@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="alternate" type="application/atom+xml" title="Atom" href="<: '/atom.xml' | uri_for :>">
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet">
+    <title>暗号化関連のメモ - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+<h1>暗号化関連のメモ</h1>
+
+<p>セキュリティ関係で中途半端な事を書くと多方面からいろい（略</p>
+
+地方自治体の補助金事業絡みで、自治体指定のホスティングサーバーに重要データのバックアップを取らないといけなくなったので、
+<p>自分用として暗号化関連の技術をメモります。</p>
+
+<h2>手っ取り早く特定ディレクトリを丸ごとバックアップ</h2>
+
+<p>scpやらrsyncやらでリモートへファイルを転送する処理は誰もがご存じだと思いますので、
+「tarでgzip圧縮して、いい感じの名前を付けて暗号化」のコマンドを結論として記します。</p>
+
+<pre><code>
+$ tar cz -C /home/some_user/ some_directory | openssl enc -aes-256-cbc -iter 12345 -k yourpassword -out `date '+%Y%m%d_%H%M%S'`_dir_backup.tar.gz.enc
+</code></pre>
+
+<h3>解説</h3>
+
+わざわざ一時的にファイルに書き出さずに、パイプを利用して<code>openssl</code>コマンドにデータを流しています。
+
+opensslコマンドでファイルを暗号化する場合は、<code>-in filename</code> とオプションを追加して指定すればOKです。
+
+<code>-aes-256-cbc</code> は暗号化の種類と鍵長、モードを表しています。wikipediaに結構詳しく書いてありますが、
+<p>ひとまずAESという種類の256bitの鍵長を使っておけばOKだと思います（2020年1月現在）。</p>
+
+<code>-iter 数字</code> で大きめのストレッチング回数を指定してブルートフォース対策。
+<code>-k パスワード</code> でパスワードの指定。このiterとkで指定したものは復号時に必要になるため、忘れないようにしましょう。
+
+<p>dateコマンドでフォーマットを指定して、「日付_時間_」をファイル名の先頭に付けています。</p>
+
+<h2>データ暗号化、ハッシュ値化の対象</h2>
+
+<p>例えばウェブアプリケーションにおいて、データベースに格納されているあらゆる個人情報を暗号化（saltを含めて）してしまうと、
+SQLのWhereによる問い合わせが困難になり、実用性が失われることでしょう。
+よって、稼働中のデータベースの暗号化またはハッシュ値化すべきフィールドはある程度限られます。</p>
+
+それに対して、データベースのダンプファイル（バックアップファイル）は暗号化してもシステムの稼働に影響を与えないので、
+<p>面倒くさがらずに必ず暗号化するという運用にした方が好ましい。</p>
+
+<ul>
+<li>ログインパスワード等はハッシュ値にする。不可逆に変換してしまう。</li>
+<li>そのユーザー固有の、外部システムへの連携用認証情報等は暗号化する。復号に必要な情報はデータベースの外に置く。</li>
+<li>Where等で条件指定されないことが明らかな個人情報項目は暗号化してしまう。</li>
+<li>DBのダンプファイルは暗号化する。</li>
+</ul>
+
+
+<hr><section><ul>
+<li> <a href="/tags/8434a1c99cbe0b5a63533a11b07d5f41.html">セキュリティ</a></li>
+<li> <a href="/tags/deb226968807d7d7a40becc2abe18d18.html">暗号</a></li>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+</ul>
+</section>
+<section>
+prev: <a href="/entry/2020/01/2020_01_08_001.html">
+</a> <br>
+next: NO ENTRY <br>
+</section>
+<section>
+created at : 2020-01-16 10:42:20<br>
+updated at : 2020-01-16 11:24:28<br>
+author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+    <script src="//google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>
