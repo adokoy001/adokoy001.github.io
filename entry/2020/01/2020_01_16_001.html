@@ -49,8 +49,7 @@
 <p>scpやらrsyncやらでリモートへファイルを転送する処理は誰もがご存じだと思いますので、
 「tarでgzip圧縮して、いい感じの名前を付けて暗号化」のコマンドを結論として記します。</p>
 
-<pre><code>
-$ tar cz -C /home/some_user/ some_directory | openssl enc -aes-256-cbc -iter 12345 -k yourpassword -out `date '+%Y%m%d_%H%M%S'`_dir_backup.tar.gz.enc
+<pre><code>$ tar cz -C /home/some_user/ some_directory | openssl enc -aes-256-cbc -iter 12345 -k yourpassword -out `date '+%Y%m%d_%H%M%S'`_dir_backup.tar.gz.enc
 </code></pre>
 
 <h3>解説</h3>
