@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="alternate" type="application/atom+xml" title="Atom" href="<: '/atom.xml' | uri_for :>">
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet">
+    <title>FuelPHPでCSRF対策 - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+<h1>FuelPHPでCSRF対策</h1>
+
+<p>ウェブアプリケーションフレームワークFuelPHPにはSecurityパッケージにCSRF対策用の便利なツールが入っているので、
+特にこだわりがなければ以下の点に注意して使っておくと良い。</p>
+
+<ul>
+<li>副作用のある操作でCSRF対策を施す</li>
+<li>フォームへの埋め込みだけ施してpost先での検証を忘れないように注意(ありがち)</li>
+<li>ログアウト処理には使わなくても害は無い</li>
+<li>Configで十分に長く複雑なsaltを設定する</li>
+</ul>
+
+<h2>FuelでのCSRF対策機能の仕組み</h2>
+
+<p>Fuelのソースを確認した限りでは、以下のような仕組みのようだ。</p>
+
+<ul>
+<li>fetch_tokenでCookieにcsrfのtokenの大元を生成＆クライアント側にset</li>
+<li>大元のtokenはFuelサーバー内セッションストレージに保存される訳ではない</li>
+<li>フォーム用としてsaltを付けてハッシュ化された値を生成、それをformのhiddenにセットすることを想定</li>
+<li>クライアントがpostすると、hiddenのtokenの値と最初に生成した大元のtokenをrequest headerに含めて送信</li>
+<li>Fuelサーバーはhiddenのtokenと、cookieで送信されたcsrfの大元の値にsalt付きハッシュを通した値を比較</li>
+<li>一致していればクライアントからの正当なリクエストと判定</li>
+<li>saltはサーバー側でしか保持しないため、改ざんやリバース生成は事実上不可能</li>
+<li>大元token生成アルゴリズム(generate_tokenファンクション)に一部mt_randが使われているが、time(),uniqid(),salt,sha512を併用しているため実質的に安全であるものと思われる。</li>
+<li>saltはクライアントごとに固有の値を持たせるのではなく、Fuelサーバーで共有されたものを一つだけ持つ</li>
+</ul>
+
+<p>fetch_tokenの計算コストは無視でき、また、サーバー側ではhash前のtokenを保持しないのでかなり低コストである。</p>
+
+
+<hr><section><ul>
+<li> <a href="/tags/337141a52adccec6e5888f8beb50b4d0.html">FuelPHP</a></li>
+<li> <a href="/tags/84159968353d6b18aab13908ffdb7af7.html">fuelphp</a></li>
+<li> <a href="/tags/11fc3960fd795c40a1de9c92ce16b3b6.html">PHP</a></li>
+<li> <a href="/tags/196875532e56e08bc3aa8e7328cb2232.html">php</a></li>
+<li> <a href="/tags/818732d94d21a30e1ae348d1fa63a792.html">CSRF</a></li>
+<li> <a href="/tags/2b0d22d52b4f63fbfcc647a95f2bc9e3.html">csrf</a></li>
+<li> <a href="/tags/8434a1c99cbe0b5a63533a11b07d5f41.html">セキュリティ</a></li>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+</ul>
+</section>
+<section>
+prev: <a href="/entry/2020/01/2020_01_16_001.html">暗号化関連のメモ</a> <br>
+next: NO ENTRY <br>
+</section>
+<section>
+created at : 2020-01-21 03:15:07<br>
+updated at : 2020-01-24 10:00:27<br>
+author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+    <script src="//google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>
