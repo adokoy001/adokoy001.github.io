@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="alternate" type="application/atom+xml" title="Atom" href="<: '/atom.xml' | uri_for :>">
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet">
+    <title>PerlのOpenSSLモジュールで電子署名 - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+<h1>PerlのOpenSSLモジュールで電子署名</h1>
+
+Perlでは <code>Crypt::OpenSSL::RSA</code> モジュールを使えば簡単に電子署名を楽しむことができるので、その紹介。
+
+<h2>電子署名と改ざん検知</h2>
+
+<p>知らない人向けに雑に説明しますと、「電子署名」とは
+「このドキュメントは間違いなく、私以外誰も知らない秘密鍵をもっているこの私めがお墨付きを与えました」ということを明確に証明するための電子的な手段で、
+公開鍵暗号のRSAによる署名と検証が有名です。
+（決して「このドキュメントは間違いなく私が作成しました」ということを証明するわけではないことにご注意ください）</p>
+
+RSAによる「署名」は、具体的には「秘密鍵を使ってドキュメントのダイジェスト値に対して暗号化したもの」にあたり、
+<p>その署名を公開鍵で復号すると元のドキュメントと一致するかどうかを見れば「検証」が可能という感じです。
+この検証作業によって署名の正当性と改ざんの検知が可能になります。</p>
+
+<h2>privateキーとpublicキーの生成</h2>
+
+<p>以下、4096ビット長の鍵生成サンプルプログラムです。</p>
+
+<pre><code>
+<p>use strict;
+use warnings;
+use utf8;
+use Data::Dumper;</p>
+
+use Crypt::CBC;
+<p>use Crypt::OpenSSL::RSA;</p>
+
+<p>my $rsa = Crypt::OpenSSL::RSA-&gt;generate_key(4096);</p>
+
+<p>my $pvt = $rsa-&gt;get_private_key_string();
+my $pub = $rsa-&gt;get_public_key_string();</p>
+
+open(my $fh, '&gt;', 'pvt.pem');
+<p>print $fh $pvt;
+close($fh);</p>
+
+open($fh, '&gt;', 'pub.pem');
+<p>print $fh $pub;
+close($fh);</p>
+
+</code></pre>
+
+<p>上記を実行するとカレントディレクトリに秘密鍵pvt.pemと公開鍵pub.pemが作成されます。</p>
+
+<h2>署名</h2>
+
+<p>以下のプログラムは、先ほど作成したpvt.pemを使ってin.txtというファイルの署名を作成し、out.signに出力（つまり署名）します。</p>
+
+<pre><code>
+<p>use strict;
+use warnings;
+use utf8;
+use Crypt::CBC;
+use Crypt::OpenSSL::RSA;</p>
+
+my $pvt_text = '';
+<p>open(my $fh, '&lt;', 'pvt.pem');
+while(&lt;$fh&gt;){$pvt_text .= $_}
+close($fh);
+my $rsa_priv = Crypt::OpenSSL::RSA-&gt;new_private_key($pvt_text);</p>
+
+my $input = $ARGV[0] // 'in.txt';
+<p>my $output = $ARGV[1] // 'out.sign';</p>
+
+my $content = '';
+<p>open($fh, '&lt;', $input);
+while(&lt;$fh&gt;){$content .= $_}
+close($fh);</p>
+
+<p>my $sign = $rsa_priv-&gt;sign($content);</p>
+
+<p>open($fh, '&gt;', $output);
+print $fh $sign;
+close($fh);</p>
+
+</code></pre>
+
+<h2>検証</h2>
+
+<p>上記プログラムで作成されたout.signに対して検証してみます。</p>
+
+<p>秘密鍵pvt.pemとin.txtとout.signの三つが必要になります。</p>
+
+<pre><code>
+<p>use strict;
+use warnings;
+use utf8;
+use Crypt::CBC;
+use Crypt::OpenSSL::RSA;</p>
+
+my $pub_text = '';
+<p>open(my $fh, '&lt;', 'pub.pem');
+while(&lt;$fh&gt;){$pub_text .= $_}
+close($fh);
+my $rsa = Crypt::OpenSSL::RSA-&gt;new_public_key($pub_text);</p>
+
+my $input = $ARGV[0] // 'in.txt';
+<p>my $signature = $ARGV[1] // 'out.sign';</p>
+
+my $content = '';
+<p>open($fh, '&lt;', $input);
+while(&lt;$fh&gt;){$content .= $_}
+close($fh);</p>
+
+my $sign = '';
+<p>open($fh, '&lt;', $signature);
+while(&lt;$fh&gt;){$sign .= $_}
+close($fh);</p>
+
+
+
+<p>if($rsa-&gt;verify($content, $sign)){
+  print "valid\n";
+}</p>
+
+</code></pre>
+
+<code>verify(元のドキュメント,署名)</code> によって検証し、正当なものであれば1が返るようになっています。
+
+
+
+<hr><section><ul>
+<li> <a href="/tags/469bb7e87f829139bc3ce9716602a8d3.html">Perl</a></li>
+<li> <a href="/tags/aceb874396434c837eec6ef7f70e9e62.html">perl</a></li>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+<li> <a href="/tags/46c3602f73d1c02def8337baa4b4d9e9.html">電子署名</a></li>
+</ul>
+</section>
+<section>
+prev: <a href="/entry/2020/01/2020_01_21_001.html">FuelPHPでCSRF対策</a> <br>
+next: <a href="/entry/2020/02/2020_02_06_001.html">SCP風創作</a> <br>
+</section>
+<section>
+created at : 2020-01-28 10:18:41<br>
+updated at : 2020-01-28 11:28:43<br>
+author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+    <script src="//google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>
