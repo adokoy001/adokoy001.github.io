@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="alternate" type="application/atom+xml" title="Atom" href="<: '/atom.xml' | uri_for :>">
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet">
+    <title>PayPalのAPI - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+<h1>PayPalのAPI</h1>
+
+<p>仕事でPayPalのSDKを使ってAPIをPHP製プロダクトに組み込んでみた。</p>
+
+ドキュメントが英語のものしか用意されていないのでかなり苦労した。
+<p>というか、ドキュメントの通りに作っても微妙にJSのコードが狂っていたりするのでかなりの罠。</p>
+
+<h2>Clientサイドプログラム</h2>
+
+<p>Client, Server, PayPalプラットフォームの処理フローは公式が作成している図の通りだが、
+最低限必要なものを実装するコードを以下に示しておく。
+ネットで日本語の情報を調べたところ古いAPIの使い方しか出てこないので、現行API（2020/02/13現在）の日本語情報としては有用かと思われる。</p>
+
+<pre><code>        &lt;script
+<p>            src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID_HERE&currency=JPY&debug=true"&gt;
+        &lt;/script&gt;
+        &lt;div id="paypal-button-container"&gt;&lt;/div&gt;
+        &lt;script&gt;
+            paypal.Buttons({</p>
+
+                createOrder: function () {
+<p>                    // fetchのpathは実装するサーバサイドプログラムを指定
+                    return fetch('/your/server_side/api/path.php', {
+                        method: 'post',
+                        headers: {
+                            'content-type': 'application/json'
+                        }
+                    }).then(function (res) {
+                        return res.json();
+                    }).then(function (data) {
+                        // ここ要注意。現時点では必要なorderIDはreturnされた結果を data.id とすることで取得できる。
+                        // ここでreturnされるべきはAPIドキュメントでいうところのOrderID
+                        return data.id;
+                    });
+                },</p>
+
+                onApprove: function (data) {
+                    // こちらも実装予定のサーバサイドプログラムのpathを指定
+                    return fetch('/your/server_side/capture/api.php', {
+                        method: 'post',
+                        headers: {
+                            'content-type': 'application/json'
+                        },
+                        // bodyの内容はidだけで良いが、受け取ったデータをそのまま流してもちゃんと動作する。
+                        body: JSON.stringify(data)
+                    }).then(function (res) {
+                        return res.json();
+                    }).then(function (details) {
+                        // 決済に成功した後にどうするかを記述。
+                        // ここではalertで内容を出力しているだけだが、実稼働時はページ遷移などの処理を入れることになると思います。
+                        alert(JSON.stringify(details));
+                    });
+                }
+            }).render('#paypal-button-container');
+        &lt;/script&gt;
+</code></pre>
+
+<p>scriptをsrcでロードするときにcurrency=JPYというパラメタを与えてあげると日本円が扱えるようになる仕様。
+これもわかりにくい。</p>
+
+<h2>サーバサイドの実装</h2>
+
+先ほどの <code>/your/server_side/api/path.php</code> と、
+<code>/your/server_side/capture/api.php</code> の具体的なPHP実装を例示します。
+
+<p>composerでpaypalのsdkをインストールしたという前提です。</p>
+
+<pre><code>
+<p>use PayPalCheckoutSdk\Core\PayPalHttpClient;
+use PayPalCheckoutSdk\Core\SandboxEnvironment;
+use PayPalCheckoutSdk\Orders\OrdersGetRequest;</p>
+
+<p>class MyApp_Util_PayPal {</p>
+
+<p>    /**
+     * Set up and return PayPal PHP SDK environment with PayPal access credentials.
+     * This sample uses SandboxEnvironment. In production, use LiveEnvironment.
+     */
+    public static function environment() {
+        $credential = self::get_credential();
+        $clientId = $credential['client_id'];
+        $clientSecret = $credential['secret'];
+        return new \PayPalCheckoutSdk\Core\SandboxEnvironment($clientId, $clientSecret);
+    }</p>
+
+    public static function get_credential() {
+<p>        // 実際にはDBに接続して復号して値を入れたりすることになる場合が多いでしょう。
+        $data = [
+            'client_id' =&gt; 'YOUR_CLIENT_ID',
+            'secret' =&gt; 'YOUR_SECRET',
+        ];
+        return $data;
+    }</p>
+
+    public static function client() {
+<p>        // sandbox環境です。プロダクションにするときはuse側とともにliveへ書き換えましょう。
+        return new \PayPalCheckoutSdk\Core\PayPalHttpClient(self::environment());
+    }</p>
+
+    public static function get_order($transaction_id = null) {
+<p>        // Order作成処理: 以下の例示のような形で料金と明細を作成していく。
+        $data = Something_Loader::something_load($transaction_id);
+        $parchase_units = [];
+        foreach ($general as $key =&gt; $item) {
+            $tmp_data = [
+                'reference_id' =&gt; $transaction_id,
+                'description' =&gt; 'something description',
+                'type' =&gt; 'SERVICE',
+                'category' =&gt; 'LODGING_AND_ACCOMMODATIONS',
+                'amount' =&gt; [
+                    'currency_code' =&gt; 'JPY',
+                    'value' =&gt; round($item['total_price']),
+                ],
+                'breakdown' =&gt; [
+                    'item_total' =&gt; [
+                        'currency_code' =&gt; 'JPY',
+                        'value' =&gt; round($item['total_price']),
+                    ],
+                    'tax_total' =&gt; [
+                        'currency_code' =&gt; 'JPY',
+                        'value' =&gt; round($item['total_consumption_tax']),
+                    ],
+                ],
+            ];
+            $parchase_units[$key] = $tmp_data;
+        }
+        $request = new PayPalCheckoutSdk\Orders\OrdersCreateRequest();
+        $request-&gt;prefer('return=representation');
+        $request-&gt;body = [
+            'intent' =&gt; 'CAPTURE',
+            'application_context' =&gt; [
+                'return_url' =&gt; 'https://yoursite.example.com/example_return',
+                'cancel_url' =&gt; 'https://yoursite.example.com/example_cancel',
+            ],
+            'purchase_units' =&gt; $parchase_units
+        ];
+        $client = self::client();
+        $response = $client-&gt;execute($request);
+        // この例ではレスポンスをそのまま返しています。
+        return $response;
+    }</p>
+
+    public static function capture_order($order_id) {
+<p>        // onApproveで決済の結果を検証してその後の処理を記述する。
+        $request = new PayPalCheckoutSdk\Orders\OrdersCaptureRequest($order_id);
+        $client = self::client();
+        $response = $client-&gt;execute($request);
+        // 以下、検証結果を読み込んで何らかの処理を記述する。
+        $status_code = $response-&gt;statusCode;
+        $result = $response-&gt;result;
+        $id = $result-&gt;id;
+        Something_Process::something_process($status_code,$result,$id);
+        return $response;
+    }</p>
+
+<p>}</p>
+
+</code></pre>
+
+<p>てな感じです。</p>
+
+これを書いている時点では新しいAPIに関する日本語のドキュメントが無いっぽいので、
+<p>何らかの参考になれば幸いです。</p>
+
+
+
+<hr><section><ul>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+<li> <a href="/tags/5da9a48b0fb4cad5620f663075e61388.html">PayPal</a></li>
+<li> <a href="/tags/11fc3960fd795c40a1de9c92ce16b3b6.html">PHP</a></li>
+<li> <a href="/tags/196875532e56e08bc3aa8e7328cb2232.html">php</a></li>
+<li> <a href="/tags/90be8b8e3efc390c717f57c21fdbfa2c.html">paypal</a></li>
+<li> <a href="/tags/0d73d6577c9581bcfb72c4cd4df759f3.html">API</a></li>
+<li> <a href="/tags/c2af1a9aa5feed1f628b103858f62ff1.html">SDK</a></li>
+<li> <a href="/tags/006f84f0d5c5317e6347bcb3622a4cbb.html">api</a></li>
+<li> <a href="/tags/8c2a4567a8b89d10db9d15ea084e98c5.html">sdk</a></li>
+</ul>
+</section>
+<section>
+prev: <a href="/entry/2020/02/2020_02_07_001.html">再帰呼び出し</a> <br>
+next: NO ENTRY <br>
+</section>
+<section>
+created at : 2020-02-13 10:14:30<br>
+updated at : 2020-02-15 14:07:38<br>
+author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+    <script src="//google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>
