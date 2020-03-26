@@ -51,14 +51,14 @@
 ネットで日本語の情報を調べたところ古いAPIの使い方しか出てこないので、現行API（2020/02/13現在）の日本語情報としては有用かと思われる。</p>
 
 <pre><code>        &lt;script
-<p>            src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID_HERE&currency=JPY&debug=true"&gt;
+            src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID_HERE&currency=JPY&debug=true"&gt;
         &lt;/script&gt;
         &lt;div id="paypal-button-container"&gt;&lt;/div&gt;
         &lt;script&gt;
-            paypal.Buttons({</p>
+            paypal.Buttons({
 
                 createOrder: function () {
-<p>                    // fetchのpathは実装するサーバサイドプログラムを指定
+                    // fetchのpathは実装するサーバサイドプログラムを指定
                     return fetch('/your/server_side/api/path.php', {
                         method: 'post',
                         headers: {
@@ -71,7 +71,7 @@
                         // ここでreturnされるべきはAPIドキュメントでいうところのOrderID
                         return data.id;
                     });
-                },</p>
+                },
 
                 onApprove: function (data) {
                     // こちらも実装予定のサーバサイドプログラムのpathを指定
@@ -92,7 +92,7 @@
                 }
             }).render('#paypal-button-container');
         &lt;/script&gt;
-</code></pre>
+</pre></code>
 
 <p>scriptをsrcでロードするときにcurrency=JPYというパラメタを与えてあげると日本円が扱えるようになる仕様。
 これもわかりにくい。</p>
@@ -105,13 +105,13 @@
 <p>composerでpaypalのsdkをインストールしたという前提です。</p>
 
 <pre><code>
-<p>use PayPalCheckoutSdk\Core\PayPalHttpClient;
+use PayPalCheckoutSdk\Core\PayPalHttpClient;
 use PayPalCheckoutSdk\Core\SandboxEnvironment;
-use PayPalCheckoutSdk\Orders\OrdersGetRequest;</p>
+use PayPalCheckoutSdk\Orders\OrdersGetRequest;
 
-<p>class MyApp_Util_PayPal {</p>
+class MyApp_Util_PayPal {
 
-<p>    /**
+    /**
      * Set up and return PayPal PHP SDK environment with PayPal access credentials.
      * This sample uses SandboxEnvironment. In production, use LiveEnvironment.
      */
@@ -120,24 +120,24 @@ use PayPalCheckoutSdk\Orders\OrdersGetRequest;</p>
         $clientId = $credential['client_id'];
         $clientSecret = $credential['secret'];
         return new \PayPalCheckoutSdk\Core\SandboxEnvironment($clientId, $clientSecret);
-    }</p>
+    }
 
     public static function get_credential() {
-<p>        // 実際にはDBに接続して復号して値を入れたりすることになる場合が多いでしょう。
+        // 実際にはDBに接続して復号して値を入れたりすることになる場合が多いでしょう。
         $data = [
             'client_id' =&gt; 'YOUR_CLIENT_ID',
             'secret' =&gt; 'YOUR_SECRET',
         ];
         return $data;
-    }</p>
+    }
 
     public static function client() {
-<p>        // sandbox環境です。プロダクションにするときはuse側とともにliveへ書き換えましょう。
+        // sandbox環境です。プロダクションにするときはuse側とともにliveへ書き換えましょう。
         return new \PayPalCheckoutSdk\Core\PayPalHttpClient(self::environment());
-    }</p>
+    }
 
     public static function get_order($transaction_id = null) {
-<p>        // Order作成処理: 以下の例示のような形で料金と明細を作成していく。
+        // Order作成処理: 以下の例示のような形で料金と明細を作成していく。
         $data = Something_Loader::something_load($transaction_id);
         $parchase_units = [];
         foreach ($general as $key =&gt; $item) {
@@ -177,10 +177,10 @@ use PayPalCheckoutSdk\Orders\OrdersGetRequest;</p>
         $response = $client-&gt;execute($request);
         // この例ではレスポンスをそのまま返しています。
         return $response;
-    }</p>
+    }
 
     public static function capture_order($order_id) {
-<p>        // onApproveで決済の結果を検証してその後の処理を記述する。
+        // onApproveで決済の結果を検証してその後の処理を記述する。
         $request = new PayPalCheckoutSdk\Orders\OrdersCaptureRequest($order_id);
         $client = self::client();
         $response = $client-&gt;execute($request);
@@ -190,11 +190,11 @@ use PayPalCheckoutSdk\Orders\OrdersGetRequest;</p>
         $id = $result-&gt;id;
         Something_Process::something_process($status_code,$result,$id);
         return $response;
-    }</p>
+    }
 
-<p>}</p>
+}
 
-</code></pre>
+</pre></code>
 
 <p>てな感じです。</p>
 

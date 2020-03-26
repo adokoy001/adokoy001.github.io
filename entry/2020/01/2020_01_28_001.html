@@ -57,28 +57,28 @@ RSAによる「署名」は、具体的には「秘密鍵を使ってドキュ�
 <p>以下、4096ビット長の鍵生成サンプルプログラムです。</p>
 
 <pre><code>
-<p>use strict;
+use strict;
 use warnings;
 use utf8;
-use Data::Dumper;</p>
+use Data::Dumper;
 
 use Crypt::CBC;
-<p>use Crypt::OpenSSL::RSA;</p>
+use Crypt::OpenSSL::RSA;
 
-<p>my $rsa = Crypt::OpenSSL::RSA-&gt;generate_key(4096);</p>
+my $rsa = Crypt::OpenSSL::RSA-&gt;generate_key(4096);
 
-<p>my $pvt = $rsa-&gt;get_private_key_string();
-my $pub = $rsa-&gt;get_public_key_string();</p>
+my $pvt = $rsa-&gt;get_private_key_string();
+my $pub = $rsa-&gt;get_public_key_string();
 
 open(my $fh, '&gt;', 'pvt.pem');
-<p>print $fh $pvt;
-close($fh);</p>
+print $fh $pvt;
+close($fh);
 
 open($fh, '&gt;', 'pub.pem');
-<p>print $fh $pub;
-close($fh);</p>
+print $fh $pub;
+close($fh);
 
-</code></pre>
+</pre></code>
 
 <p>上記を実行するとカレントディレクトリに秘密鍵pvt.pemと公開鍵pub.pemが作成されます。</p>
 
@@ -87,33 +87,33 @@ close($fh);</p>
 <p>以下のプログラムは、先ほど作成したpvt.pemを使ってin.txtというファイルの署名を作成し、out.signに出力（つまり署名）します。</p>
 
 <pre><code>
-<p>use strict;
+use strict;
 use warnings;
 use utf8;
 use Crypt::CBC;
-use Crypt::OpenSSL::RSA;</p>
+use Crypt::OpenSSL::RSA;
 
 my $pvt_text = '';
-<p>open(my $fh, '&lt;', 'pvt.pem');
+open(my $fh, '&lt;', 'pvt.pem');
 while(&lt;$fh&gt;){$pvt_text .= $_}
 close($fh);
-my $rsa_priv = Crypt::OpenSSL::RSA-&gt;new_private_key($pvt_text);</p>
+my $rsa_priv = Crypt::OpenSSL::RSA-&gt;new_private_key($pvt_text);
 
 my $input = $ARGV[0] // 'in.txt';
-<p>my $output = $ARGV[1] // 'out.sign';</p>
+my $output = $ARGV[1] // 'out.sign';
 
 my $content = '';
-<p>open($fh, '&lt;', $input);
+open($fh, '&lt;', $input);
 while(&lt;$fh&gt;){$content .= $_}
-close($fh);</p>
+close($fh);
 
-<p>my $sign = $rsa_priv-&gt;sign($content);</p>
+my $sign = $rsa_priv-&gt;sign($content);
 
-<p>open($fh, '&gt;', $output);
+open($fh, '&gt;', $output);
 print $fh $sign;
-close($fh);</p>
+close($fh);
 
-</code></pre>
+</pre></code>
 
 <h2>検証</h2>
 
@@ -122,38 +122,38 @@ close($fh);</p>
 <p>秘密鍵pvt.pemとin.txtとout.signの三つが必要になります。</p>
 
 <pre><code>
-<p>use strict;
+use strict;
 use warnings;
 use utf8;
 use Crypt::CBC;
-use Crypt::OpenSSL::RSA;</p>
+use Crypt::OpenSSL::RSA;
 
 my $pub_text = '';
-<p>open(my $fh, '&lt;', 'pub.pem');
+open(my $fh, '&lt;', 'pub.pem');
 while(&lt;$fh&gt;){$pub_text .= $_}
 close($fh);
-my $rsa = Crypt::OpenSSL::RSA-&gt;new_public_key($pub_text);</p>
+my $rsa = Crypt::OpenSSL::RSA-&gt;new_public_key($pub_text);
 
 my $input = $ARGV[0] // 'in.txt';
-<p>my $signature = $ARGV[1] // 'out.sign';</p>
+my $signature = $ARGV[1] // 'out.sign';
 
 my $content = '';
-<p>open($fh, '&lt;', $input);
+open($fh, '&lt;', $input);
 while(&lt;$fh&gt;){$content .= $_}
-close($fh);</p>
+close($fh);
 
 my $sign = '';
-<p>open($fh, '&lt;', $signature);
+open($fh, '&lt;', $signature);
 while(&lt;$fh&gt;){$sign .= $_}
-close($fh);</p>
+close($fh);
 
 
 
-<p>if($rsa-&gt;verify($content, $sign)){
+if($rsa-&gt;verify($content, $sign)){
   print "valid\n";
-}</p>
+}
 
-</code></pre>
+</pre></code>
 
 <code>verify(元のドキュメント,署名)</code> によって検証し、正当なものであれば1が返るようになっています。
 
