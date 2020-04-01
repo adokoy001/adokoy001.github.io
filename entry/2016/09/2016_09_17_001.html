@@ -6,16 +6,22 @@
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      
+      gtag('js', new Date());      
       gtag('config', 'UA-155099641-1');
     </script>
     <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <link rel="alternate" type="application/atom+xml" title="Atom" href="<: '/atom.xml' | uri_for :>">
-    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:title" content="組み合わせ" />
+<meta property="og:description" content="モンテカルロシミュレーションに近い何かのお話" />
+
+<!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <title>組み合わせ - NIKKI.YOKODA.OKINAWA</title>
     
+
   </head>
   <body>
     <style>
@@ -26,6 +32,7 @@
       h1 {font-size: 2.30em;}
       h2 {font-size: 1.90em;}
       h3 {font-size: 1.50em;}
+      pre { background-color: #E0E0E0; border: 1px solid #303030; padding: 0.7em; margin: 0.7em;}
     </style>
     <div class="container-fluid">
       <header class="container">
@@ -36,6 +43,7 @@
 	<div class="container">
 	  
 
+
 <h1>組み合わせ</h1>
 
 <p>昨日はわりと散々な目にあった．</p>
@@ -45,7 +53,9 @@
 
 <p>この点，私も悪いところがあり，直感的に宇宙誕生から今までに経過した時間が無視できるぐらい膨大な時間がかかると分かっていたので正確な計算回数は算出していなかった．</p>
 
-<p>おそらく先生の専門分野では数十億の組み合わせを解決するような問題がありふれたものであるため，愚直にブルートフォースすると""計算回数""が10^30とかを超えてしまう場合のヤバさを誤認してしまった可能性が高い．誤認する流れもなんとなくわかる．</p>
+<p>おそらく先生の専門分野では数十億の組み合わせを解決するような問題がありふれたものであるため，
+愚直にブルートフォースすると""計算回数""が10^30とかを超えてしまう場合のヤバさを誤認してしまった可能性が高い．
+誤認する流れもなんとなくわかる．</p>
 
 <p>最初から正確なな計算回数とともに，処理時間の下限を示せば良かったのだ．</p>
 
@@ -55,19 +65,26 @@
 <p>（ただし，その組み合わせ最適化問題を解く部分以外については，仕事の大まかな流れをまとめてくれたし，他のプランもいくつか提示してくれているので感謝したい．）</p>
 
 <p>まだメールは返ってきていないが，「だから何？」って言われそうに感じてる．つまり自分の中では不信感が渦巻いている．たぶんこの先このプロジェクトについて相談することは無さそうだ．</p>
-<hr><section><ul>
+
+<hr>
+
+<section>
+<ul>
 <li> <a href="/tags/f319e09eebb6e5ce1b4d387a44832273.html">仕事</a></li>
 <li> <a href="/tags/49d690ff43a777067dd42e7abd3f78c3.html">日常</a></li>
 </ul>
+
 </section>
+
 <section>
-prev: <a href="/entry/2016/09/2016-09-15-01.html">NO TITLE</a> <br>
-next: <a href="/entry/2019/12/2019_12_27_001.html">ブログツール nikki.pl を作った</a> <br>
+  prev: <a href="/entry/2016/09/2016_09_15_001.html">オンライン宿泊予約システムとか</a> <br>
+  next: <a href="/entry/2016/09/2016_09_19_001.html">睡眠中に見る夢</a> <br>
 </section>
+
 <section>
-created at : 2020-01-02 17:39:21<br>
-updated at : 2020-01-02 17:39:21<br>
-author : Toshiaki Yokoda<br>
+  created at : 2020-04-01 13:25:54<br>
+  updated at : 2020-04-01 13:25:54<br>
+  author : Toshiaki Yokoda<br>
 </section>
 
 	</div>
@@ -75,9 +92,12 @@ author : Toshiaki Yokoda<br>
       <footer>
       </footer>
     </div>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
-    <script src="//google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!--    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
     <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
   </body>
 </html>

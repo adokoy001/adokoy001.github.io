@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:title" content="MapReduce::Framework::Simple 解説1" />
+<meta property="og:description" content="CPANモジュール MapReduce::Framework::Simple の使い方について" />
+
+<!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>MapReduce::Framework::Simple 解説1 - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+      pre { background-color: #E0E0E0; border: 1px solid #303030; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+
+<h1>MapReduce::Framework::Simple 解説1</h1>
+
+<p>3ヶ月程前に、MapReduce::Framework::Simpleというモジュールを作った。</p>
+
+<a href="https://github.com/adokoy001/MapReduce-Framework-Simple">MapReduce::Framework::Simple : GitHub</a>
+
+<p> </p>
+
+<a href="https://metacpan.org/pod/MapReduce::Framework::Simple">MapReduce::Framework::Simple : CPAN</a>
+
+<p> </p>
+
+<p>httpでリモートのサーバと連携して分散処理を実現するためのモジュールとなっている。</p>
+
+<h2>作成動機</h2>
+
+<p>CPANにParallel::MapReduceというモジュールがある。
+これは、リモートへmapperとなるサブルーチンと処理の対象となるデータをssh経由で送り
+グリッドコンピューティングなMapReduceを実現するという2008年頃の古いモジュールで、エクスペリメンタルなものだった。</p>
+
+処理をworker（処理を依頼されるリモートのコンピュータ）に投げるときに、
+<p>master（処理を依頼するコンピュータ）からはsshでパスワードなし公開鍵認証を使い
+workerへログインできる状態になっている必要があるため、
+「気軽に分散処理したい」というケースではなかなか使えない。</p>
+
+<p>その上、プログラムでエラーがあると、ssh接続が強制的に切られ、sshのプロセスが大量に残るということもあった。</p>
+
+<p>もう既にMapReduceよりも使い勝手やパフォーマンスの良いプログラミングモデルがある上に、
+Hadoopなどのエコシステムが成熟しているわけだが、
+とりあえず「手っ取り早く環境が作れて、持て余している計算資源でグリッドコンピューティングして計算時間を節約したい。
+できればperlだけで完結させたい」というコンセプトで、
+Parallel::MapReduceのようにsshでリモートとつなげるのではなく、
+普通にhttpで接続するようなお手軽MapReduce環境構築モジュールを作ることにした。</p>
+
+<h2>インストール方法</h2>
+
+<p>cpanmなどで、MapReduce::Framework::Simpleをインストールすればmaster、worker共に最低限の環境構築は完了する。</p>
+
+<pre><code> $ cpanm MapReduce::Framework::Simple
+</pre></code>
+
+<h2>使い方</h2>
+
+<p>MapReduceの"Hello, World!"としてはワードカウントが取り上げられることが多いが、
+とりあえず、ランダムに生成した3万個の数字の合計・平均をリモートの3台のコンピュータに計算させてみることにする。</p>
+
+<h3>worker側の準備</h3>
+
+<p>まずは、workerとして使いたいリモートのサーバ上で、MapReduce::Framework::Simpleをインストールし、
+以下のコマンドでworkerサーバを起動しておく。</p>
+
+<pre><code> $ perl -MMapReduce::Framework::Simple -e 'MapReduce::Framework::Simple-&gt;new-&gt;worker("/your_secret_path");'
+</pre></code>
+
+<p>最後の方にある"/your_secret_path"は、workerが起動する処理受付用のhttpサーバのパスになるので、
+他人に推察されにくいパスにすることを推奨する。
+また、workerのhttpサーバは既にStarletがインストールされていればそれで起動するようになっており、
+そうでなければシングルプロセスのPlackで起動する。
+1つのworkerへ同時に幾つもの処理対象データを投げるような使い方をする場合は、Starletをインストールしておくと良い。</p>
+
+
+<p>さらに、Starletはインストールしているが敢えてStarletを使いたくない場合は、
+newの引数に「force_plackup =&gt; 1」を与えればPlackで起動させることができる。</p>
+
+<pre><code> $ perl -MMapReduce::Framework::Simple -e 'MapReduce::Framework::Simple-&gt;new(force_plackup =&gt; 1)-&gt;worker("/your_secret_path");'
+</pre></code>
+
+<h3>masterのプログラム</h3>
+
+<p>master側のプログラムでは、処理対象のデータとそれを処理を受付けるworkerのURLを格納した
+配列リファレンスの配列リファレンス、
+workerで実行させるサブルーチンのリファレンス（mapperと呼ぶ）、
+workerから受け取った処理結果をmaster側で集約するサブルーチンのリファレンス（reducerと呼ぶ）の、
+3つを用意する必要がある。</p>
+
+まずは例題の通り3万個の数値を3台のサーバに分散処理させるため、
+<p>以下のように配列リファレンスの配列リファレンスを作る。</p>
+
+<pre><code>my $data_map_reduce;
+    my $remotes = [
+        'http://192.168.0.1:5000/eval',
+            'http://192.168.0.2:5000/eval',
+            'http://192.168.0.3:5000/eval'
+            ];
+for(0 .. 2){
+    my $tmp_data;
+    for(1 .. 10000){
+        push(@$tmp_data,rand(10000));
+    }
+    push(@$data_map_reduce,[$tmp_data,$remotes-&gt;[$_]]);
+}
+</pre></code>
+
+<p>基本的には、[&lt;処理対象データ&gt;,&lt;workerサーバのURL&gt;]という形の配列リファレンスを配列リファレンスに詰め込んでいく。</p>
+
+<p>次に、mapperとreducerの書き方を見てみる。</p>
+
+<pre><code>
+# mapper code
+my $mapper = sub {
+    my $input = shift;
+    my $sum = 0;
+    my $num = $#$input + 1;
+    for(0 .. $#$input){
+        $sum += $input-&gt;[$_];
+    }
+    my $avg = $sum / $num;
+    return({avg =&gt; $avg, sum =&gt; $sum, num =&gt; $num});
+};
+
+# reducer code
+my $reducer = sub {
+    my $input = shift;
+    my $sum = 0;
+    my $avg = 0;
+    my $total_num = 0;
+    for(0 .. $#$input){
+        $sum += $input-&gt;[$_]-&gt;{sum};
+        $total_num += $input-&gt;[$_]-&gt;{num};
+    }
+    $avg = $sum / $total_num;
+    return({avg =&gt; $avg, sum =&gt; $sum});
+};
+
+</pre></code>
+
+<p>上記のように、mapper reducerいずれも引数としてデータを配列リファレンスの形で受け取るように作り、
+mapperでは平均・合計・レコード数を計算してハッシュリファレンスでreturn、
+reducerではハッシュリファレンスの配列リファレンスをloopで回して最終的な平均値と合計を計算している。</p>
+
+
+<p>無論、このコーディング方法はあくまでも一つの例である。
+mapperの引数が必ずしも配列リファレンスの配列リファレンスである必要はなく、
+引数を一つだけ、返り値も一つだけという形になっていれば良い。
+変数をひとつだけにするという約束事のために、リファレンスを使っているということに過ぎない。</p>
+
+mapperのreturnとreducerのinputの関係には注意が必要である。
+<p>各workerのreturnは、処理が完了した順番にmaster側の配列にpushされ、
+そのリファレンスをreducerのinputとして扱うという約束事なっているため、
+このサンプルコードのreducerでは入力配列リファレンスのループ処理中のように `$input-&gt;[$_]-&gt;{sum}` といった形で
+mapperからのreturn内容を参照することができる。</p>
+
+<p>最後に、作成したdata,mapper,reducerでMapReduce処理をmap_reduceメソッドで実行させるコードを記述する。</p>
+
+<pre><code>
+my $result = $mfs-&gt;map_reduce(
+       $data_map_reduce,
+            $mapper,
+            $reducer,
+            5
+            );
+
+print Dumper $result; # 結果確認用
+
+</pre></code>
+
+<p>最後の引数はmaster側でforkする引数となる。masterのメモリが許す限り、worker数以上の値を設定しておくと良い。</p>
+
+<h3>実行</h3>
+
+<p>master側のスクリプトを cal_avg_total.pl という名前で保存したと仮定すると、後は以下のコマンドで実行するだけでよい。</p>
+
+<pre><code>  $ perl cal_avg_total.pl
+</pre></code>
+
+
+<p>実行すると合計と平均値が出力されるはずである。
+正常に実行できなかった場合、workerサーバが起動されているか、URLが正しいかを確認。</p>
+
+
+<p>## まとめ</p>
+
+基本的に、workerの環境構築はMapReduce::Framework::Simpleをインストールするだけで良く、
+<p>master側はmapperのreturnとreducerのinputの関係に従って処理を書いていくだけでOKだ。
+MapReduceな書き方に慣れていない場合はそれなりに時間がかかってしまうが、そのあたりは練度の問題である。</p>
+
+このような方式の分散処理は、単一のサーバでは計算に数分・数時間・数日間もかかる程のデータ量で
+<p>「高度に並列化された」問題を手っ取り早く高速化させたい場合に有効である。
+ただし、数秒で完了するような計算処理では通信オーバーヘッドが原因で逆に遅くなってしまったり、
+シーケンシャルに処理をしなければならないような「高度に並列化できない問題」
+ではそもそも分散処理ができなかったりするのでそこはご注意を。</p>
+
+このモジュール自体はその他にも、ウェブスクレイパーを並列に実行したり、
+<p>バッチジョブを並列に実行したりなどといった使い方も可能ではあるが、
+そのような用途では普通に単一サーバ内でParallel::ForkManager等を使った方が良い。</p>
+
+<p>## 次回</p>
+
+<p>今回の例はランダムに生成した数値のsumとavgをMapReduceで計算させるという内容だったが、
+次回は実践的な使い方を紹介したいと思う。</p>
+
+
+
+<hr>
+
+<section>
+<ul>
+<li> <a href="/tags/aceb874396434c837eec6ef7f70e9e62.html">perl</a></li>
+<li> <a href="/tags/469bb7e87f829139bc3ce9716602a8d3.html">Perl</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2016/09/2016_09_30_001.html">悪あがき</a> <br>
+  next: <a href="/entry/2019/12/2019_12_27_001.html">ブログツール nikki.pl を作った</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-01 14:12:37<br>
+  updated at : 2020-04-01 14:14:10<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!--    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>

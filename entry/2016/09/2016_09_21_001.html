@@ -14,13 +14,14 @@
     <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@adokoy0001" />
 <meta name="twitter:creator" content="@adokoy0001" />
-<meta property="og:title" content="TAG : sdk" />
-<meta property="og:description" content="related list by tag name" />
+<meta property="og:title" content="Perlで集合を扱う" />
+<meta property="og:description" content="Perlで集合を扱う方法について説明。集合の対称差についても。" />
 
 <!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Related content : sdk - NIKKI.YOKODA.OKINAWA</title>
+    <title>Perlで集合を扱う - NIKKI.YOKODA.OKINAWA</title>
     
+
   </head>
   <body>
     <style>
@@ -40,11 +41,62 @@
       <hr>
       <section>
 	<div class="container">
-	  <h1>TAG: sdk</h1>
+	  
+
+
+<h1>Perlで集合を扱う</h1>
+
+<p>Perlで集合を扱うなら，CPANモジュールのSet::Objectが良さそう．ちなみに「集合を扱う」というのは，和集合，共通部分，差集合，対称差，真部分集合の判定ぐらいの感覚で．</p>
+
+<p>車輪の再発明的なものはdankogaiさんのブログに解説付きで既にあった．</p>
+
+<a href="http://blog.livedoor.jp/dankogai/archives/51441112.html">perl - 配列の∪と∩</a>
+
+<p> </p>
+
+<a href="http://blog.livedoor.jp/dankogai/archives/51442760.html">perl - にも集合オブジェクトと演算を</a>
+
+<p> </p>
+
+割りと簡単に作れるので，CPANモジュールインストールどころかpackageを作るまでも無いだろうということで，
+<p>Gistにサブルーチンのセットをメモ代わりに書いてみた．</p>
+
+<a href="https://gist.github.com/adokoy001/7890136538e3c979e339d0f1b890eab3">https://gist.github.com/adokoy001/7890136538e3c979e339d0f1b890eab3</a>
+
+<p> </p>
+
+<p>「ハッシュのkeyを取るだけでいいじゃん」っていう箇所があるので後々修正しようかな・・・．</p>
+
+<p>地味に和集合,共通部分,対称差については3つ以上の集合にも対応しておいた（絶妙にそういう機能が必要になることもあるので）</p>
+
+対称差については，「その要素を含む集合の数が奇数であれば，対称差の集合に入る」ようになっているので
+<p>直感的に「おや？」と思うかもしれないが，3入力以上のXORと同じ振る舞いだと考えれば違和感は無くなるかも．</p>
+
+
+
+
+
 <hr>
+
+<section>
 <ul>
-<li>2020-02-13 10:14:30: <a href="/entry/2020/02/2020_02_13_001.html">PayPalのAPI</a></li>
-<ul>
+<li> <a href="/tags/469bb7e87f829139bc3ce9716602a8d3.html">Perl</a></li>
+<li> <a href="/tags/d0ad2ad349dec67bbf8ffebb3118045e.html">集合</a></li>
+<li> <a href="/tags/682b082a8afb50a1c51894656cc65ad3.html">数学</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2016/09/2016_09_19_001.html">睡眠中に見る夢</a> <br>
+  next: <a href="/entry/2016/09/2016_09_26_001.html">最近の出来事</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-01 13:25:54<br>
+  updated at : 2020-04-01 14:17:24<br>
+  author : Toshiaki Yokoda<br>
+</section>
 
 	</div>
       </section>
