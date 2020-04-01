@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:title" content="AWSでVPC構築" />
+<meta property="og:description" content="AWSでプライベートなネットワークを構築したときのメモ" />
+
+<!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>AWSでVPC構築 - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+      pre { background-color: #E0E0E0; border: 1px solid #303030; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+
+<h1>AWSでVPC構築</h1>
+
+<p>社会復帰してまだ半年にもならないですが、1年半以上パソコンを触っていないという浦島太郎状態から徐々にキャッチアップできるようになってきたような気がする（錯覚）</p>
+
+最近AWSで本番環境の構築作業をしていたので、メモ代わりに気付いたことを記しておく。ちなみにAWSで本番環境を構築するのは初めてです（今までにSoftbankクラウド、さくらのクラウド、
+<p>GMOクラウド & Altus、IBMクラウドでWebサーバを構築したことはあります。AWSは個人アカウントの無料枠で試しただけ）</p>
+
+<h2>VPCのアドレス空間</h2>
+
+<p>まず初めに、展開するサービスの要件に合わせたアドレス空間でバーチャルプライベートネットワークを構築する。とりあえず 10.X.0.0/16 ぐらい確保しておけば大丈夫だろう。</p>
+
+<p>AWSで複数のサービスを展開することや、不要になったサービスを事業譲渡などで他社に引き渡すことを考えると、プライベートネットワークをサービス単位で構築しておいた方が良い（サービス間連携はプライベートネットワーク内の通信以外の手段で実現する）。</p>
+
+<p>VPNサーバーを立ててメンテ基盤を作ることもあるので、自社内・関係取引先含む既存のネットワークと重ならないアドレス空間が好ましい。</p>
+
+<p>VPCには一つ以上のサブネットが必要。VPCで確保したアドレス空間と同じものを割り当ててよい。</p>
+
+<h2>インターネットゲートウェイを作成</h2>
+
+<p>VPCとインターネットを相互接続するためにはインターネットゲートウェイが必要。1つ作成し、割り当てる。</p>
+
+<p>Egress-OnlyではインターネットからVPCに対するアクティブな接続はできないので注意（SSHなど）。</p>
+
+<p>ここまで設定すればうまく動きそうに思えるが、後述するデフォルトゲートウェイの設定を書いてやらなければまだ動かない。</p>
+
+<h2>ルートテーブルの設定</h2>
+
+<p>作成したVPCのルートテーブルに、0.0.0.0/0の通信先をインターネットゲートウェイに向けるように設定し、作成したサブネットにも関連付けを施す。</p>
+
+<p>これでやっとうまく動く。</p>
+
+
+
+
+<hr>
+
+<section>
+<ul>
+<li> <a href="/tags/3cf85f8aa8c0e8ac60e28dc945c432c3.html">AWS</a></li>
+<li> <a href="/tags/563f2733f1430968befd2fed9cb652a7.html">EC2</a></li>
+<li> <a href="/tags/cf1e092bba848c15ca3128b250b31d7b.html">Linux</a></li>
+<li> <a href="/tags/da029f48e0f417fb04948321c2b3b419.html">Ubuntu</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2019/11/2019_11_18_001.html">phpのアトミックデプロイ</a> <br>
+  next: <a href="/entry/2019/11/2019_11_28_001.html">MySQL（InnoDB）のロックとトランザクション</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-01 15:57:39<br>
+  updated at : 2020-04-01 15:57:39<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!--    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>

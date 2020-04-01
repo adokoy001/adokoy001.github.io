@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:title" content="簡易認証基盤的なものを作った" />
+<meta property="og:description" content="簡易認証基盤的なものを作った話。" />
+
+<!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>簡易認証基盤的なものを作った - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+      pre { background-color: #E0E0E0; border: 1px solid #303030; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+
+<h1>簡易認証基盤的なものを作った</h1>
+
+<p>久々にMojoliciousでperl製アプリを作ってみた。やっぱりperlは良い。</p>
+
+
+<a href="https://api.yokoda.okinawa">https://api.yokoda.okinawa</a>
+
+<p> </p>
+
+Registerでメールアドレスを登録したらアクティベーションコードが送られて来るので、Activateでコードを入力してください。
+<p>それが済んだらOTPやTemp Authが使えるようになります。</p>
+
+<h2>ブロックチェーン的な変な機能</h2>
+
+<p>元々はOTPとか簡易ユーザー認証基盤をJSON形式のAPIで提供するだけのアプリを作る予定だったが、hash値の連鎖で何か面白いことができないかと試行錯誤しているうちに出来上がったものが非対話式ゼロ知識証明っぽくなった。</p>
+
+<p>（Hash chainと書いていますが実際にはhash chainではないです。）</p>
+
+<p>一応、「パスワード等の秘密を一切明かさずに何らかの所有権や権限を主張する」ことを目的とした機能になっている。</p>
+
+<h3>Create Root Hash Chain で認証の基点を作成</h3>
+
+<p>Create Root Hash Chain で認証の基点を作成する。</p>
+
+messageには何を入れてもいいが、想定している内容としては「XX株式会社 本部」「ヤマダタロウ ROOT認証局」等である。
+<p>next secret keyは、このメッセージにAdd hash chain（後述）でデータをつなげるために必要なパスワードとなる。</p>
+
+submitすると（またはクライアントを書いてpost）、JSON形式でtransaction_idとsecret_verify_idが返される。
+<p>secret_verify_keyは、このtransaction_idのデータを作成したのは自分であることを証明するために必要な秘密の鍵であり、
+この時にしか表示されない（システム上でも保存されない）。</p>
+
+<p>返されたtransaction_idと、設定したnext secret keyの情報を「権限を与えたい人物」に与える。</p>
+
+
+<h3>Add Hash Chain でメッセージを繋げる</h3>
+
+<p>対象のtransaction_idにメッセージを繋げることができる。
+その際には該当transaction_idを作成したときに設定したnext secret keyを入力する必要がある。
+つまり、next secret keyを知っている者だけがこのtransaction_idにメッセージを繋げることができるようになっているので
+「このtransaction_idを作った者から権限を与えられている（パスワードを知らされている）」ことを示すことができる。</p>
+
+<p>Create Root Hash Chainと同様、書き込みに成功するとtransaction_idとsecret_verify_keyが返る。</p>
+
+<p>もちろん、このままでは「該当transaction_idのnext secret keyを知っている者から書き込みがあった」ということしか言えず、
+誰が書き込んだのかは証明できない。</p>
+
+<h3>Create evidence hash chain</h3>
+
+
+<p>「このtransaction_idを自分が作成したということをパブリックに証明したい」場合に使う。</p>
+
+Root hash chainの作成またはhash chainの追加時に返されたtransaction_idとsecret_verify_keyを入力すると、
+<p>誰もが閲覧可能な検証ページのリンクが返る。このリンクは何度でも再作成することができ、古いものは自動的に削除される。</p>
+
+<p>そのため、このリンクを証明したい相手に示すことで「自分が作成した」ということを高確率で証明できる。</p>
+
+
+<hr>
+
+<section>
+<ul>
+<li> <a href="/tags/469bb7e87f829139bc3ce9716602a8d3.html">Perl</a></li>
+<li> <a href="/tags/aceb874396434c837eec6ef7f70e9e62.html">perl</a></li>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2019/10/2019_10_15_001.html">PHPカンファレンス沖縄 2019</a> <br>
+  next: <a href="/entry/2019/11/2019_11_01_001.html">Chatbotのプログラム</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-01 15:57:39<br>
+  updated at : 2020-04-01 15:57:39<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!--    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>

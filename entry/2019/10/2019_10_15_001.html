@@ -14,12 +14,12 @@
     <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@adokoy0001" />
 <meta name="twitter:creator" content="@adokoy0001" />
-<meta property="og:title" content="ブログツール nikki.pl を作った" />
-<meta property="og:description" content="Perl5.8以上であればコアモジュール以外のモジュールに一切依存しない、簡素なブログツールを作った。" />
+<meta property="og:title" content="PHPカンファレンス沖縄 2019" />
+<meta property="og:description" content="ペチコン見てきました。" />
 
 <!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>ブログツール nikki.pl を作った - NIKKI.YOKODA.OKINAWA</title>
+    <title>PHPカンファレンス沖縄 2019 - NIKKI.YOKODA.OKINAWA</title>
     
 
   </head>
@@ -44,41 +44,70 @@
 	  
 
 
-<h1>ブログツール nikki.pl</h1>
+<h1>PHPカンファレンス沖縄 2019</h1>
 
-<p>長らくRijiを使っているが、ちょっとリスペクトして似たような機能を持ったブログツールをやっつけで書いてみた。</p>
+<p>2019/10/12(土)にプロト本社でPHP Conference Okinawa 2019が開催された。本編(2,000円)と懇親会(3,000円)に参加。</p>
 
-<p>目指したのはコアモジュール以外のモジュールに依存しないこと。</p>
+<p>懇親会では、大学院の頃に一緒に勉強していた人と偶然再会。</p>
 
-<p>markdownからhtmlに変換する処理を実装するのは面倒くさそうだったので、
-超簡単なマークアップﾗﾝｷﾞｯｼﾞ（ほとんど置換するだけ）にした。拡張子は.nk。</p>
+<p>以下に、お役立ち情報をまとめる</p>
 
-<p>よろしければ使ってみてください。</p>
+<h2>PHPでファミコンエミュレータ</h2>
 
-<a href="https://github.com/adokoy001/nikki">nikki.pl github</a>
+<ul>
+<li>ファミコンのハードウェアをエミュレート</li>
+<li>まずはメモリのマッピングから。意外とコードは単純で、配列へのデータ投入とif文でできている。</li>
+<li>マリオを動かすだけなら最低限のCPUの命令を実装すればよい</li>
+<li>実機はスプライトの制限等がある</li>
+</ul>
 
-<p>エンジョイ！！</p>
+
+<h2>標準インターフェースによるアプリ開発</h2>
+
+<ul>
+<li>jQueryやWAF等を使わずにW3CやPSRだけに依存する書き方等</li>
+<li>WAFやライブラリは流行り廃りがあるが、標準を守って開発すれば時代の変化に対応しやすい。</li>
+</ul>
+
+
+<h2>DBバックエンドパフォーマンスチューニング(MySQL)</h2>
+
+<ul>
+<li>合計件数表示のcount(*)等はバッチ処理で定期的に実行させて結果をキャッシュ</li>
+<li>MySQLは1クエリで1テーブルあたり1つのインデックスしか使わない</li>
+</ul>
+
+
+<h3>以下、私の補足</h3>
+
+<ul>
+<li>カーディナリティが高く、かつ、順序に意味がない尺度のデータであればHashインデックスを使う</li>
+<li>複合インデックスはカラムの順番にも注意(B+木の仕様)</li>
+</ul>
 
 
 <hr>
 
 <section>
 <ul>
-<li> <a href="/tags/aceb874396434c837eec6ef7f70e9e62.html">perl</a></li>
-<li> <a href="/tags/2de07bdae4a29c6a78579f6bf8f01518.html">ブログツール</a></li>
-<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+<li> <a href="/tags/11fc3960fd795c40a1de9c92ce16b3b6.html">PHP</a></li>
+<li> <a href="/tags/196875532e56e08bc3aa8e7328cb2232.html">php</a></li>
+<li> <a href="/tags/0a58202a04354f694ef1f2ac4f414157.html">PHPカンファレンス</a></li>
+<li> <a href="/tags/e1fcf1e0c7a1e084d80c42c6c2c03488.html">カンファレンス</a></li>
+<li> <a href="/tags/f04917668224b3c5e091fc109fcf205f.html">沖縄</a></li>
+<li> <a href="/tags/1c7a5826f3a8a08e4b4bbefd83a58b09.html">2019</a></li>
 </ul>
 
 </section>
 
 <section>
-  prev: <a href="/entry/2019/11/2019_11_28_001.html">MySQL（InnoDB）のロックとトランザクション</a> <br>
-  next: <a href="/entry/2019/12/2019_12_29_001.html">いい感じのアクアリウムグッズ</a> <br>
+  prev: <a href="/entry/2019/10/2019_10_08_002.html">Perlは過小評価されすぎでは。</a> <br>
+  next: <a href="/entry/2019/10/2019_10_28_001.html">簡易認証基盤的なものを作った</a> <br>
 </section>
 
 <section>
-  created at : 2019-12-27 22:54:54<br>
-  updated at : 2019-12-27 23:23:37<br>
+  created at : 2020-04-01 15:57:39<br>
+  updated at : 2020-04-01 15:57:39<br>
   author : Toshiaki Yokoda<br>
 </section>
 

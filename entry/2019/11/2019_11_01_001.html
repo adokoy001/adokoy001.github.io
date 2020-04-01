@@ -14,12 +14,12 @@
     <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@adokoy0001" />
 <meta name="twitter:creator" content="@adokoy0001" />
-<meta property="og:title" content="ブログツール nikki.pl を作った" />
-<meta property="og:description" content="Perl5.8以上であればコアモジュール以外のモジュールに一切依存しない、簡素なブログツールを作った。" />
+<meta property="og:title" content="Chatbotのプログラム" />
+<meta property="og:description" content="以前作ったチャットボットをマルチプロセス対応。ただし、実用的ではない。" />
 
 <!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>ブログツール nikki.pl を作った - NIKKI.YOKODA.OKINAWA</title>
+    <title>Chatbotのプログラム - NIKKI.YOKODA.OKINAWA</title>
     
 
   </head>
@@ -44,20 +44,57 @@
 	  
 
 
-<h1>ブログツール nikki.pl</h1>
+<h1>Chatbotのプログラム</h1>
 
-<p>長らくRijiを使っているが、ちょっとリスペクトして似たような機能を持ったブログツールをやっつけで書いてみた。</p>
+<p>ずいぶん前に書いたChatbotのプログラムをマルチプロセスに対応させた。</p>
 
-<p>目指したのはコアモジュール以外のモジュールに依存しないこと。</p>
+<a href="https://github.com/adokoy001/MyChatBot">https://github.com/adokoy001/MyChatBot</a>
 
-<p>markdownからhtmlに変換する処理を実装するのは面倒くさそうだったので、
-超簡単なマークアップﾗﾝｷﾞｯｼﾞ（ほとんど置換するだけ）にした。拡張子は.nk。</p>
+<p> </p>
 
-<p>よろしければ使ってみてください。</p>
+チャットボットフレームワークとして作っていますが、
+<p>あくまでも簡易的・学習用としてのものなのでデータの永続化やスケール性等は全く考慮されていません。
+チャットボットのフレームワークとしては無限の拡張性と自由度がありますが、
+プロダクションでは全く使い物にならないと思います。</p>
 
-<a href="https://github.com/adokoy001/nikki">nikki.pl github</a>
+<h2>Storableでプロセス間オブジェクト共有</h2>
 
-<p>エンジョイ！！</p>
+<p>Starman等のマルチプロセスhttpサーバーで起動してもちゃんと動くように、
+Storableを使って内部で使っている変数のプロセス間共有を実現させた。</p>
+
+Storableは変数だけではなくオブジェクトやコードリファレンスもプロセス間共有させることができるのでかなり面白い。
+<p>その際はStorable::Deparse（B::Deparseのミラクルパワーを使うことを許可）と
+Storable::Evalのグローバル変数を1にセットすることを忘れずに。</p>
+
+<pre><code>     （略)
+    use Storable qw(lock_nstore lock_retrieve);
+    $Storable::Deparse = 1;
+    $Storable::Eval = 1;
+
+     (中略)
+
+    ## webアプリスタートアップ処理
+    my $my_object = MyOriginalObject-&gt;new();
+
+    # objectをファイルにsaveして別プロセスと共有
+    lock_nstore $my_object, './filename_for_saved_object';
+
+     (中略)
+
+    ## webアプリのリクエスト処理内部
+
+    # 共有されているobjectを読み込み
+    $my_object = lock_retrieve './filename_for_saved_object';
+
+     (何らかの処理)
+
+    # objectの内容をsave
+    lock_nstore $my_object, './filename_for_saved_object';
+
+</pre></code>
+
+<p>httpサーバーの実行ループ中の読み込みから書き込みまではアトミックに処理しなければならないため、
+読み込み時からadvisory lockを獲得するようにしている。</p>
 
 
 <hr>
@@ -65,20 +102,21 @@
 <section>
 <ul>
 <li> <a href="/tags/aceb874396434c837eec6ef7f70e9e62.html">perl</a></li>
-<li> <a href="/tags/2de07bdae4a29c6a78579f6bf8f01518.html">ブログツール</a></li>
+<li> <a href="/tags/0072f335491d1508c35acfeeadbe7738.html">chatbot</a></li>
+<li> <a href="/tags/fae84dfdfdb3faaa6224ecf70ac2b934.html">チャットボット</a></li>
 <li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
 </ul>
 
 </section>
 
 <section>
-  prev: <a href="/entry/2019/11/2019_11_28_001.html">MySQL（InnoDB）のロックとトランザクション</a> <br>
-  next: <a href="/entry/2019/12/2019_12_29_001.html">いい感じのアクアリウムグッズ</a> <br>
+  prev: <a href="/entry/2019/10/2019_10_28_001.html">簡易認証基盤的なものを作った</a> <br>
+  next: <a href="/entry/2019/11/2019_11_12_001.html">飲食店の待ち行列</a> <br>
 </section>
 
 <section>
-  created at : 2019-12-27 22:54:54<br>
-  updated at : 2019-12-27 23:23:37<br>
+  created at : 2020-04-01 15:57:39<br>
+  updated at : 2020-04-01 15:57:39<br>
   author : Toshiaki Yokoda<br>
 </section>
 

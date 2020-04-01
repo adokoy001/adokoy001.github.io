@@ -14,13 +14,14 @@
     <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@adokoy0001" />
 <meta name="twitter:creator" content="@adokoy0001" />
-<meta property="og:title" content="TAG : 仕事" />
-<meta property="og:description" content="related list by tag name" />
+<meta property="og:title" content="InnoDBはHashインデックスを張ることができない" />
+<meta property="og:description" content="勘違いしていた話。" />
 
 <!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Related content : 仕事 - NIKKI.YOKODA.OKINAWA</title>
+    <title>InnoDBはHashインデックスを張ることができない - NIKKI.YOKODA.OKINAWA</title>
     
+
   </head>
   <body>
     <style>
@@ -40,12 +41,39 @@
       <hr>
       <section>
 	<div class="container">
-	  <h1>TAG: 仕事</h1>
+	  
+
+
+<h1>InnoDBはHashインデックスを張ることができない</h1>
+
+<p>表題の通り。勘違いしてた。</p>
+
+Index作成時にHASHを指定できるが、実際に作成されるのはBTREEインデックスになるとのこと。
+<p>で、ややこしいのがInnoDBは適応的ハッシュインデックスという機能を持っており、稼働状況から自動的に必要なハッシュインデックスが構築され、それが利用されるとのことでした。</p>
+
+
 <hr>
+
+<section>
 <ul>
-<li>2020-04-01 15:21:40: <a href="/entry/2016/12/2016_12_13_001.html">出張コスト</a></li>
-<li>2020-04-01 13:25:54: <a href="/entry/2016/09/2016_09_17_001.html">組み合わせ</a></li>
-<ul>
+<li> <a href="/tags/c3a16b8b467e75a71b2720d7b7286d5c.html">tags:</a></li>
+<li> <a href="/tags/73f6dbedb2854e9f024196e58812fb6c.html">MySQL</a></li>
+<li> <a href="/tags/44fc1de429a6125aa7d0a7857790ccd4.html">インデックス</a></li>
+<li> <a href="/tags/1db455d5330fe7d50625b71299cc3e11.html">InnoDB</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2019/11/2019_11_12_001.html">飲食店の待ち行列</a> <br>
+  next: <a href="/entry/2019/11/2019_11_18_001.html">phpのアトミックデプロイ</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-01 15:57:39<br>
+  updated at : 2020-04-01 15:57:39<br>
+  author : Toshiaki Yokoda<br>
+</section>
 
 	</div>
       </section>

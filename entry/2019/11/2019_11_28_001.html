@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:title" content="MySQL（InnoDB）のロックとトランザクション" />
+<meta property="og:description" content="MySQLのロックとトランザクションについて、PostgreSQLとの違いなど。" />
+
+<!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>MySQL（InnoDB）のロックとトランザクション - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+      pre { background-color: #E0E0E0; border: 1px solid #303030; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+
+<h1>MySQL（InnoDB）のロックとトランザクション</h1>
+
+<p>元PostgreSQLユーザー故、MySQLのトランザクションとテーブルロック獲得処理を逆に取り違えて致命的なミスをしてしまうところだった。</p>
+
+<p>以下のようなPostgreSQLの（他セッションからの読み取りを含む）排他ロックが要求されるトランザクション処理があると仮定する。</p>
+
+<pre><code>    ## PostgreSQL
+    BEGIN;
+    LOCK TABLE table_stock IN ACCESS EXCLUSIVE MODE;
+    UPDATE table_reserve SET num_of_reserve = num_of_reserve + 1 where item_id = 10 and date = '2020-01-01';
+    UPDATE table_stock SET num_of_stock = num_of_stock - 1 where item_id = 10 and date = '2020-01-01';
+    COMMIT;
+</pre></code>
+
+<p>PostgreSQLでは「トランザクションを開始」-&gt;「排他ロック（ACCESS EXCLUSIVE）獲得」-&gt;「アトミックかつ不可視にしたい処理」-&gt;「トランザクションをコミット」-&gt;「ロックを自動的に開放」という流れになる。
+また、ロックモードの指定は「ロックを獲得する対象テーブル（レコード）の状態をどのように変更するか」という観点での名前になっている。</p>
+
+それに対してMySQLでは、「autocommitを0に設定」-&gt;「排他ロックを獲得」-&gt;「暗黙的にトランザクションが開始される」-&gt;「アトミックかつ不可視にしたい処理」-&gt;「トランザクションを明示的にコミット」-&gt;「明示的にロックを開放」という流れ。
+<p>ロックモードの指定はREADとWRITEがあり、これは「ロックを獲得しようとしているセッションがこれから実行する処理は、読み込みだけなのか、それとも書き込みが含まれるのか」という観点での名前になっている。</p>
+
+<p>複数テーブルに及ぶ更新系処理では、それら全てのテーブルに対して排他ロックを「一文で」獲得する必要がある。複数ステートメントでロックを獲得しようとしても、その前のロックは勝手にアンロックされる（というか、ロック獲得と同時に暗黙のトランザクションが開始される）。</p>
+
+<p>そのほかにもいろいろある。</p>
+
+古いけど参考になるサイト:  <a href="https://kannokanno.hatenablog.com/entry/20120704/1341419338">https://kannokanno.hatenablog.com/entry/20120704/1341419338</a>
+
+<p> </p>
+
+
+公式 : <a href="https://dev.mysql.com/doc/refman/5.6/ja/internal-locking.html">https://dev.mysql.com/doc/refman/5.6/ja/internal-locking.html</a>
+
+<p> </p>
+
+<p>・・・と、PostgreSQL使いからするとかなり神経を使う激ヤバ仕様。</p>
+
+
+<hr>
+
+<section>
+<ul>
+<li> <a href="/tags/73f6dbedb2854e9f024196e58812fb6c.html">MySQL</a></li>
+<li> <a href="/tags/2204e2d506bdf4ea3e82fc18a4c0fdcc.html">PostgreSQL</a></li>
+<li> <a href="/tags/1d5fec20ebdc0e20a30694388cf57784.html">mysql</a></li>
+<li> <a href="/tags/2ce2d7d4c8196680f7e36fd58a56bfd8.html">postgresql</a></li>
+<li> <a href="/tags/9881f12ca85129f090f98880fd4e3a0d.html">DB</a></li>
+<li> <a href="/tags/6c21dd6899b878610a2a60f266b3abcf.html">RDB</a></li>
+<li> <a href="/tags/1b4a8cdd708c671951319e62e5eda15a.html">データベース</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2019/11/2019_11_25_001.html">AWSでVPC構築</a> <br>
+  next: <a href="/entry/2019/12/2019_12_27_001.html">ブログツール nikki.pl を作った</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-01 15:57:39<br>
+  updated at : 2020-04-01 15:57:39<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!--    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>

@@ -14,13 +14,14 @@
     <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@adokoy0001" />
 <meta name="twitter:creator" content="@adokoy0001" />
-<meta property="og:title" content="TAG : 仕事" />
-<meta property="og:description" content="related list by tag name" />
+<meta property="og:title" content="phpのアトミックデプロイ" />
+<meta property="og:description" content="phpをホットにデプロイする方法を調べてみた。Deployerが良さげ。" />
 
 <!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Related content : 仕事 - NIKKI.YOKODA.OKINAWA</title>
+    <title>phpのアトミックデプロイ - NIKKI.YOKODA.OKINAWA</title>
     
+
   </head>
   <body>
     <style>
@@ -40,12 +41,54 @@
       <hr>
       <section>
 	<div class="container">
-	  <h1>TAG: 仕事</h1>
+	  
+
+
+<h1>phpのアトミックデプロイ</h1>
+
+<p>Perlのゼロダウンタイムでグレイスフルなホットデプロイに慣れていたせいで、
+phpのプロジェクトをデプロイ（本番環境で新しいプログラムに入れ替える）する際のアトミシティを考えていなかった。</p>
+
+今時自前で作るのはばかばかしいが実際に作るとしたら、ブルーグリーンデプロイメントのように、
+<p>HTTPサーバで設定しているドキュメントルートの指し示すディレクトリをシンボリックリンクにして、
+それをアトミックに張り替えるスクリプトを組めば良いらしい。</p>
+
+
+参考1: <a href="https://ngyuki.hatenablog.com/entry/2017/07/25/082825">https://ngyuki.hatenablog.com/entry/2017/07/25/082825</a>
+
+<p> </p>
+
+参考2: <a href="https://qiita.com/dalance/items/d2d2feb720172036fd22">https://qiita.com/dalance/items/d2d2feb720172036fd22</a>
+
+<p> </p>
+
+ちなみに普段使いのFuelPHPではDeployerというのが良く使われている模様。
+<p>ゼロダウンタイムと銘打っているので、これも恐らく同様にシンボリックリンクを使ってやってくれているものだと思われる。
+（DBへのコネクションをpersistentに張っている場合はどうなるんだろう？）</p>
+
+アプリケーションを実行しているプロセスのグレイスフルなリスタートをするようなものがphpに無いか探したが、
+<p>見つけられなかった。</p>
+
 <hr>
+
+<section>
 <ul>
-<li>2020-04-01 15:21:40: <a href="/entry/2016/12/2016_12_13_001.html">出張コスト</a></li>
-<li>2020-04-01 13:25:54: <a href="/entry/2016/09/2016_09_17_001.html">組み合わせ</a></li>
-<ul>
+<li> <a href="/tags/196875532e56e08bc3aa8e7328cb2232.html">php</a></li>
+<li> <a href="/tags/155b866acdfc697eb4a8e449bb06ea18.html">デプロイ</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2019/11/2019_11_14_001.html">InnoDBはHashインデックスを張ることができない</a> <br>
+  next: <a href="/entry/2019/11/2019_11_25_001.html">AWSでVPC構築</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-01 15:57:39<br>
+  updated at : 2020-04-01 15:57:39<br>
+  author : Toshiaki Yokoda<br>
+</section>
 
 	</div>
       </section>
