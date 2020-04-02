@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:title" content="PHPのarrayから再帰的にkeyとvalueを全て取り出す" />
+<meta property="og:description" content="再帰呼び出しを使って複雑なデータ構造を全て走査" />
+
+<!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>PHPのarrayから再帰的にkeyとvalueを全て取り出す - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+      pre { background-color: #E0E0E0; border: 1px solid #303030; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+
+<h1>PHPのarrayから再帰的にkeyとvalueを全て取り出す</h1>
+
+
+<p>PHP歴がそろそろ半年になろうとしているので、私的なエチュードであるところの「ある言語で複雑なデータ構造を再帰的に全てスキャンするプログラム」を書いてみた。</p>
+
+<p>動作は表題の通りです。</p>
+
+<pre><code>    &lt;?php
+    # 複雑なデータ構造
+    $external = ['abc','abcd','abcde','xyz'];
+    $input = [
+               'A1' =&gt; [
+                        'AA1' =&gt; [
+                                  'AAA1' =&gt; 'aaaa1',
+                                  'AAA2' =&gt; ['aaaa2','aaaa2a','aaaa2aa','aaaa2aaa']
+                                  ],
+                        ],
+               'B1' =&gt; [
+                        'BB1' =&gt; 'bb1',
+                        'BB2' =&gt; [
+                                  'BBB1' =&gt; [
+                                             'BBBB1' =&gt; 'bbbb1',
+                                             'BBBB2' =&gt; 'bbbb2',
+                                             ],
+                                  ],
+                        'BB3' =&gt; 'bb3'
+                        ],
+               'C1' =&gt; &$external
+               ];
+
+    # 再帰的key_value抽出関数
+    function extract_key_value_rec($var,&$keys,&$values){
+      if(!is_scalar($var)){
+        foreach($var as $key =&gt; $value){
+          if(array_values($var) !== $var){
+            $keys[$key] = true;
+          }
+          extract_key_value_rec($value,$keys,$values);
+        }
+      }else{
+        $values[$var] = true;
+      }
+    }
+
+    # 実行
+    extract_key_value_rec($input,$keys_1,$values_1);
+    print_r($keys_1);
+    print_r($values_1);
+    ?&gt;
+</pre></code>
+
+<p>is_scalarでスカラーかどうかの型判定をして再帰呼び出しを続けるかどうかを分岐、``` array_values($var) !== $var ``` の部分で連想配列か配列かを判定している。</p>
+
+
+
+
+<hr>
+
+<section>
+<ul>
+<li> <a href="/tags/11fc3960fd795c40a1de9c92ce16b3b6.html">PHP</a></li>
+<li> <a href="/tags/196875532e56e08bc3aa8e7328cb2232.html">php</a></li>
+<li> <a href="/tags/9c28d7edc8699a2822c91357dae0d9be.html">プログラミング　再帰的呼び出し</a></li>
+<li> <a href="/tags/d2296ee4b85e6c9b32ebbb2d39b4ae2a.html">複雑なデータ構造</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2019/11/2019_11_29_001.html">FuelPHPのDeployerによるデプロイ</a> <br>
+  next: <a href="/entry/2019/12/2019_12_07_001.html">FuelPHPのクエリビルダチートシート</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-02 11:01:38<br>
+  updated at : 2020-04-02 11:01:38<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!--    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>

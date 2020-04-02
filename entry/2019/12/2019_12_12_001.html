@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:title" content="ウェブサイトのセキュリティ：入力バリデーション、正規表現" />
+<meta property="og:description" content="ちょっとセンシティブなネタです。" />
+
+<!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>ウェブサイトのセキュリティ：入力バリデーション、正規表現 - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+      pre { background-color: #E0E0E0; border: 1px solid #303030; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+
+<h1>ウェブサイトのセキュリティ：入力バリデーション、正規表現</h1>
+
+
+<p>安全なウェブサイトを作るためにネット上の情報を漁っていると、「入力バリデーション」と「パスワード」についてクリティカルなものがあったりする。</p>
+
+<p>今回はこのあたりについて自分の考えをまとめておく。</p>
+
+<h2>入力バリデーション</h2>
+
+<p>入力のバリデーションはSQLインジェクションの根本的な対策にはならない。SQLインジェクションへの根本的な対策は、プリペアードステートメントを利用すること。</p>
+
+クライアントサイドの入力バリデーションは、ウェブサイトの利用者へ「入力値の条件が満たされていない理由」を親切丁寧に伝えるために過ぎない。
+<p>攻撃者はその気になればHTTPリクエストのすべての内容を生成することができるということを理解しておかなければならない。</p>
+
+<h3>最強のバリデーション</h3>
+
+<p>selectタグのoption項目のように、クライアントからの入力値として取りうる値が限定的であれば、</p>
+
+<ul>
+<li>入力値を文字列へ強制的に変換した後に、</li>
+<li>予め適切に設定した最大文字列長以下の長さであることを確認し、</li>
+<li>「if,caseで型を含めて等しいかを判定して分岐」するか、</li>
+<li>または、「あらかじめ用意した連想配列（辞書）のキーとして存在するかをチェック」する</li>
+</ul>
+
+<p>という方法が最強と思われる。</p>
+
+<h3>現実的な方法</h3>
+
+<p>お使いのフレームワークが用意しているバリデーション機構を利用してください。</p>
+
+
+<h2>その正規表現、大丈夫？</h2>
+
+<p>一つの正規表現で無理やり入力値のバリデーションを実現することは避けた方が良い。</p>
+
+<p>そもそも本来の正規表現・正規言語は有限オートマトンでしかないので、可読性、保守性、ReDoS対策の観点から、できるだけシンプルな造りになるように処理をステップごとに分割し、一つ一つのコードを単純化することを検討しよう。</p>
+
+<p>メールアドレスのバリデーションを自前の一行正規表現で済ませてしまうのはやめよう。</p>
+
+<h3>ちょっとまって、その正規表現、本当に本当に大丈夫？</h3>
+
+<p>入力文字列の長さを調べたいのならば、例えばPHPであればstrlenで判定できる。</p>
+
+半角英数字以外の文字が含まれていないかチェックしたいのであれば <code>preg_match("/[^0-9a-zA-Z]/",$input)</code> でチェックしよう。
+
+<p>新しく設定しようとしているパスワードが条件を満たしているか判定したいだって？
+以下の処理をシーケンシャルに実行して、条件に反していたらその時点でリジェクトすればオッケーだと思うよ。</p>
+
+<ul>
+<li>「受け入れ可能なcharacter以外が入っていないかを判定」</li>
+<li>「文字列の長さは条件の範囲内かを判定」</li>
+<li>「必要な文字種類がすべて入っているかを分割して判定」</li>
+<li>「文字の種類数が条件を満たしているかを判定（"AAAAAaaaaa11111"などの弱いPWへの対策）」</li>
+<li>「クラックされやすいパスワードリストに載っていないかを判定」</li>
+</ul>
+
+<h3>しつこくてごめんね。その正規表現、本当にほんと～～に大丈夫？</h3>
+
+<p>正規言語の限界、イプシロン遷移、バックトラック、DFAとNFAについて考えたことがない、「そんな単語聞いたことも無い」という状態であれば、頑張って複雑な一行の正規表現で済ませてしまうのは絶対にやめよう。</p>
+
+「0回以上繰り返し」の量指定子は地雷です。<code>*</code>と<code>{0,N}</code>が該当しますね。
+
+例えばこんな短い正規表現と入力でReDoSが成立します： <a href="https://twitter.com/adokoy0001/status/824580874704293889">リンク</a>
+
+<p>バックトラックが何なのか分かっていないのであれば、「極力正規表現を使わない方法」を模索しましょう。</p>
+
+JSONのバリデーション、カッコの開き・閉じの対応チェック、回文（逆から読んでも同じ文章）の判定、任意の1以上の整数<code>n</code>に対する <code>a^n b^n</code> の判定、などなど、有限オートマトンであるところの正規表現ではスタックがないので不可能です。
+
+<p>そういうのはプッシュダウンオートマトンであるところの文脈自由言語とかならできます。</p>
+
+<p>正規表現を積極的に使うべきシーンは、文字列の置換やパターンマッチした部分を抽出する処理などでしょう。</p>
+
+<h3>それでも正規表現を使いたい場合</h3>
+
+<p>どうしても入力バリデーションを正規表現一発でやりたいのであれば、以下のURLにある正規表現のやばい挙動を完全に理解した上でやりましょう。</p>
+
+<a href="https://regex101.com/r/enRb1V/1/debugger">やばい挙動</a>
+
+<a href="https://regex101.com/r/GM8BLm/2/debugger">やばい挙動その2</a>
+
+最後の量指定子<code>{1,3}</code>を、<code>{1,50}</code>にしてみよう。
+
+やばい挙動その3:  <a href="https://regex101.com/r/GM8BLm/3/debugger">リンク</a>
+
+<p>おわかりいただけただろうか。さらに50から70とかに増やすとタイムアウトになったりする。</p>
+
+<p>ここで重要なのは以下である。</p>
+
+<ul>
+<li>数字を増やすと指数関数的にステップ数が増える</li>
+<li>短い入力でもバックトラック地獄は起こりうる</li>
+<li>短くシンプルな正規表現でも危ないものは危ない</li>
+<li>量指定子 <code>*</code> を使わなくても、イプシロン遷移があれば危ない</li>
+</ul>
+
+<p>この投稿が何かのお役に立てれば幸いである。</p>
+
+
+<hr>
+
+<section>
+<ul>
+<li> <a href="/tags/8434a1c99cbe0b5a63533a11b07d5f41.html">セキュリティ</a></li>
+<li> <a href="/tags/2c83259af201dd29d7ef4554e3e9ba27.html">ウェブサイト</a></li>
+<li> <a href="/tags/6fdfd8140939a4c1ef030ca43a436dc6.html">ウェブアプリケーション</a></li>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+<li> <a href="/tags/b1629463c0bc4cc309bcd1dc86195b8f.html">正規表現</a></li>
+<li> <a href="/tags/196875532e56e08bc3aa8e7328cb2232.html">php</a></li>
+<li> <a href="/tags/11fc3960fd795c40a1de9c92ce16b3b6.html">PHP</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2019/12/2019_12_10_001.html">ウェブアプリケーションを攻撃者から守るためのロードマップ</a> <br>
+  next: <a href="/entry/2019/12/2019_12_16_001.html">Mojo::UserAgentを使ってアクティブチェック（外部監視）</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-02 11:01:38<br>
+  updated at : 2020-04-02 11:01:38<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!--    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>

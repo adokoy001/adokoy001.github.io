@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:title" content="ウェブアプリケーションを攻撃者から守るためのロードマップ" />
+<meta property="og:description" content="セキュリティ関連のお話。正しい情報はIPA等から得るようにしましょう。" />
+
+<!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>ウェブアプリケーションを攻撃者から守るためのロードマップ - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+      pre { background-color: #E0E0E0; border: 1px solid #303030; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+
+<h1>ウェブアプリケーションを攻撃者から守るためのロードマップ</h1>
+
+
+<p>ウェブアプリのセキュリティ対策について無責任なことをネットで書くことはご法度であり、また、セキュリティ対策を講じる担当者もネット上の情報を安易に受け止めてはいけない。このドキュメントも例外ではない。</p>
+
+<p>JPAが公開している安全なウェブサイトの作り方、脆弱性情報データベースの情報をこまめにチェックすること。</p>
+
+<h2>ネットワーク構成とファイアウォール</h2>
+
+<p>アプリケーションとストレージは分離し、HTTPを受け付けるサーバーとそのportのみをpublicに晒す。ロードバランサを利用するのであれば、LBの80,443番ポートのみpublicに晒し、APPとDBはローカルネットワーク内部のみのトラフィックを受け付ける。</p>
+
+<p>各サーバにアクセスするために、マネジメント用のサーバMGMTを設けると良い。その場合の構成は、LB(80,443ポートを晒す),MGMT(カスタマイズされたsshポートを晒す),APP(ローカルのみ),DB（ローカルのみ）</p>
+
+<h2>中間者攻撃</h2>
+
+<p>クラウドサーバへの初回SSHアクセス時は、予めクラウド基盤で提供されている該当サーバのフィンガープリントを照合する。</p>
+
+<p>たとえ運用チームだけが用いるウェブコンソールであっても、クラウド上など社内ネットワークの外に置かれている以上は必ず中間者攻撃を想定した構成にしなければならない。対策として最も優れている方法は「とにかくLet's Encryptを入れて中間者攻撃を確実に防ぐ」こと。</p>
+
+<h2>サーバー本体のアップデート</h2>
+
+<p>HTTPサーバーおよびリバースプロキシのセキュリティパッチは必ず適用する。</p>
+
+<p>無停止で手軽にメンテナンスできるような構成が望ましいため、グローバルIPをサーバにほぼゼロダウンタイムでアタッチできるサービスを利用すると良い。</p>
+
+<h2>認証</h2>
+
+<p>sshログインはpublic key認証とパスワード認証を併用することが望ましい。</p>
+
+<p>アプリへのログインに用いられるパスワードは必ずsaltを付けてハッシュ化する。saltは共通のものだけを使うのではなく、レコード毎に生成しなければならない。</p>
+
+<p>システム運用チームは、特権的なウェブコンソールでアカウントを共有してはならない。運用チームのメンバーが退職した際にはそのアカウントをログイン不能な状態にするか、可能であれば削除すること。</p>
+
+<p>外部システムとの連携に用いられる認証情報は、アプリへのログインに用いる情報とは完全に分離し、APIアクセスキーやToken等として簡単に失効させることができるようにすること。</p>
+
+<p>PaaS等を利用する際に用いられるクレデンシャルを環境変数に設定する場合、その環境変数がプリントされるページが存在してはならない（例：AWS S3の認証情報をHTTPサーバの環境変数にセットした状態で、phpinfo()が呼ばれるページをプロダクションに放置してしまうなど）</p>
+
+<p>ソースコード中に外部システムのクレデンシャルを直接書き込まないこと。</p>
+
+<h2>ウェブアプリ固有の問題</h2>
+
+<p>認証情報をhiddenパラメタに含めてはいけない。</p>
+
+<p>適切なHTMLエスケープ機構を利用せずにユーザーからの入力値やDBから読みだした値を出力することはXSSに繋がる。</p>
+
+<p>副作用のある操作は全てCSRF対策が必要。</p>
+
+<p>顧客自身がページをWYSIWYGエディタ等でカスタマイズできる機能がある場合、それ自体がXSS脆弱性となっており、さらにページ編集機能にCSRF対策が施されていない場合はフィッシングサイトへの誘導に利用される危険性がある。</p>
+
+
+<h2>決済機能</h2>
+
+<p>クレジットカード番号などは間違ってもサーバに保存してはならない。</p>
+
+<p>デバッグ目的でカード番号をログに保存してはいけない。</p>
+
+<p>決済時のみ決済サービスへjumpする機能を利用することができるのであれば、利用する。</p>
+
+<p>何らかの攻撃が成功し決済サービスへのjump先がフィッシングサイトへ書き換えられてしまう事態を想定し、システムの外から定期的に（数分間隔）決済ページへのリダイレクト先を監視するサーバを立てること（具体的には、決済ページに遷移するまでのアクセスを順次実行するUserAgentを作ってcronで定期的に実行して監視。）</p>
+
+<h2>SQLインジェクション</h2>
+
+<p>何らかの値をリテラル・変数問わず入力する場合、必ずプリペアードステートメントを利用する。プリペアードステートメントのエミュレーションはやはりエミュレーションに過ぎないので安全ではない。</p>
+
+<p>プリペアードステートメントを利用しなくても安全なケースは「select count(*) from table_a」等、「かならずこのSQLにしかならない」ということが確定している定型文などに限ると考える。</p>
+
+
+<p>原則として、「本物の（エミュレーションではない）プリペアードステートメントを利用すること以外にSQLインジェクションの有効な対策は存在しない」と考えるべきである。</p>
+
+<h2>二段階（二要素）認証とアクティビティ通知</h2>
+
+<p>アプリケーションの利用者が必ずしも高いリテラシーを持っているとは限らない。パスワードは辞書攻撃等で突破される前提で考えておき、二段階（二要素）認証を必ず導入しておくこと。</p>
+
+<p>異常な回数のログイン試行やログインの成功などを、事前に登録されたアカウント本人のメールアドレス等にそのアクティビティを送る。</p>
+
+<p>パスワードリセット時に、事前に登録されたもの以外のメールアドレスに復旧URLを送り付けてはいけない（例：7Pay）</p>
+
+
+
+<hr>
+
+<section>
+<ul>
+<li> <a href="/tags/099465853495ff80660a282fba63c9ff.html">セキュリティ　ウェブアプリケーション</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2019/12/2019_12_07_001.html">FuelPHPのクエリビルダチートシート</a> <br>
+  next: <a href="/entry/2019/12/2019_12_12_001.html">ウェブサイトのセキュリティ：入力バリデーション、正規表現</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-02 11:01:38<br>
+  updated at : 2020-04-02 11:01:38<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!--    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>

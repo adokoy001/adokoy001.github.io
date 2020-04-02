@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:title" content="FuelPHPのクエリビルダチートシート" />
+<meta property="og:description" content="FuelPHPのクエリビルダ忘れがちなので、自分用チートシートとして。" />
+
+<!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>FuelPHPのクエリビルダチートシート - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+      pre { background-color: #E0E0E0; border: 1px solid #303030; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+
+<h1>FuelPHPのクエリビルダチートシート</h1>
+
+<p>FuelPHPのquery builderのselect系についてのみ、実用的な例を示しておく。
+insert,update,delete系はORMを使ったほうが効果的な場合もあるだろうが、
+FuelPHPのModel自動生成機能はリレーションをまともに読んでくれない（リレーションを手作業で張る必要あり・・・）ので、
+DBの仕様を頻繁に変えるような開発初期段階ではかなり大変で、Modelの更新も慎重にやらなきゃなので、アンチパターンに入りがちかもしれない。
+PerlのDBIx::Classとスキーマローダーに慣れている身としては結構厳しい。</p>
+
+<p>（ということで、私としてはFuelPHP標準搭載のQuery Builderがコスパ的にかなり良いと思っています。）</p>
+
+<pre><code>    DB::query("LOCK TABLES table_01 WRITE, table_02 WRITE, table_03 WRITE, table_log WRITE, table_transaction WRITE");
+    DB::start_transaction();
+    $result = DB::select_array([
+        ['table_01.field_01','field_alias_name01'],
+        ['table_02.field_02','field_alias_name02'],
+        ['table_03.field_03','field_alias_name03'],
+      ])
+      -&gt;from('table_01')
+      -&gt;join('table_02','inner')
+      -&gt;on('table_01.primary_key_01','=','table_02.foreign_key_02')
+      -&gt;join('table_03','left outer')
+      -&gt;on('table_01.primary_key_01','=','table_03.foreign_key_03')
+      -&gt;where('table_01.field_04','=',$condition01)
+      -&gt;and_where_open()
+      -&gt;where('table_02.field_05','=',$condition02)
+      -&gt;or_where('table_02.field_06','=',$condition03)
+      -&gt;and_where_close()
+      -&gt;and_where('table_03.field_07','in',[$item01,$item02,$item03])
+      -&gt;order_by('field_alias_name01','desc')
+      -&gt;order_by('field_alias_name02','asc')
+      -&gt;limit($record_limitation)
+      -&gt;offset($offset_value)
+      -&gt;execute()
+      -&gt;as_array();
+    if(count($result) === 0){
+      DB::insert('table_log')
+        -&gt;set(['field_01' =&gt; 'Empty', 'field_02' =&gt; $user_name])
+        -&gt;execute();
+    }else{
+      foreach($result as $result_item){
+        DB::insert('table_transaction')
+          -&gt;set(['field_01' =&gt; $result_item['field_alias_name02']])
+          -&gt;execute();
+      }
+    }
+    DB::commit_transaction();
+    DB::query("UNLOCK TABLES");
+</pre></code>
+
+<p>この例は「かなり強いLOCKを割と長い時間維持する」書き方なので、マネをするとしたら非機能要件に合っているかどうかを吟味してください。</p>
+
+
+<hr>
+
+<section>
+<ul>
+<li> <a href="/tags/196875532e56e08bc3aa8e7328cb2232.html">php</a></li>
+<li> <a href="/tags/11fc3960fd795c40a1de9c92ce16b3b6.html">PHP</a></li>
+<li> <a href="/tags/84159968353d6b18aab13908ffdb7af7.html">fuelphp</a></li>
+<li> <a href="/tags/337141a52adccec6e5888f8beb50b4d0.html">FuelPHP</a></li>
+<li> <a href="/tags/8f753e53f0d3602e1d03871e37de9847.html">クエリビルダ</a></li>
+<li> <a href="/tags/0166f5fa34ebe4c8e866c8ae1d2ec139.html">select系</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2019/11/2019_11_29_002.html">PHPのarrayから再帰的にkeyとvalueを全て取り出す</a> <br>
+  next: <a href="/entry/2019/12/2019_12_10_001.html">ウェブアプリケーションを攻撃者から守るためのロードマップ</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-02 11:01:38<br>
+  updated at : 2020-04-02 11:01:38<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!--    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>

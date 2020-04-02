@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:title" content="Mojo::UserAgentを使ってアクティブチェック（外部監視）" />
+<meta property="og:description" content="
+" />
+
+<!--    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>Mojo::UserAgentを使ってアクティブチェック（外部監視） - NIKKI.YOKODA.OKINAWA</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.30em;}
+      h2 {font-size: 1.90em;}
+      h3 {font-size: 1.50em;}
+      pre { background-color: #E0E0E0; border: 1px solid #303030; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container-fluid">
+      <header class="container">
+	<a href="/">TOP</a> | <a href="/tags.html">TAG LIST</a> | <a href="/archive.html">ARCHIVES</a>
+      </header>
+      <hr>
+      <section>
+	<div class="container">
+	  
+
+
+<h1>Mojo::UserAgentを使ってアクティブチェック（外部監視）</h1>
+
+
+<p>表題の通り、cron等で適当にアクティブチェックのプログラムを書き捨てるならMojo::UserAgentが便利ですよというお話。</p>
+
+<p>MojoliciousはPerl標準モジュール以外に依存していないので、サクッとインストールして実行環境を用意することができる（まあディストロのパッケージマネージャでインストールすればたいていのものはストレスなくインストールできますが）</p>
+
+<h2>サンプルコード</h2>
+
+<pre><code>
+以下コードは監視対象HTTPサーバへアクセスした後、ステータスコードが200,301以外を返された場合にSlackへ通知する例。
+
+    use strict;
+    use warnings;
+    use utf8;
+    use Encode;
+    use Mojo::UserAgent;
+
+    ### Slackで通知する場合のapi url
+    my $slack = 'https://your.slack.channel.example.com/services/A/B/C';
+    ### 監視対象の設定
+    my $external = [
+       {name =&gt; 'my site 1', url =&gt; 'https://your.site1.example.com/'},
+       {name =&gt; 'my site 2', url =&gt; 'https://your.site2.example.com/'},
+    ];
+
+    ### 実行
+    my $ext_ua = Mojo::UserAgent-&gt;new;
+    for(0 .. $#$external){
+        my $instance = $external-&gt;[$_];
+        my $con_error = '';
+        my $code = 1000;
+        eval{
+            $code = $ext_ua-&gt;get($instance-&gt;{url})-&gt;result-&gt;code;
+        };
+        if($@){
+            $con_error = $@;
+        }
+        if($code != 200 and $code != 301){
+             my $message = $instance-&gt;{name} . ' : ' . $code . ' : ' . "$con_error\n";
+             my $tmp_res = $ext_ua-&gt;post(
+                 $slack
+                 =&gt;
+                 { 'Content-type' =&gt; 'application/json' }
+                 =&gt;  json =&gt; { text =&gt; $message }
+                 )-&gt;result;
+        }
+    }
+
+</pre></code>
+
+<h2>障害の発生と継続</h2>
+
+<p>例えばこのコードを10分間隔で実行した場合、監視対象の障害が継続していれば10分間隔でSlack通知が来てしまう。</p>
+
+「新たに発生した時だけ通知」という動作にしたい場合は、例えば、
+SQLiteをDBにして障害の発生したURLと日時（エポックタイム）を記録するようにして、
+<code>最後に検知してからの経過秒数 + α &gt; 監視間隔</code> を満たした場合だけSlack通知するように書けば良い。
+
+<p>SQLiteの簡単なCRUD操作を提供してくれるMojo::SQLiteというラッパーモジュールがあるので使うとよい。</p>
+
+<p> </p>
+
+Mojo::SQLite : <a href="https://metacpan.org/pod/Mojo::SQLite">リンク</a>
+
+<p> </p>
+
+<p>が、こちらはMojoliciousと違って依存モジュール満載なので、それが嫌であればストイックにファイル操作でurlとエポック時間を保存するだけの適当なcsvやjsonをストレージにすればよい（と思います）</p>
+
+
+
+
+<hr>
+
+<section>
+<ul>
+<li> <a href="/tags/469bb7e87f829139bc3ce9716602a8d3.html">Perl</a></li>
+<li> <a href="/tags/aceb874396434c837eec6ef7f70e9e62.html">perl</a></li>
+<li> <a href="/tags/48dac2fcd7cc8423478b49c8b18c15c0.html">Mojolicious</a></li>
+<li> <a href="/tags/aa960f31a5c16214cfe0fa8746913ddd.html">Mojo</a></li>
+<li> <a href="/tags/8adfcadfdadf949a37f439e45be44913.html">UserAgent</a></li>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+</ul>
+
+</section>
+
+<section>
+  prev: <a href="/entry/2019/12/2019_12_12_001.html">ウェブサイトのセキュリティ：入力バリデーション、正規表現</a> <br>
+  next: <a href="/entry/2019/12/2019_12_27_001.html">ブログツール nikki.pl を作った</a> <br>
+</section>
+
+<section>
+  created at : 2020-04-02 11:01:38<br>
+  updated at : 2020-04-02 11:01:38<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </section>
+      <footer>
+      </footer>
+    </div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!--    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+  </body>
+</html>
