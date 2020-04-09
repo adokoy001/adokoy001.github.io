@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-04-03T12:22:37Z</updated>
+<updated>2020-04-09T09:05:49Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>nikki.pl あともう少し頑張ってみる</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_07_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_07_001.html</id>
+<updated>2020-04-09 09:05:49</updated>
+<summary>nikki.plのアップデート近況報告と今後の予定</summary>
+</entry>
+<entry>
 <title>Post COVID-19の世界</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_02_002.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_02_002.html</id>
 <updated>2020-04-03 12:22:37</updated>
@@ -57,11 +63,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/02/2020_02_18_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/02/2020_02_18_001.html</id>
 <updated>2020-02-18 09:16:28</updated>
 <summary>日常575タイトル</summary>
-</entry>
-<entry>
-<title>PayPalのAPI</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/02/2020_02_13_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/02/2020_02_13_001.html</id>
-<updated>2020-02-15 14:07:38</updated>
-<summary>仕事でPayPalのSDKを使ってAPIを組み込んだこととか</summary>
 </entry>
 </feed>
