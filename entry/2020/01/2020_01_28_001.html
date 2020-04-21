@@ -137,11 +137,15 @@ close($fh);
 
 </pre></code>
 
+<p>このままでは入力の長さに応じて署名が長くなってしまうので、SHA-2などのハッシュアルゴリズムでダイジェスト値を計算します。</p>
+
+<p>このダイジェスト値こそが電子署名になります。</p>
+
 <h2>検証</h2>
 
 <p>上記プログラムで作成されたout.signに対して検証してみます。</p>
 
-<p>秘密鍵pvt.pemとin.txtとout.signの三つが必要になります。</p>
+<p>公開鍵pub.pem、入力in.txt、署名out.signの三つが必要になります。</p>
 
 <pre><code>
 use strict;
@@ -201,7 +205,7 @@ if($rsa-&gt;verify($content, $sign)){
 
 <section name="document_information">
   created at : 2020-01-28 10:18:41<br>
-  updated at : 2020-01-28 11:28:43<br>
+  updated at : 2020-04-21 17:20:38<br>
   author : Toshiaki Yokoda<br>
 </section>
 
