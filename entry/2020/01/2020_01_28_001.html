@@ -137,9 +137,9 @@ close($fh);
 
 </pre></code>
 
-<p>このままでは入力の長さに応じて署名が長くなってしまうので、SHA-2などのハッシュアルゴリズムでダイジェスト値を計算します。</p>
+<p>ただ単に暗号化しただけでは入力の長さに応じて署名（の一歩手前）が長くなってしまうので、SHA-2などの安全なハッシュアルゴリズムでダイジェスト値を計算します。</p>
 
-<p>このダイジェスト値こそが電子署名になります。</p>
+このダイジェスト値（<code>sign($content)</code>で求めたもの）こそが電子署名になります。
 
 <h2>検証</h2>
 
@@ -205,7 +205,7 @@ if($rsa-&gt;verify($content, $sign)){
 
 <section name="document_information">
   created at : 2020-01-28 10:18:41<br>
-  updated at : 2020-04-21 17:20:38<br>
+  updated at : 2020-04-21 17:26:06<br>
   author : Toshiaki Yokoda<br>
 </section>
 
