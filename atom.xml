@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-04-23T11:32:30Z</updated>
+<updated>2020-05-07T10:43:13Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>GW終了</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_07_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_07_001.html</id>
+<updated>2020-05-07 10:43:13</updated>
+<summary>ゴールデンウィークが終わってしまった</summary>
+</entry>
+<entry>
 <title>リモートワーク検討</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_23_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_23_001.html</id>
 <updated>2020-04-23 11:32:30</updated>
@@ -57,11 +63,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_09_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_09_001.html</id>
 <updated>2020-04-17 13:50:31</updated>
 <summary>現時点での新型コロナウイルスに関する情報をまとめておく</summary>
-</entry>
-<entry>
-<title>nikki.pl あともう少し頑張ってみる</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_07_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_07_001.html</id>
-<updated>2020-04-09 09:05:49</updated>
-<summary>nikki.plのアップデート近況報告と今後の予定</summary>
 </entry>
 </feed>
