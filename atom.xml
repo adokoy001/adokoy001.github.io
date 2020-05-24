@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-05-22T16:31:44Z</updated>
+<updated>2020-05-24T17:07:06Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>Rustやってみる。</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_24_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_24_001.html</id>
+<updated>2020-05-24 17:07:06</updated>
+<summary>Perl,PHPはある程度扱えるようになってきたので、システムプログラミング言語としてRustに挑戦してみたい。</summary>
+</entry>
+<entry>
 <title>自宅60cm水槽に生体追加</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_22_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_22_001.html</id>
 <updated>2020-05-22 16:31:44</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/03/2020_03_29_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/03/2020_03_29_001.html</id>
 <updated>2020-05-20 15:09:09</updated>
 <summary>新型コロナウイルス感染症についての現時点でのまとめ（自分用メモ）</summary>
-</entry>
-<entry>
-<title>なぜか結核菌感染症を予防するためのBCGがウイルスに有効な理由</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/03/2020_03_27_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/03/2020_03_27_001.html</id>
-<updated>2020-03-27 09:30:37</updated>
-<summary>BCGがCOVID-19（新型コロナウイルス）に有効である可能性が示唆されている。</summary>
 </entry>
 </feed>
