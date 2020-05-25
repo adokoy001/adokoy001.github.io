@@ -18,11 +18,11 @@
 <meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="og:locale" content="ja_JP"/>
-<meta property="og:title" content="Rustやってみる。" />
-<meta property="og:description" content="Perl,PHPはある程度扱えるようになってきたので、システムプログラミング言語としてRustに挑戦してみたい。" />
+<meta property="og:title" content="Rustの難しいところに入った" />
+<meta property="og:description" content="RustのOwnershipでちょっと難しくなってきた。" />
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Rustやってみる。 - NIKKI - Perl/PHP/アクアリウム 日記</title>
+    <title>Rustの難しいところに入った - NIKKI - Perl/PHP/アクアリウム 日記</title>
     
 
   </head>
@@ -58,20 +58,19 @@
 	  
 
 
-<h1>Rustやってみる。</h1>
+<h1>Rustの難しいところに入った</h1>
 
-<p>Perl,PHP,JavaScript,HTML,CSS,SQL等、ウェブアプリケーションを作る上で必要な言語は一通り触っており、
-ある程度の規模のものでも一通り自分で作れるようにはなったので、バイナリを吐く言語を流暢に扱えるようになりたいと思った。</p>
+<p>最終目標はActix-webで何か実用的なウェブアプリを作ることなのだが、Rustのユニークなところでちょっとわけが分からなくなってきた。</p>
 
-<p>CやC++は今から学ぶのはどうなの？という感じがあり、Haskelのようなイロモノ（マサカリが飛んできそう）には手を出したくないので、いろいろと評判の良いRustをやってみようと思う。</p>
+<a href="https://doc.rust-jp.rs/">Rustの日本語ドキュメント</a> に沿って進めている。
 
-<a href="https://doc.rust-jp.rs/">Rustの日本語ドキュメント</a> がかなり良さそうだったので、着々とプラクティスを進めている。
+<p>値のバインディング（束縛）が原則イミュータブルで、ミュータブルなバインディング（普通の言語の変数に近い）で発生し得る一貫性の崩壊をオーナーシップ（所有権）で解決するような感じかな。</p>
 
-<p>SentenceではなくExpression指向な言語ということで、PerlやPHPばかり触ってきた人間としてはちょっとキツイが、今時のJavaScriptの書き方に近いところがあるのでまあなんとかついていける感じ。</p>
+<p>「エラーが出るはずのサンプルコード」でエラーが出なかったりするのは、このドキュメントが古いバージョンだからなのだろうか。</p>
 
-<p>システムプログラミング言語としてみた場合はどうなのだろう。未知の領域。</p>
+ボトムアップ式にやっていく前に <a href="https://doc.rust-jp.rs/the-rust-programming-language-ja/1.6/book/dining-philosophers.html">食事する哲学者</a> を先に終わらせてしまっていたので、なんとなく理解はできるかも。
 
-<p>ひとまずこのサイトのサンプルコードを動かしながら書き捨てプログラムをgithubへ置いているが、たぶん迷惑なので短期間のうちにdeleteします。</p>
+<p>マイペースでやっていきます。</p>
 
 <hr>
 
@@ -84,13 +83,13 @@
 </section>
 
 <section name="prev_and_next">
-  prev: <a href="/entry/2020/05/2020_05_22_001.html">自宅60cm水槽に生体追加</a> <br>
-  next: <a href="/entry/2020/05/2020_05_25_001.html">Rustの難しいところに入った</a> <br>
+  prev: <a href="/entry/2020/05/2020_05_24_001.html">Rustやってみる。</a> <br>
+  next: NO ENTRY <br>
 </section>
 
 <section name="document_information">
-  created at : 2020-05-24 10:26:07<br>
-  updated at : 2020-05-24 17:07:06<br>
+  created at : 2020-05-25 16:04:36<br>
+  updated at : 2020-05-25 16:35:32<br>
   author : Toshiaki Yokoda<br>
 </section>
 
