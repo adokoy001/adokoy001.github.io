@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-05-26T10:34:41Z</updated>
+<updated>2020-05-26T17:19:04Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>Laravelも並行して学習中</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_002.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_002.html</id>
+<updated>2020-05-26 17:19:04</updated>
+<summary>Rustの学習をマイペースで進めつつ、Laravelのお勉強も始めた。</summary>
+</entry>
+<entry>
 <title>自前ラップトップの環境構築で夜更かししてしまった</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_001.html</id>
 <updated>2020-05-26 10:34:41</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_07_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_07_001.html</id>
 <updated>2020-04-09 09:05:49</updated>
 <summary>nikki.plのアップデート近況報告と今後の予定</summary>
-</entry>
-<entry>
-<title>Post COVID-19の世界</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_02_002.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_02_002.html</id>
-<updated>2020-04-03 12:22:37</updated>
-<summary>これからのことを考えてみる</summary>
 </entry>
 </feed>
