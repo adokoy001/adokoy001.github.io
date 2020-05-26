@@ -18,11 +18,11 @@
 <meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="og:locale" content="ja_JP"/>
-<meta property="og:title" content="Rustの難しいところに入った" />
-<meta property="og:description" content="RustのOwnershipでちょっと難しくなってきた。" />
+<meta property="og:title" content="自前ラップトップの環境構築で夜更かししてしまった" />
+<meta property="og:description" content="Ubuntu 20.04 LTSを自前ラップトップのVirtual Box環境に構築。今まで使っていた18.04のVMから設定や開発環境などを移行していく予定・・・。" />
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Rustの難しいところに入った - NIKKI - Perl/PHP/アクアリウム 日記</title>
+    <title>自前ラップトップの環境構築で夜更かししてしまった - NIKKI - Perl/PHP/アクアリウム 日記</title>
     
 
   </head>
@@ -58,38 +58,50 @@
 	  
 
 
-<h1>Rustの難しいところに入った</h1>
+<h1>自前ラップトップの環境構築で夜更かししてしまった</h1>
 
-<p>最終目標はActix-webで何か実用的なウェブアプリを作ることなのだが、Rustのユニークなところでちょっとわけが分からなくなってきた。</p>
+<p>Ubuntu 20.04 LTSが出てからかなり遅れてVMにインストール。</p>
 
-<a href="https://doc.rust-jp.rs/">Rustの日本語ドキュメント</a> に沿って進めている。
+<p>相変わらずいい感じ。いつも通りデスクトップ版を使うことにする。</p>
 
-<p>値のバインディング（束縛）が原則イミュータブルで、ミュータブルなバインディング（普通の言語の変数に近い）で発生し得る一貫性の崩壊をオーナーシップ（所有権）で解決するような感じかな。</p>
+<p>Virtual Boxでインストール＆初期設定＆apt update ＆ apt upgrade。</p>
 
-<p>「エラーが出るはずのサンプルコード」でエラーが出なかったりするのは、このドキュメントが古いバージョンだからなのだろうか。</p>
+<p>ネットワークはプライマリインターフェイスにデフォルトのNAT、セカンダリにホストオンリーアダプタを割り当て。</p>
 
-ボトムアップ式にやっていく前に <a href="https://doc.rust-jp.rs/the-rust-programming-language-ja/1.6/book/dining-philosophers.html">食事する哲学者</a> を先に終わらせてしまっていたので、なんとなく理解はできるかも。
+<p>GUIの画面からホストオンリーアダプタのIP設定をスタティックに設定。で、Guest Additionもインストールしておく。で、再起動。</p>
 
-<p>マイペースでやっていきます。</p>
+<p>ホストからsshでアクセスできるように、まずはsshをインストール。sshdではなくsshでsshdがインストールされる（ややこしい）</p>
+
+<p>build-essential, git, curl, zshをインストールして最低限の人権を確保。今まで使っていたUbuntu 18.04から.zshrcを移植。ついでにemacsの設定ファイルも持ってくる。</p>
+
+<p>その後plenv, rbenv, pyenv, rustコンパイル環境を準備。</p>
+
+<p>emacsをインストール。list-packagesで必要なパッケージをインストール。既に設定ファイルは持ってきているので正常に動く。</p>
+
+<p>・・・</p>
+
+<p>という感じで昨日は夜更かししてしまった。</p>
 
 <hr>
 
 <section name="tags">
 <ul>
-<li> <a href="/tags/d309ad6ba439abb9b7e8ea0b97c6386e.html">Rust</a></li>
-<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+<li> <a href="/tags/fc7d9abf5916431c5f0d6c5c8a93b96d.html">foo</a></li>
+<li> <a href="/tags/59c063f7fc105366effcc510658f5573.html">bar</a></li>
+<li> <a href="/tags/b819601256b5642569c4c9d69a5567b4.html">baz</a></li>
+<li> <a href="/tags/b4cf6c8017be60b67032fbd0fffa9546.html">anything</a></li>
 </ul>
 
 </section>
 
 <section name="prev_and_next">
-  prev: <a href="/entry/2020/05/2020_05_24_001.html">Rustやってみる。</a> <br>
-  next: <a href="/entry/2020/05/2020_05_26_001.html">自前ラップトップの環境構築で夜更かししてしまった</a> <br>
+  prev: <a href="/entry/2020/05/2020_05_25_001.html">Rustの難しいところに入った</a> <br>
+  next: NO ENTRY <br>
 </section>
 
 <section name="document_information">
-  created at : 2020-05-25 16:04:36<br>
-  updated at : 2020-05-25 16:35:32<br>
+  created at : 2020-05-26 10:20:51<br>
+  updated at : 2020-05-26 10:34:41<br>
   author : Toshiaki Yokoda<br>
 </section>
 
