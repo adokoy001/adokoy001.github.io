@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-05-26T17:19:04Z</updated>
+<updated>2020-05-29T09:19:00Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>ZONEうまい</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_28_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_28_001.html</id>
+<updated>2020-05-29 09:19:00</updated>
+<summary>最近でてきたエナジードリンク</summary>
+</entry>
+<entry>
 <title>Laravelも並行して学習中</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_002.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_002.html</id>
 <updated>2020-05-26 17:19:04</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_09_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_09_001.html</id>
 <updated>2020-04-17 13:50:31</updated>
 <summary>現時点での新型コロナウイルスに関する情報をまとめておく</summary>
-</entry>
-<entry>
-<title>nikki.pl あともう少し頑張ってみる</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_07_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_07_001.html</id>
-<updated>2020-04-09 09:05:49</updated>
-<summary>nikki.plのアップデート近況報告と今後の予定</summary>
 </entry>
 </feed>
