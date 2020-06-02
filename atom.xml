@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-05-29T09:19:00Z</updated>
+<updated>2020-06-02T14:11:12Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>PerlとPHPの違い</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/06/2020_06_02_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/06/2020_06_02_001.html</id>
+<updated>2020-06-02 14:11:12</updated>
+<summary>PerlとPHPは記法が似ているが、違っている部分を簡単にまとめる。</summary>
+</entry>
+<entry>
 <title>ZONEうまい</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_28_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_28_001.html</id>
 <updated>2020-05-29 09:19:00</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_15_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_15_001.html</id>
 <updated>2020-04-15 17:19:15</updated>
 <summary>沖縄限定商品についてのちょっとした気付き</summary>
-</entry>
-<entry>
-<title>新型コロナウイルスに関する乱雑なまとめ</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_09_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_09_001.html</id>
-<updated>2020-04-17 13:50:31</updated>
-<summary>現時点での新型コロナウイルスに関する情報をまとめておく</summary>
 </entry>
 </feed>
