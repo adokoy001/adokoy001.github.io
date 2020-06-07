@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-06-05T10:32:24Z</updated>
+<updated>2020-06-08T02:50:55Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>termux入力テスト</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/06/2020_06_08_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/06/2020_06_08_001.html</id>
+<updated>2020-06-08 02:50:55</updated>
+<summary>スマホを新しくしてtermuxから作成テスト。</summary>
+</entry>
+<entry>
 <title>GEX ラクフィルを購入</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/06/2020_06_05_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/06/2020_06_05_001.html</id>
 <updated>2020-06-05 10:32:24</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_17_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_17_001.html</id>
 <updated>2020-04-17 11:28:34</updated>
 <summary>ただの日記。明らかに蓄膿症の症状が出ている。</summary>
-</entry>
-<entry>
-<title>nikki.plに新機能を追加しました。</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_16_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_16_001.html</id>
-<updated>2020-04-17 03:56:17</updated>
-<summary>nikki.plにカスタマイズ機能とHTML直書き機能を追加</summary>
 </entry>
 </feed>
