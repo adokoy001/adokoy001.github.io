@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-07-01T16:18:38Z</updated>
+<updated>2020-07-02T17:20:23Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>nikki.plがMarkdownに対応しました。</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/07/2020_07_02_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/07/2020_07_02_001.html</id>
+<updated>2020-07-02 17:20:23</updated>
+<summary>独自記法だけでしたが、この度Markdownにも対応しました。</summary>
+</entry>
+<entry>
 <title>最近の日課</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/07/2020_07_01_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/07/2020_07_01_001.html</id>
 <updated>2020-07-01 16:18:38</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_23_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_23_001.html</id>
 <updated>2020-04-23 11:32:30</updated>
 <summary>新型コロナウイルスの蔓延を防ぐためにリモートワーク環境の構築が進んでいる。</summary>
-</entry>
-<entry>
-<title>コトブキ プロフィットフィルター X3 所感</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/04/2020_04_22_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/04/2020_04_22_001.html</id>
-<updated>2020-04-22 16:10:31</updated>
-<summary>寿工芸のプロフィットフィルターX3を使ってみた感想</summary>
 </entry>
 </feed>
