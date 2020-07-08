@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@adokoy0001" />
+<meta name="twitter:creator" content="@adokoy0001" />
+<meta property="og:type" content="article" />
+<meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
+<meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
+<meta property="og:locale" content="ja_JP"/>
+<meta property="og:title" content="（ソフトウェア）エンジニアへの道" />
+<meta property="og:description" content="IT関係のお仕事で必要になりそうな知識をまとめてみる。" />
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>（ソフトウェア）エンジニアへの道 - NIKKI - Perl/PHP/アクアリウム 日記</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.00em;}
+      h2 {font-size: 1.70em;}
+      h3 {font-size: 1.40em;}
+      pre { background-color: #E8E8E8; border: 1px solid #484848; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container">
+      <header>
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+	  <a class="navbar-brand" href="/">TOP PAGE</a>
+	  <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="altername">
+	    <span class="navbar-toggler-icon"></span>
+	  </button>
+	  <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+	    <div class="navbar-nav">
+	      <a class="nav-item nav-link" href="/tags.html">TAG LIST</a>
+	      <a class="nav-item nav-link" href="/archive.html">ARCHIVES</a>
+	      <a class="nav-item nav-link" href="/entry/2020/04/2020_04_20_001resume.html">PROFILE</a>
+	    </div>
+	  </div>
+	</nav>
+      </header>
+      <main>
+	<div class="container">
+	  
+<h1>（ソフトウェア）エンジニアへの道</h1>
+
+<p>考えてみるとITは広範囲かつそこそこ深い知識が要求される業界だなと思ったので、（ソフトウェア）エンジニアとして必要っぽい知識をまとめる。</p>
+
+<p>チェックリスト的な感じでやっていきます。</p>
+
+<h2>はじめに</h2>
+
+<p>以下の大項目に分けて必要な知識・スキルをリストアップしてゆく。</p>
+
+<ul>
+<li>SHAKAIJIN（社会人）的なスキル</li>
+<li>コンピューターの基本的な使い方</li>
+<li>Linuxのインストールや設定</li>
+<li>ミドルウェアのインストールと設定</li>
+<li>開発環境のセットアップ</li>
+<li>コマンドラインインターフェース</li>
+<li>プログラミング・マークアップスキル</li>
+<li>データベース・SQL</li>
+<li>クラウド活用</li>
+<li>セキュリティ関連</li>
+</ul>
+
+<h2>SHAKAIJIN（社会人）的なスキル</h2>
+
+<p>ここでいうShakaijinスキルには「メールの書き方」や「チャットツールの使い方」等が含まれる。</p>
+
+<ul>
+<li>電子メールのto,cc,bccの意味を理解しており、使いこなせている。</li>
+<li>チャットツールの使い方をある程度知っている。</li>
+<li>コピー機、プリンタ、FAX、電話の使い方を知っている。</li>
+<li>オフィススイート（MS Office等）ソフトウェアの使い方をある程度知っている。</li>
+</ul>
+
+<h2>コンピューターの基本的な使い方</h2>
+
+<p>最近はパソコンを触らない人が増えているということを耳にしたので、とりあえず。</p>
+
+<ul>
+<li>Wifiの設定ができる。</li>
+<li>PCにログインしてブラウザを起動し、そのあとブラウザを閉じてOSをシャットダウンすることができる。</li>
+<li>自分にとって必要なアプリケーションのインストール方法を知っている。</li>
+<li>キーボード、マウス、USB、外部メディアを正しく取り扱うことができる。</li>
+<li>PCの管理者として、ユーザーの追加・権限設定・パスワード設定等ができる。</li>
+<li>メモリ増設、HDD交換、Windowsのクリーンインストールなどができる（可能なマシンであれば）</li>
+</ul>
+
+<h2>Linuxのインストールや設定</h2>
+
+<p>インフラエンジニア寄りの内容。</p>
+
+<ul>
+<li>Ubuntu,CentOS等のLinuxをベアメタル（実マシン）でインストールできる。</li>
+<li>Ubuntu,CentOS等のLinuxを仮想マシン上でインストールできる。</li>
+<li>LVM（論理ボリューム）を設定することができる。</li>
+<li>SELinux、AppArmorの有効・無効の切り替え方が分かる。</li>
+<li>ネットワークの設定方法が分かる。</li>
+<li>iptables等によるファイアウォール（パケットフィルタ）が正しく設定できる。</li>
+<li>ユーザーの追加、権限設定(sudo等)を正しく実施することができる。</li>
+<li>サービス（デーモン）の登録、削除、起動設定の変更等ができる。</li>
+<li>パッケージマネージャでアップデートを施す方法を知っている。</li>
+<li>タイムゾーン、時刻合わせ、ロケールの設定ができる。</li>
+<li>cronの設定ができる。</li>
+</ul>
+
+<h2>ミドルウェアのインストールと設定</h2>
+
+<p>インフラエンジニア寄りの内容。</p>
+
+<ul>
+<li>何か一つのHTTPサーバーのインストールと設定ができる。</li>
+<li>何か一つのRDBMSのインストールと設定ができる。</li>
+<li>何か一つのNoSQLのインストールと設定ができる。</li>
+<li>システムの動作に必要なDockerイメージを展開することができる。</li>
+<li>アプリケーションの動作に必要なライブラリをインストールし、設定することができる。</li>
+</ul>
+
+<h2>開発環境のセットアップ</h2>
+
+<p>プログラマとして開発環境を構築して作業に取り掛かれるまでの能力。</p>
+
+<ul>
+<li>開発に用いるプログラミング言語を実行する環境を構築することができる。</li>
+<li>エディタ、IDEの設定ができる。</li>
+<li>Git等のソースコード管理ツールを使える状態にすることができる。</li>
+<li>開発環境からリポジトリにアクセスできる状態にすることができる。</li>
+<li>エディタやIDEをプログラミング環境として快適な設定にカスタマイズすることができる。</li>
+</ul>
+
+<h2>コマンドラインインターフェース</h2>
+
+<p>Linuxのコマンドライン操作がある程度できると良い。</p>
+
+<ul>
+<li>コマンド cd,ls,cp,mkdir,rmdir,rm,pwd,top,ps,cat,less,パイプ、リダイレクトの使い方が分かる。</li>
+<li>sudoコマンドの使い方がわかる。</li>
+<li>vi,vim,nano,emacs等のエディタで設定ファイルなどを書き換えることができる。</li>
+<li>apt,yum,reboot,halt,systemctl,serviceコマンドを知っている。</li>
+<li>ssh,scp,rsyncの使い方がわかる。</li>
+<li>圧縮解凍系のコマンドを知っている。</li>
+<li>findコマンドを使いこなせる。</li>
+<li>環境変数の設定方法が分かる。</li>
+<li>簡単なシェルスクリプトが書ける。</li>
+<li>自分にとって使いやすいシェルに切り替える方法を知っている。</li>
+</ul>
+
+<h2>プログラミングスキル</h2>
+
+<p>プログラミング言語に依らず、わりと普遍的なものをリストアップ。</p>
+
+<ul>
+<li>変数のスコープを理解している。</li>
+<li>FizzBuzzが書ける。</li>
+<li>ファイル操作（読み込み、書き込み）ができる。</li>
+<li>オブジェクト指向プログラミングができる。またはパラダイムを理解している。</li>
+<li>関数型プログラミングができる。またはパラダイムを理解している。</li>
+<li>ループ構文が書ける。</li>
+<li>エラトステネスの篩が書ける。</li>
+<li>複雑なデータ構造を自由自在に作ることができる。</li>
+<li>再帰呼び出しが書ける。</li>
+<li>例外処理が書ける。</li>
+<li>プログラム側からRDBMSにアクセスする方法を知っている。</li>
+<li>クエリビルダまたはORマッパーを使うことができる。</li>
+<li>DBへの問い合わせ時にSQLインジェクションが発生しない安全な実装方法を知っている。</li>
+<li>DBのトランザクションと排他制御について知っている。</li>
+<li>いわゆる「N+1問題」を理解しており、回避することができる。</li>
+<li>リソースの適切なロック方法（ファイルやRDBMSの排他制御等）を知っている。</li>
+<li>簡単な電子掲示板を実装することができる。</li>
+<li>JSONやXML、YAML等のデータをプログラムで読み書きする方法を知っている。</li>
+<li>既存のフレームワークを使ってアプリを一通り作ることができる。</li>
+<li>バッチ処理を書くことができ、適切なタイミングで実行することができる。</li>
+<li>ユニットテストを考慮してクラスや関数の適切な設計ができる。</li>
+</ul>
+
+<h2>データベース・SQL</h2>
+
+<p>エンジニアにとっては最も重要な能力かもしれない。</p>
+
+<ul>
+<li>RDBMSユーザーの作成、権限設定ができる。</li>
+<li>DBの作成、テーブルの作成方法を知っている。</li>
+<li>DBのダンプ、リストア方法を知っている。</li>
+<li>プライマリキー、ユニーク制約、not null制約、外部キー制約について理解している。</li>
+<li>普段使っているRDBMSのフィールドの型を理解している。</li>
+<li>必要なフィールドにindexを貼ることができる。</li>
+<li>explainの内容を理解し、遅い部分を特定し、改善する方法を提示できる。</li>
+<li>簡単なinsert,select,update,delete文が書ける。</li>
+<li>複雑なwhere句が書ける。</li>
+<li>複雑なjoin(inner,left,cross等含む)が書ける。</li>
+<li>group byを使いこなせる。</li>
+<li>havingを使いこなせる。</li>
+<li>case式を使いこなせる。</li>
+<li>副問い合わせを使いこなせる。</li>
+<li>RDBの正規化を理解している。</li>
+<li>システムの要件と規模にあった適切なテーブル設計ができる。</li>
+<li>非機能要件にあった適切なDBメンテナンス、バッチ処理を設計することができる。</li>
+</ul>
+
+<h2>クラウド活用</h2>
+
+<p>AWSが主流ではあるが、あくまでもクラウドサービス全般を使いこなすということで。</p>
+
+<ul>
+<li>DNSの設定方法を知っている。</li>
+<li>組織の設定としてユーザー権限を適切に設定する方法を知っている。</li>
+<li>クラウドコンソール上でVMを立ち上げることができる。</li>
+<li>立ち上げたクラウドVMにsshでログインし、ネットワーク設定やアップデートなどの作業ができる。</li>
+<li>VMのスナップショットイメージを作成することができる。</li>
+<li>クラウド基盤上で仮想ネットワークやファイアウォールを設定することができる。</li>
+<li>必要であればPaaS,SaaS,ストレージサービスなどを立ち上げて利用することができる。</li>
+<li>サーバロードバランスの設定ができる。</li>
+<li>サービスを無停止でスケールさせる手段を知っている。</li>
+</ul>
+
+<h2>セキュリティ関連</h2>
+
+<p>この辺りは必要最低限のものをリストアップ。</p>
+
+<ul>
+<li>公開鍵暗号方式について理解している。</li>
+<li>SSL(TLS)について理解している。</li>
+<li>コマンドインジェクションの原因と根本的な対策方法を知っている。</li>
+<li>SQLインジェクションの原因と根本的な対策方法を知っている。</li>
+<li>XSSの原因と対策方法を知っている。</li>
+<li>CSRFの原因と対策方法を知っている。</li>
+<li>パスワードを平文で保存せずにシステムを作る方法を知っている。</li>
+</ul>
+
+<p>以上！</p>
+
+
+<hr>
+
+<section name="tags">
+<ul>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+</ul>
+
+</section>
+
+<section name="prev_and_next">
+  prev: <a href="/entry/2020/07/2020_07_07_001.html">With コロナウイルス</a> <br>
+  next: NO ENTRY <br>
+</section>
+
+<section name="document_information">
+  created at : 2020-07-08 12:57:40<br>
+  updated at : 2020-07-08 15:58:53<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </main>
+      <footer>
+	<table style="margin: 1em;">
+	  <tr>
+	    <td style="margin: 0.5em;">
+	      <a href="https://twitter.com/share" class="twitter-share-button" data-via="adokoy0001">Tweet</a>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <div class="fb-share-button" data-layout="button_count"></div>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <div class="line-it-button" data-lang="ja" data-type="share-a" data-ver="3" data-url="https://social-plugins.line.me/ja/how_to_install#lineitbutton" data-color="default" data-size="large" data-count="true" style="display: none;"></div>
+	    </td>
+	  </tr>
+	</table>
+      </footer>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+    <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+    <script>(function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v3.0";
+    fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));</script>
+    <script src="https://d.line-scdn.net/r/web/social-plugin/js/thirdparty/loader.min.js" async="async" defer="defer"></script>
+  </body>
+</html>
