@@ -14,16 +14,17 @@
     <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@adokoy0001" />
 <meta name="twitter:creator" content="@adokoy0001" />
-<meta property="og:title" content="TAG : PHP" />
-<meta property="og:type" content="blog" />
-<meta property="og:description" content="related list by tag name" />
+<meta property="og:type" content="article" />
 <meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="og:locale" content="ja_JP"/>
+<meta property="og:title" content="Laravel練習中" />
+<meta property="og:description" content="FuelPHPの将来性（の無さ）を考えてLaravelの基本をおさえておく。" />
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Related content : PHP - NIKKI - Perl/PHP/アクアリウム 日記</title>
+    <title>Laravel練習中 - NIKKI - Perl/PHP/アクアリウム 日記</title>
     
+
   </head>
   <body>
     <style>
@@ -54,21 +55,76 @@
       </header>
       <main>
 	<div class="container">
-	  <h1>TAG: PHP</h1>
+	  
+<h1>Laravel練習中</h1>
+
+<p>いろいろと基本的なところをおさえておいた。</p>
+
+<h2>artisanコマンドを使いまくる</h2>
+
+<p>マイグレーションファイル、コントローラー、ミドルウェア、DBシード、いろんなファイルの作成でartisanコマンドを使う。</p>
+
+<p>もちろんマイグレーションやDBシーディングの実行や開発用ビルトインHTTPサーバーの起動などもこのコマンドでできる。</p>
+
+<p>せっかく用意されているツールなので、わざわざ手動でファイルを作成したり開発環境でApache立てたりとかをせずにartisanコマンドでやっていきたいところ。</p>
+
+<h2>認証はmiddlewareを使う</h2>
+
+<p>特定routeにはログイン済みのユーザーだけを通したい場合はmiddlewareを使う。</p>
+
+<p>認証用に独自のmiddlewareを作る場合ももちろんartisanコマンドで。ひな形が作られる。</p>
+
+<p>作成したmiddlewareをRouteから呼び出すためにはKernelのmiddlewareリストに登録しておく必要がある。この辺りはちょっと泥臭い。</p>
+
+<p>Kernelに登録したミドルウェアを通ったものだけがアクセスを許可されるように書く場合、Routeの記述を以下のようにする。</p>
+
+<pre><code>Route::resource('/auth_only','AuthOnlyController')-&gt;middleware('RegisteredMyMiddleware');
+</code></pre>
+
+<p>ログインにも複数のタイプ（BtoC一般ユーザー、システム管理者、BtoBユーザー、等）を持たせたいなら、独自の認証機構を作っておいてそれをmiddlewareで呼び出すだけにしてしまうのも手。</p>
+
+<p>こんな感じ。</p>
+
+<pre><code>Route::resource('/manage/setting','ManagerOnlyController')-&gt;middleware('AuthCheckManager');
+Route::resource('/customer/setting','CustomerOnlyController')-&gt;middleware('AuthCheckCustomer');
+Route::resource('/business_user/setting','BusinessUserOnlyController')-&gt;middleware('AuthCheckBusinessUser');
+</code></pre>
+
+<h2>いわゆるユーティリティクラスを置くディレクトリについて</h2>
+
+<p>良く使う独自のstatic関数やクラスをどこかにまとめて置いておきたい場合がある。</p>
+
+<p>serviceディレクトリに置くことが多いようだが、普通に「util」というディレクトリを作ってそこに集めても問題無い。</p>
+
+<p>呼び出すときは\App\Util（以下略）等と書けば良いだけだ。</p>
+
+<h2>その他</h2>
+
+<p>後は一般的なMVCフレームワークといった感じ。</p>
+
+<p>FuelPHPと比べるとわざわざuseを書かないといけないファイルが多かったりするので不便な気もするが、将来性を考えるとLaravelをやっておく必要があると感じている。</p>
+
+
 <hr>
+
+<section name="tags">
 <ul>
-<li> 2020-07-29 : <a href="/entry/2020/07/2020_07_29_001.html">Laravel練習中</a></li>
-<li> 2020-06-02 : <a href="/entry/2020/06/2020_06_02_001.html">PerlとPHPの違い</a></li>
-<li> 2020-05-26 : <a href="/entry/2020/05/2020_05_26_002.html">Laravelも並行して学習中</a></li>
-<li> 2020-02-13 : <a href="/entry/2020/02/2020_02_13_001.html">PayPalのAPI</a></li>
-<li> 2020-01-21 : <a href="/entry/2020/01/2020_01_21_001.html">FuelPHPでCSRF対策</a></li>
-<li> 2019-12-12 : <a href="/entry/2019/12/2019_12_12_001.html">ウェブサイトのセキュリティ：入力バリデーション、正規表現</a></li>
-<li> 2019-12-07 : <a href="/entry/2019/12/2019_12_07_001.html">FuelPHPのクエリビルダチートシート</a></li>
-<li> 2019-11-29 : <a href="/entry/2019/11/2019_11_29_002.html">PHPのarrayから再帰的にkeyとvalueを全て取り出す</a></li>
-<li> 2019-11-29 : <a href="/entry/2019/11/2019_11_29_001.html">FuelPHPのDeployerによるデプロイ</a></li>
-<li> 2019-10-15 : <a href="/entry/2019/10/2019_10_15_001.html">PHPカンファレンス沖縄 2019</a></li>
-<li> 2019-10-04 : <a href="/entry/2019/10/2019_10_04_001.html">PerlとPHP</a></li>
+<li> <a href="/tags/11fc3960fd795c40a1de9c92ce16b3b6.html">PHP</a></li>
+<li> <a href="/tags/91c5863746aa37a624b84e85d14077ca.html">Laravel</a></li>
 </ul>
+
+</section>
+
+<section name="prev_and_next">
+  prev: <a href="/entry/2020/07/2020_07_28_001.html">BS11の「ひぐらしのなく頃に」</a> <br>
+  next: NO ENTRY <br>
+</section>
+
+<section name="document_information">
+  created at : 2020-07-29 16:08:59<br>
+  updated at : 2020-07-29 17:01:41<br>
+  author : Toshiaki Yokoda<br>
+</section>
 
 	</div>
       </main>
