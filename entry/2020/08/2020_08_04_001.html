@@ -18,11 +18,11 @@
 <meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="og:locale" content="ja_JP"/>
-<meta property="og:title" content="Laravel練習中" />
-<meta property="og:description" content="FuelPHPの将来性（の無さ）を考えてLaravelの基本をおさえておく。" />
+<meta property="og:title" content="ポビドンヨード吉村知事" />
+<meta property="og:description" content="思い切った会見をしてしまった大阪吉村知事。しかし、批判の多くは誤解に基づいているもの。" />
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Laravel練習中 - NIKKI - Perl/PHP/アクアリウム 日記</title>
+    <title>ポビドンヨード吉村知事 - NIKKI - Perl/PHP/アクアリウム 日記</title>
     
 
   </head>
@@ -56,73 +56,48 @@
       <main>
 	<div class="container">
 	  
-<h1>Laravel練習中</h1>
+<h1>ポビドンヨード吉村知事</h1>
 
-<p>いろいろと基本的なところをおさえておいた。</p>
+<p>大阪の吉村知事がちょっと思い切った行動に出てしまったようで、多方面から集中砲火を浴びている。</p>
 
-<h2>artisanコマンドを使いまくる</h2>
+<p>正直なところ私も「馬鹿にしてやろうかな」と思ってしまったのだが、内容を確認してみるとそれほど単純な話ではなかった。</p>
 
-<p>マイグレーションファイル、コントローラー、ミドルウェア、DBシード、いろんなファイルの作成でartisanコマンドを使う。</p>
+<p>今回の「騒ぎ」の要点を以下にまとめておく。</p>
 
-<p>もちろんマイグレーションやDBシーディングの実行や開発用ビルトインHTTPサーバーの起動などもこのコマンドでできる。</p>
+<ul>
+<li>趣旨は「ポビドンヨードを含むうがい薬でうがいをすると、早期回復・感染拡大防止に効果があるかもしれない」というもの。</li>
+<li>実験ではうがいをする前にPCR検査の検体を採取している。うがいによってコロナウイルスが洗い流されたという懸念は失当。</li>
+<li>対照群は「うがいをしない」もののみ。本来であれば「水でうがいをする」群も用意して比較するべき。</li>
+<li>そもそも今回の研究結果が出されたというだけの段階で知事が会見を開いてポビドンヨードうがいの励行を呼びかけるというのは問題があるのではないかという指摘。</li>
+<li>ヨウ素を多く含む薬剤なので使用を慎重にするべき人もいる。長期服用にも注意。</li>
+<li>三類医薬品の転売は違法なので早速買い占め＆メルカリ出品コンボを繰り出した人はアウト</li>
+<li>会見では諸々の注意点が説明されたようだが、それら重要な情報がある程度のリテラシーを持っている人にすら十分に伝わっていない。</li>
+<li>ポビドンヨードがPCR検査偽陽性を誘発するという確証はない（コロナPCR用のプライマが反応しなくなる等の現象が確認されているわけではないし、そもそもこの実験ではうがい前に検体を採取している）</li>
+</ul>
 
-<p>せっかく用意されているツールなので、わざわざ手動でファイルを作成したり開発環境でApache立てたりとかをせずにartisanコマンドでやっていきたいところ。</p>
-
-<h2>認証はmiddlewareを使う</h2>
-
-<p>特定routeにはログイン済みのユーザーだけを通したい場合はmiddlewareを使う。</p>
-
-<p>認証用に独自のmiddlewareを作る場合ももちろんartisanコマンドで。ひな形が作られる。</p>
-
-<p>作成したmiddlewareをRouteから呼び出すためにはKernelのmiddlewareリストに登録しておく必要がある。この辺りはちょっと泥臭い。</p>
-
-<p>Kernelに登録したミドルウェアを通ったものだけがアクセスを許可されるように書く場合、Routeの記述を以下のようにする。</p>
-
-<pre><code>Route::resource('/auth_only','AuthOnlyController')-&gt;middleware('RegisteredMyMiddleware');
-</code></pre>
-
-<p>ログインにも複数のタイプ（BtoC一般ユーザー、システム管理者、BtoBユーザー、等）を持たせたいなら、独自の認証機構を作っておいてそれをmiddlewareで呼び出すだけにしてしまうのも手。</p>
-
-<p>こんな感じ。</p>
-
-<pre><code>Route::resource('/manage/setting','ManagerOnlyController')-&gt;middleware('AuthCheckManager');
-Route::resource('/customer/setting','CustomerOnlyController')-&gt;middleware('AuthCheckCustomer');
-Route::resource('/business_user/setting','BusinessUserOnlyController')-&gt;middleware('AuthCheckBusinessUser');
-</code></pre>
-
-<h2>いわゆるユーティリティクラスを置くディレクトリについて</h2>
-
-<p>良く使う独自のstatic関数やクラスをどこかにまとめて置いておきたい場合がある。</p>
-
-<p>serviceディレクトリに置くことが多いようだが、普通に「util」というディレクトリを作ってそこに集めても問題無い。</p>
-
-<p>呼び出すときは\App\Util（以下略）等と書けば良いだけだ。</p>
-
-<h2>その他</h2>
-
-<p>後は一般的なMVCフレームワークといった感じ。</p>
-
-<p>FuelPHPと比べるとわざわざuseを書かないといけないファイルが多かったりするので不便な気もするが、将来性を考えるとLaravelをやっておく必要があると感じている。</p>
+<p>要点としては「注意を要する点はいくつかある。トンデモな話というほどのものではない。早期回復及び感染拡大防止にある程度有効な可能性がある。」といったところか。</p>
 
 
 <hr>
 
 <section name="tags">
 <ul>
-<li> <a href="/tags/11fc3960fd795c40a1de9c92ce16b3b6.html">PHP</a></li>
-<li> <a href="/tags/91c5863746aa37a624b84e85d14077ca.html">Laravel</a></li>
+<li> <a href="/tags/49d690ff43a777067dd42e7abd3f78c3.html">日常</a></li>
+<li> <a href="/tags/d21d92cf8b732d0f978b6fdabc154170.html">イソジン</a></li>
+<li> <a href="/tags/20a5fe66bd73c685c7dc62fe876cbec1.html">コロナ</a></li>
+<li> <a href="/tags/3d6da3ccdf5d102497ab71a97a800d0e.html">ポビドンヨード</a></li>
 </ul>
 
 </section>
 
 <section name="prev_and_next">
-  prev: <a href="/entry/2020/07/2020_07_28_001.html">BS11の「ひぐらしのなく頃に」</a> <br>
-  next: <a href="/entry/2020/08/2020_08_04_001.html">ポビドンヨード吉村知事</a> <br>
+  prev: <a href="/entry/2020/07/2020_07_29_001.html">Laravel練習中</a> <br>
+  next: NO ENTRY <br>
 </section>
 
 <section name="document_information">
-  created at : 2020-07-29 16:08:59<br>
-  updated at : 2020-07-29 17:01:41<br>
+  created at : 2020-08-04 13:06:03<br>
+  updated at : 2020-08-05 11:43:36<br>
   author : Toshiaki Yokoda<br>
 </section>
 

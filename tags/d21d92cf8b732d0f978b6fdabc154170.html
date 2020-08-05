@@ -14,17 +14,16 @@
     <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@adokoy0001" />
 <meta name="twitter:creator" content="@adokoy0001" />
-<meta property="og:type" content="article" />
+<meta property="og:title" content="TAG : イソジン" />
+<meta property="og:type" content="blog" />
+<meta property="og:description" content="related list by tag name" />
 <meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="og:locale" content="ja_JP"/>
-<meta property="og:title" content="Laravel練習中" />
-<meta property="og:description" content="FuelPHPの将来性（の無さ）を考えてLaravelの基本をおさえておく。" />
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Laravel練習中 - NIKKI - Perl/PHP/アクアリウム 日記</title>
+    <title>Related content : イソジン - NIKKI - Perl/PHP/アクアリウム 日記</title>
     
-
   </head>
   <body>
     <style>
@@ -55,76 +54,11 @@
       </header>
       <main>
 	<div class="container">
-	  
-<h1>Laravel練習中</h1>
-
-<p>いろいろと基本的なところをおさえておいた。</p>
-
-<h2>artisanコマンドを使いまくる</h2>
-
-<p>マイグレーションファイル、コントローラー、ミドルウェア、DBシード、いろんなファイルの作成でartisanコマンドを使う。</p>
-
-<p>もちろんマイグレーションやDBシーディングの実行や開発用ビルトインHTTPサーバーの起動などもこのコマンドでできる。</p>
-
-<p>せっかく用意されているツールなので、わざわざ手動でファイルを作成したり開発環境でApache立てたりとかをせずにartisanコマンドでやっていきたいところ。</p>
-
-<h2>認証はmiddlewareを使う</h2>
-
-<p>特定routeにはログイン済みのユーザーだけを通したい場合はmiddlewareを使う。</p>
-
-<p>認証用に独自のmiddlewareを作る場合ももちろんartisanコマンドで。ひな形が作られる。</p>
-
-<p>作成したmiddlewareをRouteから呼び出すためにはKernelのmiddlewareリストに登録しておく必要がある。この辺りはちょっと泥臭い。</p>
-
-<p>Kernelに登録したミドルウェアを通ったものだけがアクセスを許可されるように書く場合、Routeの記述を以下のようにする。</p>
-
-<pre><code>Route::resource('/auth_only','AuthOnlyController')-&gt;middleware('RegisteredMyMiddleware');
-</code></pre>
-
-<p>ログインにも複数のタイプ（BtoC一般ユーザー、システム管理者、BtoBユーザー、等）を持たせたいなら、独自の認証機構を作っておいてそれをmiddlewareで呼び出すだけにしてしまうのも手。</p>
-
-<p>こんな感じ。</p>
-
-<pre><code>Route::resource('/manage/setting','ManagerOnlyController')-&gt;middleware('AuthCheckManager');
-Route::resource('/customer/setting','CustomerOnlyController')-&gt;middleware('AuthCheckCustomer');
-Route::resource('/business_user/setting','BusinessUserOnlyController')-&gt;middleware('AuthCheckBusinessUser');
-</code></pre>
-
-<h2>いわゆるユーティリティクラスを置くディレクトリについて</h2>
-
-<p>良く使う独自のstatic関数やクラスをどこかにまとめて置いておきたい場合がある。</p>
-
-<p>serviceディレクトリに置くことが多いようだが、普通に「util」というディレクトリを作ってそこに集めても問題無い。</p>
-
-<p>呼び出すときは\App\Util（以下略）等と書けば良いだけだ。</p>
-
-<h2>その他</h2>
-
-<p>後は一般的なMVCフレームワークといった感じ。</p>
-
-<p>FuelPHPと比べるとわざわざuseを書かないといけないファイルが多かったりするので不便な気もするが、将来性を考えるとLaravelをやっておく必要があると感じている。</p>
-
-
+	  <h1>TAG: イソジン</h1>
 <hr>
-
-<section name="tags">
 <ul>
-<li> <a href="/tags/11fc3960fd795c40a1de9c92ce16b3b6.html">PHP</a></li>
-<li> <a href="/tags/91c5863746aa37a624b84e85d14077ca.html">Laravel</a></li>
+<li> 2020-08-04 : <a href="/entry/2020/08/2020_08_04_001.html">ポビドンヨード吉村知事</a></li>
 </ul>
-
-</section>
-
-<section name="prev_and_next">
-  prev: <a href="/entry/2020/07/2020_07_28_001.html">BS11の「ひぐらしのなく頃に」</a> <br>
-  next: <a href="/entry/2020/08/2020_08_04_001.html">ポビドンヨード吉村知事</a> <br>
-</section>
-
-<section name="document_information">
-  created at : 2020-07-29 16:08:59<br>
-  updated at : 2020-07-29 17:01:41<br>
-  author : Toshiaki Yokoda<br>
-</section>
 
 	</div>
       </main>

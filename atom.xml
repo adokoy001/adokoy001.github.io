@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-07-29T17:01:41Z</updated>
+<updated>2020-08-05T11:43:36Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>ポビドンヨード吉村知事</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/08/2020_08_04_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/08/2020_08_04_001.html</id>
+<updated>2020-08-05 11:43:36</updated>
+<summary>思い切った会見をしてしまった大阪吉村知事。しかし、批判の多くは誤解に基づいているもの。</summary>
+</entry>
+<entry>
 <title>Laravel練習中</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/07/2020_07_29_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/07/2020_07_29_001.html</id>
 <updated>2020-07-29 17:01:41</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_25_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_25_001.html</id>
 <updated>2020-05-25 16:35:32</updated>
 <summary>RustのOwnershipでちょっと難しくなってきた。</summary>
-</entry>
-<entry>
-<title>Rustやってみる。</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_24_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_24_001.html</id>
-<updated>2020-05-24 17:07:06</updated>
-<summary>Perl,PHPはある程度扱えるようになってきたので、システムプログラミング言語としてRustに挑戦してみたい。</summary>
 </entry>
 </feed>
