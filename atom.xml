@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-08-05T11:51:06Z</updated>
+<updated>2020-08-05T14:57:53Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>レバノンの首都ベイルートで大爆発</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/08/2020_08_05_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/08/2020_08_05_001.html</id>
+<updated>2020-08-05 14:57:53</updated>
+<summary>レバノンの首都ベイルートでTNT換算1キロトン級の大爆発が発生。劣悪な保管状態の硝酸アンモニウムが爆発したものとみられる。</summary>
+</entry>
+<entry>
 <title>ポビドンヨード吉村知事</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/08/2020_08_04_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/08/2020_08_04_001.html</id>
 <updated>2020-08-05 11:51:06</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_001.html</id>
 <updated>2020-05-26 10:34:41</updated>
 <summary>Ubuntu 20.04 LTSを自前ラップトップのVirtual Box環境に構築。今まで使っていた18.04のVMから設定や開発環境などを移行していく予定・・・。</summary>
-</entry>
-<entry>
-<title>Rustの難しいところに入った</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_25_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_25_001.html</id>
-<updated>2020-05-25 16:35:32</updated>
-<summary>RustのOwnershipでちょっと難しくなってきた。</summary>
 </entry>
 </feed>
