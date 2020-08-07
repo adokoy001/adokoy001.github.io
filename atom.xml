@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-08-05T14:57:53Z</updated>
+<updated>2020-08-07T14:29:39Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>重症者数と死亡者数</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/08/2020_08_06_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/08/2020_08_06_001.html</id>
+<updated>2020-08-07 14:29:39</updated>
+<summary>COVID-19の重症者数の変動が厚生労働省のグラフで表示されていない件について。他の項目はあるんだけど。</summary>
+</entry>
+<entry>
 <title>レバノンの首都ベイルートで大爆発</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/08/2020_08_05_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/08/2020_08_05_001.html</id>
 <updated>2020-08-05 14:57:53</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_002.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_002.html</id>
 <updated>2020-05-26 17:19:04</updated>
 <summary>Rustの学習をマイペースで進めつつ、Laravelのお勉強も始めた。</summary>
-</entry>
-<entry>
-<title>自前ラップトップの環境構築で夜更かししてしまった</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_001.html</id>
-<updated>2020-05-26 10:34:41</updated>
-<summary>Ubuntu 20.04 LTSを自前ラップトップのVirtual Box環境に構築。今まで使っていた18.04のVMから設定や開発環境などを移行していく予定・・・。</summary>
 </entry>
 </feed>
