@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-08-07T14:29:39Z</updated>
+<updated>2020-08-11T09:19:43Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>3連休</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/08/2020_08_11_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/08/2020_08_11_001.html</id>
+<updated>2020-08-11 09:19:43</updated>
+<summary>3連休にやったこと。</summary>
+</entry>
+<entry>
 <title>重症者数と死亡者数</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/08/2020_08_06_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/08/2020_08_06_001.html</id>
 <updated>2020-08-07 14:29:39</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_28_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_28_001.html</id>
 <updated>2020-05-29 09:19:00</updated>
 <summary>最近でてきたエナジードリンク</summary>
-</entry>
-<entry>
-<title>Laravelも並行して学習中</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_002.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/05/2020_05_26_002.html</id>
-<updated>2020-05-26 17:19:04</updated>
-<summary>Rustの学習をマイペースで進めつつ、Laravelのお勉強も始めた。</summary>
 </entry>
 </feed>
