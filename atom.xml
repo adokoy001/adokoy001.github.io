@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-08-17T14:50:09Z</updated>
+<updated>2020-09-07T13:37:38Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>近況</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_07_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_07_001.html</id>
+<updated>2020-09-07 13:37:38</updated>
+<summary>近況報告です。</summary>
+</entry>
+<entry>
 <title>【随筆】前職</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/08/2020_08_17_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/08/2020_08_17_001.html</id>
 <updated>2020-08-17 14:50:09</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/06/2020_06_08_002.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/06/2020_06_08_002.html</id>
 <updated>2020-06-08 13:36:58</updated>
 <summary>そういえば下書き機能が無かったので、近々追加する予定。</summary>
-</entry>
-<entry>
-<title>termux入力テスト</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/06/2020_06_08_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/06/2020_06_08_001.html</id>
-<updated>2020-06-08 02:50:55</updated>
-<summary>スマホを新しくしてtermuxから作成テスト。</summary>
 </entry>
 </feed>
