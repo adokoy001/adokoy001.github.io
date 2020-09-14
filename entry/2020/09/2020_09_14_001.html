@@ -14,16 +14,17 @@
     <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@adokoy0001" />
 <meta name="twitter:creator" content="@adokoy0001" />
-<meta property="og:title" content="TAG : セキュリティ" />
-<meta property="og:type" content="blog" />
-<meta property="og:description" content="related list by tag name" />
+<meta property="og:type" content="article" />
 <meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="og:locale" content="ja_JP"/>
+<meta property="og:title" content="圧倒的に正しいSQLインジェクション対策" />
+<meta property="og:description" content="ちょっと衝撃的なQiita記事があったので" />
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Related content : セキュリティ - NIKKI - Perl/PHP/アクアリウム 日記</title>
+    <title>圧倒的に正しいSQLインジェクション対策 - NIKKI - Perl/PHP/アクアリウム 日記</title>
     
+
   </head>
   <body>
     <style>
@@ -54,14 +55,49 @@
       </header>
       <main>
 	<div class="container">
-	  <h1>TAG: セキュリティ</h1>
+	  
+<h1>圧倒的に正しいSQLインジェクション対策</h1>
+
+<p>まず結論から先に述べると、「いかなる場合であってもプリペアードステートメントを必ず使え」です。</p>
+
+<h2>詳細</h2>
+
+<p>SQLインジェクションを確実に防ぐ唯一の手段は「プリペアードステートメントを必ず使う」です。</p>
+
+<h2>注意</h2>
+
+<p>世の中には（PHP等）偽物のプリペアードステートメントがあるので、本物のプリペアードステートメントを使ってください。</p>
+
+<h2>まとめ</h2>
+
+<p>偽物ではない本物のプリペアードステートメントを使ってSQLを実行する前にコンパイルし、</p>
+
+<p>ユーザーからの入力などは必ずバインド値に設定してから実行するようにしてください。</p>
+
+<p>プロダクト全体で必ずプリペアードステートメントを使うようにしてください。</p>
+
+
 <hr>
+
+<section name="tags">
 <ul>
-<li> 2020-09-14 : <a href="/entry/2020/09/2020_09_14_001.html">圧倒的に正しいSQLインジェクション対策</a></li>
-<li> 2020-01-21 : <a href="/entry/2020/01/2020_01_21_001.html">FuelPHPでCSRF対策</a></li>
-<li> 2020-01-16 : <a href="/entry/2020/01/2020_01_16_001.html">暗号化関連のメモ</a></li>
-<li> 2019-12-12 : <a href="/entry/2019/12/2019_12_12_001.html">ウェブサイトのセキュリティ：入力バリデーション、正規表現</a></li>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+<li> <a href="/tags/17c609d6194772351721e624a695390e.html">SQL</a></li>
+<li> <a href="/tags/8434a1c99cbe0b5a63533a11b07d5f41.html">セキュリティ</a></li>
 </ul>
+
+</section>
+
+<section name="prev_and_next">
+  prev: <a href="/entry/2020/09/2020_09_08_001.html">GEX ラクフィル 所感</a> <br>
+  next: NO ENTRY <br>
+</section>
+
+<section name="document_information">
+  created at : 2020-09-14 09:59:26<br>
+  updated at : 2020-09-14 10:09:05<br>
+  author : Toshiaki Yokoda<br>
+</section>
 
 	</div>
       </main>
