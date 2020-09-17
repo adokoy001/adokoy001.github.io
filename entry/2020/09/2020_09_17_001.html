@@ -14,16 +14,17 @@
     <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@adokoy0001" />
 <meta name="twitter:creator" content="@adokoy0001" />
-<meta property="og:title" content="TAG : Perl" />
-<meta property="og:type" content="blog" />
-<meta property="og:description" content="related list by tag name" />
+<meta property="og:type" content="article" />
 <meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="og:locale" content="ja_JP"/>
+<meta property="og:title" content="perlでパスワードハッシュ" />
+<meta property="og:description" content="perlでおすすめのパスワードハッシュモジュール" />
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Related content : Perl - NIKKI - Perl/PHP/アクアリウム 日記</title>
+    <title>perlでパスワードハッシュ - NIKKI - Perl/PHP/アクアリウム 日記</title>
     
+
   </head>
   <body>
     <style>
@@ -54,21 +55,71 @@
       </header>
       <main>
 	<div class="container">
-	  <h1>TAG: Perl</h1>
+	  
+<h1>perlでパスワードハッシュ</h1>
+
+<p>「perl password hash」などとググると2020年現在もちょっとアレな情報が上位に来るので、先に結論を述べた上で、パスワードの取り扱いに関する基本的なことを説明したいと思う。</p>
+
+<h2>認証のためのパスワードを安全に保管する方法</h2>
+
+<p>Crypt::Password モジュールを利用すると良い。</p>
+
+<pre><code>use strict;
+use warnings;
+use Crypt::Password;
+
+my $pw = 'plain password';
+my $hashed_password = password($pw);
+
+#認証
+if( check_password($hashed_password,$pw) ){
+    print "OK!\n";
+}else{
+    print "NG!\n";
+}
+</code></pre>
+
+<p>以降、基本的なことを述べる。</p>
+
+<h2>認証をするだけなら不可逆な変換が良い</h2>
+
+<p>「パスワードを暗号化」という表現は多い（実際、上記で紹介したモジュール名もまさに Crypt と書いてある）</p>
+
+<p>が、認証を「する側」のシステムとしてであれば、不可逆な変換を通した結果が検証できれば良い。</p>
+
+<p>可逆な変換（本来の意味の暗号化）をする必要は無いし、復号するための情報が漏れた場合に大変危険である。</p>
+
+<h2>パスワードをハッシュ値化するための機能を積極的に使うこと</h2>
+
+<p>ハッシュ値を計算する機能は数多くあるが、言語やその言語の追加ライブラリで用意されている「パスワードをハッシュ値化したり検証したりする機能」を利用するべきである。</p>
+
+<p>最新のものを使っていれば、ハッシュアルゴリズム、salt、ストレッチング等は安全だと言える。</p>
+
+<p>異様に衝突しやすいアルゴリズム、独自のsalt値生成ロジック、独自のストレッチング方法を実装するのは、特別な場合を除いて避けた方がよい。一般的なアプリケーションを書いている限りは不要だろう。</p>
+
+
 <hr>
+
+<section name="tags">
 <ul>
-<li> 2020-09-17 : <a href="/entry/2020/09/2020_09_17_001.html">perlでパスワードハッシュ</a></li>
-<li> 2020-06-02 : <a href="/entry/2020/06/2020_06_02_001.html">PerlとPHPの違い</a></li>
-<li> 2020-04-16 : <a href="/entry/2020/04/2020_04_16_001.html">nikki.plに新機能を追加しました。</a></li>
-<li> 2020-04-07 : <a href="/entry/2020/04/2020_04_07_001.html">nikki.pl あともう少し頑張ってみる</a></li>
-<li> 2020-01-28 : <a href="/entry/2020/01/2020_01_28_001.html">PerlのOpenSSLモジュールで電子署名</a></li>
-<li> 2019-12-16 : <a href="/entry/2019/12/2019_12_16_001.html">Mojo::UserAgentを使ってアクティブチェック（外部監視）</a></li>
-<li> 2019-10-28 : <a href="/entry/2019/10/2019_10_28_001.html">簡易認証基盤的なものを作った</a></li>
-<li> 2019-10-08 : <a href="/entry/2019/10/2019_10_08_002.html">Perlは過小評価されすぎでは。</a></li>
-<li> 2019-10-04 : <a href="/entry/2019/10/2019_10_04_001.html">PerlとPHP</a></li>
-<li> 2016-10-07 : <a href="/entry/2016/10/2016_10_07_001.html">MapReduce::Framework::Simple 解説1</a></li>
-<li> 2016-09-21 : <a href="/entry/2016/09/2016_09_21_001.html">Perlで集合を扱う</a></li>
+<li> <a href="/tags/469bb7e87f829139bc3ce9716602a8d3.html">Perl</a></li>
+<li> <a href="/tags/aceb874396434c837eec6ef7f70e9e62.html">perl</a></li>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+<li> <a href="/tags/8434a1c99cbe0b5a63533a11b07d5f41.html">セキュリティ</a></li>
 </ul>
+
+</section>
+
+<section name="prev_and_next">
+  prev: <a href="/entry/2020/09/2020_09_16_001.html">バルハルマラソン終了条件踏んでしまった</a> <br>
+  next: NO ENTRY <br>
+</section>
+
+<section name="document_information">
+  created at : 2020-09-17 13:33:03<br>
+  updated at : 2020-09-17 14:37:01<br>
+  author : Toshiaki Yokoda<br>
+</section>
 
 	</div>
       </main>

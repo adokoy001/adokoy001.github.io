@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-09-16T16:40:20Z</updated>
+<updated>2020-09-17T14:37:01Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>perlでパスワードハッシュ</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_17_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_17_001.html</id>
+<updated>2020-09-17 14:37:01</updated>
+<summary>perlでおすすめのパスワードハッシュモジュール</summary>
+</entry>
+<entry>
 <title>バルハルマラソン終了条件踏んでしまった</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_16_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_16_001.html</id>
 <updated>2020-09-16 16:40:20</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/07/2020_07_03_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/07/2020_07_03_001.html</id>
 <updated>2020-07-03 11:26:23</updated>
 <summary>nikki.plをバージョン1.0.0としてタグ付け。</summary>
-</entry>
-<entry>
-<title>nikki.plがMarkdownに対応しました。</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/07/2020_07_02_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/07/2020_07_02_001.html</id>
-<updated>2020-07-02 17:20:23</updated>
-<summary>独自記法だけでしたが、この度Markdownにも対応しました。</summary>
 </entry>
 </feed>
