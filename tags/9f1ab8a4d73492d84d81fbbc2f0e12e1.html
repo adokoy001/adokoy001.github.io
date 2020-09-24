@@ -14,17 +14,16 @@
     <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@adokoy0001" />
 <meta name="twitter:creator" content="@adokoy0001" />
-<meta property="og:type" content="article" />
+<meta property="og:title" content="TAG : 犯罪" />
+<meta property="og:type" content="blog" />
+<meta property="og:description" content="related list by tag name" />
 <meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="og:locale" content="ja_JP"/>
-<meta property="og:title" content="perlでパスワードハッシュ" />
-<meta property="og:description" content="perlでおすすめのパスワードハッシュモジュール" />
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>perlでパスワードハッシュ - NIKKI - Perl/PHP/アクアリウム 日記</title>
+    <title>Related content : 犯罪 - NIKKI - Perl/PHP/アクアリウム 日記</title>
     
-
   </head>
   <body>
     <style>
@@ -55,71 +54,11 @@
       </header>
       <main>
 	<div class="container">
-	  
-<h1>perlでパスワードハッシュ</h1>
-
-<p>「perl password hash」などとググると2020年現在もちょっとアレな情報が上位に来るので、先に結論を述べた上で、パスワードの取り扱いに関する基本的なことを説明したいと思う。</p>
-
-<h2>認証のためのパスワードを安全に保管する方法</h2>
-
-<p>Crypt::Password モジュールを利用すると良い。</p>
-
-<pre><code>use strict;
-use warnings;
-use Crypt::Password;
-
-my $pw = 'plain password';
-my $hashed_password = password($pw);
-
-#認証
-if( check_password($hashed_password,$pw) ){
-    print "OK!\n";
-}else{
-    print "NG!\n";
-}
-</code></pre>
-
-<p>以降、基本的なことを述べる。</p>
-
-<h2>認証をするだけなら不可逆な変換が良い</h2>
-
-<p>「パスワードを暗号化」という表現は多い（実際、上記で紹介したモジュール名もまさに Crypt と書いてある）</p>
-
-<p>が、認証を「する側」のシステムとしてであれば、不可逆な変換を通した結果が検証できれば良い。</p>
-
-<p>可逆な変換（本来の意味の暗号化）をする必要は無いし、復号するための情報が漏れた場合に大変危険である。</p>
-
-<h2>パスワードをハッシュ値化するための機能を積極的に使うこと</h2>
-
-<p>ハッシュ値を計算する機能は数多くあるが、言語やその言語の追加ライブラリで用意されている「パスワードをハッシュ値化したり検証したりする機能」を利用するべきである。</p>
-
-<p>最新のものを使っていれば、ハッシュアルゴリズム、salt、ストレッチング等は安全だと言える。</p>
-
-<p>異様に衝突しやすいアルゴリズム、独自のsalt値生成ロジック、独自のストレッチング方法を実装するのは、特別な場合を除いて避けた方がよい。一般的なアプリケーションを書いている限りは不要だろう。</p>
-
-
+	  <h1>TAG: 犯罪</h1>
 <hr>
-
-<section name="tags">
 <ul>
-<li> <a href="/tags/469bb7e87f829139bc3ce9716602a8d3.html">Perl</a></li>
-<li> <a href="/tags/aceb874396434c837eec6ef7f70e9e62.html">perl</a></li>
-<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
-<li> <a href="/tags/8434a1c99cbe0b5a63533a11b07d5f41.html">セキュリティ</a></li>
+<li> 2020-09-24 : <a href="/entry/2020/09/2020_09_24_001.html">解散した有名バンドの元ギタリストが再犯で逮捕</a></li>
 </ul>
-
-</section>
-
-<section name="prev_and_next">
-  prev: <a href="/entry/2020/09/2020_09_16_001.html">バルハルマラソン終了条件踏んでしまった</a> <br>
-  next: <a href="/entry/2020/09/2020_09_24_001.html">解散した有名バンドの元ギタリストが再犯で逮捕</a> <br>
-</section>
-
-<section name="document_information">
-  created at : 2020-09-17 13:33:03<br>
-  updated at : 2020-09-17 14:37:01<br>
-  author : Toshiaki Yokoda<br>
-</section>
 
 	</div>
       </main>
