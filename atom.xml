@@ -3,8 +3,20 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2020-09-29T13:49:38Z</updated>
+<updated>2020-10-21T15:23:12Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>TwitterのRTの仕様が一時的に変わるらしい</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/10/2020_10_20_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/10/2020_10_20_001.html</id>
+<updated>2020-10-21 15:23:12</updated>
+<summary>アメリカ大統領選に向けての対策として、TwitterのRTがデフォルトで引用RTになるとのこと。</summary>
+</entry>
+<entry>
+<title>実家のアクアリウムが壊滅</title>
+<link href="https://nikki.yokoda.okinawa/entry/2020/10/2020_10_19_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/10/2020_10_19_001.html</id>
+<updated>2020-10-20 10:22:21</updated>
+<summary>コロナのため実家のアクアリウムが壊滅</summary>
+</entry>
+<entry>
 <title>某氏の発信者情報開示請求</title>
 <link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_29_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_29_001.html</id>
 <updated>2020-09-29 13:49:38</updated>
@@ -111,17 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/07/2020_07_28_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/07/2020_07_28_001.html</id>
 <updated>2020-07-28 15:08:35</updated>
 <summary>何度も繰り返し見ているけどやっぱりついつい見てしまう</summary>
-</entry>
-<entry>
-<title>コロナは弱毒化しているのか</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/07/2020_07_14_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/07/2020_07_14_001.html</id>
-<updated>2020-07-15 11:46:19</updated>
-<summary>直近1カ月の感染者・重症者・死亡者・年齢分布を見た感じ、弱毒化もしくは医療プロトコルの確立がみられるような気がしたので。</summary>
-</entry>
-<entry>
-<title>沖縄のコロナ</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/07/2020_07_09_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/07/2020_07_09_001.html</id>
-<updated>2020-07-09 15:51:47</updated>
-<summary>最近在沖縄米軍内部で感染者が確認された。沖縄県民にも感染者を確認。</summary>
 </entry>
 </feed>
