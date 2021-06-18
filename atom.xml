@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2021-05-25T16:15:54Z</updated>
+<updated>2021-06-18T10:06:52Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>会社が引っ越し</title>
+<link href="https://nikki.yokoda.okinawa/entry/2021/06/2021_06_18_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2021/06/2021_06_18_001.html</id>
+<updated>2021-06-18 10:06:52</updated>
+<summary>会社が引っ越ししました。</summary>
+</entry>
+<entry>
 <title>筋トレ</title>
 <link href="https://nikki.yokoda.okinawa/entry/2021/05/2021_05_25_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2021/05/2021_05_25_001.html</id>
 <updated>2021-05-25 16:15:54</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_15_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_15_001.html</id>
 <updated>2020-09-15 17:11:44</updated>
 <summary>ミンサガ極め作業の方針など</summary>
-</entry>
-<entry>
-<title>圧倒的に正しいSQLインジェクション対策</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_14_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_14_001.html</id>
-<updated>2020-09-14 10:19:16</updated>
-<summary>ちょっと衝撃的なQiita記事があったので</summary>
 </entry>
 </feed>
