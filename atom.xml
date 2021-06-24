@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2021-06-18T10:06:52Z</updated>
+<updated>2021-06-24T13:52:03Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>socket.ioのCORS</title>
+<link href="https://nikki.yokoda.okinawa/entry/2021/06/2021_06_24_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2021/06/2021_06_24_001.html</id>
+<updated>2021-06-24 13:52:03</updated>
+<summary>socket.ioのCORS対応でオプション指定を忘れがちなのでメモ</summary>
+</entry>
+<entry>
 <title>会社が引っ越し</title>
 <link href="https://nikki.yokoda.okinawa/entry/2021/06/2021_06_18_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2021/06/2021_06_18_001.html</id>
 <updated>2021-06-18 10:06:52</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_16_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_16_001.html</id>
 <updated>2020-09-16 16:40:20</updated>
 <summary>ミンサガでジュエル稼ぎに入ろうと思ったら、やってしまいました。</summary>
-</entry>
-<entry>
-<title>ミンサガ9周目 稼ぎ作業突入</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_15_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_15_001.html</id>
-<updated>2020-09-15 17:11:44</updated>
-<summary>ミンサガ極め作業の方針など</summary>
 </entry>
 </feed>
