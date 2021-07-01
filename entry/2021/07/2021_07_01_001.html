@@ -18,11 +18,11 @@
 <meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
 <meta property="og:locale" content="ja_JP"/>
-<meta property="og:title" content="socket.ioのCORS" />
-<meta property="og:description" content="socket.ioのCORS対応でオプション指定を忘れがちなのでメモ" />
+<meta property="og:title" content="ひとり親状態" />
+<meta property="og:description" content="妻がまた入院したのでひとり親状態を満喫している" />
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>socket.ioのCORS - NIKKI - Perl/PHP/アクアリウム 日記</title>
+    <title>ひとり親状態 - NIKKI - Perl/PHP/アクアリウム 日記</title>
     
 
   </head>
@@ -56,51 +56,31 @@
       <main>
 	<div class="container">
 	  
-<h1>socket.ioのCORS</h1>
+<h1>ひとり親状態</h1>
 
-<p>WebRTCのアプリを作るためにnodejsのsocket.ioで処理するサーバーを分散させるためにCORSの設定をしたんだけど、httpモジュールのcreateServerでヘッダーを指定しただけではCORSが上手く動かなかった。</p>
+<p>妻がまた入院してひとり親状態になった。</p>
 
-<p>というのも、socket.ioで取り込むhttpサーバーインスタンスで指定したからといって、websocket側のレスポンスヘッダにも同様のものが含まれるというわけではなく、socket.ioのインスタンス生成時に指定する必要があった（当然と言えば当然か）</p>
-
-<p>例えば、あらゆるoriginからのリクエストを許可する（あまりよくない）場合は、</p>
-
-<pre><code>//Webサーバー生成
-const http = require('http');
-const http_server = http.createServer(
-    (req, res) =&gt;{
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.write("Hello");
-        res.end();
-    }
-);
-</code></pre>
-
-<p>こうやってhttpサーバーを生成した後に、</p>
-
-<pre><code>var io_server = require('socket.io')(http_server, { cors: { origin: '*' } } );
-</code></pre>
-
-<p>としてsocket.ioサーバーのインスタンスを生成してやる必要がある。</p>
+<p>ひとり親状態には慣れているので大丈夫。時短とかリモートワークだったら完全ワンオペも余裕かな。
+フルタイム勤務で通勤時間が往復で2時間、ひとり親世帯とみなされないから子供を預かってくれる施設に限りがあるという縛りがキツい感じ。日々タイムアタック。</p>
 
 
 <hr>
 
 <section name="tags">
 <ul>
-<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
-<li> <a href="/tags/b1072ee56e53ff8be555698422434284.html">nodejs</a></li>
+<li> <a href="/tags/49d690ff43a777067dd42e7abd3f78c3.html">日常</a></li>
 </ul>
 
 </section>
 
 <section name="prev_and_next">
-  prev: <a href="/entry/2021/06/2021_06_18_001.html">会社が引っ越し</a> <br>
-  next: <a href="/entry/2021/07/2021_07_01_001.html">ひとり親状態</a> <br>
+  prev: <a href="/entry/2021/06/2021_06_24_001.html">socket.ioのCORS</a> <br>
+  next: NO ENTRY <br>
 </section>
 
 <section name="document_information">
-  created at : 2021-06-24 13:39:19<br>
-  updated at : 2021-06-24 13:57:22<br>
+  created at : 2021-07-01 14:57:39<br>
+  updated at : 2021-07-01 15:08:03<br>
   author : Toshiaki Yokoda<br>
 </section>
 

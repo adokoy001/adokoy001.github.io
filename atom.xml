@@ -3,11 +3,17 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2021-06-24T13:52:03Z</updated>
+<updated>2021-07-01T15:08:03Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>ひとり親状態</title>
+<link href="https://nikki.yokoda.okinawa/entry/2021/07/2021_07_01_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2021/07/2021_07_01_001.html</id>
+<updated>2021-07-01 15:08:03</updated>
+<summary>妻がまた入院したのでひとり親状態を満喫している</summary>
+</entry>
+<entry>
 <title>socket.ioのCORS</title>
 <link href="https://nikki.yokoda.okinawa/entry/2021/06/2021_06_24_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2021/06/2021_06_24_001.html</id>
-<updated>2021-06-24 13:52:03</updated>
+<updated>2021-06-24 13:57:22</updated>
 <summary>socket.ioのCORS対応でオプション指定を忘れがちなのでメモ</summary>
 </entry>
 <entry>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_17_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_17_001.html</id>
 <updated>2020-09-17 14:37:01</updated>
 <summary>perlでおすすめのパスワードハッシュモジュール</summary>
-</entry>
-<entry>
-<title>バルハルマラソン終了条件踏んでしまった</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_16_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_16_001.html</id>
-<updated>2020-09-16 16:40:20</updated>
-<summary>ミンサガでジュエル稼ぎに入ろうと思ったら、やってしまいました。</summary>
 </entry>
 </feed>
