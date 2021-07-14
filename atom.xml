@@ -3,8 +3,14 @@
 
 <title>NIKKI - Perl/PHP/アクアリウム 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2021-07-01T15:08:03Z</updated>
+<updated>2021-07-14T15:30:34Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>12日に妻が一時的に退院</title>
+<link href="https://nikki.yokoda.okinawa/entry/2021/07/2021_07_14_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2021/07/2021_07_14_001.html</id>
+<updated>2021-07-14 15:30:34</updated>
+<summary>状態はあまり良くないけど、妻が12日に退院した</summary>
+</entry>
+<entry>
 <title>ひとり親状態</title>
 <link href="https://nikki.yokoda.okinawa/entry/2021/07/2021_07_01_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2021/07/2021_07_01_001.html</id>
 <updated>2021-07-01 15:08:03</updated>
@@ -117,11 +123,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_24_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_24_001.html</id>
 <updated>2020-09-29 13:43:37</updated>
 <summary>複数の悪質な事件を起こした凶悪な性犯罪者が出所後にフェミニストと称してツイッター上で活動、ある告発がきっかけで失脚、そして昨日、性犯罪の再犯で逮捕されたことが報道された。</summary>
-</entry>
-<entry>
-<title>perlでパスワードハッシュ</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/09/2020_09_17_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/09/2020_09_17_001.html</id>
-<updated>2020-09-17 14:37:01</updated>
-<summary>perlでおすすめのパスワードハッシュモジュール</summary>
 </entry>
 </feed>
