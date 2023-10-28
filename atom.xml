@@ -3,8 +3,14 @@
 
 <title>NIKKI - 日記</title>
 <link href="https://nikki.yokoda.okinawa" />
-<updated>2023-10-11T11:57:06Z</updated>
+<updated>2023-10-28T18:39:29Z</updated>
 <author><name>Toshiaki Yokoda</name></author><entry>
+<title>DB設計のアンチパターン</title>
+<link href="https://nikki.yokoda.okinawa/entry/2023/10/2023_10_28_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2023/10/2023_10_28_001.html</id>
+<updated>2023-10-28 18:39:29</updated>
+<summary>DB設計のアンチパターン等について考えることがあったのでメモ</summary>
+</entry>
+<entry>
 <title>ハッカーズチャンプルー 2023</title>
 <link href="https://nikki.yokoda.okinawa/entry/2023/10/2023_10_11_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2023/10/2023_10_11_001.html</id>
 <updated>2023-10-11 11:57:06</updated>
@@ -297,11 +303,5 @@
 <link href="https://nikki.yokoda.okinawa/entry/2020/08/2020_08_17_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/08/2020_08_17_001.html</id>
 <updated>2020-08-17 14:50:09</updated>
 <summary>エッセイです。</summary>
-</entry>
-<entry>
-<title>ミンサガ8周目：アイシャ</title>
-<link href="https://nikki.yokoda.okinawa/entry/2020/08/2020_08_14_001.html"/><id>tag:https://nikki.yokoda.okinawa/entry/2020/08/2020_08_14_001.html</id>
-<updated>2020-08-17 13:19:14</updated>
-<summary>Romancing SaGa Minstrel Songの8周目に突入</summary>
 </entry>
 </feed>
