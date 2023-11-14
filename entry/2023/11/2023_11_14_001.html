@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155099641-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());      
+      gtag('config', 'UA-155099641-1');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@toshiaki_yokoda" />
+<meta name="twitter:creator" content="@toshiaki_yokoda" />
+<meta property="og:type" content="article" />
+<meta property="og:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
+<meta property="twitter:image" content="https://nikki.yokoda.okinawa/assets/images/logo_flower.jpg"/>
+<meta property="og:locale" content="ja_JP"/>
+<meta property="og:title" content="今どきのウェブアプリと開発環境" />
+<meta property="og:description" content="今どきのウェブアプリの構成とか、プログラミング環境について。" />
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>今どきのウェブアプリと開発環境 - NIKKI - 日記</title>
+    
+
+  </head>
+  <body>
+    <style>
+      .container-fluid {
+      padding-right: 15px;
+      padding-left: 15px;
+      }
+      h1 {font-size: 2.00em;}
+      h2 {font-size: 1.70em;}
+      h3 {font-size: 1.40em;}
+      pre { background-color: #E8E8E8; border: 1px solid #484848; padding: 0.7em; margin: 0.7em;}
+    </style>
+    <div class="container">
+      <header>
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+	  <a class="navbar-brand" href="/">TOP PAGE</a>
+	  <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="altername">
+	    <span class="navbar-toggler-icon"></span>
+	  </button>
+	  <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+	    <div class="navbar-nav">
+	      <a class="nav-item nav-link" href="/tags.html">TAG LIST</a>
+	      <a class="nav-item nav-link" href="/archive.html">ARCHIVES</a>
+	      <a class="nav-item nav-link" href="/entry/2020/04/2020_04_20_001resume.html">PROFILE</a>
+	    </div>
+	  </div>
+	</nav>
+      </header>
+      <main>
+	<div class="container">
+	  
+<h1>今どきのウェブアプリと開発環境</h1>
+
+<p>今どきのウェブアプリ開発から遠ざかり過ぎたのでちょっと勉強中。</p>
+
+<p>新しいシステムの設計を進めているんだけど、一旦この記事で今どきのやり方をまとめてみる。</p>
+
+<h2>開発環境周辺</h2>
+
+<p>現代ではCopilot必須かも。まあ、ChatGPTを叩きまくるのもいいけど、お金があるならCopilotをやらない理由は無いね。</p>
+
+<p>IDEはVSCode一択かな。GitHub Copilotと連携すれば最強。
+IntellijのgitのUIがかなり使いやすいんだけど、やっぱりVSCodeで全部やったほうが良さそう。</p>
+
+<p>ソースコード管理はGitLabを使っている。まあ、GitHubエンタープライズか自前GitLabであれば問題無いかな。
+GitLab CIとか使えば自動テストで品質を保証できるけど、まあローカルで自動テストを走らせるだけでもOK。
+このあたりは開発チームの規模感に依る。</p>
+
+<h2>設計ドキュメント関連</h2>
+
+<p>markdown形式一択かなと思う。UMLはmermaidとかplantとかで記述。</p>
+
+<ul>
+<li>gitのプロジェクトに設計ドキュメントを入れてしまった方が良さそう。</li>
+<li>OpenAPIとかだとジェネレーターに渡すyamlも設計ドキュメントの一部とみなして管理すれば良さそう。</li>
+<li>プロジェクト概要からユースケース図、ER図、システム運用マニュアルまである程度全てmarkdownで作っておくと吉。</li>
+</ul>
+
+<h2>DB周り</h2>
+
+<p>ORマッパー前提で"ID required"上等の設計がベストかも。</p>
+
+<ul>
+<li>CRUDメインの簡単なアプリならMySQL系が良いかも。ORMのサポートも充実しているしフィールドの順番も変えられるしね。</li>
+<li>かなり重たい集計処理の多いシステムならPostgreSQLかな。Nested Loopの改良版ではHash Joinに太刀打ちできないはず。</li>
+<li>必ずプライマリキーとして人工キー（いわゆるサロゲートキー）を1つだけ定義しておくこと。</li>
+<li>外部キー制約は必ずつけること。</li>
+<li>集計系とか一部のパフォーマンス重視のDB操作はクエリビルダーや生SQLも使うと良い。</li>
+</ul>
+
+<h2>バックエンド</h2>
+
+<p>いわゆる軽量な言語の中ではPythonが流行っている。個人的にはPHPでも良いと思っているけどね。</p>
+
+<ul>
+<li>Python3は使えるようになっておいた方が良い。軽量言語でプロジェクトを立ち上げるのならPythonが無難か。</li>
+<li>PHPも第二の選択肢としてイケていると思う。</li>
+<li>API Gateway + Lambda の構成は、それぞれのサービスの制限事項を完全に理解した上で使うこと。</li>
+<li>JWTの認証機構はとりあえずリフレッシュトークン使っとけといったところ。</li>
+</ul>
+
+<h2>フロントエンド</h2>
+
+<p>React, Vue, Angularの3大フレームワークをおさえておけば十分かな。
+実際にはNext.js,Nuxt.js,Angularの3択になるかと思う。</p>
+
+<ul>
+<li>サーバーサイドレンダリングが必要なプロジェクトかどうかをまず考えること。話はそれからだ。</li>
+<li>デザインシステムは独自のものを作らない方が良さげ。やりたくなる気持ちはわかるが・・・。</li>
+<li>3大フレームワーク、TS、JWT、サーバーサイドレンダリング、WebSocketあたりを使いこなせれば一人前。</li>
+</ul>
+
+<h2>本番環境周り</h2>
+
+<p>今どきVMは微妙だけど、SaaSとかPaaSの弱点は把握しておいた方が良い。時間制限とかエフェメラルポートぐらいはね。</p>
+
+<ul>
+<li>BtoBならアクセス集中などの予測不可能な動きはあまりない。VMとかコンテナでも十分だったりする。</li>
+<li>BtoC（BtoBtoC）はアクセスがスパイクすることがあるので、Lambda等のサービスも視野に入れること。</li>
+<li>RDBはやっぱりマネージドが無難。ただ、サポート切れになったら強制アップグレードでダウンタイムが出たりするからそのあたりの準備と覚悟は必要。</li>
+<li>セキュリティ対策はAWS等のクラウド事業者が提供するWAF等を利用するしか無いと思った方が良い。</li>
+</ul>
+
+
+<hr>
+
+<section name="tags">
+<ul>
+<li> <a href="/tags/b5f6667d56ebbe80d496711b019a172c.html">プログラミング</a></li>
+<li> <a href="/tags/69c38f16ad64b43156dc233a042ca640.html">システム</a></li>
+<li> <a href="/tags/fb4493d17578ab210923c19493f7cfec.html">IT</a></li>
+<li> <a href="/tags/ca87538a3bde11d694da2738791e9899.html">ウェブアプリ</a></li>
+</ul>
+
+</section>
+
+<section name="prev_and_next">
+  prev: <a href="/entry/2023/11/2023_11_02_001.html">マイベストプラクティス</a> <br>
+  next: NO ENTRY <br>
+</section>
+
+<section name="document_information">
+  created at : 2023-11-14 15:41:57<br>
+  updated at : 2023-11-14 16:31:45<br>
+  author : Toshiaki Yokoda<br>
+</section>
+
+	</div>
+      </main>
+      <footer>
+	<table style="margin: 1em;">
+	  <tr>
+	    <td style="margin: 0.5em;">
+	      <a href="https://twitter.com/share" class="twitter-share-button" data-via="toshiaki_yokoda">Tweet</a>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <div class="fb-share-button" data-layout="button_count"></div>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <div class="line-it-button" data-lang="ja" data-type="share-a" data-ver="3" data-url="https://social-plugins.line.me/ja/how_to_install#lineitbutton" data-color="default" data-size="large" data-count="true" style="display: none;"></div>
+	    </td>
+	  </tr>
+	</table>
+      </footer>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+    <script>$(function(){$('pre > code').addClass('prettyprint');});</script>
+    <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+    <script>(function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v3.0";
+    fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));</script>
+    <script src="https://d.line-scdn.net/r/web/social-plugin/js/thirdparty/loader.min.js" async="async" defer="defer"></script>
+  </body>
+</html>
