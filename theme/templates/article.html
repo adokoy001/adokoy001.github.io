@@ -1,0 +1,13 @@
+<article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / {{article.kind}}</p>
+    <h1>{{article.title}}</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="{{article.date}}">{{article.date}}</time></p>
+      <div class="tag-row">{{{tags_html}}}</div>
+    </div>
+  </header>
+  <div class="prose">{{{body_html}}}</div>
+  {{{relations_html}}}
+  {{{related_html}}}
+</article>
