@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>TinyLM LabからTensorFlow.jsを卒業した——手書き逆伝播とWebGPU、そして日本語対話コーパスの公開 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="tf.jsを審判にして依存ゼロ学習エンジンを検証し、WGSL手書き21カーネルでWebGPU学習を実装。日本語対話コーパス10万字と学習済みモデルも公開。独立AI監査がloss低下と会話能力の乖離、そして実バグを発見した記録。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-22-002/"><meta property="og:title" content="TinyLM LabからTensorFlow.jsを卒業した——手書き逆伝播とWebGPU、そして日本語対話コーパスの公開"><meta property="og:description" content="tf.jsを審判にして依存ゼロ学習エンジンを検証し、WGSL手書き21カーネルでWebGPU学習を実装。日本語対話コーパス10万字と学習済みモデルも公開。独立AI監査がloss低下と会話能力の乖離、そして実バグを発見した記録。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-22-002/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>TinyLM LabからTensorFlow.jsを卒業した——手書き逆伝播とWebGPU、そして日本語対話コーパスの公開</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-08-22T19:30:00+09:00">2026-08-22T19:30:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/ai/">AI</a><a class="tag" href="/tags/javascript/">JavaScript</a><a class="tag" href="/tags/entry-437a172d7b13/">開発</a><a class="tag" href="/tags/entry-0b60a0b5dc47/">データセット</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="tinylm-labからtensorflow-jsを卒業した">TinyLM LabからTensorFlow.jsを卒業した</h1>
+<p>午前中に公開した<a href="/works/tinylm-lab/">ブラウザで学習するMoE言語モデル</a>の続きです。あのあと勢いで「tensorflow.js非依存にできます？」とAIに聞いたら、その日のうちに依存ゼロ版とWebGPU版ができてしまったので、経緯ごとまとめて公開します。おまけに、学習教材として作った日本語対話コーパスも配布します。</p>
+<h2 id="公開物">公開物</h2>
+<ul>
+<li><strong><a href="/works/tinylm-lab-zero/">TinyLM Lab Zero</a></strong> — 依存ゼロ・WebGPU対応の単一HTML（約76KB）。CDN読み込みなし、機内モードでも動きます。</li>
+<li><strong><a href="/works/tinylm-lab-zero/tinylm_jp_corpus_bundle_v1.zip">TinyLM JP Dialogue Corpus 100k</a></strong> — 約10万字の日本語対話コーパス一式（生成・検証スクリプト、評価文30問付き）。</li>
+<li><strong><a href="/works/tinylm-lab-zero/tinylm-jp-nano-step1000.json">学習済みチェックポイント（ナノ・1,000 step）</a></strong> — 上のコーパスで学習したモデル。Zeroに読み込めばすぐ生成を試せます。</li>
+</ul>
+<h2 id="tf-jsを審判にして-tf-jsを卒業する">tf.jsを審判にして、tf.jsを卒業する</h2>
+<p>午前の版はtensorflow.jsに行列演算と自動微分を任せていました。依存ゼロ版では、RMSNorm・RoPE・causal attention・SwiGLU・MoEルーター・Adamの<strong>逆伝播をすべて手書き</strong>し、TypedArrayだけで学習エンジンを組んでいます。メモリはgradient checkpointing方式（各層の入力だけ保存し、逆伝播時に層内を再計算）で、活性化メモリを1層分に抑えました。</p>
+<p>面白いのは検証の構図です。手書き逆伝播は、符号一つ・転置一つの間違いで「静かに学習が劣化する」世界なので、三段構えで検証しました。</p>
+<ol>
+<li><strong>数値微分との突き合わせ</strong> — Float64モードで中心差分と比較。3構成・261点すべて絶対誤差1e-9未満。</li>
+<li><strong>tf.js版を審判にした相互検証</strong> — 同一重み・同一入力でlogits最大差2.7e-7、CE lossは小数6桁一致。二つの独立実装が同じ数学を計算している強い証拠です。</li>
+<li><strong>実学習</strong> — 150 stepでloss 5.18→0.13、生成はコーパスの文体を再現。</li>
+</ol>
+<p>卒業したいフレームワーク自身を審判に使って卒業する、という構図が気に入っています。</p>
+<p>副産物として速度も上がりました。同一環境のCPU比較で<strong>tf.js-cpuの約4.5倍（1,040 vs 230 tok/s）</strong>。フレームワークのオーバーヘッドが消えたこと、そしてMoEが「選ばれた専門家だけを計算する」本物のスパース実行になったことが効いています（tf.js版は勾配の都合で全専門家を密計算していました）。保存形式は旧版と完全互換で、相互に読み込めます。</p>
+<h2 id="webgpuを手書きする">WebGPUを手書きする</h2>
+<p>「GPUも使えます？」の答えがこちらです。tf.jsには戻らず、<strong>WGSLコンピュートシェーダを21カーネル手書き</strong>して、学習ステップ全体——順伝播・逆伝播・Adam更新——をGPU常駐で回します。CPUへの読み出しはlossと専門家稼働率だけ。</p>
+<p>開発環境にGPUがないという問題は、ソフトウェアVulkan（llvmpipe）＋Node用WebGPUバインディングで突破しました。速度は測れませんが<strong>正しさは検証できる</strong>環境です。検証済みのCPUエンジンを審判にして、全36勾配テンソルの一致（最悪相対差1.4e-6）、GPU単独学習の収束、GPU→CPUの状態往復まで確認しています。</p>
+<p>実機の速度保証ができない代わりに、<strong>初回学習時にその端末上でCPUエンジンと全勾配テンソルを突き合わせる自己診断</strong>を組み込みました。合格した場合だけGPUが有効になります。「開発側で保証できないことは、実行側で機械検査する」という設計です。</p>
+<h2 id="外部レビューで診断が本物になった">外部レビューで診断が本物になった</h2>
+<p>このプロジェクトは複数のAIを使い分けて進めています。実装と検証をClaudeが行い、別のAI（GPT-5.6）に成果物をレビューさせる、を2往復。指摘は的確でした。</p>
+<ul>
+<li>自己診断が「loss比較だけ」で、逆伝播が壊れていても素通しになっていた → 全勾配テンソル比較へ昇格</li>
+<li>Adam再開の不整合（モーメント未保存なのにバイアス補正だけ過去から続く）→「重みは継続、optimizerは再始動」に統一</li>
+<li>ほぼゼロ勾配のテンソルで相対誤差判定が過敏 → 絶対誤差フロアを追加</li>
+<li>例外時にボタンとWake Lockが取り残される → finallyで後始末</li>
+</ul>
+<p>一度目の修正が半端で、二度目のレビューに取り残しを突かれる場面もありました。実装者と監査者を分ける普通のソフトウェア工学が、AI同士でも普通に機能します。</p>
+<h2 id="日本語対話コーパスも作った">日本語対話コーパスも作った</h2>
+<p>10万字級の教材が欲しくなり、対話コーパスを一式作りました。中身は挨拶・聞き返し・計画・四則演算・感情サポート・安全な断り方など36カテゴリの型を意味対応固定のテンプレートで生成したオリジナル部分（CC0、100,006字・1,225会話）と、公開データ<a href="https://huggingface.co/datasets/llm-jp/oasst2-33k-ja">LLM-jp OASST2 33k Japanese</a>から人手選別した補助28会話（Apache-2.0）です。ライセンスはファイル単位で分離し、SHA-256・選定マニフェスト・検証スクリプト・非リーク保証付きの評価文30問まで同梱しています。</p>
+<p>ナノ構成（総226k・有効158kパラメタ）で1,000 step学習した結果が配布中のチェックポイントです。ここで面白いのは、<strong>二つのAIによる独立評価が異なる深さの結論を出した</strong>ことです。</p>
+<p>Claudeの評価（30問・ルーブリック8項目でおよそ9/16）は「応答の型は獲得、意味の対応付けは未達」でした。助手の文体は全問一貫し、曖昧な依頼への聞き返しや感情サポートの型は出る。しかし計画テンプレの中身が混線し、算数は形式だけ覚えて計算が壊れる。</p>
+<p>一方、GPT-5.6 Solによる独立再現（HTMLと教材のSHA-256を固定し、同一seedで学習から再実行）は、もう一段深いところを掘りました。<strong>訓練データと完全一致するprefixでの生成16回のうち意味合格は2回、訓練回答の完全再現はゼロ、完全一致の算数でも「4+4→18」、安全拒否は全試行失敗</strong>。つまりloss 0.67は「会話の意味対応」どころか「暗記」すら反映していない。次文字予測lossの大部分は日本語断片の局所的な継続で下がるため、応答境界での正しい選択とlossが乖離する——という解釈まで含めて、「低い言語モデルlossだけで会話能力を判定してはいけない」という教訓が定量化されました。</p>
+<p>このコーパスのREADMEは「158kパラメタで狙えるのは応答の型であり、知識ではない」と予告していましたが、独立診断はさらに「現構成では意図の分岐が広すぎる」ことを示しています。提案された次の一手（教材を6〜8意図へ絞る、学習窓を応答境界へ整列させる、利用者部分のlossをマスクする）は次回の実験テーマです。評価文とルーブリックは同梱してあるので、読者の追試も歓迎します。</p>
+<h2 id="独立テストがバグも見つけた">独立テストがバグも見つけた</h2>
+<p>GPT-5.6 Solのレポートは性能評価に留まらず、<strong>実バグを一つ発見しました</strong>。モデル初期化後に教材を編集・差し替えても内部のトークン列が無効化されず、画面に表示された教材ではなく以前の教材で学習し続ける、という状態管理の穴です。公開版では修正済みで、教材の編集・読込・空白正規化の変更で必ず再トークン化し、モデルの語彙にない文字が混ざった場合は警告を出すようにしました。</p>
+<p>実装者（Claude）が2往復のレビューを通過した後でも、視点の違う監査者が実行環境ごと変えて再現テストをすると、まだ出てくるものは出てくる。多重チェックの価値はこの「まだ出てくる」にあります。</p>
+<h2 id="締め">締め</h2>
+<p>朝の「テストして」から始まった一日が、tf.js卒業・WebGPU手書き・コーパス公開・独立監査まで来ました。ブラウザとテキストエディタしかない環境でも、言語モデルの中身を全部さわれる時代です。手元の端末で自己診断が通ったかどうか、よければ教えてください。</p>
+<p>なお、この小モデルは応答の型の教材です。医療・法律・金融など結果が重大な用途には使わないでください。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/08/2026-08-22-001/">← ブラウザで学習するMoE言語モデルを作った</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/08/2026-08-22-001/">ブラウザで学習するMoE言語モデルを作った</a></li><li><a href="/posts/2026/08/2026-08-20-007/">システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</a></li><li><a href="/posts/2026/08/2026-08-20-006/">システム設計のための数学 横断層: 検証を実行する手段</a></li><li><a href="/posts/2026/08/2026-08-20-005/">システム設計のための数学 第四層: 不可能性と限界</a></li><li><a href="/posts/2026/08/2026-08-20-004/">システム設計のための数学 第三層: 合成の数学</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

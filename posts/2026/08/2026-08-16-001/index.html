@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>AIに作らせたゲームを2本、サイトに公開した · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="ChatGPT製のノベルゲームとGemini製の3Dブロック崩しを /works/ に公開。AIプラットフォームからの持ち出しに苦労した話と、公開前の監査・手直しの記録。ついでにサイト基盤をTsuzuriに移行した話も。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-16-001/"><meta property="og:title" content="AIに作らせたゲームを2本、サイトに公開した"><meta property="og:description" content="ChatGPT製のノベルゲームとGemini製の3Dブロック崩しを /works/ に公開。AIプラットフォームからの持ち出しに苦労した話と、公開前の監査・手直しの記録。ついでにサイト基盤をTsuzuriに移行した話も。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-16-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>AIに作らせたゲームを2本、サイトに公開した</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-08-16T04:00:35+09:00">2026-08-16T04:00:35+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-fd2460833058/">ゲーム</a><a class="tag" href="/tags/entry-437a172d7b13/">開発</a><a class="tag" href="/tags/entry-9cbeebd67d49/">創作</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="aiに作らせたゲームを2本-サイトに公開した">AIに作らせたゲームを2本、サイトに公開した</h1>
+<p>最近、各社の生成AIにゲームを作らせて遊んでいる。せっかくなので出来の良かった2本をこのサイトで公開した。</p>
+<ul>
+<li><a href="/works/hoshikuzu-signal/">星屑シグナル</a> — 近未来の沖縄とMABUI衛星群を巡る長編ノベルゲーム。ルート7本・エンディング19種。</li>
+<li><a href="/works/cyber-break-3d/">CYBER BREAK 3D</a> — Three.js製のド派手な3Dブロック崩し。物理破片とネオンエフェクトが飛び散る。</li>
+</ul>
+<p>どちらもブラウザだけで動く。スマホでも遊べるはず。</p>
+<h2 id="持ち出しが一番大変だった">持ち出しが一番大変だった</h2>
+<p>意外なことに、いちばん苦労したのはゲームの中身ではなく「AIプラットフォームの外に持ち出す」工程だった。</p>
+<p>Google AI Studioはzipダウンロードが何度やってもバグって取得できず（なぜかクッキー承認画面のHTMLが降ってくる）、結局GitHub連携経由で救出。さらにGitHubからダウンロードしたzipは、今度はチャットに添付しようとすると不可視化されて選択できない。最終的に「プライベートリポジトリを作らせて、使い捨てトークンでcloneする」という経路に落ち着いた。</p>
+<p>ChatGPT側もGemini側も、生成されるのはフルスタックの雛形（サーバー、DB、認証ヘルパー入り）で、静的サイトにそのまま置ける形にはなっていない。プラットフォームに住み続ける前提の構造になっているというか、外に出す動線が細い。</p>
+<h2 id="公開前にやったこと">公開前にやったこと</h2>
+<p>公開作業はClaudeに委任した。やったことは大体こんな感じ。</p>
+<ol>
+<li>コード監査（外部通信ゼロの確認、認証・DB等の未使用残骸の切り分け）</li>
+<li>ゲーム本体だけを抽出して静的ビルドに再構成</li>
+<li>Google Fonts等の外部リソースをローカル同梱に置き換え</li>
+<li>ヘッドレスブラウザで実プレイテスト</li>
+</ol>
+<p>このプレイテストが効いた。CYBER BREAK 3Dは、ゲームオーバー後にリトライすると残機0のまま・スコアも持ち越しという壊れた状態のバグを抱えていて、実際にプレイさせて初めて発覚した。AIが書いたコードは一見動くが、状態遷移の隅は普通にバグっている。生成→即公開ではなく、監査と手直しの工程が本体だと思う。</p>
+<p>余談だが、Chakra Petchというフォントに800ウェイトを指定しているコードがあって、調べたらこの書体に800は存在しなかった。ブラウザが黙って合成太字にしていただけ。AIの書くコードはこういう「エラーにならない嘘」を含むので油断ならない。</p>
+<h2 id="ところで-サイトはtsuzuriに移行した">ところで、サイトはTsuzuriに移行した</h2>
+<p>このサイト自体の話。長年使ってきた自作ブログツール nikki.pl から、新しく作った静的サイトエンジン <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a> に移行した。Pure Perlの依存ゼロ・単一ファイル配布で、masterにpushするとGitHub Actionsがビルドしてそのまま配信される仕組み。旧記事156本も旧URLからのリダイレクト付きで引っ越し済みなので、昔のリンクも生きている。</p>
+<p>今回のゲーム公開も、Tsuzuriのスタンドアロン作品機能をそのまま使っている。自作・監査済みの作品は独立ページとして配信し、未監査のものはsandbox付きiframeに隔離する、という二段構えにしてあるので、こういう「AI製の得体の知れないもの」を載せるのにちょうどいい。</p>
+<p>まあ何にせよ、遊んでみてください。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2024/01/2024-01-17-001/">← アクアリウム再燃</a><a rel="next" href="/posts/2026/08/2026-08-16-002/">シンギュラリティをテーマに小説を三本書いた →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/08/2026-08-22-002/">TinyLM LabからTensorFlow.jsを卒業した——手書き逆伝播とWebGPU、そして日本語対話コーパスの公開</a></li><li><a href="/posts/2026/08/2026-08-22-001/">ブラウザで学習するMoE言語モデルを作った</a></li><li><a href="/posts/2026/08/2026-08-20-007/">システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</a></li><li><a href="/posts/2026/08/2026-08-20-006/">システム設計のための数学 横断層: 検証を実行する手段</a></li><li><a href="/posts/2026/08/2026-08-20-005/">システム設計のための数学 第四層: 不可能性と限界</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

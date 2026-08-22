@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>TinyLM Lab Zero — 依存ゼロ・WebGPU対応 ブラウザ学習MoE言語モデル実験室</title>
+<style>
+:root{
+  --paper:#F2F5F9;
+  --ink:#14213D;
+  --ink-soft:rgba(20,33,61,.62);
+  --line:rgba(20,33,61,.14);
+  --grid-minor:rgba(43,75,224,.055);
+  --grid-major:rgba(43,75,224,.12);
+  --accent:#2B4BE0;
+  --accent-deep:#1E36A8;
+  --plot:#E24E1B;
+  --ok:#0E7A4D;
+  --bad:#C22F2F;
+  --card:#FFFFFF;
+  --mono:"SF Mono","Roboto Mono","Cascadia Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  color:var(--ink);
+  background:
+    repeating-linear-gradient(0deg,var(--grid-major) 0 1px,transparent 1px 48px),
+    repeating-linear-gradient(90deg,var(--grid-major) 0 1px,transparent 1px 48px),
+    repeating-linear-gradient(0deg,var(--grid-minor) 0 1px,transparent 1px 8px),
+    repeating-linear-gradient(90deg,var(--grid-minor) 0 1px,transparent 1px 8px),
+    var(--paper);
+  min-height:100vh;
+  padding-bottom:64px;
+}
+header{
+  position:sticky;top:0;z-index:10;
+  background:rgba(242,245,249,.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+  padding:10px 16px;
+}
+.head-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+h1{font-size:1.05rem;letter-spacing:.04em;font-weight:700}
+h1 small{font-weight:400;color:var(--ink-soft);font-size:.72rem;letter-spacing:.08em;margin-left:6px}
+#odo{font-family:var(--mono);font-size:.74rem;color:var(--accent-deep);white-space:nowrap;text-align:right;line-height:1.5}
+#odo b{color:var(--plot)}
+main{max-width:680px;margin:0 auto;padding:16px 12px}
+section{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:16px 14px;
+  margin-bottom:16px;
+  box-shadow:0 1px 2px rgba(20,33,61,.05);
+}
+.eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.22em;color:var(--accent);margin-bottom:2px}
+section h2{font-size:.98rem;margin-bottom:10px}
+textarea,input[type=text]{
+  width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;
+  font-size:16px;background:#FBFCFE;color:var(--ink);font-family:inherit;
+}
+textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:1px}
+#corpus{height:140px;font-size:.85rem;line-height:1.6}
+#corpus[readonly]{background:#EEF1F7;color:var(--ink-soft)}
+.stat-row{
+  display:flex;flex-wrap:wrap;gap:8px 18px;
+  font-family:var(--mono);font-size:.74rem;color:var(--ink-soft);margin-top:8px;
+}
+.stat-row b{color:var(--ink);font-weight:600}
+.knob{margin:12px 0}
+.knob label{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px}
+.knob label output{font-family:var(--mono);color:var(--accent-deep)}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.knob-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+button{
+  border:1px solid var(--accent);border-radius:8px;padding:11px 16px;
+  font-size:.9rem;font-weight:600;background:var(--card);color:var(--accent-deep);cursor:pointer;
+}
+button.primary{background:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:active:not(:disabled){transform:translateY(1px)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn-row button{flex:1;min-width:120px}
+/* スケール5段 */
+.scale-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:4px 0 8px}
+.scale-btn{
+  border:1px solid var(--line);border-radius:8px;background:#FBFCFE;
+  padding:8px 4px;cursor:pointer;text-align:center;font-family:inherit;
+}
+.scale-btn .sname{font-size:.78rem;font-weight:700;color:var(--ink)}
+.scale-btn .sparams{font-family:var(--mono);font-size:.62rem;color:var(--accent-deep);margin-top:2px}
+.scale-btn .sdev{font-size:.58rem;color:var(--ink-soft);margin-top:2px;line-height:1.35}
+.scale-btn.sel{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:-1px;background:#fff}
+#chart{
+  width:100%;height:180px;display:block;
+  border:1px solid var(--line);border-radius:8px;
+  background:
+    repeating-linear-gradient(0deg,var(--grid-minor) 0 1px,transparent 1px 9px),
+    repeating-linear-gradient(90deg,var(--grid-minor) 0 1px,transparent 1px 9px),
+    #FBFCFE;
+  margin-top:12px;
+}
+#metrics{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-family:var(--mono);font-size:.76rem}
+#metrics span b{color:var(--plot)}
+/* エキスパート稼働率パネル(このページの見せ場) */
+#moePanel{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px;background:#FBFCFE}
+#moePanel .mp-title{font-family:var(--mono);font-size:.66rem;letter-spacing:.18em;color:var(--accent);margin-bottom:8px}
+.ebar{display:flex;align-items:center;gap:8px;margin:4px 0}
+.ebar .elab{font-family:var(--mono);font-size:.68rem;width:34px;color:var(--ink-soft)}
+.ebar .etrack{flex:1;height:12px;background:rgba(20,33,61,.07);border-radius:6px;overflow:hidden}
+.ebar .efill{height:100%;width:0%;background:var(--accent);border-radius:6px;transition:width .3s}
+.ebar .epct{font-family:var(--mono);font-size:.68rem;width:44px;text-align:right;color:var(--ink)}
+#status{margin-top:10px;font-size:.78rem;font-family:var(--mono);color:var(--ink-soft);min-height:1.2em;word-break:break-all}
+#status.err{color:var(--bad)}
+#status.ok{color:var(--ok)}
+#genOut{
+  margin-top:10px;padding:12px;background:#FBFCFE;
+  border:1px dashed var(--accent);border-radius:8px;
+  font-size:.88rem;line-height:1.8;white-space:pre-wrap;word-break:break-all;
+  min-height:3em;color:var(--ink);
+}
+.hint{font-size:.74rem;color:var(--ink-soft);margin-top:8px;line-height:1.6}
+.warn{font-size:.74rem;color:var(--bad);margin-top:8px;line-height:1.6}
+.wake{display:flex;align-items:center;gap:8px;font-size:.8rem;margin-top:12px;color:var(--ink-soft)}
+input[type=file]{display:none}
+@media (max-width:480px){.scale-row{grid-template-columns:repeat(5,1fr)}.scale-btn .sdev{display:none}}
+@media (prefers-reduced-motion: no-preference){
+  button.primary.running{animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 5px rgba(43,75,224,.18)}}
+}
+@media (prefers-reduced-motion: reduce){.ebar .efill{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="head-top">
+    <h1>TinyLM Lab<small>Zero · 依存ゼロ / WebGPU / MoE / RoPE / SwiGLU</small></h1>
+    <div id="odo">計 — params<br>有効 <b>—</b> params</div>
+  </div>
+</header>
+<main>
+
+<section>
+  <div class="eyebrow">01 · CORPUS</div>
+  <h2>学習テキスト</h2>
+  <textarea id="corpus" spellcheck="false"></textarea>
+  <div class="btn-row">
+    <button id="btnFile">テキストファイルを読み込む (.txt)</button>
+    <button id="btnClearCorpus">クリア</button>
+  </div>
+  <input type="file" id="corpusFile" accept=".txt,.md,text/plain" multiple>
+  <label class="wake"><input type="checkbox" id="wsNorm" checked> 空白を正規化して学習 (\r除去・3連続以上の改行を2つに圧縮)</label>
+  <div class="stat-row">
+    <span>文字数 <b id="stCharCount">0</b></span>
+    <span>語彙(異なり文字) <b id="stVocab">0</b></span>
+  </div>
+  <p class="hint">文字レベルで学習します。連続する空行が多いテキストは、生成時にも改行が多く再現されます。気になる場合は正規化を有効にしてください。複数ファイルを選ぶと連結されます。20万字を超えると欄内はプレビュー表示になりますが、全文が学習に使われます。目安: ナノ〜マイクロは数万〜数十万字、スモール以上は数百万字以上を推奨。</p>
+</section>
+
+<section>
+  <div class="eyebrow">02 · SCALE</div>
+  <h2>規模プリセット</h2>
+  <div class="scale-row" id="scaleRow"></div>
+  <div id="scaleNote" class="hint"></div>
+  <div class="knob-grid">
+    <div class="knob"><label>次元 d_model <output id="oD">64</output></label>
+      <input type="range" id="kD" min="0" max="7" step="1" value="1"></div>
+    <div class="knob"><label>層数 <output id="oL">2</output></label>
+      <input type="range" id="kL" min="1" max="12" step="1" value="2"></div>
+    <div class="knob"><label>ヘッド数 <output id="oH">2</output></label>
+      <input type="range" id="kH" min="0" max="4" step="1" value="1"></div>
+    <div class="knob"><label>文脈長 <output id="oT">64</output></label>
+      <input type="range" id="kT" min="0" max="4" step="1" value="1"></div>
+    <div class="knob"><label>エキスパート数 <output id="oE">2</output></label>
+      <input type="range" id="kE" min="0" max="3" step="1" value="1"></div>
+    <div class="knob"><label>top-k <output id="oK">1</output></label>
+      <input type="range" id="kK" min="1" max="2" step="1" value="1"></div>
+    <div class="knob"><label>バッチ <output id="oB">16</output></label>
+      <input type="range" id="kB" min="0" max="3" step="1" value="2"></div>
+    <div class="knob"><label>学習率 <output id="oLR">3e-3</output></label>
+      <input type="range" id="kLR" min="0" max="4" step="1" value="3"></div>
+  </div>
+  <div class="stat-row">
+    <span>総パラメタ <b id="stParams">—</b></span>
+    <span>有効パラメタ/トークン <b id="stActive">—</b></span>
+    <span>推定学習メモリ <b id="stMem">—</b></span>
+  </div>
+  <div class="btn-row">
+    <button id="btnInit" class="primary">この構成でモデルを初期化</button>
+  </div>
+  <p class="hint">エキスパート数1でMoE無効(通常の密なFFN)。MoEでは各トークンがtop-k個の専門家だけを使うため、総パラメタが増えても1トークンあたりの計算規模(有効パラメタ)は抑えられます。本実装は選ばれた専門家だけを計算する真のスパース実行のため、有効パラメタの少なさがそのまま速度に効きます。</p>
+  <p id="bigWarn" class="warn" style="display:none"></p>
+</section>
+
+<section>
+  <div class="eyebrow">03 · TRAIN</div>
+  <h2>学習</h2>
+  <div class="knob"><label>今回のステップ数 <output id="oSteps">1000</output></label>
+    <input type="range" id="kSteps" min="200" max="20000" step="200" value="1000"></div>
+  <div class="btn-row">
+    <button id="btnTrain" class="primary" disabled>学習開始</button>
+    <button id="btnStop" disabled>停止</button>
+  </div>
+  <canvas id="chart" width="640" height="180"></canvas>
+  <div id="metrics">
+    <span>step <b id="mStep">0</b></span>
+    <span>loss <b id="mLoss">—</b></span>
+    <span>aux <b id="mAux">—</b></span>
+    <span>tok/s <b id="mTps">—</b></span>
+    <span>backend <b id="mBackend">—</b></span>
+  </div>
+  <div id="moePanel" style="display:none">
+    <div class="mp-title">EXPERT LOAD · 全層平均の割当率(理想は均等 / auxは1.0が均等分散)</div>
+    <div id="ebars"></div>
+  </div>
+  <label class="wake"><input type="checkbox" id="wakeLock"> 学習中は画面をスリープさせない</label>
+  <label class="wake" id="gpuRow" style="display:none"><input type="checkbox" id="useGpu" checked> GPUで学習する (WebGPU・手書きWGSLカーネル)</label>
+  <p class="hint" id="gpuInfo"></p>
+  <p class="hint">WebGPU対応ブラウザでは学習ステップ全体(順伝播・逆伝播・Adam)がGPU常駐で走ります。初回はCPUエンジンとlossおよび全勾配テンソルを突き合わせる自己診断を行い、合格した場合のみGPUを使います。GPU学習中のaux表示は「—」になります(数学は同一)。生成と保存はCPU側で行うため、停止時に重みを自動回収します。</p>
+  <div id="status">エンジンを初期化中…</div>
+</section>
+
+<section>
+  <div class="eyebrow">04 · SAMPLE</div>
+  <h2>文章生成</h2>
+  <input type="text" id="prompt" placeholder="書き出し(空でも可)">
+  <div class="knob-grid">
+    <div class="knob"><label>生成文字数 <output id="oGen">200</output></label>
+      <input type="range" id="kGen" min="50" max="600" step="50" value="200"></div>
+    <div class="knob"><label>温度 <output id="oTemp">0.8</output></label>
+      <input type="range" id="kTemp" min="3" max="15" step="1" value="8"></div>
+    <div class="knob"><label>top-p <output id="oTopP">0.95</output></label>
+      <input type="range" id="kTopP" min="50" max="100" step="5" value="95"></div>
+  </div>
+  <p class="hint">top-pは確率上位の候補だけからサンプルする設定です(1.00で無効)。改行や記号など低確率トークンの暴発を抑えます。</p>
+  <div class="btn-row"><button id="btnGen" class="primary" disabled>生成する</button></div>
+  <div id="genOut">まだモデルがありません。初期化して学習するか、保存済みモデルを読み込んでください。</div>
+</section>
+
+<section>
+  <div class="eyebrow">05 · I/O</div>
+  <h2>モデルの保存と読み込み</h2>
+  <div class="btn-row">
+    <button id="btnSave" disabled>モデルをダウンロード (.json)</button>
+    <button id="btnLoad">モデルを読み込む</button>
+  </div>
+  <input type="file" id="fileIn" accept=".json,application/json">
+  <p class="hint">重み・語彙表・構成をまとめた JSON を端末に保存します(形式: tinylm-lab-v2。GPU版TinyLM Labと相互に読み込み可能)。読み込めば続きから学習できます。すべての処理はこの端末内で完結し、通信は行いません。目安として2,000万パラメタを超えるとファイルが数百MBになり、ブラウザによっては保存に失敗します。</p>
+</section>
+
+</main>
+<script>
+"use strict";
+/* ============ 定数 ============ */
+const D_OPTS=[32,64,128,192,256,384,512,768],
+      HEAD_OPTS=[1,2,4,8,12],
+      CTX_OPTS=[32,64,128,256,512],
+      E_OPTS=[1,2,4,8],
+      BATCH_OPTS=[4,8,16,32],
+      LR_OPTS=[3e-4,6e-4,1e-3,3e-3,6e-3],
+      LR_LABEL=["3e-4","6e-4","1e-3","3e-3","6e-3"];
+
+const SCALES=[
+ {name:"ナノ",    dev:"スマホ\n〜15分",     d:1,L:2, H:1,T:1,E:1,K:1,B:2,LR:3,
+  note:"スマホでも15分前後で学習が終わる規模。まず動きを見るならこれ。コーパスは数万字で十分。"},
+ {name:"マイクロ",dev:"スマホ数h\nPC 〜1h", d:2,L:4, H:2,T:2,E:2,K:2,B:2,LR:3,
+  note:"純JSエンジンではPCで1時間前後、スマホだと数時間。文体の再現が目に見えて良くなる規模。数十万字推奨。"},
+ {name:"スモール",dev:"PC\n半日〜",         d:4,L:6, H:3,T:3,E:2,K:2,B:2,LR:2,
+  note:"CPU実行では半日〜の長期戦。放置学習と保存/再開の併用前提。数百万字のコーパスが欲しい規模。"},
+ {name:"ミディアム",dev:"観察用\n(非実用)",  d:6,L:8, H:3,T:3,E:2,K:2,B:1,LR:1,
+  note:"依存ゼロエンジンでの学習は非現実的な規模。構成とパラメタ数の観察、学習済みモデルの読み込み実行用。"},
+ {name:"ラージ",  dev:"観察用\n(非実用)",    d:7,L:12,H:4,T:4,E:3,K:2,B:1,LR:0,
+  note:"同じく観察用。この規模を回すならGPU版(v2)かサーバをどうぞ。保存ファイルも巨大になります。"},
+];
+
+/* ============ UI状態 ============ */
+let dataIdsUI=null;
+let corpusStore="", corpusIsPreview=false;
+let running=false, lossHist=[], utilEMA=null, wakeLockObj=null;
+let gpuName=null, gpuCfgKey="", vocabWarn="";
+
+const $=id=>document.getElementById(id);
+const statusEl=$("status");
+function setStatus(msg,cls){statusEl.textContent=msg;statusEl.className=cls||"";}
+function fmtNum(n){return n>=1e9?(n/1e9).toFixed(2)+"B":n>=1e6?(n/1e6).toFixed(2)+"M":n>=1e3?(n/1e3).toFixed(1)+"k":""+n;}
+
+const SAMPLE=(()=>{const p=[
+"むかしむかし、海のそばの小さな村に、風の音を集める少女がいました。",
+"少女は毎朝、浜辺に立って貝殻を耳にあて、波の運んでくる音を一つずつ瓶に詰めました。",
+"晴れた日の音は青く、雨の日の音は銀色に光りました。",
+"村の人々は不思議に思いましたが、少女はにこにこ笑うだけでした。",
+"ある冬の夜、村を大きな嵐が襲いました。",
+"船は帰れず、灯台の火も消え、村は真っ暗になりました。",
+"少女は集めた瓶を全部かかえて、崖の上へのぼりました。",
+"瓶のふたを開けると、夏の風の音、祭りの太鼓の音、子どもたちの笑い声があふれ出しました。",
+"音は光になって夜空にのぼり、沖の船を村まで導きました。",
+"それから村では、良い音を見つけると瓶に詰めて、灯台のたもとに置くようになりました。",
+];let s="";for(let i=0;i<6;i++)s+=p.join("")+"\n";return s;})();
+
+/* ===CORE=== 純JS学習エンジン(DOM非依存・依存ゼロ) */
+const AUX_COEF=0.01;
+let ARR=Float32Array;                 // テスト時はsetPrecision(64)でFloat64Arrayに切替
+function setPrecision(bits){ARR=bits===64?Float64Array:Float32Array;}
+
+let C=null, W=null, G=null, AM=null, AV=null, step=0, adamStep=0;
+let vocabChars=[], charToId=new Map(), dataIds=null;
+let ACT=null;                          // (B,T)ごとの作業バッファ
+let rngState=123456789;
+
+function rngSeed(s){rngState=s>>>0||1;}
+function rngU(){                       // xorshift32 → [0,1)
+  let x=rngState;x^=x<<13;x^=x>>>17;x^=x<<5;rngState=x>>>0;
+  return rngState/4294967296;
+}
+function rngN(){                       // Box-Muller
+  let u=0,v=0;while(u===0)u=rngU();while(v===0)v=rngU();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function hidOf(d){return Math.ceil(d*8/3/16)*16;}
+function paramCounts(cfg){
+  const d=cfg.d,h=hidOf(d),E=cfg.experts,K=Math.min(cfg.topk,E);
+  const expert=3*d*h;
+  const perLayer=2*d + 3*d*d + d*d + (E>1?d*E:0) + E*expert;
+  const total=cfg.vocab*d + cfg.layers*perLayer + d;
+  const active=total - (E>1?(E-K)*expert*cfg.layers:0);
+  return {total,active};
+}
+function* namedShapes(cfg){
+  const d=cfg.d,h=hidOf(d);
+  yield["wte",[cfg.vocab,d]];
+  for(let l=0;l<cfg.layers;l++){
+    const pre="b"+l+".";
+    yield[pre+"rms1",[d]];
+    yield[pre+"qkvw",[d,3*d]];
+    yield[pre+"projw",[d,d]];
+    yield[pre+"rms2",[d]];
+    if(cfg.experts>1)yield[pre+"router",[d,cfg.experts]];
+    for(let j=0;j<cfg.experts;j++){
+      yield[pre+"e"+j+".w1",[d,h]];
+      yield[pre+"e"+j+".w3",[d,h]];
+      yield[pre+"e"+j+".w2",[h,d]];
+    }
+  }
+  yield["rmsf",[d]];
+}
+function buildModel(cfg){
+  C=cfg;W={};G={};AM={};AV={};step=0;adamStep=0;ACT=null;
+  const resid=0.02/Math.sqrt(2*cfg.layers);
+  for(const ns of namedShapes(cfg)){
+    const name=ns[0],shape=ns[1],size=shape.reduce((a,b)=>a*b,1);
+    const a=new ARR(size);
+    if(name.endsWith("rms1")||name.endsWith("rms2")||name==="rmsf")a.fill(1);
+    else{
+      const std=(name.endsWith("projw")||name.endsWith(".w2"))?resid:0.02;
+      for(let i=0;i<size;i++)a[i]=rngN()*std;
+    }
+    W[name]={a,shape};
+    G[name]=new ARR(size);
+    AM[name]=new ARR(size);
+    AV[name]=new ARR(size);
+  }
+}
+/* --- 行列演算カーネル (row-major) --- */
+function mm(Aa,N,Kd,Ba,Md,Ca){        // C[N,M] = A[N,K]·B[K,M]
+  Ca.fill(0);
+  for(let n=0;n<N;n++){
+    const ar=n*Kd,cr=n*Md;
+    for(let k=0;k<Kd;k++){
+      const a=Aa[ar+k];if(a===0)continue;
+      const br=k*Md;
+      for(let m=0;m<Md;m++)Ca[cr+m]+=a*Ba[br+m];
+    }
+  }
+}
+function mmBT(Da,N,Md,Wa,Kd,Ca){      // C[N,K] = D[N,M]·W[K,M]ᵀ (行同士の内積)
+  for(let n=0;n<N;n++){
+    const dr=n*Md,cr=n*Kd;
+    for(let k=0;k<Kd;k++){
+      const wr=k*Md;let s=0;
+      for(let m=0;m<Md;m++)s+=Da[dr+m]*Wa[wr+m];
+      Ca[cr+k]=s;
+    }
+  }
+}
+function mmATacc(Aa,N,Kd,Da,Md,Ga){   // G[K,M] += A[N,K]ᵀ·D[N,M]
+  for(let n=0;n<N;n++){
+    const ar=n*Kd,dr=n*Md;
+    for(let k=0;k<Kd;k++){
+      const a=Aa[ar+k];if(a===0)continue;
+      const gr=k*Md;
+      for(let m=0;m<Md;m++)Ga[gr+m]+=a*Da[dr+m];
+    }
+  }
+}
+/* --- 部品ごとの順/逆伝播 --- */
+function rmsFwd(x,g,y,inv,N,d){       // y=x*inv*g, invは行ごと保存
+  for(let n=0;n<N;n++){
+    const r=n*d;let s=0;
+    for(let i=0;i<d;i++)s+=x[r+i]*x[r+i];
+    const iv=1/Math.sqrt(s/d+1e-6);inv[n]=iv;
+    for(let i=0;i<d;i++)y[r+i]=x[r+i]*iv*g[i];
+  }
+}
+function rmsBwd(x,g,inv,dy,dx,dg,N,d){// dxへ加算, dgへ加算
+  for(let n=0;n<N;n++){
+    const r=n*d,iv=inv[n];let dot=0;
+    for(let i=0;i<d;i++)dot+=dy[r+i]*g[i]*x[r+i];
+    const c=iv*iv*iv*dot/d;
+    for(let i=0;i<d;i++){
+      dx[r+i]+=dy[r+i]*g[i]*iv-x[r+i]*c;
+      dg[i]+=dy[r+i]*x[r+i]*iv;
+    }
+  }
+}
+function ropeApply(buf,off3,B,T,H,hd,dir){ // qkvバッファ内のq/k領域を回転(dir=+1順/-1逆)
+  const half=hd/2,d3=3*H*hd;
+  for(let b=0;b<B;b++)for(let t=0;t<T;t++){
+    const base=(b*T+t)*d3+off3;
+    for(let h=0;h<H;h++){
+      const hb=base+h*hd;
+      for(let i=0;i<half;i++){
+        const th=t/Math.pow(10000,2*i/hd),c=Math.cos(th),s=Math.sin(th)*dir;
+        const x1=buf[hb+i],x2=buf[hb+half+i];
+        buf[hb+i]=x1*c-x2*s;
+        buf[hb+half+i]=x1*s+x2*c;
+      }
+    }
+  }
+}
+function ensureBuffers(B,T){
+  if(ACT&&ACT.B===B&&ACT.T===T)return;
+  const d=C.d,N=B*T,H=C.heads,hd=d/H,h=hidOf(d),E=C.experts,K=Math.min(C.topk,E);
+  const mk=n=>new ARR(n);
+  ACT={B,T,N,
+    xs:Array.from({length:C.layers},()=>mk(N*d)), // 層入力チェックポイント
+    x:mk(N*d),h1:mk(N*d),qkv:mk(N*3*d),attP:mk(B*H*T*T),y:mk(N*d),
+    xmid:mk(N*d),h2:mk(N*d),inv1:mk(N),inv2:mk(N),invf:mk(N),
+    xf:mk(N*d),
+    dx:mk(N*d),dh1:mk(N*d),dqkv:mk(N*3*d),dy:mk(N*d),dxmid:mk(N*d),dh2:mk(N*d),
+    ea:mk(h),eb:mk(h),eu:mk(h),dea:mk(h),deb:mk(h),deu:mk(h),
+    probs:E>1?mk(N*E):null,sel:E>1?new Int32Array(N*K):null,gates:E>1?mk(N*K):null,
+    dprobs:E>1?mk(N*E):null,drl:E>1?mk(N*E):null,
+    scq:mk(T*hd),sck:mk(T*hd),scv:mk(T*hd),sdq:mk(T*hd),sdk:mk(T*hd),sdv:mk(T*hd),sdP:mk(T*T),
+    logitRow:mk(C.vocab),
+    bx:new Int32Array(N),by:new Int32Array(N),
+  };
+}
+/* --- FFN(密/スパースMoE) 順伝播: xmid→h2→(out加算でxへ) --- */
+function ffnFwd(l,N,collectStats){
+  const d=C.d,h=hidOf(d),E=C.experts,K=Math.min(C.topk,E);
+  const A=ACT,x=A.x;
+  rmsFwd(A.xmid,W["b"+l+".rms2"].a,A.h2,A.inv2,N,d);
+  if(E===1){
+    const e="b"+l+".e0.";
+    for(let n=0;n<N;n++)ffnToken(A.h2,n*d,W[e+"w1"].a,W[e+"w3"].a,W[e+"w2"].a,x,n*d,1,d,h,A);
+    return 0;
+  }
+  // ルーター
+  const R=W["b"+l+".router"].a;
+  mm(A.h2,N,d,R,E,A.probs);
+  let aux=0;
+  const fCount=collectStats?collectStats.fCount:null;
+  const pMean=new Array(E).fill(0);
+  for(let n=0;n<N;n++){
+    const pr=n*E;let mx=-Infinity;
+    for(let e=0;e<E;e++)if(A.probs[pr+e]>mx)mx=A.probs[pr+e];
+    let Z=0;
+    for(let e=0;e<E;e++){A.probs[pr+e]=Math.exp(A.probs[pr+e]-mx);Z+=A.probs[pr+e];}
+    for(let e=0;e<E;e++){A.probs[pr+e]/=Z;pMean[e]+=A.probs[pr+e];}
+    // top-k選択
+    for(let k=0;k<K;k++){
+      let best=-1,bv=-1;
+      for(let e=0;e<E;e++){
+        let used=false;
+        for(let q=0;q<k;q++)if(A.sel[n*K+q]===e)used=true;
+        if(!used&&A.probs[pr+e]>bv){bv=A.probs[pr+e];best=e;}
+      }
+      A.sel[n*K+k]=best;
+    }
+    let S=0;
+    for(let k=0;k<K;k++)S+=A.probs[pr+A.sel[n*K+k]];
+    for(let k=0;k<K;k++){
+      const g=A.probs[pr+A.sel[n*K+k]]/(S+1e-9);
+      A.gates[n*K+k]=g;
+      const e="b"+l+".e"+A.sel[n*K+k]+".";
+      ffnToken(A.h2,n*d,W[e+"w1"].a,W[e+"w3"].a,W[e+"w2"].a,x,n*d,g,d,h,A);
+      if(fCount)fCount[A.sel[n*K+k]]++;
+    }
+  }
+  // aux = (E/K)·Σ f_e·P_e
+  const cnt=new Array(E).fill(0);
+  for(let n=0;n<N;n++)for(let k=0;k<K;k++)cnt[A.sel[n*K+k]]++;
+  for(let e=0;e<E;e++)aux+=(cnt[e]/N)*(pMean[e]/N);
+  return aux*E/K;
+}
+function ffnToken(h2,ho,w1,w3,w2,out,oo,gate,d,h,A){ // 1トークン分 out+=gate·SwiGLU(h2)
+  const a=A.ea,b=A.eb;
+  for(let j=0;j<h;j++){a[j]=0;b[j]=0;}
+  for(let i=0;i<d;i++){
+    const hv=h2[ho+i];if(hv===0)continue;
+    const r1=i*h,r3=i*h;
+    for(let j=0;j<h;j++){a[j]+=hv*w1[r1+j];b[j]+=hv*w3[r3+j];}
+  }
+  for(let j=0;j<h;j++){
+    const s=a[j]/(1+Math.exp(-a[j]));  // silu
+    a[j]=s*b[j];                       // a←u=silu(a)·b を上書き保存
+  }
+  for(let j=0;j<h;j++){
+    const u=a[j];if(u===0)continue;
+    const r2=j*d,g=gate*u;
+    for(let i=0;i<d;i++)out[oo+i]+=g*w2[r2+i];
+  }
+}
+/* --- 1層の順伝播 (xin=A.xs[l] → A.x を上書き) --- */
+function layerFwd(l,B,T,collectStats){
+  const d=C.d,H=C.heads,hd=d/H,N=B*T,A=ACT;
+  const xin=A.xs[l];
+  rmsFwd(xin,W["b"+l+".rms1"].a,A.h1,A.inv1,N,d);
+  mm(A.h1,N,d,W["b"+l+".qkvw"].a,3*d,A.qkv);
+  ropeApply(A.qkv,0,B,T,H,hd,1);      // q
+  ropeApply(A.qkv,d,B,T,H,hd,1);      // k
+  // attention
+  const scale=1/Math.sqrt(hd);
+  for(let b=0;b<B;b++)for(let hh=0;hh<H;hh++){
+    const q=A.scq,k=A.sck,v=A.scv;
+    for(let t=0;t<T;t++){
+      const src=(b*T+t)*3*d+hh*hd;
+      for(let i=0;i<hd;i++){q[t*hd+i]=A.qkv[src+i];k[t*hd+i]=A.qkv[src+d+i];v[t*hd+i]=A.qkv[src+2*d+i];}
+    }
+    const pOff=((b*H+hh)*T)*T;
+    for(let t=0;t<T;t++){
+      let mx=-Infinity;
+      for(let j=0;j<=t;j++){
+        let s=0;for(let i=0;i<hd;i++)s+=q[t*hd+i]*k[j*hd+i];
+        s*=scale;A.attP[pOff+t*T+j]=s;if(s>mx)mx=s;
+      }
+      let Z=0;
+      for(let j=0;j<=t;j++){const e=Math.exp(A.attP[pOff+t*T+j]-mx);A.attP[pOff+t*T+j]=e;Z+=e;}
+      for(let j=0;j<=t;j++)A.attP[pOff+t*T+j]/=Z;
+      for(let j=t+1;j<T;j++)A.attP[pOff+t*T+j]=0;
+      const yr=(b*T+t)*d+hh*hd;
+      for(let i=0;i<hd;i++)A.y[yr+i]=0;
+      for(let j=0;j<=t;j++){
+        const p=A.attP[pOff+t*T+j];if(p===0)continue;
+        for(let i=0;i<hd;i++)A.y[yr+i]+=p*v[j*hd+i];
+      }
+    }
+  }
+  // xmid = xin + y·projw ; x = xmid (FFNが加算する)
+  mm(A.y,N,d,W["b"+l+".projw"].a,d,A.xmid);
+  for(let i=0;i<N*d;i++){A.xmid[i]+=xin[i];A.x[i]=A.xmid[i];}
+  return ffnFwd(l,N,collectStats);
+}
+/* --- 1層の逆伝播 (A.dxに∂L/∂x_out、終了時∂L/∂x_inへ更新) --- */
+function layerBwd(l,B,T){
+  const d=C.d,H=C.heads,hd=d/H,N=B*T,A=ACT,h=hidOf(d),E=C.experts,K=Math.min(C.topk,E);
+  layerFwd(l,B,T,null);                // チェックポイントから再計算(A.h1等を復元)
+  const xin=A.xs[l];
+  // FFN逆伝播: dxはFFN出力への勾配(残差なのでdxmidにもそのまま流れる)
+  A.dxmid.set(A.dx);
+  A.dh2.fill(0);
+  if(E===1){
+    const e="b"+l+".e0.";
+    for(let n=0;n<N;n++)ffnTokenBwd(n,e,1,A.dx,null,0,d,h);
+  }else{
+    A.dprobs.fill(0);
+    for(let n=0;n<N;n++){
+      const pr=n*E;let S=0;
+      for(let k=0;k<K;k++)S+=A.probs[pr+A.sel[n*K+k]];
+      // 各選択エキスパート: dgate と dexpert
+      const dg=[];
+      for(let k=0;k<K;k++){
+        const e="b"+l+".e"+A.sel[n*K+k]+".";
+        dg.push(ffnTokenBwd(n,e,A.gates[n*K+k],A.dx,A.eu,1,d,h));
+      }
+      // gates=p_sel/S の逆伝播
+      let dot=0;
+      for(let k=0;k<K;k++)dot+=dg[k]*A.gates[n*K+k];
+      for(let k=0;k<K;k++)
+        A.dprobs[pr+A.sel[n*K+k]]+=(dg[k]-dot)/(S+1e-9);
+    }
+    // aux損失: dP_e = (coef/L)·(E/K)·f_e/N  (目的関数は ce + coef·mean_l(aux))
+    const cnt=new Array(E).fill(0);
+    for(let n=0;n<N;n++)for(let k=0;k<K;k++)cnt[A.sel[n*K+k]]++;
+    for(let e=0;e<E;e++){
+      const c=(AUX_COEF/C.layers)*(E/K)*(cnt[e]/N)/N;
+      for(let n=0;n<N;n++)A.dprobs[n*E+e]+=c;
+    }
+    // softmax逆伝播 → ルーターlogits勾配
+    for(let n=0;n<N;n++){
+      const pr=n*E;let dot=0;
+      for(let e=0;e<E;e++)dot+=A.dprobs[pr+e]*A.probs[pr+e];
+      for(let e=0;e<E;e++)A.drl[pr+e]=A.probs[pr+e]*(A.dprobs[pr+e]-dot);
+    }
+  }
+  if(E>1){
+    // dh2 += drl·routerᵀ ; drouter += h2ᵀ·drl
+    const R=W["b"+l+".router"].a,dR=G["b"+l+".router"];
+    for(let n=0;n<N;n++){
+      const rr=n*E,hr=n*d;
+      for(let e=0;e<E;e++){
+        const g=A.drl[rr+e];if(g===0)continue;
+        for(let i=0;i<d;i++){A.dh2[hr+i]+=g*R[i*E+e];dR[i*E+e]+=A.h2[hr+i]*g;}
+      }
+    }
+  }
+  // rms2逆伝播: dh2 → dxmidへ加算
+  rmsBwd(A.xmid,W["b"+l+".rms2"].a,A.inv2,A.dh2,A.dxmid,G["b"+l+".rms2"],N,d);
+  // proj逆伝播: dxmid → dy, dprojw ; 残差はxinへ
+  mmBT(A.dxmid,N,d,W["b"+l+".projw"].a,d,A.dy);
+  mmATacc(A.y,N,d,A.dxmid,d,G["b"+l+".projw"]);
+  // attention逆伝播
+  A.dqkv.fill(0);
+  const scale=1/Math.sqrt(hd);
+  for(let b=0;b<B;b++)for(let hh=0;hh<H;hh++){
+    const q=A.scq,k=A.sck,v=A.scv,dq=A.sdq,dk=A.sdk,dv=A.sdv,dP=A.sdP;
+    for(let t=0;t<T;t++){
+      const src=(b*T+t)*3*d+hh*hd;
+      for(let i=0;i<hd;i++){q[t*hd+i]=A.qkv[src+i];k[t*hd+i]=A.qkv[src+d+i];v[t*hd+i]=A.qkv[src+2*d+i];}
+    }
+    dq.fill(0);dk.fill(0);dv.fill(0);
+    const pOff=((b*H+hh)*T)*T;
+    for(let t=0;t<T;t++){
+      const dyr=(b*T+t)*d+hh*hd;
+      // dV, dP
+      for(let j=0;j<=t;j++){
+        const p=A.attP[pOff+t*T+j];
+        let s=0;
+        for(let i=0;i<hd;i++){s+=A.dy[dyr+i]*v[j*hd+i];dv[j*hd+i]+=p*A.dy[dyr+i];}
+        dP[j]=s;
+      }
+      // softmax逆伝播
+      let dot=0;
+      for(let j=0;j<=t;j++)dot+=dP[j]*A.attP[pOff+t*T+j];
+      for(let j=0;j<=t;j++){
+        const dS=A.attP[pOff+t*T+j]*(dP[j]-dot)*scale;
+        for(let i=0;i<hd;i++){dq[t*hd+i]+=dS*k[j*hd+i];dk[j*hd+i]+=dS*q[t*hd+i];}
+      }
+    }
+    for(let t=0;t<T;t++){
+      const dst=(b*T+t)*3*d+hh*hd;
+      for(let i=0;i<hd;i++){A.dqkv[dst+i]+=dq[t*hd+i];A.dqkv[dst+d+i]+=dk[t*hd+i];A.dqkv[dst+2*d+i]+=dv[t*hd+i];}
+    }
+  }
+  ropeApply(A.dqkv,0,B,T,H,hd,-1);     // RoPE逆回転
+  ropeApply(A.dqkv,d,B,T,H,hd,-1);
+  // qkv線形逆伝播
+  A.dh1.fill(0);
+  mmBT(A.dqkv,N,3*d,W["b"+l+".qkvw"].a,d,A.dh1);
+  mmATacc(A.h1,N,d,A.dqkv,3*d,G["b"+l+".qkvw"]);
+  // rms1逆伝播 → dxin(=dxmidの残差分に加算)
+  A.dx.set(A.dxmid);                   // 残差経路
+  rmsBwd(xin,W["b"+l+".rms1"].a,A.inv1,A.dh1,A.dx,G["b"+l+".rms1"],N,d);
+}
+function ffnTokenBwd(n,e,gate,dout,euOut,wantDgate,d,h){
+  const A=ACT,ho=n*d,oo=n*d;
+  const w1=W[e+"w1"].a,w3=W[e+"w3"].a,w2=W[e+"w2"].a;
+  const dw1=G[e+"w1"],dw3=G[e+"w3"],dw2=G[e+"w2"];
+  const a=A.ea,b=A.eb,u=A.eu,da=A.dea,db=A.deb,du=A.deu;
+  // 再計算: a,b,u
+  for(let j=0;j<h;j++){a[j]=0;b[j]=0;}
+  for(let i=0;i<d;i++){
+    const hv=A.h2[ho+i];if(hv===0)continue;
+    const r=i*h;
+    for(let j=0;j<h;j++){a[j]+=hv*w1[r+j];b[j]+=hv*w3[r+j];}
+  }
+  let dgate=0;
+  for(let j=0;j<h;j++){
+    const sg=1/(1+Math.exp(-a[j])),s=a[j]*sg;
+    u[j]=s*b[j];
+  }
+  if(wantDgate){                       // dgate = dout·(u·w2)
+    for(let j=0;j<h;j++){
+      const uj=u[j];if(uj===0)continue;
+      const r2=j*d;let s=0;
+      for(let i=0;i<d;i++)s+=dout[oo+i]*w2[r2+i];
+      dgate+=uj*s;
+    }
+  }
+  // du = gate·(dout·w2ᵀ) ; dw2 += (gate·u)ᵀ⊗dout
+  for(let j=0;j<h;j++){
+    const r2=j*d;let s=0;
+    for(let i=0;i<d;i++){s+=dout[oo+i]*w2[r2+i];dw2[r2+i]+=gate*u[j]*dout[oo+i];}
+    du[j]=gate*s;
+  }
+  // SwiGLU逆伝播
+  for(let j=0;j<h;j++){
+    const sg=1/(1+Math.exp(-a[j])),s=a[j]*sg;
+    db[j]=du[j]*s;
+    da[j]=du[j]*b[j]*sg*(1+a[j]*(1-sg));
+  }
+  // dh2 += da·w1ᵀ + db·w3ᵀ ; dw1 += h2⊗da ; dw3 += h2⊗db
+  for(let i=0;i<d;i++){
+    const hv=A.h2[ho+i],r=i*h;let s=0;
+    for(let j=0;j<h;j++){
+      s+=da[j]*w1[r+j]+db[j]*w3[r+j];
+      dw1[r+j]+=hv*da[j];dw3[r+j]+=hv*db[j];
+    }
+    A.dh2[ho+i]+=s;
+  }
+  return dgate;
+}
+/* --- 学習1ステップ --- */
+function tokenize(text){
+  const chars=Array.from(text);
+  if(!vocabChars.length){
+    vocabChars=[...new Set(chars)].sort();
+    charToId=new Map(vocabChars.map((c,i)=>[c,i]));
+  }
+  dataIds=new Int32Array(chars.length);
+  for(let i=0;i<chars.length;i++)dataIds[i]=charToId.get(chars[i])??0;
+}
+function makeBatchInto(bx,by,B,T){
+  const Nc=dataIds.length-T-1;
+  for(let b=0;b<B;b++){
+    const i=(Math.random()*Nc)|0;
+    for(let t=0;t<T;t++){bx[b*T+t]=dataIds[i+t];by[b*T+t]=dataIds[i+t+1];}
+  }
+}
+function trainStep(B,lr){
+  const T=C.ctx;
+  ensureBuffers(B,T);
+  makeBatchInto(ACT.bx,ACT.by,B,T);
+  const r=computeGrads(B);
+  step++;
+  adamApply(lr);
+  return r;
+}
+function computeGrads(B){
+  const T=C.ctx,d=C.d,V=C.vocab,E=C.experts;
+  ensureBuffers(B,T);
+  const A=ACT,N=B*T;
+  // 埋め込み
+  for(let n=0;n<N;n++){
+    const src=A.bx[n]*d,dst=n*d;
+    for(let i=0;i<d;i++)A.x[dst+i]=W.wte.a[src+i];
+  }
+  // 各層(チェックポイント保存)
+  const stats=E>1?{fCount:new Float64Array(E)}:null;
+  let aux=0;
+  for(let l=0;l<C.layers;l++){A.xs[l].set(A.x);aux+=layerFwd(l,B,T,stats);}
+  aux=C.layers?aux/C.layers:0;
+  // 最終RMS + ヘッド(重み共有) + CE
+  rmsFwd(A.x,W.rmsf.a,A.xf,A.invf,N,d);
+  for(const k in G)G[k].fill(0);
+  A.dx.fill(0);
+  let ce=0;
+  const lr_=A.logitRow,dwte=G.wte,wte=W.wte.a;
+  for(let n=0;n<N;n++){
+    const xr=n*d;
+    let mx=-Infinity;
+    for(let v=0;v<V;v++){
+      let s=0;const wr=v*d;
+      for(let i=0;i<d;i++)s+=A.xf[xr+i]*wte[wr+i];
+      lr_[v]=s;if(s>mx)mx=s;
+    }
+    let Z=0;
+    for(let v=0;v<V;v++){lr_[v]=Math.exp(lr_[v]-mx);Z+=lr_[v];}
+    const yv=A.by[n];
+    ce-=Math.log(lr_[yv]/Z+1e-12);
+    for(let v=0;v<V;v++){
+      const dl=(lr_[v]/Z-(v===yv?1:0))/N;
+      if(dl===0)continue;
+      const wr=v*d;
+      for(let i=0;i<d;i++){A.dx[xr+i]+=dl*wte[wr+i];dwte[wr+i]+=dl*A.xf[xr+i];}
+    }
+  }
+  ce/=N;
+  // rmsf逆伝播: A.dx(∂/∂xf)→∂/∂x
+  const dxf=A.dh1;dxf.set(A.dx);A.dx.fill(0);
+  rmsBwd(A.x,W.rmsf.a,A.invf,dxf,A.dx,G.rmsf,N,d);
+  // 各層逆伝播(逆順・再計算方式)
+  for(let l=C.layers-1;l>=0;l--)layerBwd(l,B,T);
+  // 埋め込み逆伝播(scatter)
+  for(let n=0;n<N;n++){
+    const dst=A.bx[n]*d,src=n*d;
+    for(let i=0;i<d;i++)dwte[dst+i]+=A.dx[src+i];
+  }
+  let util=null;
+  if(stats){
+    util=new Float64Array(E);
+    for(let e=0;e<E;e++)util[e]=stats.fCount[e]/(N*C.layers);
+  }
+  return {loss:ce,aux:E>1?aux:null,util};
+}
+function adamApply(lr){
+  adamStep++;
+  const b1=0.9,b2=0.999,eps=1e-8;
+  const c1=1-Math.pow(b1,adamStep),c2=1-Math.pow(b2,adamStep);
+  for(const k in W){
+    const w=W[k].a,g=G[k],m=AM[k],v=AV[k];
+    for(let i=0;i<w.length;i++){
+      m[i]=b1*m[i]+(1-b1)*g[i];
+      v[i]=b2*v[i]+(1-b2)*g[i]*g[i];
+      w[i]-=lr*(m[i]/c1)/(Math.sqrt(v[i]/c2)+eps);
+    }
+  }
+}
+function evalLoss(B){ // 現在のACT.bx/byで順伝播のみ: ce + coef·mean_l(aux)
+  const T=C.ctx,d=C.d,V=C.vocab,E=C.experts;
+  const A=ACT,N=B*T;
+  for(let n=0;n<N;n++){
+    const src=A.bx[n]*d,dst=n*d;
+    for(let i=0;i<d;i++)A.x[dst+i]=W.wte.a[src+i];
+  }
+  let aux=0;
+  for(let l=0;l<C.layers;l++){A.xs[l].set(A.x);aux+=layerFwd(l,B,T,null);}
+  aux=C.layers?aux/C.layers:0;
+  rmsFwd(A.x,W.rmsf.a,A.xf,A.invf,N,d);
+  let ce=0;const lr_=A.logitRow,wte=W.wte.a;
+  for(let n=0;n<N;n++){
+    const xr=n*d;let mx=-Infinity;
+    for(let v=0;v<V;v++){
+      let sv=0;const wr=v*d;
+      for(let i=0;i<d;i++)sv+=A.xf[xr+i]*wte[wr+i];
+      lr_[v]=sv;if(sv>mx)mx=sv;
+    }
+    let Z=0;
+    for(let v=0;v<V;v++){lr_[v]=Math.exp(lr_[v]-mx);Z+=lr_[v];}
+    ce-=Math.log(lr_[A.by[n]]/Z+1e-12);
+  }
+  return ce/N+(E>1?AUX_COEF*aux:0);
+}
+/* --- 生成(順伝播のみ・スパース実行) --- */
+function genLogits(ids){
+  const T=ids.length,d=C.d;
+  if(!(ACT&&ACT.B===1&&ACT.T>=T))ensureBuffers(1,Math.max(T,C.ctx));
+  const A=ACT,N=T;
+  for(let n=0;n<N;n++){
+    const src=ids[n]*d,dst=n*d;
+    for(let i=0;i<d;i++)A.x[dst+i]=W.wte.a[src+i];
+  }
+  for(let l=0;l<C.layers;l++){A.xs[l].set(A.x);layerFwd(l,1,T,null);}
+  rmsFwd(A.x,W.rmsf.a,A.xf,A.invf,N,d);
+  const out=new Float32Array(C.vocab),xr=(N-1)*d,wte=W.wte.a;
+  for(let v=0;v<C.vocab;v++){
+    let s=0;const wr=v*d;
+    for(let i=0;i<d;i++)s+=A.xf[xr+i]*wte[wr+i];
+    out[v]=s;
+  }
+  return out;
+}
+function sampleRow(row,temp,topP){
+  const n=row.length;let mx=-Infinity;
+  for(let i=0;i<n;i++){row[i]/=temp;if(row[i]>mx)mx=row[i];}
+  if(!Number.isFinite(mx))return -1;
+  let sum=0;const pb=new Float64Array(n);
+  for(let i=0;i<n;i++){pb[i]=Math.exp(row[i]-mx);sum+=pb[i];}
+  if(!(sum>0)||!Number.isFinite(sum))return -1;
+  for(let i=0;i<n;i++)pb[i]/=sum;
+  const idx=Array.from({length:n},(_,i)=>i).sort((x,y)=>pb[y]-pb[x]);
+  let cum=0,cut=n;
+  for(let r=0;r<n;r++){cum+=pb[idx[r]];if(cum>=topP){cut=r+1;break;}}
+  let z=0;for(let r=0;r<cut;r++)z+=pb[idx[r]];
+  let u=Math.random()*z;
+  for(let r=0;r<cut;r++){u-=pb[idx[r]];if(u<=0)return idx[r];}
+  return idx[cut-1];
+}
+function normalizeWS(t){
+  return t.replace(/\r/g,"").replace(/[ \t]{2,}/g," ").replace(/\n{3,}/g,"\n\n");
+}
+/* --- 保存/読み込み(tinylm-lab-v2形式互換) --- */
+function f32ToB64(f32){
+  const u8=new Uint8Array(f32.buffer,f32.byteOffset,f32.byteLength);
+  let s="";for(let i=0;i<u8.length;i+=0x8000)
+    s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));
+  return btoa(s);
+}
+function b64ToF32(s){
+  const bin=atob(s),u8=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  return new Float32Array(u8.buffer);
+}
+function serializeModel(){
+  const weights={};
+  for(const k in W)
+    weights[k]={shape:W[k].shape,data:f32ToB64(Float32Array.from(W[k].a))};
+  return {format:"tinylm-lab-v2",config:C,step,vocab:vocabChars,weights};
+}
+function deserializeModel(j){
+  if(j.format!=="tinylm-lab-v2")
+    throw new Error(j.format==="tinylm-lab-v1"?"v1形式です。v2(RoPE/MoE)とは互換がありません":"形式が違います");
+  vocabChars=j.vocab;
+  charToId=new Map(vocabChars.map((c,i)=>[c,i]));
+  buildModel(j.config);
+  for(const k in W){
+    const w=j.weights[k];
+    if(!w)throw new Error("重み欠落: "+k);
+    const f=b64ToF32(w.data);
+    for(let i=0;i<f.length;i++)W[k].a[i]=f[i];
+  }
+  step=j.step||0;
+  adamStep=0; // モーメントは保存されないため「重みは継続、optimizerは再始動」で統一
+}
+/* ===END CORE=== */
+
+/* ===GPUCORE=== WebGPU学習エンジン(依存ゼロ・WGSL手書き)
+   CPUエンジン(CORE)の W/AM/AV/C/step/dataIds を共有し、学習ステップ全体をGPU常駐で実行。
+   数学はCPUエンジンと同一。MoEはGPUでは全専門家密計算+ゲートマスク(スパースと同値)。
+   idsAllレイアウト(u32): [0,N)=ids [N,2N)=tgt [2N,3N)=uniqIds [3N,4N+1)=segOff [4N+1,5N+1)=pos */
+let GD=null;
+
+function gpuWGSL(cfg,B){
+  const d=cfg.d,T=cfg.ctx,H=cfg.heads,hd=d/H,E=cfg.experts,K=Math.min(cfg.topk,E),
+        V=cfg.vocab,hid=hidOf(d),N=B*T;
+  return `
+struct U { o:vec4<u32>, p:vec4<u32>, f:vec4<f32> };
+@group(0) @binding(0) var<uniform> u:U;
+@group(0) @binding(1) var<storage,read_write> b1:array<f32>;
+@group(0) @binding(2) var<storage,read_write> b2:array<f32>;
+@group(0) @binding(3) var<storage,read_write> b3:array<f32>;
+@group(0) @binding(4) var<storage,read_write> b4:array<f32>;
+@group(0) @binding(5) var<storage,read_write> b5:array<f32>;
+@group(0) @binding(6) var<storage,read_write> bu:array<atomic<u32>>;
+@group(0) @binding(7) var<storage,read_write> bi:array<u32>;
+const D:u32=${d}u; const TT:u32=${T}u; const HH:u32=${H}u; const HD:u32=${hd}u;
+const EE:u32=${E}u; const KK:u32=${K}u; const VV:u32=${V}u; const HI:u32=${hid}u;
+const NN:u32=${N}u; const SCALE:f32=${(1/Math.sqrt(hd)).toFixed(9)};
+
+@compute @workgroup_size(8,8)
+fn mm_nn(@builtin(global_invocation_id) g:vec3<u32>){ // C=A[N,K]·B[K,M]*f0(+C*f1) o=[a,b,c] p=[N,K,M]
+  let n=g.y; let m=g.x;
+  if(n>=u.p.x||m>=u.p.z){return;}
+  var s:f32=0.0;
+  for(var k:u32=0u;k<u.p.y;k++){ s+=b1[u.o.x+n*u.p.y+k]*b2[u.o.y+k*u.p.z+m]; }
+  let ci=u.o.z+n*u.p.z+m;
+  if(u.f.y==0.0){ b3[ci]=s*u.f.x; } else { b3[ci]=s*u.f.x+b3[ci]*u.f.y; }
+}
+@compute @workgroup_size(8,8)
+fn mm_nt(@builtin(global_invocation_id) g:vec3<u32>){ // C=A[N,M]·B[K,M]ᵀ*f0(+C*f1) o=[a,b,c] p=[N,M,K]
+  let n=g.y; let k=g.x;
+  if(n>=u.p.x||k>=u.p.z){return;}
+  var s:f32=0.0;
+  for(var m:u32=0u;m<u.p.y;m++){ s+=b1[u.o.x+n*u.p.y+m]*b2[u.o.y+k*u.p.y+m]; }
+  let ci=u.o.z+n*u.p.z+k;
+  if(u.f.y==0.0){ b3[ci]=s*u.f.x; } else { b3[ci]=s*u.f.x+b3[ci]*u.f.y; }
+}
+@compute @workgroup_size(8,8)
+fn mm_tn(@builtin(global_invocation_id) g:vec3<u32>){ // G[K,M]+=A[N,K]ᵀ·D[N,M] o=[a,d,g] p=[N,K,M]
+  let k=g.y; let m=g.x;
+  if(k>=u.p.y||m>=u.p.z){return;}
+  var s:f32=0.0;
+  for(var n:u32=0u;n<u.p.x;n++){ s+=b1[u.o.x+n*u.p.y+k]*b2[u.o.y+n*u.p.z+m]; }
+  b3[u.o.z+k*u.p.z+m]+=s;
+}
+@compute @workgroup_size(64)
+fn embed(@builtin(global_invocation_id) g:vec3<u32>){ // b1=Wf(o.x=wte) b2=x
+  let idx=g.x; if(idx>=NN*D){return;}
+  b2[idx]=b1[u.o.x+bi[idx/D]*D+idx%D];
+}
+@compute @workgroup_size(8,8)
+fn embed_bwd(@builtin(global_invocation_id) g:vec3<u32>){ // b1=dx b2=Gf(o.x=wte) p=[uniqCount,uniqBase,segBase,posBase]
+  let ui=g.y; let i=g.x;
+  if(ui>=u.p.x||i>=D){return;}
+  let vid=bi[u.p.y+ui];
+  let s0=bi[u.p.z+ui]; let s1=bi[u.p.z+ui+1u];
+  var s:f32=0.0;
+  for(var q:u32=s0;q<s1;q++){ s+=b1[bi[u.p.w+q]*D+i]; }
+  b2[u.o.x+vid*D+i]+=s;
+}
+@compute @workgroup_size(64)
+fn rms_fwd(@builtin(global_invocation_id) g:vec3<u32>){ // b1=x b2=y b3=inv b4=Wf(o.x=g)
+  let n=g.x; if(n>=NN){return;}
+  var s:f32=0.0;
+  for(var i:u32=0u;i<D;i++){ let x=b1[n*D+i]; s+=x*x; }
+  let iv=inverseSqrt(s/f32(D)+1e-6);
+  b3[n]=iv;
+  for(var i:u32=0u;i<D;i++){ b2[n*D+i]=b1[n*D+i]*iv*b4[u.o.x+i]; }
+}
+@compute @workgroup_size(64)
+fn rms_bwd_dx(@builtin(global_invocation_id) g:vec3<u32>){ // b1=x b2=inv b3=dy b4=dx(+=) b5=Wf(o.x=g)
+  let n=g.x; if(n>=NN){return;}
+  let iv=b2[n];
+  var dot:f32=0.0;
+  for(var i:u32=0u;i<D;i++){ dot+=b3[n*D+i]*b5[u.o.x+i]*b1[n*D+i]; }
+  let c=iv*iv*iv*dot/f32(D);
+  for(var i:u32=0u;i<D;i++){ b4[n*D+i]+=b3[n*D+i]*b5[u.o.x+i]*iv-b1[n*D+i]*c; }
+}
+@compute @workgroup_size(64)
+fn rms_bwd_dg(@builtin(global_invocation_id) g:vec3<u32>){ // b1=x b2=inv b3=dy b4=Gf(o.x=g)
+  let i=g.x; if(i>=D){return;}
+  var s:f32=0.0;
+  for(var n:u32=0u;n<NN;n++){ s+=b3[n*D+i]*b1[n*D+i]*b2[n]; }
+  b4[u.o.x+i]+=s;
+}
+@compute @workgroup_size(64)
+fn rope(@builtin(global_invocation_id) g:vec3<u32>){ // b1=qkv o.x=領域(0/D) f0=±1
+  let idx=g.x; let half=HD/2u;
+  if(idx>=NN*HH*half){return;}
+  let n=idx/(HH*half); let r=idx%(HH*half);
+  let h=r/half; let i=r%half;
+  let th=f32(n%TT)/pow(10000.0,2.0*f32(i)/f32(HD));
+  let c=cos(th); let s=sin(th)*u.f.x;
+  let base=n*3u*D+u.o.x+h*HD;
+  let x1=b1[base+i]; let x2=b1[base+half+i];
+  b1[base+i]=x1*c-x2*s;
+  b1[base+half+i]=x1*s+x2*c;
+}
+@compute @workgroup_size(64)
+fn att_fwd(@builtin(global_invocation_id) g:vec3<u32>){ // b1=qkv b2=attP b3=y
+  let idx=g.x; if(idx>=NN*HH){return;}
+  let bh=idx/TT; let t=idx%TT;
+  let b=bh/HH; let h=bh%HH;
+  let qb=(b*TT+t)*3u*D+h*HD;
+  let pOff=(b*HH+h)*TT*TT+t*TT;
+  var mx:f32=-1e30;
+  for(var j:u32=0u;j<=t;j++){
+    let kb=(b*TT+j)*3u*D+D+h*HD;
+    var s:f32=0.0;
+    for(var i:u32=0u;i<HD;i++){ s+=b1[qb+i]*b1[kb+i]; }
+    s*=SCALE; b2[pOff+j]=s; if(s>mx){mx=s;}
+  }
+  var z:f32=0.0;
+  for(var j:u32=0u;j<=t;j++){ let e=exp(b2[pOff+j]-mx); b2[pOff+j]=e; z+=e; }
+  for(var j:u32=0u;j<=t;j++){ b2[pOff+j]/=z; }
+  let yb=(b*TT+t)*D+h*HD;
+  for(var i:u32=0u;i<HD;i++){ b3[yb+i]=0.0; }
+  for(var j:u32=0u;j<=t;j++){
+    let p=b2[pOff+j];
+    let vb=(b*TT+j)*3u*D+2u*D+h*HD;
+    for(var i:u32=0u;i<HD;i++){ b3[yb+i]+=p*b1[vb+i]; }
+  }
+}
+@compute @workgroup_size(64)
+fn att_bwd_dq(@builtin(global_invocation_id) g:vec3<u32>){ // b1=qkv b2=attP b3=dy b4=dqkv b5=attDot
+  let idx=g.x; if(idx>=NN*HH){return;}
+  let bh=idx/TT; let t=idx%TT;
+  let b=bh/HH; let h=bh%HH;
+  let pOff=(b*HH+h)*TT*TT+t*TT;
+  let dyb=(b*TT+t)*D+h*HD;
+  var dot:f32=0.0;
+  for(var j:u32=0u;j<=t;j++){
+    let vb=(b*TT+j)*3u*D+2u*D+h*HD;
+    var dp:f32=0.0;
+    for(var i:u32=0u;i<HD;i++){ dp+=b3[dyb+i]*b1[vb+i]; }
+    dot+=dp*b2[pOff+j];
+  }
+  b5[(b*HH+h)*TT+t]=dot;
+  let dqb=(b*TT+t)*3u*D+h*HD;
+  for(var j:u32=0u;j<=t;j++){
+    let vb=(b*TT+j)*3u*D+2u*D+h*HD;
+    let kb=(b*TT+j)*3u*D+D+h*HD;
+    var dp:f32=0.0;
+    for(var i:u32=0u;i<HD;i++){ dp+=b3[dyb+i]*b1[vb+i]; }
+    let ds=b2[pOff+j]*(dp-dot)*SCALE;
+    for(var i:u32=0u;i<HD;i++){ b4[dqb+i]+=ds*b1[kb+i]; }
+  }
+}
+@compute @workgroup_size(64)
+fn att_bwd_dkv(@builtin(global_invocation_id) g:vec3<u32>){
+  let idx=g.x; if(idx>=NN*HH){return;}
+  let bh=idx/TT; let j=idx%TT;
+  let b=bh/HH; let h=bh%HH;
+  let vb=(b*TT+j)*3u*D+2u*D+h*HD;
+  let dkb=(b*TT+j)*3u*D+D+h*HD;
+  let dvb=(b*TT+j)*3u*D+2u*D+h*HD;
+  for(var t:u32=j;t<TT;t++){
+    let p=b2[(b*HH+h)*TT*TT+t*TT+j];
+    let dyb=(b*TT+t)*D+h*HD;
+    var dp:f32=0.0;
+    for(var i:u32=0u;i<HD;i++){ dp+=b3[dyb+i]*b1[vb+i]; }
+    let ds=p*(dp-b5[(b*HH+h)*TT+t])*SCALE;
+    let qb=(b*TT+t)*3u*D+h*HD;
+    for(var i:u32=0u;i<HD;i++){
+      b4[dkb+i]+=ds*b1[qb+i];
+      b4[dvb+i]+=p*b3[dyb+i];
+    }
+  }
+}
+@compute @workgroup_size(64)
+fn swiglu_fwd(@builtin(global_invocation_id) g:vec3<u32>){ // b1=a b2=b b3=u
+  let i=g.x; if(i>=NN*HI){return;}
+  let a=b1[i];
+  b3[i]=(a/(1.0+exp(-a)))*b2[i];
+}
+@compute @workgroup_size(64)
+fn swiglu_bwd(@builtin(global_invocation_id) g:vec3<u32>){ // b1=a b2=b b3=du b4=da b5=db
+  let i=g.x; if(i>=NN*HI){return;}
+  let a=b1[i]; let sg=1.0/(1.0+exp(-a));
+  b5[i]=b3[i]*a*sg;
+  b4[i]=b3[i]*b2[i]*sg*(1.0+a*(1.0-sg));
+}
+@compute @workgroup_size(64)
+fn scale_acc(@builtin(global_invocation_id) g:vec3<u32>){ // b3+=gate·b1  p.x=e p.y=1で密(gate=1)
+  let idx=g.x; if(idx>=NN*D){return;}
+  var gt:f32=1.0;
+  if(u.p.y==0u){ gt=b2[(idx/D)*EE+u.p.x]; }
+  b3[idx]+=gt*b1[idx];
+}
+@compute @workgroup_size(64)
+fn row_scale(@builtin(global_invocation_id) g:vec3<u32>){ // b3=b1·gate[:,e]
+  let idx=g.x; if(idx>=NN*D){return;}
+  b3[idx]=b1[idx]*b2[(idx/D)*EE+u.p.x];
+}
+@compute @workgroup_size(64)
+fn row_dot(@builtin(global_invocation_id) g:vec3<u32>){ // b3[:,e]=rowdot(b1,b2)
+  let n=g.x; if(n>=NN){return;}
+  var s:f32=0.0;
+  for(var i:u32=0u;i<D;i++){ s+=b1[n*D+i]*b2[n*D+i]; }
+  b3[n*EE+u.p.x]=s;
+}
+@compute @workgroup_size(64)
+fn router_fwd(@builtin(global_invocation_id) g:vec3<u32>){ // b1=probs(logits→softmax) b2=gates p.x=カウント(0/1/2) p.y=層カウンタオフセット
+  let n=g.x; if(n>=NN){return;}
+  var mx:f32=-1e30;
+  for(var e:u32=0u;e<EE;e++){ if(b1[n*EE+e]>mx){mx=b1[n*EE+e];} }
+  var z:f32=0.0;
+  for(var e:u32=0u;e<EE;e++){ let ex=exp(b1[n*EE+e]-mx); b1[n*EE+e]=ex; z+=ex; }
+  for(var e:u32=0u;e<EE;e++){ b1[n*EE+e]/=z; b2[n*EE+e]=-1.0; }
+  var S:f32=0.0;
+  for(var k:u32=0u;k<KK;k++){
+    var best:u32=0u; var bv:f32=-1.0;
+    for(var e:u32=0u;e<EE;e++){
+      if(b2[n*EE+e]<0.0&&b1[n*EE+e]>bv){bv=b1[n*EE+e];best=e;}
+    }
+    b2[n*EE+best]=b1[n*EE+best]; S+=b1[n*EE+best];
+    if(u.p.x==1u){ atomicAdd(&bu[best],1u); }
+    if(u.p.x==2u){ atomicAdd(&bu[u.p.y+best],1u); }
+  }
+  for(var e:u32=0u;e<EE;e++){
+    if(b2[n*EE+e]<0.0){ b2[n*EE+e]=0.0; }
+    else { b2[n*EE+e]=b1[n*EE+e]/(S+1e-9); }
+  }
+}
+@compute @workgroup_size(64)
+fn router_bwd(@builtin(global_invocation_id) g:vec3<u32>){ // b1=probs b2=gates b3=dgates b4=drl p.y=層カウンタoff f0=aux係数
+  let n=g.x; if(n>=NN){return;}
+  var S:f32=0.0; var dot:f32=0.0;
+  for(var e:u32=0u;e<EE;e++){
+    if(b2[n*EE+e]>0.0){ S+=b1[n*EE+e]; dot+=b3[n*EE+e]*b2[n*EE+e]; }
+  }
+  var dp:array<f32,${E}>;
+  for(var e:u32=0u;e<EE;e++){
+    var v:f32=0.0;
+    if(b2[n*EE+e]>0.0){ v=(b3[n*EE+e]-dot)/(S+1e-9); }
+    v+=u.f.x*f32(atomicLoad(&bu[u.p.y+e]));
+    dp[e]=v;
+  }
+  var d2:f32=0.0;
+  for(var e:u32=0u;e<EE;e++){ d2+=dp[e]*b1[n*EE+e]; }
+  for(var e:u32=0u;e<EE;e++){ b4[n*EE+e]=b1[n*EE+e]*(dp[e]-d2); }
+}
+@compute @workgroup_size(64)
+fn ce(@builtin(global_invocation_id) g:vec3<u32>){ // b1=logits(→dlogits) b3=rowloss
+  let n=g.x; if(n>=NN){return;}
+  var mx:f32=-1e30;
+  for(var v:u32=0u;v<VV;v++){ if(b1[n*VV+v]>mx){mx=b1[n*VV+v];} }
+  var z:f32=0.0;
+  for(var v:u32=0u;v<VV;v++){ z+=exp(b1[n*VV+v]-mx); }
+  let t=bi[NN+n];
+  b3[n]=-(b1[n*VV+t]-mx-log(z));
+  for(var v:u32=0u;v<VV;v++){
+    var p=exp(b1[n*VV+v]-mx)/z;
+    if(v==t){ p-=1.0; }
+    b1[n*VV+v]=p/f32(NN);
+  }
+}
+@compute @workgroup_size(64)
+fn adam(@builtin(global_invocation_id) g:vec3<u32>){ // b1=Wf b2=Gf b3=Mf b4=Vf f=[lr,c1,c2] p.x=総数
+  let i=g.x; if(i>=u.p.x){return;}
+  let gr=b2[i];
+  b3[i]=0.9*b3[i]+0.1*gr;
+  b4[i]=0.999*b4[i]+0.001*gr*gr;
+  b1[i]-=u.f.x*(b3[i]/u.f.y)/(sqrt(b4[i]/u.f.z)+1e-8);
+}
+`;
+}
+
+async function gpuInit(gpuObj){
+  const adapter=await gpuObj.requestAdapter();
+  if(!adapter)throw new Error("WebGPUアダプタが見つかりません");
+  const lim=adapter.limits;
+  const device=await adapter.requestDevice({requiredLimits:{
+    maxStorageBufferBindingSize:Math.min(lim.maxStorageBufferBindingSize,1<<30),
+    maxBufferSize:Math.min(lim.maxBufferSize,1<<30),
+  }});
+  GD={adapter,device,ready:false,limits:device.limits};
+  const info=adapter.info||{};
+  return info.description||info.vendor||"GPU";
+}
+function gpuOffsets(){
+  const off={};let cur=0;
+  for(const ns of namedShapes(C)){off[ns[0]]=cur;cur+=ns[1].reduce((a,b)=>a*b,1);}
+  return {off,total:cur};
+}
+function gpuDestroy(){
+  if(!GD||!GD.BF)return;
+  for(const k in GD.BF){
+    const v=GD.BF[k];
+    if(Array.isArray(v))v.forEach(x=>x.destroy&&x.destroy());
+    else if(v&&v.destroy)v.destroy();
+  }
+  if(GD.ub)GD.ub.destroy();
+  GD.BF=null;GD.bgCache=new Map();GD.bufId=new Map();GD.ready=false;
+}
+function gpuBuild(B){
+  gpuDestroy();
+  const dev=GD.device,d=C.d,T=C.ctx,N=B*T,H=C.heads,E=C.experts,V=C.vocab,hid=hidOf(d),L=C.layers;
+  const {off,total}=gpuOffsets();
+  const mkS=n=>dev.createBuffer({size:Math.max(n,4)*4,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_SRC|GPUBufferUsage.COPY_DST});
+  const BF={
+    Wf:mkS(total),Gf:mkS(total),Mf:mkS(total),Vf:mkS(total),
+    x:mkS(N*d),xsAll:mkS(L*N*d),h1:mkS(N*d),qkv:mkS(N*3*d),
+    attP:mkS(B*H*T*T),attDot:mkS(B*H*T),y:mkS(N*d),xmid:mkS(N*d),h2:mkS(N*d),xin:mkS(N*d),
+    inv1:mkS(N),inv2:mkS(N),invf:mkS(N),xf:mkS(N*d),
+    ea:mkS(N*hid),eb:mkS(N*hid),eu:mkS(N*hid),eo:mkS(N*d),
+    dea:mkS(N*hid),deb:mkS(N*hid),deu:mkS(N*hid),deo:mkS(N*d),
+    dx:mkS(N*d),dh1:mkS(N*d),dqkv:mkS(N*3*d),dy:mkS(N*d),dxmid:mkS(N*d),dh2:mkS(N*d),dxf:mkS(N*d),
+    probs:mkS(E>1?N*E:4),gates:mkS(E>1?N*E:4),dgates:mkS(E>1?N*E:4),drl:mkS(E>1?N*E:4),
+    logits:mkS(N*V),rowloss:mkS(N),
+    counters:dev.createBuffer({size:(E+L*E+4)*4,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_SRC|GPUBufferUsage.COPY_DST}),
+    idsAll:dev.createBuffer({size:(5*N+1)*4,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST}),
+    dmy:[mkS(1),mkS(1),mkS(1),mkS(1),mkS(1)],
+    rb:dev.createBuffer({size:(N+E+4)*4,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ}),
+  };
+  const mod=dev.createShaderModule({code:gpuWGSL(C,B)});
+  const bglEntries=[{binding:0,visibility:GPUShaderStage.COMPUTE,buffer:{type:"uniform",hasDynamicOffset:true}}];
+  for(let i=1;i<=7;i++)bglEntries.push({binding:i,visibility:GPUShaderStage.COMPUTE,buffer:{type:"storage"}});
+  const bgl=dev.createBindGroupLayout({entries:bglEntries});
+  const plo=dev.createPipelineLayout({bindGroupLayouts:[bgl]});
+  const names=["mm_nn","mm_nt","mm_tn","embed","embed_bwd","rms_fwd","rms_bwd_dx","rms_bwd_dg",
+               "rope","att_fwd","att_bwd_dq","att_bwd_dkv","swiglu_fwd","swiglu_bwd",
+               "scale_acc","row_scale","row_dot","router_fwd","router_bwd","ce","adam"];
+  const P={};
+  for(const nm of names)P[nm]=dev.createComputePipeline({layout:plo,compute:{module:mod,entryPoint:nm}});
+  GD.bgl=bgl;
+  const UCAP=8192;
+  GD.B=B;GD.N=N;GD.off=off;GD.total=total;GD.BF=BF;GD.P=P;
+  GD.ub=dev.createBuffer({size:UCAP*256,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+  GD.ustage=new ArrayBuffer(UCAP*256);GD.ucount=0;
+  GD.bufId=new Map();GD.bgCache=new Map();GD.idn=0;
+  GD.hostIds=new Uint32Array(5*N+1);
+  GD.ready=true;
+}
+function gpuUni(o,p,f){
+  const i=GD.ucount++;
+  const dv=new DataView(GD.ustage,i*256,64);
+  for(let k=0;k<4;k++)dv.setUint32(k*4,(o[k]||0)>>>0,true);
+  for(let k=0;k<4;k++)dv.setUint32(16+k*4,(p[k]||0)>>>0,true);
+  for(let k=0;k<4;k++)dv.setFloat32(32+k*4,f[k]||0,true);
+  return i*256;
+}
+function bufKey(b){
+  if(!GD.bufId.has(b))GD.bufId.set(b,GD.idn++);
+  return GD.bufId.get(b);
+}
+function gpuBG(slots){
+  const key=slots.map(s=>s?bufKey(s):"_").join(",");
+  if(GD.bgCache.has(key))return GD.bgCache.get(key);
+  const BF=GD.BF;
+  const entries=[{binding:0,resource:{buffer:GD.ub,size:64}}];
+  for(let i=0;i<5;i++)entries.push({binding:i+1,resource:{buffer:slots[i]||BF.dmy[i]}});
+  entries.push({binding:6,resource:{buffer:BF.counters}});
+  entries.push({binding:7,resource:{buffer:BF.idsAll}});
+  const bg=GD.device.createBindGroup({layout:GD.bgl,entries});
+  GD.bgCache.set(key,bg);
+  return bg;
+}
+function gpuUploadState(){
+  const total=GD.total;
+  const flat=new Float32Array(total),m=new Float32Array(total),v=new Float32Array(total);
+  for(const k in W){flat.set(Float32Array.from(W[k].a),GD.off[k]);m.set(Float32Array.from(AM[k]),GD.off[k]);v.set(Float32Array.from(AV[k]),GD.off[k]);}
+  GD.device.queue.writeBuffer(GD.BF.Wf,0,flat);
+  GD.device.queue.writeBuffer(GD.BF.Mf,0,m);
+  GD.device.queue.writeBuffer(GD.BF.Vf,0,v);
+}
+async function gpuReadBuf(buf,count,offEl){
+  const dev=GD.device;
+  const st=dev.createBuffer({size:count*4,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
+  const enc=dev.createCommandEncoder();
+  enc.copyBufferToBuffer(buf,(offEl||0)*4,st,0,count*4);
+  dev.queue.submit([enc.finish()]);
+  await st.mapAsync(GPUMapMode.READ);
+  const out=Float32Array.from(new Float32Array(st.getMappedRange()));
+  st.unmap();st.destroy();
+  return out;
+}
+async function gpuDownloadState(){
+  for(const k in W){
+    const o=GD.off[k],n=W[k].a.length;
+    const w=await gpuReadBuf(GD.BF.Wf,n,o);
+    const m=await gpuReadBuf(GD.BF.Mf,n,o);
+    const v=await gpuReadBuf(GD.BF.Vf,n,o);
+    for(let i=0;i<n;i++){W[k].a[i]=w[i];AM[k][i]=m[i];AV[k][i]=v[i];}
+  }
+}
+function gpuEncodeStep(lr,applyAdam){
+  const BF=GD.BF,off=GD.off,B=GD.B,N=GD.N;
+  const d=C.d,T=C.ctx,H=C.heads,E=C.experts,K=Math.min(C.topk,E),V=C.vocab,hid=hidOf(d),L=C.layers;
+  GD.ucount=0;
+  const enc=GD.device.createCommandEncoder();
+  enc.clearBuffer(BF.Gf);enc.clearBuffer(BF.dx);
+  enc.clearBuffer(BF.counters);
+  const items=[];
+  const D_=(name,slots,o,p,f,cols,rows)=>{
+    const wx=rows===undefined?Math.ceil(cols/64):Math.ceil(cols/8);
+    const wy=rows===undefined?1:Math.ceil(rows/8);
+    items.push({k:"d",name,slots,o,p,f,wx,wy});
+  };
+  const CP=(src,dst,n,so,doff)=>items.push({k:"c",src,dst,n,so:so||0,doff:doff||0});
+  const CL=b=>items.push({k:"z",b});
+  const layerFwdPlan=(l,countMode)=>{
+    D_("rms_fwd",[BF.x,BF.h1,BF.inv1,BF.Wf],[off["b"+l+".rms1"]],[],[],N);
+    D_("mm_nn",[BF.h1,BF.Wf,BF.qkv],[0,off["b"+l+".qkvw"],0],[N,d,3*d],[1,0],3*d,N);
+    D_("rope",[BF.qkv],[0],[],[1],N*H*(d/H/2));
+    D_("rope",[BF.qkv],[d],[],[1],N*H*(d/H/2));
+    D_("att_fwd",[BF.qkv,BF.attP,BF.y],[],[],[],N*H);
+    D_("mm_nn",[BF.y,BF.Wf,BF.xmid],[0,off["b"+l+".projw"],0],[N,d,d],[1,0],d,N);
+    D_("scale_acc",[BF.x,BF.gates,BF.xmid],[],[0,1],[],N*d);
+    CP(BF.xmid,BF.x,N*d);
+    D_("rms_fwd",[BF.xmid,BF.h2,BF.inv2,BF.Wf],[off["b"+l+".rms2"]],[],[],N);
+    if(E>1){
+      D_("mm_nn",[BF.h2,BF.Wf,BF.probs],[0,off["b"+l+".router"],0],[N,d,E],[1,0],E,N);
+      D_("router_fwd",[BF.probs,BF.gates],[],[countMode,E+l*E],[],N);
+    }
+    for(let e=0;e<E;e++){
+      const pre="b"+l+".e"+e+".";
+      D_("mm_nn",[BF.h2,BF.Wf,BF.ea],[0,off[pre+"w1"],0],[N,d,hid],[1,0],hid,N);
+      D_("mm_nn",[BF.h2,BF.Wf,BF.eb],[0,off[pre+"w3"],0],[N,d,hid],[1,0],hid,N);
+      D_("swiglu_fwd",[BF.ea,BF.eb,BF.eu],[],[],[],N*hid);
+      D_("mm_nn",[BF.eu,BF.Wf,BF.eo],[0,off[pre+"w2"],0],[N,hid,d],[1,0],d,N);
+      D_("scale_acc",[BF.eo,BF.gates,BF.x],[],[e,E>1?0:1],[],N*d);
+    }
+  };
+  D_("embed",[BF.Wf,BF.x],[off.wte],[],[],N*d);
+  for(let l=0;l<L;l++){CP(BF.x,BF.xsAll,N*d,0,l*N*d);layerFwdPlan(l,1);}
+  D_("rms_fwd",[BF.x,BF.xf,BF.invf,BF.Wf],[off.rmsf],[],[],N);
+  D_("mm_nt",[BF.xf,BF.Wf,BF.logits],[0,off.wte,0],[N,d,V],[1,0],V,N);
+  D_("ce",[BF.logits,BF.gates,BF.rowloss],[],[],[],N);
+  D_("mm_nn",[BF.logits,BF.Wf,BF.dxf],[0,off.wte,0],[N,V,d],[1,0],d,N);
+  D_("mm_tn",[BF.logits,BF.xf,BF.Gf],[0,0,off.wte],[N,V,d],[],d,V);
+  D_("rms_bwd_dx",[BF.x,BF.invf,BF.dxf,BF.dx,BF.Wf],[off.rmsf],[],[],N);
+  D_("rms_bwd_dg",[BF.x,BF.invf,BF.dxf,BF.Gf],[off.rmsf],[],[],d);
+  for(let l=L-1;l>=0;l--){
+    CP(BF.xsAll,BF.x,N*d,l*N*d,0);
+    CP(BF.xsAll,BF.xin,N*d,l*N*d,0);
+    layerFwdPlan(l,E>1?2:0);
+    CP(BF.dx,BF.dxmid,N*d);
+    CL(BF.dh2);
+    if(E>1)CL(BF.dgates);
+    for(let e=0;e<E;e++){
+      const pre="b"+l+".e"+e+".";
+      D_("mm_nn",[BF.h2,BF.Wf,BF.ea],[0,off[pre+"w1"],0],[N,d,hid],[1,0],hid,N);
+      D_("mm_nn",[BF.h2,BF.Wf,BF.eb],[0,off[pre+"w3"],0],[N,d,hid],[1,0],hid,N);
+      D_("swiglu_fwd",[BF.ea,BF.eb,BF.eu],[],[],[],N*hid);
+      if(E>1){
+        D_("mm_nn",[BF.eu,BF.Wf,BF.eo],[0,off[pre+"w2"],0],[N,hid,d],[1,0],d,N);
+        D_("row_dot",[BF.dx,BF.eo,BF.dgates],[],[e],[],N);
+        D_("row_scale",[BF.dx,BF.gates,BF.deo],[],[e],[],N*d);
+      }else{
+        CP(BF.dx,BF.deo,N*d);
+      }
+      D_("mm_tn",[BF.eu,BF.deo,BF.Gf],[0,0,off[pre+"w2"]],[N,hid,d],[],d,hid);
+      D_("mm_nt",[BF.deo,BF.Wf,BF.deu],[0,off[pre+"w2"],0],[N,d,hid],[1,0],hid,N);
+      D_("swiglu_bwd",[BF.ea,BF.eb,BF.deu,BF.dea,BF.deb],[],[],[],N*hid);
+      D_("mm_tn",[BF.h2,BF.dea,BF.Gf],[0,0,off[pre+"w1"]],[N,d,hid],[],hid,d);
+      D_("mm_tn",[BF.h2,BF.deb,BF.Gf],[0,0,off[pre+"w3"]],[N,d,hid],[],hid,d);
+      D_("mm_nt",[BF.dea,BF.Wf,BF.dh2],[0,off[pre+"w1"],0],[N,hid,d],[1,1],d,N);
+      D_("mm_nt",[BF.deb,BF.Wf,BF.dh2],[0,off[pre+"w3"],0],[N,hid,d],[1,1],d,N);
+    }
+    if(E>1){
+      const auxC=(AUX_COEF/L)*(E/K)/(N*N);
+      D_("router_bwd",[BF.probs,BF.gates,BF.dgates,BF.drl],[],[0,E+l*E],[auxC],N);
+      D_("mm_tn",[BF.h2,BF.drl,BF.Gf],[0,0,off["b"+l+".router"]],[N,d,E],[],E,d);
+      D_("mm_nt",[BF.drl,BF.Wf,BF.dh2],[0,off["b"+l+".router"],0],[N,E,d],[1,1],d,N);
+    }
+    D_("rms_bwd_dx",[BF.xmid,BF.inv2,BF.dh2,BF.dxmid,BF.Wf],[off["b"+l+".rms2"]],[],[],N);
+    D_("rms_bwd_dg",[BF.xmid,BF.inv2,BF.dh2,BF.Gf],[off["b"+l+".rms2"]],[],[],d);
+    D_("mm_nt",[BF.dxmid,BF.Wf,BF.dy],[0,off["b"+l+".projw"],0],[N,d,d],[1,0],d,N);
+    D_("mm_tn",[BF.y,BF.dxmid,BF.Gf],[0,0,off["b"+l+".projw"]],[N,d,d],[],d,d);
+    CL(BF.dqkv);
+    D_("att_bwd_dq",[BF.qkv,BF.attP,BF.dy,BF.dqkv,BF.attDot],[],[],[],N*H);
+    D_("att_bwd_dkv",[BF.qkv,BF.attP,BF.dy,BF.dqkv,BF.attDot],[],[],[],N*H);
+    D_("rope",[BF.dqkv],[0],[],[-1],N*H*(d/H/2));
+    D_("rope",[BF.dqkv],[d],[],[-1],N*H*(d/H/2));
+    D_("mm_nt",[BF.dqkv,BF.Wf,BF.dh1],[0,off["b"+l+".qkvw"],0],[N,3*d,d],[1,0],d,N);
+    D_("mm_tn",[BF.h1,BF.dqkv,BF.Gf],[0,0,off["b"+l+".qkvw"]],[N,d,3*d],[],3*d,d);
+    CP(BF.dxmid,BF.dx,N*d);
+    D_("rms_bwd_dx",[BF.xin,BF.inv1,BF.dh1,BF.dx,BF.Wf],[off["b"+l+".rms1"]],[],[],N);
+    D_("rms_bwd_dg",[BF.xin,BF.inv1,BF.dh1,BF.Gf],[off["b"+l+".rms1"]],[],[],d);
+  }
+  D_("embed_bwd",[BF.dx,BF.Gf],[off.wte],[GD.segCount,2*N,3*N,4*N+1],[],d,GD.segCount);
+  if(applyAdam){
+    step++;adamStep++;
+    const c1=1-Math.pow(0.9,adamStep),c2=1-Math.pow(0.999,adamStep);
+    D_("adam",[BF.Wf,BF.Gf,BF.Mf,BF.Vf],[],[GD.total],[lr,c1,c2],GD.total);
+  }
+  let pass=null;
+  const endPass=()=>{if(pass){pass.end();pass=null;}};
+  for(const it of items){
+    if(it.k==="c"){endPass();enc.copyBufferToBuffer(it.src,it.so*4,it.dst,it.doff*4,it.n*4);continue;}
+    if(it.k==="z"){endPass();enc.clearBuffer(it.b);continue;}
+    if(!pass)pass=enc.beginComputePass();
+    const uoff=gpuUni(it.o,it.p,it.f);
+    pass.setPipeline(GD.P[it.name]);
+    pass.setBindGroup(0,gpuBG(it.slots),[uoff]);
+    pass.dispatchWorkgroups(it.wx,it.wy);
+  }
+  endPass();
+  enc.copyBufferToBuffer(BF.rowloss,0,BF.rb,0,N*4);
+  enc.copyBufferToBuffer(BF.counters,0,BF.rb,N*4,C.experts*4);
+  GD.device.queue.writeBuffer(GD.ub,0,GD.ustage,0,GD.ucount*256);
+  return enc.finish();
+}
+function gpuPrepBatch(bx,by){
+  const N=GD.N,ids=GD.hostIds;
+  ids.fill(0);
+  for(let n=0;n<N;n++){ids[n]=bx[n];ids[N+n]=by[n];}
+  const bins=new Map();
+  for(let n=0;n<N;n++){
+    const v=bx[n];
+    if(!bins.has(v))bins.set(v,[]);
+    bins.get(v).push(n);
+  }
+  const uniq=[...bins.keys()];
+  GD.segCount=uniq.length;
+  let p=0;
+  for(let u2=0;u2<uniq.length;u2++){
+    ids[2*N+u2]=uniq[u2];
+    ids[3*N+u2]=p;
+    const lst=bins.get(uniq[u2]);
+    for(const pos of lst)ids[4*N+1+p++]=pos;
+  }
+  ids[3*N+uniq.length]=p;
+  GD.device.queue.writeBuffer(GD.BF.idsAll,0,ids);
+}
+async function gpuTrainStep(lr,fixedBatch,applyAdam){
+  const N=GD.N,T=C.ctx,B=GD.B,E=C.experts;
+  let bx,by;
+  if(fixedBatch){bx=fixedBatch.bx;by=fixedBatch.by;}
+  else{
+    bx=new Uint32Array(N);by=new Uint32Array(N);
+    const Nc=dataIds.length-T-1;
+    for(let b=0;b<B;b++){
+      const i=(Math.random()*Nc)|0;
+      for(let t=0;t<T;t++){bx[b*T+t]=dataIds[i+t];by[b*T+t]=dataIds[i+t+1];}
+    }
+  }
+  gpuPrepBatch(bx,by);
+  GD.device.queue.submit([gpuEncodeStep(lr,applyAdam!==false)]);
+  await GD.BF.rb.mapAsync(GPUMapMode.READ);
+  const raw=GD.BF.rb.getMappedRange();
+  const rl=new Float32Array(raw,0,N);
+  let loss=0;for(let n=0;n<N;n++)loss+=rl[n];
+  loss/=N;
+  let util=null;
+  if(E>1){
+    const cnt=new Uint32Array(raw,N*4,E);
+    util=new Float64Array(E);
+    for(let e=0;e<E;e++)util[e]=cnt[e]/(N*C.layers);
+  }
+  GD.BF.rb.unmap();
+  return {loss,aux:null,util};
+}
+async function gpuReadGrad(name){
+  return gpuReadBuf(GD.BF.Gf,W[name].a.length,GD.off[name]);
+}
+async function gpuReadAllGrads(){
+  const flat=await gpuReadBuf(GD.BF.Gf,GD.total,0);
+  const out={};
+  for(const k in W)out[k]=flat.subarray(GD.off[k],GD.off[k]+W[k].a.length);
+  return out;
+}
+/* ===END GPUCORE=== */
+
+
+/* ============ UI: コーパス ============ */
+const PREVIEW_LIMIT=200000;
+function getCorpus(){return corpusIsPreview?corpusStore:$("corpus").value;}
+function corpusForModel(){const t=getCorpus();return $("wsNorm").checked?normalizeWS(t):t;}
+function setCorpus(text){
+  corpusStore=text;
+  dataIds=null; // 教材が変わったら必ず再tokenize (旧教材での学習継続バグ対策)
+  if(Array.from(text).length>PREVIEW_LIMIT){
+    corpusIsPreview=true;
+    $("corpus").value=text.slice(0,100000)+"\n\n…(プレビュー: 全"+Array.from(text).length.toLocaleString()+"文字を保持中。編集する場合はクリアしてください)";
+    $("corpus").readOnly=true;
+  }else{
+    corpusIsPreview=false;
+    $("corpus").value=text;
+    $("corpus").readOnly=false;
+  }
+  refreshKnobs();refreshScaleParams();
+}
+$("btnFile").onclick=()=>$("corpusFile").click();
+$("corpusFile").onchange=async e=>{
+  const files=[...e.target.files];
+  if(!files.length)return;
+  try{
+    const texts=await Promise.all(files.map(f=>f.text()));
+    setCorpus(texts.join("\n"));
+    setStatus(files.length+"ファイル読み込み完了","ok");
+  }catch(err){setStatus("ファイル読み込み失敗: "+err.message,"err");}
+  e.target.value="";
+};
+$("btnClearCorpus").onclick=()=>{setCorpus("");};
+$("corpus").addEventListener("input",()=>{if(!corpusIsPreview){corpusStore=$("corpus").value;dataIds=null;refreshKnobs();refreshScaleParams();}});
+$("wsNorm").addEventListener("change",()=>{dataIds=null;refreshKnobs();});
+
+/* ============ UI: スライダーとプリセット ============ */
+const kD=$("kD"),kL=$("kL"),kH=$("kH"),kT=$("kT"),kE=$("kE"),kK=$("kK"),kB=$("kB"),kLR=$("kLR"),
+      kSteps=$("kSteps"),kGen=$("kGen"),kTemp=$("kTemp"),kTopP=$("kTopP");
+let selScale=-1;
+function curCfg(){
+  let d=D_OPTS[+kD.value],hi=+kH.value;
+  while(hi>0&&(d%HEAD_OPTS[hi]!==0||((d/HEAD_OPTS[hi])%2)!==0))hi--;
+  kH.value=hi;
+  const E=E_OPTS[+kE.value];
+  return {d,layers:+kL.value,heads:HEAD_OPTS[hi],ctx:CTX_OPTS[+kT.value],
+          experts:E,topk:Math.min(+kK.value,E)};
+}
+function refreshKnobs(){
+  const cfg=curCfg();
+  $("oD").textContent=cfg.d;$("oL").textContent=cfg.layers;
+  $("oH").textContent=cfg.heads;$("oT").textContent=cfg.ctx;
+  $("oE").textContent=cfg.experts;$("oK").textContent=cfg.topk;
+  $("oB").textContent=BATCH_OPTS[+kB.value];$("oLR").textContent=LR_LABEL[+kLR.value];
+  $("oSteps").textContent=kSteps.value;$("oGen").textContent=kGen.value;
+  $("oTemp").textContent=(+kTemp.value/10).toFixed(1);
+  $("oTopP").textContent=(+kTopP.value/100).toFixed(2);
+  const text=getCorpus();
+  const uniq=new Set(Array.from(text)).size;
+  $("stCharCount").textContent=Array.from(text).length.toLocaleString();
+  $("stVocab").textContent=uniq;
+  if(uniq){
+    const pc=paramCounts({...cfg,vocab:uniq});
+    $("stParams").textContent=fmtNum(pc.total);
+    $("stActive").textContent=fmtNum(pc.active);
+    $("stMem").textContent="≈"+fmtNum(pc.total*16)+"B";
+    const warn=$("bigWarn");
+    if(pc.total>5e6){
+      warn.style.display="";
+      warn.textContent="この規模("+fmtNum(pc.total)+" params)は依存ゼロエンジン(CPU実行)では学習に長時間かかります。学習済みモデルの読み込み実行は可能です。";
+    }else warn.style.display="none";
+  }else{$("stParams").textContent="—";$("stActive").textContent="—";$("stMem").textContent="—";}
+  document.querySelectorAll(".scale-btn").forEach((b,i)=>b.classList.toggle("sel",i===selScale));
+  $("scaleNote").textContent=selScale>=0?SCALES[selScale].note:"プリセットを選ぶか、下のスライダーで自由に構成できます。";
+}
+function buildScaleRow(){
+  const row=$("scaleRow");
+  SCALES.forEach((s,i)=>{
+    const b=document.createElement("button");
+    b.type="button";b.className="scale-btn";
+    b.innerHTML='<div class="sname">'+s.name+'</div><div class="sparams" id="sp'+i+'">—</div><div class="sdev">'+s.dev.replace("\n","<br>")+'</div>';
+    b.onclick=()=>{
+      selScale=i;
+      kD.value=s.d;kL.value=s.L;kH.value=s.H;kT.value=s.T;
+      kE.value=s.E;kK.value=s.K;kB.value=s.B;kLR.value=s.LR;
+      refreshKnobs();
+    };
+    row.appendChild(b);
+  });
+}
+function refreshScaleParams(){
+  const uniq=Math.max(new Set(Array.from(getCorpus())).size,100);
+  SCALES.forEach((s,i)=>{
+    const cfg={d:D_OPTS[s.d],layers:s.L,heads:HEAD_OPTS[s.H],ctx:CTX_OPTS[s.T],
+               experts:E_OPTS[s.E],topk:s.K,vocab:uniq};
+    const el=$("sp"+i);if(el)el.textContent=fmtNum(paramCounts(cfg).total);
+  });
+}
+[kD,kL,kH,kT,kE,kK,kB,kLR,kSteps,kGen,kTemp,kTopP].forEach(el=>el.addEventListener("input",()=>{
+  if([kD,kL,kH,kT,kE,kK].includes(el))selScale=-1;
+  refreshKnobs();
+}));
+
+/* ============ 学習UI ============ */
+function updateOdo(){
+  if(!C){$("odo").innerHTML="計 — params<br>有効 <b>—</b> params";return;}
+  const pc=paramCounts(C);
+  $("odo").innerHTML="計 "+fmtNum(pc.total)+" params<br>有効 <b>"+fmtNum(pc.active)+"</b> params";
+}
+function buildEbars(){
+  const panel=$("moePanel"),wrap=$("ebars");
+  wrap.innerHTML="";
+  if(!C||C.experts<2){panel.style.display="none";return;}
+  panel.style.display="";
+  for(let e=0;e<C.experts;e++){
+    const div=document.createElement("div");
+    div.className="ebar";
+    div.innerHTML='<span class="elab">E'+e+'</span><div class="etrack"><div class="efill" id="ef'+e+'"></div></div><span class="epct" id="ep'+e+'">—</span>';
+    wrap.appendChild(div);
+  }
+  utilEMA=null;
+}
+function showUtil(util){
+  if(!C||C.experts<2||!util)return;
+  const K=Math.min(C.topk,C.experts);
+  if(!utilEMA)utilEMA=Float64Array.from(util);
+  else for(let i=0;i<util.length;i++)utilEMA[i]=utilEMA[i]*0.9+util[i]*0.1;
+  for(let e=0;e<C.experts;e++){
+    const share=utilEMA[e]/K*100;
+    const f=$("ef"+e),p=$("ep"+e);
+    if(f){f.style.width=Math.min(share,100)+"%";p.textContent=share.toFixed(1)+"%";}
+  }
+}
+function gpuMemCheck(B){
+  const total=paramCounts(C).total,N=B*C.ctx;
+  const lim=GD.limits;
+  const stateB=total*4;                      // Wf(=Gf=Mf=Vf 各同サイズ)
+  const bigAct=Math.max(C.layers*N*C.d, N*C.vocab, B*C.heads*C.ctx*C.ctx)*4;
+  const est=stateB*4 + (C.layers*N*C.d + N*C.vocab + B*C.heads*C.ctx*C.ctx + 30*N*C.d + 8*N*hidOf(C.d))*4;
+  if(stateB>lim.maxStorageBufferBindingSize||stateB>lim.maxBufferSize||bigAct>lim.maxStorageBufferBindingSize)
+    throw new Error("この規模はGPUバッファ上限を超えます (重み"+(stateB/2**30).toFixed(2)+"GiB / 上限"+(Math.min(lim.maxStorageBufferBindingSize,lim.maxBufferSize)/2**30).toFixed(2)+"GiB)。CPUエンジンをご利用ください");
+  return est;
+}
+async function gpuPrepare(B){
+  if(!GD)gpuName=await gpuInit(navigator.gpu);
+  const key=JSON.stringify([C,B]);
+  if(gpuCfgKey!==key){
+    const est=gpuMemCheck(B);
+    setStatus("GPUパイプラインを構築中… (推定GPUメモリ "+(est/2**20).toFixed(0)+"MB)","ok");
+    gpuBuild(B);
+    gpuUploadState();
+    if(paramCounts(C).total<5e6){
+      setStatus("GPU自己診断中… (CPUと全勾配テンソルを突き合わせ)","ok");
+      await new Promise(r=>setTimeout(r,0));
+      ensureBuffers(B,C.ctx);
+      makeBatchInto(ACT.bx,ACT.by,B,C.ctx);
+      const bx=Uint32Array.from(ACT.bx),by=Uint32Array.from(ACT.by);
+      const cr=computeGrads(B);
+      const gr=await gpuTrainStep(0,{bx,by},false);
+      const diff=Math.abs(cr.loss-gr.loss);
+      if(!(diff<1e-3))throw new Error("自己診断不一致(loss) CPU "+cr.loss.toFixed(4)+" / GPU "+gr.loss.toFixed(4));
+      const allG=await gpuReadAllGrads();
+      let worst=0,wn="";
+      for(const nm in G){
+        const cg=G[nm],gg=allG[nm];
+        let sc=0,md=0;
+        for(let i=0;i<cg.length;i++){const c=Math.abs(cg[i]);if(c>sc)sc=c;}
+        for(let i=0;i<cg.length;i++){const dd=Math.abs(cg[i]-gg[i]);if(dd>md)md=dd;}
+        const rel=md/Math.max(sc,1e-8);
+        if(md>1e-5&&rel>worst){worst=rel;wn=nm;} // ほぼゼロ勾配テンソルの過敏判定を回避
+      }
+      if(!(worst<5e-3))throw new Error("自己診断不一致(勾配) "+wn+" 相対差 "+worst.toExponential(1));
+      $("gpuInfo").textContent="✓ "+(gpuName||"GPU")+" 自己診断合格 (loss差 "+diff.toExponential(1)+" / 全"+Object.keys(G).length+"勾配テンソル最大相対差 "+worst.toExponential(1)+")";
+    }else{
+      $("gpuInfo").textContent=(gpuName||"GPU")+" (大規模構成のため自己診断は省略。メモリ見積 "+(est/2**20).toFixed(0)+"MB)";
+    }
+    gpuCfgKey=key;
+  }else{
+    gpuUploadState();
+  }
+}
+async function train(){
+  const B=BATCH_OPTS[+kB.value],total=+kSteps.value,lr=LR_OPTS[+kLR.value];
+  running=true;
+  $("btnTrain").disabled=true;$("btnTrain").classList.add("running");
+  $("btnStop").disabled=false;$("btnInit").disabled=true;
+  if($("wakeLock").checked)try{wakeLockObj=await navigator.wakeLock.request("screen");}catch(e){}
+  $("btnGen").disabled=true;$("btnSave").disabled=true;$("btnLoad").disabled=true;
+  let onGpu=false,downloadFailed=false;
+  try{
+  if($("useGpu")&&$("useGpu").checked&&navigator.gpu){
+    try{await gpuPrepare(B);onGpu=true;}
+    catch(e){
+      setStatus("GPU初期化失敗、CPUで学習します: "+e.message,"err");
+      $("gpuInfo").textContent="✗ "+e.message;
+    }
+  }
+  $("mBackend").textContent=onGpu?"webgpu":"pure-js";
+  let done=0,t0=performance.now(),tokWindow=0;
+  setStatus("学習中"+(onGpu?" (WebGPU)":"")+(vocabWarn?" / 注意: "+vocabWarn:"")+"… (このタブを閉じないでください)","ok");
+  while(running&&done<total){
+    const r=onGpu?await gpuTrainStep(lr):trainStep(B,lr);
+    done++;tokWindow+=B*C.ctx;
+    if(r.util)showUtil(r.util);
+    const ema=lossHist.length?lossHist[lossHist.length-1][1]*0.92+r.loss*0.08:r.loss;
+    lossHist.push([step,ema]);
+    if(!Number.isFinite(r.loss)){setStatus("loss が発散しました。学習率を下げて再初期化してください","err");break;}
+    const now=performance.now();
+    if(now-t0>400||done===total){
+      $("mStep").textContent=step;
+      $("mLoss").textContent=r.loss.toFixed(3);
+      $("mAux").textContent=r.aux!==null?r.aux.toFixed(3):"—";
+      $("mTps").textContent=Math.round(tokWindow/((now-t0)/1000)).toLocaleString();
+      t0=now;tokWindow=0;
+      drawChart();
+      await new Promise(res=>setTimeout(res,0));
+    }
+  }
+  }finally{
+    running=false;
+    if(onGpu&&GD&&GD.ready){
+      setStatus("GPUから重み・オプティマイザ状態を回収中…","ok");
+      try{await gpuDownloadState();}
+      catch(e){downloadFailed=true;setStatus("重み回収失敗(生成・保存は古い重みになります): "+e.message,"err");}
+    }
+    $("btnTrain").disabled=false;$("btnTrain").classList.remove("running");
+    $("btnStop").disabled=true;$("btnInit").disabled=false;
+    $("btnGen").disabled=false;$("btnSave").disabled=false;$("btnLoad").disabled=false;
+    if(wakeLockObj){wakeLockObj.release().catch(()=>{});wakeLockObj=null;}
+  }
+  if(!downloadFailed&&Number.isFinite(lossHist.at(-1)?.[1]??0))
+    setStatus("step "+step+" で停止。もう一度「学習開始」で続きから学習できます","ok");
+}
+function drawChart(){
+  const cv=$("chart"),ctx=cv.getContext("2d");
+  const Wd=cv.width,Hd=cv.height;
+  ctx.clearRect(0,0,Wd,Hd);
+  if(lossHist.length<2)return;
+  const ys=lossHist.map(p=>p[1]);
+  const yMax=Math.max(...ys),yMin=Math.min(...ys),pad=12;
+  const sx=i=>pad+(Wd-2*pad)*i/(lossHist.length-1);
+  const sy=v=>pad+(Hd-2*pad)*(1-(v-yMin)/Math.max(yMax-yMin,1e-6));
+  ctx.strokeStyle="#E24E1B";ctx.lineWidth=2;ctx.lineJoin="round";
+  ctx.beginPath();
+  lossHist.forEach((p,i)=>{i?ctx.lineTo(sx(i),sy(p[1])):ctx.moveTo(sx(i),sy(p[1]));});
+  ctx.stroke();
+  ctx.fillStyle="rgba(20,33,61,.6)";ctx.font="11px monospace";
+  ctx.fillText(yMax.toFixed(2),4,14);
+  ctx.fillText(yMin.toFixed(2),4,Hd-4);
+}
+
+/* ============ 生成UI ============ */
+async function generate(){
+  $("btnGen").disabled=true;
+  const out=$("genOut");
+  const temp=Math.max(+kTemp.value/10,0.1),n=+kGen.value,topP=+kTopP.value/100;
+  let ids=Array.from($("prompt").value).map(c=>charToId.get(c)).filter(v=>v!==undefined);
+  if(!ids.length)ids=[dataIds&&dataIds.length?dataIds[0]:0];
+  out.textContent=ids.map(i=>vocabChars[i]).join("");
+  for(let i=0;i<n;i++){
+    const row=genLogits(ids.slice(-C.ctx));
+    const id=sampleRow(row,temp,topP);
+    if(id<0){
+      setStatus("重みが数値破綻(NaN)しています。学習が発散した可能性があります。学習率を下げて再初期化するか、保存済みモデルを読み込んでください","err");
+      break;
+    }
+    ids.push(id);
+    out.textContent+=vocabChars[id]??"";
+    if(i%4===0)await new Promise(res=>setTimeout(res,0));
+  }
+  $("btnGen").disabled=false;
+}
+
+/* ============ 保存・読み込みUI ============ */
+function saveModel(){
+  try{
+    const j=serializeModel();
+    const blob=new Blob([JSON.stringify(j)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="tinylm-zero-"+fmtNum(paramCounts(C).total)+"-step"+step+".json";
+    a.click();URL.revokeObjectURL(a.href);
+    setStatus("モデルをダウンロードしました","ok");
+  }catch(e){setStatus("保存失敗(規模が大きすぎる可能性): "+e.message,"err");}
+}
+function loadModel(file){
+  const rd=new FileReader();
+  rd.onload=()=>{try{
+    deserializeModel(JSON.parse(rd.result));
+    gpuCfgKey="";
+    const ct=corpusForModel();
+    let unk=0;
+    if(ct){unk=Array.from(ct).reduce((a,c)=>a+(charToId.has(c)?0:1),0);tokenize(ct);}
+    else dataIds=new Int32Array(0);
+    afterModelReady();
+    setStatus("読み込み完了: "+fmtNum(paramCounts(C).total)+" params / step "+step+(unk>0?" / 注意: 教材の語彙外"+unk+"字はid0扱い":""),"ok");
+  }catch(e){setStatus("読み込み失敗: "+e.message,"err");}};
+  rd.readAsText(file);
+}
+function afterModelReady(){
+  $("btnTrain").disabled=false;$("btnGen").disabled=false;$("btnSave").disabled=false;
+  $("genOut").textContent="準備完了。学習するか、そのまま生成を試せます(未学習ならデタラメが出ます)。";
+  lossHist=[];drawChart();
+  buildEbars();updateOdo();
+}
+
+/* ============ イベント ============ */
+$("btnInit").onclick=()=>{
+  const text=corpusForModel();
+  const cfg=curCfg();
+  if(Array.from(text).length<cfg.ctx+10){
+    setStatus("テキストが短すぎます(文脈長+10文字以上必要)","err");return;}
+  vocabChars=[];charToId=new Map();
+  tokenize(text);
+  rngSeed(Date.now()>>>0);
+  buildModel({...cfg,vocab:vocabChars.length});
+  gpuCfgKey="";
+  afterModelReady();
+  setStatus("初期化完了: 語彙 "+vocabChars.length+" 文字 / "+fmtNum(paramCounts(C).total)+" params (有効 "+fmtNum(paramCounts(C).active)+")","ok");
+};
+$("btnTrain").onclick=()=>{
+  vocabWarn="";
+  if(!dataIds||dataIds.length<C.ctx+2){
+    const text=corpusForModel();
+    if(Array.from(text).length<C.ctx+10){setStatus("学習テキストがありません","err");return;}
+    const unk=Array.from(text).reduce((a,c)=>a+(charToId.has(c)?0:1),0);
+    tokenize(text);
+    if(unk>0)vocabWarn="語彙外"+unk+"字はid0扱い(語彙は初期化時に固定)";
+  }
+  train().catch(e=>{running=false;setStatus("エラー: "+e.message,"err");});
+};
+$("btnStop").onclick=()=>{running=false;};
+$("btnGen").onclick=()=>generate().catch(e=>setStatus("生成エラー: "+e.message,"err"));
+$("btnSave").onclick=saveModel;
+$("btnLoad").onclick=()=>$("fileIn").click();
+$("fileIn").onchange=e=>{if(e.target.files[0])loadModel(e.target.files[0]);e.target.value="";};
+
+/* ============ 起動 ============ */
+setCorpus(SAMPLE);
+buildScaleRow();
+refreshKnobs();
+refreshScaleParams();
+if(navigator.gpu){
+  $("gpuRow").style.display="";
+  $("mBackend").textContent="webgpu対応";
+  $("gpuInfo").textContent="WebGPU利用可 (学習開始時に自己診断します)";
+}else{
+  $("mBackend").textContent="pure-js";
+  $("gpuInfo").textContent="";
+}
+setStatus("準備OK (依存ゼロ・純JSエンジン"+(navigator.gpu?" + WebGPU":"")+")。規模を選んでモデルを初期化してください","ok");
+</script>
+</body>
+</html>

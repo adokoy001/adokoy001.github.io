@@ -1,0 +1,740 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>NIKKI - 日記</title>
+    <link>https://nikki.yokoda.okinawa/</link>
+    <description>Toshiaki Yokoda の日記</description>
+    <language>ja</language>
+    <item>
+      <title>TinyLM LabからTensorFlow.jsを卒業した——手書き逆伝播とWebGPU、そして日本語対話コーパスの公開</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-22-002/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-22-002/</guid>
+      <pubDate>Sat, 22 Aug 2026 10:30:00 GMT</pubDate>
+      <description>tf.jsを審判にして依存ゼロ学習エンジンを検証し、WGSL手書き21カーネルでWebGPU学習を実装。日本語対話コーパス10万字と学習済みモデルも公開。独立AI監査がloss低下と会話能力の乖離、そして実バグを発見した記録。</description>
+      <content:encoded>&lt;h1 id=&quot;tinylm-labからtensorflow-jsを卒業した&quot;&gt;TinyLM LabからTensorFlow.jsを卒業した&lt;/h1&gt;
+&lt;p&gt;午前中に公開した&lt;a href=&quot;/works/tinylm-lab/&quot;&gt;ブラウザで学習するMoE言語モデル&lt;/a&gt;の続きです。あのあと勢いで「tensorflow.js非依存にできます？」とAIに聞いたら、その日のうちに依存ゼロ版とWebGPU版ができてしまったので、経緯ごとまとめて公開します。おまけに、学習教材として作った日本語対話コーパスも配布します。&lt;/p&gt;
+&lt;h2 id=&quot;公開物&quot;&gt;公開物&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/works/tinylm-lab-zero/&quot;&gt;TinyLM Lab Zero&lt;/a&gt;&lt;/strong&gt; — 依存ゼロ・WebGPU対応の単一HTML（約76KB）。CDN読み込みなし、機内モードでも動きます。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/works/tinylm-lab-zero/tinylm_jp_corpus_bundle_v1.zip&quot;&gt;TinyLM JP Dialogue Corpus 100k&lt;/a&gt;&lt;/strong&gt; — 約10万字の日本語対話コーパス一式（生成・検証スクリプト、評価文30問付き）。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/works/tinylm-lab-zero/tinylm-jp-nano-step1000.json&quot;&gt;学習済みチェックポイント（ナノ・1,000 step）&lt;/a&gt;&lt;/strong&gt; — 上のコーパスで学習したモデル。Zeroに読み込めばすぐ生成を試せます。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;tf-jsを審判にして-tf-jsを卒業する&quot;&gt;tf.jsを審判にして、tf.jsを卒業する&lt;/h2&gt;
+&lt;p&gt;午前の版はtensorflow.jsに行列演算と自動微分を任せていました。依存ゼロ版では、RMSNorm・RoPE・causal attention・SwiGLU・MoEルーター・Adamの&lt;strong&gt;逆伝播をすべて手書き&lt;/strong&gt;し、TypedArrayだけで学習エンジンを組んでいます。メモリはgradient checkpointing方式（各層の入力だけ保存し、逆伝播時に層内を再計算）で、活性化メモリを1層分に抑えました。&lt;/p&gt;
+&lt;p&gt;面白いのは検証の構図です。手書き逆伝播は、符号一つ・転置一つの間違いで「静かに学習が劣化する」世界なので、三段構えで検証しました。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;数値微分との突き合わせ&lt;/strong&gt; — Float64モードで中心差分と比較。3構成・261点すべて絶対誤差1e-9未満。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;tf.js版を審判にした相互検証&lt;/strong&gt; — 同一重み・同一入力でlogits最大差2.7e-7、CE lossは小数6桁一致。二つの独立実装が同じ数学を計算している強い証拠です。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;実学習&lt;/strong&gt; — 150 stepでloss 5.18→0.13、生成はコーパスの文体を再現。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;卒業したいフレームワーク自身を審判に使って卒業する、という構図が気に入っています。&lt;/p&gt;
+&lt;p&gt;副産物として速度も上がりました。同一環境のCPU比較で&lt;strong&gt;tf.js-cpuの約4.5倍（1,040 vs 230 tok/s）&lt;/strong&gt;。フレームワークのオーバーヘッドが消えたこと、そしてMoEが「選ばれた専門家だけを計算する」本物のスパース実行になったことが効いています（tf.js版は勾配の都合で全専門家を密計算していました）。保存形式は旧版と完全互換で、相互に読み込めます。&lt;/p&gt;
+&lt;h2 id=&quot;webgpuを手書きする&quot;&gt;WebGPUを手書きする&lt;/h2&gt;
+&lt;p&gt;「GPUも使えます？」の答えがこちらです。tf.jsには戻らず、&lt;strong&gt;WGSLコンピュートシェーダを21カーネル手書き&lt;/strong&gt;して、学習ステップ全体——順伝播・逆伝播・Adam更新——をGPU常駐で回します。CPUへの読み出しはlossと専門家稼働率だけ。&lt;/p&gt;
+&lt;p&gt;開発環境にGPUがないという問題は、ソフトウェアVulkan（llvmpipe）＋Node用WebGPUバインディングで突破しました。速度は測れませんが&lt;strong&gt;正しさは検証できる&lt;/strong&gt;環境です。検証済みのCPUエンジンを審判にして、全36勾配テンソルの一致（最悪相対差1.4e-6）、GPU単独学習の収束、GPU→CPUの状態往復まで確認しています。&lt;/p&gt;
+&lt;p&gt;実機の速度保証ができない代わりに、&lt;strong&gt;初回学習時にその端末上でCPUエンジンと全勾配テンソルを突き合わせる自己診断&lt;/strong&gt;を組み込みました。合格した場合だけGPUが有効になります。「開発側で保証できないことは、実行側で機械検査する」という設計です。&lt;/p&gt;
+&lt;h2 id=&quot;外部レビューで診断が本物になった&quot;&gt;外部レビューで診断が本物になった&lt;/h2&gt;
+&lt;p&gt;このプロジェクトは複数のAIを使い分けて進めています。実装と検証をClaudeが行い、別のAI（GPT-5.6）に成果物をレビューさせる、を2往復。指摘は的確でした。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;自己診断が「loss比較だけ」で、逆伝播が壊れていても素通しになっていた → 全勾配テンソル比較へ昇格&lt;/li&gt;
+&lt;li&gt;Adam再開の不整合（モーメント未保存なのにバイアス補正だけ過去から続く）→「重みは継続、optimizerは再始動」に統一&lt;/li&gt;
+&lt;li&gt;ほぼゼロ勾配のテンソルで相対誤差判定が過敏 → 絶対誤差フロアを追加&lt;/li&gt;
+&lt;li&gt;例外時にボタンとWake Lockが取り残される → finallyで後始末&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;一度目の修正が半端で、二度目のレビューに取り残しを突かれる場面もありました。実装者と監査者を分ける普通のソフトウェア工学が、AI同士でも普通に機能します。&lt;/p&gt;
+&lt;h2 id=&quot;日本語対話コーパスも作った&quot;&gt;日本語対話コーパスも作った&lt;/h2&gt;
+&lt;p&gt;10万字級の教材が欲しくなり、対話コーパスを一式作りました。中身は挨拶・聞き返し・計画・四則演算・感情サポート・安全な断り方など36カテゴリの型を意味対応固定のテンプレートで生成したオリジナル部分（CC0、100,006字・1,225会話）と、公開データ&lt;a href=&quot;https://huggingface.co/datasets/llm-jp/oasst2-33k-ja&quot;&gt;LLM-jp OASST2 33k Japanese&lt;/a&gt;から人手選別した補助28会話（Apache-2.0）です。ライセンスはファイル単位で分離し、SHA-256・選定マニフェスト・検証スクリプト・非リーク保証付きの評価文30問まで同梱しています。&lt;/p&gt;
+&lt;p&gt;ナノ構成（総226k・有効158kパラメタ）で1,000 step学習した結果が配布中のチェックポイントです。ここで面白いのは、&lt;strong&gt;二つのAIによる独立評価が異なる深さの結論を出した&lt;/strong&gt;ことです。&lt;/p&gt;
+&lt;p&gt;Claudeの評価（30問・ルーブリック8項目でおよそ9/16）は「応答の型は獲得、意味の対応付けは未達」でした。助手の文体は全問一貫し、曖昧な依頼への聞き返しや感情サポートの型は出る。しかし計画テンプレの中身が混線し、算数は形式だけ覚えて計算が壊れる。&lt;/p&gt;
+&lt;p&gt;一方、GPT-5.6 Solによる独立再現（HTMLと教材のSHA-256を固定し、同一seedで学習から再実行）は、もう一段深いところを掘りました。&lt;strong&gt;訓練データと完全一致するprefixでの生成16回のうち意味合格は2回、訓練回答の完全再現はゼロ、完全一致の算数でも「4+4→18」、安全拒否は全試行失敗&lt;/strong&gt;。つまりloss 0.67は「会話の意味対応」どころか「暗記」すら反映していない。次文字予測lossの大部分は日本語断片の局所的な継続で下がるため、応答境界での正しい選択とlossが乖離する——という解釈まで含めて、「低い言語モデルlossだけで会話能力を判定してはいけない」という教訓が定量化されました。&lt;/p&gt;
+&lt;p&gt;このコーパスのREADMEは「158kパラメタで狙えるのは応答の型であり、知識ではない」と予告していましたが、独立診断はさらに「現構成では意図の分岐が広すぎる」ことを示しています。提案された次の一手（教材を6〜8意図へ絞る、学習窓を応答境界へ整列させる、利用者部分のlossをマスクする）は次回の実験テーマです。評価文とルーブリックは同梱してあるので、読者の追試も歓迎します。&lt;/p&gt;
+&lt;h2 id=&quot;独立テストがバグも見つけた&quot;&gt;独立テストがバグも見つけた&lt;/h2&gt;
+&lt;p&gt;GPT-5.6 Solのレポートは性能評価に留まらず、&lt;strong&gt;実バグを一つ発見しました&lt;/strong&gt;。モデル初期化後に教材を編集・差し替えても内部のトークン列が無効化されず、画面に表示された教材ではなく以前の教材で学習し続ける、という状態管理の穴です。公開版では修正済みで、教材の編集・読込・空白正規化の変更で必ず再トークン化し、モデルの語彙にない文字が混ざった場合は警告を出すようにしました。&lt;/p&gt;
+&lt;p&gt;実装者（Claude）が2往復のレビューを通過した後でも、視点の違う監査者が実行環境ごと変えて再現テストをすると、まだ出てくるものは出てくる。多重チェックの価値はこの「まだ出てくる」にあります。&lt;/p&gt;
+&lt;h2 id=&quot;締め&quot;&gt;締め&lt;/h2&gt;
+&lt;p&gt;朝の「テストして」から始まった一日が、tf.js卒業・WebGPU手書き・コーパス公開・独立監査まで来ました。ブラウザとテキストエディタしかない環境でも、言語モデルの中身を全部さわれる時代です。手元の端末で自己診断が通ったかどうか、よければ教えてください。&lt;/p&gt;
+&lt;p&gt;なお、この小モデルは応答の型の教材です。医療・法律・金融など結果が重大な用途には使わないでください。&lt;/p&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>ブラウザで学習するMoE言語モデルを作った</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-22-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-22-001/</guid>
+      <pubDate>Sat, 22 Aug 2026 03:00:00 GMT</pubDate>
+      <description>tf.jsでRMSNorm・RoPE・SwiGLU・MoEを積んだ文字レベル言語モデルをブラウザ内で学習できるようにした。スマホ10分からサーバ級まで5段階。開発中に踏んだバグと診断の記録。</description>
+      <content:encoded>&lt;h1 id=&quot;ブラウザで学習するmoe言語モデルを作った&quot;&gt;ブラウザで学習するMoE言語モデルを作った&lt;/h1&gt;
+&lt;p&gt;言語モデルを「使う」記事は世に溢れているが、「その場で学習させる」となると急に少なくなる。当然で、学習には普通GPUサーバとPythonの環境構築が要る。でもtf.jsを使えば、HTMLファイル一枚で、ブラウザの中で、スマホでも、小さなTransformerを本当に学習できる。作ったのがこれ。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;/works/tinylm-lab/&quot;&gt;&lt;strong&gt;TinyLM Lab を開く → /works/tinylm-lab/&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;テキストを貼るかファイルを読み込ませて「初期化」→「学習開始」を押すと、lossが下がっていくのが見え、途中で止めて文章を生成させられる。全部端末内で完結し、通信は一切しない。&lt;/p&gt;
+&lt;h2 id=&quot;発端-動いていなかった初版&quot;&gt;発端: 動いていなかった初版&lt;/h2&gt;
+&lt;p&gt;もともとはGPT-2構造そのままの素朴な文字レベルモデルをHTML一枚に詰めたものがあった。これをClaudeに「適当な長文でテストして」と投げたところ、開口一番「このファイル、ブラウザで開いてもボタンが一切効かないはずです」と言われた。&lt;/p&gt;
+&lt;p&gt;原因はジェネレータ関数の中で&lt;code&gt;forEach&lt;/code&gt;のアロー関数越しに&lt;code&gt;yield&lt;/code&gt;していたこと。アロー関数はジェネレータではないので&lt;code&gt;yield&lt;/code&gt;は不正で、&lt;code&gt;&amp;quot;use strict&amp;quot;&lt;/code&gt;下では構文エラー、つまりスクリプト全体が読み込み時点で死ぬ。書いた本人（AI）も、持ち込んだ本人（私）も気づいていなかった。人間もAIも「読めば正しそうに見えるコード」には弱い。テストは実行してこそ。&lt;/p&gt;
+&lt;h2 id=&quot;全部載せ-現代アーキテクチャの縮小模型&quot;&gt;全部載せ: 現代アーキテクチャの縮小模型&lt;/h2&gt;
+&lt;p&gt;直すだけでは面白くないので、アーキテクチャを現代化した。LayerNorm→RMSNorm、学習位置埋め込み→RoPE、GELU→SwiGLU。ここまでやるとLlama系ミニチュアと言える構成になる。&lt;/p&gt;
+&lt;p&gt;そしてMoE（Mixture of Experts）。各層のFFNを「ルーター＋N個の専門家FFN」に置き換え、トークンごとにルーターが選んだtop-k個の専門家だけを使う。総パラメタ数は専門家の数だけ膨らむのに、1トークンが実際に通る「有効パラメタ」は一定——現代の大規模モデルの核心的な仕組みが、画面上の二つの数字（計/有効）としてヘッダーに常時表示される。学習中は各専門家の稼働率がバーで動き、Switch Transformer式の負荷分散補助損失がルーターの偏りを矯正していく様子が目で見える。ここが一番作りたかった部分。&lt;/p&gt;
+&lt;p&gt;規模は5段階のプリセットにした。ナノ（約18万パラメタ・スマホで10分）からラージ（数億パラメタ・サーバ級GPUで数日、ブラウザでは動作保証外の実験領域）まで。正直に書いておくと、ブラウザで現実的に学習できるのはスモール（千数百万）あたりが上限で、それ以上は「構造は本物と同じだが、賢さは伴わない」領域になる。Chinchilla則的に言えば、パラメタに見合うデータを食わせる速度がブラウザにはない。これは賢さの縮小模型ではなく、仕組みの縮小模型である。&lt;/p&gt;
+&lt;h2 id=&quot;技術メモ2題&quot;&gt;技術メモ2題&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;MoEの勾配とtop-kマスク。&lt;/strong&gt; tf.jsで&lt;code&gt;topk&lt;/code&gt;のインデックスからマスクを作ると、逆伝播が勾配未定義の演算に突っ込んで死ぬ。通常モードではインデックスを一度CPUに読み出して定数マスクを作り、勾配経路をルーター確率側だけに限定した。ただこのCPU往復は毎ステップのGPU同期点になる。そこで高速モードでは&lt;code&gt;tf.customGrad&lt;/code&gt;でマスク構築全体を包み、「K番目に大きい確率を閾値に&lt;code&gt;greaterEqual&lt;/code&gt;」でGPU上のままマスク化して勾配はゼロを返す。あわせてlossの読み出し自体を10ステップに1回へ間引き、GPUコマンドキューを切らさない。両モードのlogitsは完全一致することを確認済み。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;改行が出続ける事件。&lt;/strong&gt; 学習後の生成で改行ばかり出る、という症状に遭遇した。診断してみると原因候補が二つあり、どちらも「バグ」ではなかった。一つは学習発散でNaN化した重み——サンプラーが同一トークンに固着し、語彙表は辞書順ソートなので先頭は大抵改行になる。もう一つはコーパス自体に空行が多い場合——モデルは段落区切りの連続改行を忠実に学習して忠実に再現する。対策として、サンプラーをCPU実装に置き換えてNaNを明示エラー化し、top-pサンプリングと空白正規化オプションを足した。「おかしな出力」の原因が壊れた重みなのか正しい学習なのかを切り分ける、というのは大きなモデルの評価でも本質的に同じ話だと思う。&lt;/p&gt;
+&lt;h2 id=&quot;開発方法について&quot;&gt;開発方法について&lt;/h2&gt;
+&lt;p&gt;今回の開発で一番効いたのは、HTMLの中のモデル数学部分をマーカーで区切ってDOM非依存にし、&lt;strong&gt;出荷するコードそのものを&lt;/strong&gt;抽出してNode.jsでテストする方式だった。パラメタ数の計算式が実変数の総要素数と一致するか、保存→復元でlogitsが完全一致するか、学習ループでテンソルがリークしないか。この過程でテンソルリーク（120文字の生成で2万6千個残留）を含む3件のバグが出荷前に捕まった。テスト用に書き直したコードをテストしても、出荷物の保証にはならない。&lt;/p&gt;
+&lt;p&gt;道具は嘘をつかない。手を抜けば、必ずどこかで音が変わる。&lt;/p&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-007/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-007/</guid>
+      <pubDate>Thu, 20 Aug 2026 14:50:00 GMT</pubDate>
+      <description>連載の総括。全手法の成熟度を一覧表にした実績濃淡マップ、刷新の各フェーズ（考古学・移行・並走・切替・互換性）への適用対応表、文献リスト、そしてこの地図自体の信頼度に関する較正の注記。</description>
+      <content:encoded>&lt;h1 id=&quot;総括-実績濃淡マップと大規模刷新への適用&quot;&gt;総括: 実績濃淡マップと大規模刷新への適用&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;連載序論はこちら&lt;/a&gt;。連載で扱った手法群を一覧に畳み、大規模刷新のフェーズごとにどこが効くかを対応付ける。&lt;/p&gt;
+&lt;h2 id=&quot;実績濃淡マップ&quot;&gt;実績濃淡マップ&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;手法/概念&lt;/th&gt;&lt;th&gt;成熟度&lt;/th&gt;&lt;th&gt;代表実績&lt;/th&gt;&lt;th&gt;刷新での主用途&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;ホーア論理・契約&lt;/td&gt;&lt;td&gt;実務厚&lt;/td&gt;&lt;td&gt;SPARK Ada, Dafny&lt;/td&gt;&lt;td&gt;変換処理の正当性&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;時相論理＋モデル検査&lt;/td&gt;&lt;td&gt;実務厚&lt;/td&gt;&lt;td&gt;Amazon TLA+, ハードウェア&lt;/td&gt;&lt;td&gt;切替手順・並行性&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;分離論理（バグ検出振り）&lt;/td&gt;&lt;td&gt;実務厚&lt;/td&gt;&lt;td&gt;Meta Infer&lt;/td&gt;&lt;td&gt;C/C++資産解析&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;性質ベース/差分テスト&lt;/td&gt;&lt;td&gt;実務厚&lt;/td&gt;&lt;td&gt;QuickCheck系, 各社CI&lt;/td&gt;&lt;td&gt;新旧照合の主力&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;抽象解釈&lt;/td&gt;&lt;td&gt;実務厚&lt;/td&gt;&lt;td&gt;Astrée (A380)&lt;/td&gt;&lt;td&gt;資源限界・溢れ検出&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;SMT&lt;/td&gt;&lt;td&gt;実務厚&lt;/td&gt;&lt;td&gt;Z3（各ツール基盤）&lt;/td&gt;&lt;td&gt;自動化の共通基盤&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;CRDT / CALM&lt;/td&gt;&lt;td&gt;実務厚 / 実績有&lt;/td&gt;&lt;td&gt;Riak, Cosmos DB&lt;/td&gt;&lt;td&gt;照合系の調整レス化&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;帰納的不変条件&lt;/td&gt;&lt;td&gt;実務厚（文化）&lt;/td&gt;&lt;td&gt;Paxos証明, IC3&lt;/td&gt;&lt;td&gt;刷新全体の背骨&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;精緻化 (B/Event-B)&lt;/td&gt;&lt;td&gt;実績有&lt;/td&gt;&lt;td&gt;パリ地下鉄14号線&lt;/td&gt;&lt;td&gt;勘定核の段階的導出&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;依存型・定理証明&lt;/td&gt;&lt;td&gt;実績有&lt;/td&gt;&lt;td&gt;seL4, CompCert&lt;/td&gt;&lt;td&gt;死活的コアのみ&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;振る舞い部分型&lt;/td&gt;&lt;td&gt;実務厚（原則）&lt;/td&gt;&lt;td&gt;Liskov原則, Pact&lt;/td&gt;&lt;td&gt;外部互換性の定式化&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;Rely-Guarantee&lt;/td&gt;&lt;td&gt;実績有&lt;/td&gt;&lt;td&gt;ハードウェアAG&lt;/td&gt;&lt;td&gt;並走期の相互依存分析&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;双模倣・余代数&lt;/td&gt;&lt;td&gt;理論先行&lt;/td&gt;&lt;td&gt;mCRL2&lt;/td&gt;&lt;td&gt;差分テストの意味論&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;セッション型&lt;/td&gt;&lt;td&gt;理論先行&lt;/td&gt;&lt;td&gt;Scribble&lt;/td&gt;&lt;td&gt;電文プロトコル記述規律&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;関手的データ移行&lt;/td&gt;&lt;td&gt;理論先行&lt;/td&gt;&lt;td&gt;CQL&lt;/td&gt;&lt;td&gt;移行写像の分類語彙&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;LTL合成&lt;/td&gt;&lt;td&gt;理論先行&lt;/td&gt;&lt;td&gt;GR(1)ロボティクス&lt;/td&gt;&lt;td&gt;仕様実現可能性検査&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&quot;大規模刷新への適用マッピング&quot;&gt;大規模刷新への適用マッピング&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;考古学（現行仕様の発掘）&lt;/strong&gt;: LLMによる仕様逆生成＋性質ベーステストでの検収（1.5, 5.5）。発掘した性質は帰納的不変条件の候補台帳（2.2）として蓄積する。ここは数学よりも「数学に乗せられる形式で仕様を書き溜める」規律が本体。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;移行設計&lt;/strong&gt;: データ対応を抽象化写像として明示し可換性を検査（2.4）。多対一の潰しはΣ/Δ/Πの分類で漏れ点検（3.5）。移行バッチ単体は事前・事後条件で契約化（1.1）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;並走・照合&lt;/strong&gt;: 差分テストの意味論的限界（トレース同値の有限近似、2.3）を明記した上で主力に据える（5.5）。照合系は単調設計で調整レス化（3.4）。新旧の相互依存はrely-guaranteeで障害連鎖を列挙（3.1）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;切替手順&lt;/strong&gt;: TLA+等で手順・並行性を小さく抽象化して全数検査（1.2, 5.1）。「分断・不一致時にどちらを正とするか」はCAP的経営判断として事前確定（4.2）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;互換性維持&lt;/strong&gt;: 外部接続ごとに振る舞い部分型の条件（事前弱化・事後強化のみ）で点検（3.2）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;資源限界&lt;/strong&gt;: 容量・溢れ系は抽象解釈ツールで網羅（5.2）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;死活的コア&lt;/strong&gt;: 利息・端数・仕訳の核だけ精緻化 or 定理証明（2.1, 5.4）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;検証ポートフォリオ設計&lt;/strong&gt;: Riceの定理由来の四極（健全な過大近似・過小近似・決定可能断片への制限・手動証明）に性質を割り当てる表を作る（4.1）。全性質に同じ手段を使おうとしない。&lt;/p&gt;
+&lt;h2 id=&quot;追記-2026-08-21-全層統合の最新事例と正誤表&quot;&gt;追記（2026-08-21）: 全層統合の最新事例と正誤表&lt;/h2&gt;
+&lt;p&gt;公開直後、GPT-5.6 Solによる本連載の徹底レビューを受けた。主要な指摘と新出典を独立に裏取りした上で、価値の高いものを本文に反映した。経緯ごと記録として残す。&lt;/p&gt;
+&lt;h3 id=&quot;全層統合事例-aws-nitro-isolation-engine&quot;&gt;全層統合事例: AWS Nitro Isolation Engine&lt;/h3&gt;
+&lt;p&gt;2026年、この地図のほぼ全層を一つの本番システムで統合した事例が出ている。AWSのNitro Isolation Engine——EC2のVM分離だけを専任で担う最小の信頼基盤で、re:Invent 2025で発表され、Graviton5世代インスタンスの標準機能として一般提供された。Rustのサブセットで実装し、事前・事後条件、分離論理、精緻化、非干渉性を組み合わせてIsabelle/HOLで機能的正当性と分離特性を検証。機械検査済みの数学は約33万行で、seL4に匹敵する規模と報告されている（&lt;a href=&quot;https://aws.amazon.com/jp/blogs/news/ec2s-formally-verified-isolation-engine-provides-mathematical-assurance-of-virtual-machine-isolation/&quot;&gt;AWSの解説記事&lt;/a&gt;）。注目すべきは、ハイパーバイザ全体を証明したのではなく、分離を担う小さなコアへ信頼境界を縮めてから証明した点で、「定理証明は小さく死活的なコアに限定する」という本連載の相場観（5.4）の最新かつ最大級の実例になっている。&lt;/p&gt;
+&lt;p&gt;また、LLMによる検証済みコード生成のリポジトリ規模ベンチマーク（実装と証明の同時生成を測るVero等）では、単一関数で通る成功が複数モジュールの合成に伸びない傾向が一貫して報告されており、「合成」を独立の第三層に置いた判断の傍証といえる。&lt;/p&gt;
+&lt;h3 id=&quot;正誤表&quot;&gt;正誤表&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;箇所&lt;/th&gt;&lt;th&gt;誤&lt;/th&gt;&lt;th&gt;正&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;4.1 Riceの三分類&lt;/td&gt;&lt;td&gt;テスト・有界検査を「完全だが不健全」と分類&lt;/td&gt;&lt;td&gt;健全な過大近似と過小近似（反例は本物・見逃し許容）の枠へ修正。bound内で網羅的でも無反例は無制限の安全を意味しない&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;5.4 定理証明&lt;/td&gt;&lt;td&gt;「表現力は無制限」&lt;/td&gt;&lt;td&gt;選んだ論理体系に相対的。決定不能性・不完全性は消えない&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;1.1 最弱事前条件&lt;/td&gt;&lt;td&gt;wpを部分正当性の文脈で説明&lt;/td&gt;&lt;td&gt;Dijkstraのwpは停止込みの全正当性側。部分正当性側はwlp&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;3.4 CRDT&lt;/td&gt;&lt;td&gt;結び半束をCRDT一般の説明として記述&lt;/td&gt;&lt;td&gt;半束はstate-based CRDTの説明。op-basedは可換性＋因果配送&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;3.4 Figma&lt;/td&gt;&lt;td&gt;CRDTの実戦場として例示&lt;/td&gt;&lt;td&gt;Figmaは自社解説で「true CRDTではない」と明言するCRDT-inspired方式&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;このほか、精密化のみの軽微な修正（safety/livenessの「積」→「共通部分」、精緻化の前順序性、CAPが構造的類推であることの明記、Σ/Δ/ΠのKan拡張としての正確化、validationの境界の言い直し、旧系オラクルの既知バグ凍結問題の追記）を各記事に反映した。&lt;/p&gt;
+&lt;p&gt;レビューではさらに、新旧等価性を複数実行間の関係として扱うhyperproperties、形式モデルと実装の乖離を検査するconformance checking、業務不変条件ごとの調整回避可能性を扱うI-confluence、保証の前提と失効条件を管理する「保証台帳」など、この地図に未収載の重要概念が指摘された。これらは第二期として稿を改めて扱う。&lt;/p&gt;
+&lt;h2 id=&quot;較正の注記-この連載自体の信頼度&quot;&gt;較正の注記（この連載自体の信頼度）&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;各手法の存在・定義・代表事例（seL4, CompCert, Astrée, Météor, Amazon TLA+等）は確立された公知の事実で、確信度は高い。&lt;/li&gt;
+&lt;li&gt;数値の細部（seL4の証明行数・人年など）は桁は正しいが端数は資料により揺れる。引用時は一次資料の再確認を推奨。&lt;/li&gt;
+&lt;li&gt;「刷新での適用」は本連載独自の対応付けであり、実プロジェクトでの検証実績があるものではない。仮説として扱ってほしい。&lt;/li&gt;
+&lt;li&gt;成熟度三段階の判定は執筆時点の主観的較正。特にLLM×形式手法（不変条件生成・仕様逆生成）は変化が速く、この評価は早期に陳腐化しうる。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;主要文献&quot;&gt;主要文献&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Leslie Lamport, &lt;em&gt;Specifying Systems&lt;/em&gt;（TLA+の正典、無料公開）/ Hillel Wayne, &lt;em&gt;Practical TLA+&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;Baier &amp;amp; Katoen, &lt;em&gt;Principles of Model Checking&lt;/em&gt;（モデル検査の標準教科書）&lt;/li&gt;
+&lt;li&gt;Daniel Jackson, &lt;em&gt;Software Abstractions&lt;/em&gt;（Alloyと小スコープ仮説）&lt;/li&gt;
+&lt;li&gt;Jean-Raymond Abrial, &lt;em&gt;Modeling in Event-B&lt;/em&gt;（精緻化の工学）&lt;/li&gt;
+&lt;li&gt;Benjamin Pierceほか, &lt;em&gt;Software Foundations&lt;/em&gt;（Coqで学ぶ第一層、無料公開）&lt;/li&gt;
+&lt;li&gt;Davide Sangiorgi, &lt;em&gt;Introduction to Bisimulation and Coinduction&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;Glynn Winskel, &lt;em&gt;The Formal Semantics of Programming Languages&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;Cousot &amp;amp; Cousot (1977), &amp;quot;Abstract Interpretation&amp;quot; / Rival &amp;amp; Yi, &lt;em&gt;Introduction to Static Analysis&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;David Spivak, &lt;em&gt;Category Theory for the Sciences&lt;/em&gt; / Fong &amp;amp; Spivak, &lt;em&gt;Seven Sketches in Compositionality&lt;/em&gt;（無料公開）&lt;/li&gt;
+&lt;li&gt;Marc Shapiro et al. (2011), &amp;quot;Conflict-free Replicated Data Types&amp;quot; / Hellerstein &amp;amp; Alvaro, &amp;quot;Keeping CALM&amp;quot; (CACM 2020)&lt;/li&gt;
+&lt;li&gt;Newcombe et al., &amp;quot;How Amazon Web Services Uses Formal Methods&amp;quot; (CACM 2015)&lt;/li&gt;
+&lt;li&gt;Klein et al., &amp;quot;seL4: Formal Verification of an OS Kernel&amp;quot; (SOSP 2009) / Leroy, &amp;quot;Formal Verification of a Realistic Compiler&amp;quot; (CACM 2009)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;連載: システム設計と大規模刷新のための数学&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;序論 — 地図の全体像&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-002/&quot;&gt;第一層: 仕様を書くための数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-003/&quot;&gt;第二層: 仕様と実装の関係の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-004/&quot;&gt;第三層: 合成の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-005/&quot;&gt;第四層: 不可能性と限界の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-006/&quot;&gt;横断層: 検証を実行する手段の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;総括: 実績濃淡マップと大規模刷新への適用（この記事）&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>システム設計のための数学 横断層: 検証を実行する手段</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-006/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-006/</guid>
+      <pubDate>Thu, 20 Aug 2026 14:49:00 GMT</pubDate>
+      <description>主張をどう機械で確かめるか。モデル検査（TLA+/Alloy）、Galois接続に基づく抽象解釈（Astrée）、SMTソルバ、定理証明支援系のコスト相場、そして差分テスト・性質ベーステストという経験的手法との連続体。</description>
+      <content:encoded>&lt;h1 id=&quot;横断層-検証を実行する手段の数学&quot;&gt;横断層: 検証を実行する手段の数学&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;連載序論はこちら&lt;/a&gt;。第一〜四層が「何を主張するか」の数学だとすれば、この層は「主張をどう機械で確かめるか」の数学。&lt;/p&gt;
+&lt;h2 id=&quot;5-1-モデル検査-実務厚&quot;&gt;5.1 モデル検査 [実務厚]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 有限状態モデルの全数（または記号的・有界）探索で時相性質を検査し、違反時は具体的な反例トレースを返す。反例が出ることが定理証明に対する最大の実務的優位——反例は設計者への教育材料になる。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;道具と実績&lt;/strong&gt;: &lt;strong&gt;TLA+&lt;/strong&gt;（AmazonがS3・DynamoDB等の設計検証で、テストでは到達不能な深さのバグを複数発見したと報告。MongoDB・CosmosDBも採用）、SPIN（通信プロトコル、NASA）、Alloy（関係論理＋小スコープ、スキーマ・設計の検査に向く）、NuSMV/nuXmv（ハードウェア寄り）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 適用先の第一候補は&lt;strong&gt;切替手順・並走プロトコル・障害時運用&lt;/strong&gt;。コードではなく「手順と並行性」の設計を検証する道具として使う。数千行の実装より先に、数百行のTLA+モデルで切替の論理を潰すのが費用対効果の最適点。&lt;/p&gt;
+&lt;h2 id=&quot;5-2-抽象解釈と-galois-接続-実務厚&quot;&gt;5.2 抽象解釈と Galois 接続 [実務厚]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 具体意味論（実際の実行の集合）と抽象領域（区間・多面体・オクタゴン等）をGalois接続（α: 抽象化, γ: 具体化の随伴対）で結び、抽象側でプログラムを「実行」して全実行の過大近似を得る。健全性は随伴から従い、偽陽性はあるが見逃しはない（対象性質について）。無限上昇列を止めるwideningが実用の鍵。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;道具と実績&lt;/strong&gt;: &lt;strong&gt;Astrée&lt;/strong&gt;（Airbus A380/A400Mの飛行制御Cコードで実行時エラー不在を証明した、産業的検証の金字塔）、Polyspace、Meta Inferの基盤理論（Cousot–Cousot 1977）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 資源限界系の欠陥（バッファ・ファイル容量・カウンタ溢れ・数値オーバーフロー）の網羅的検出。「このバッチ量でこのファイル上限に当たる」型の欠陥は、値域解析の守備範囲そのもの。&lt;/p&gt;
+&lt;h2 id=&quot;5-3-smt-ソルバ-実務厚&quot;&gt;5.3 SMT ソルバ [実務厚]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 命題論理のSATに、算術・配列・ビットベクトル・未解釈関数などの理論を組み合わせて充足可能性を判定する（DPLL(T)方式）。現代の検証ツールの共通基盤エンジンであり、Dafny・F*・有界モデル検査・シンボリック実行（KLEE）・篩型のすべてが背後でSMTを呼ぶ。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実績&lt;/strong&gt;: Z3（Microsoft）、CVC5。SMT競技会による継続的性能向上が、2000年代以降の「検証の自動化が急に実用になった」現象の主因。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 直接使うというより、「どこまで自動化できるか」の境界線を引いている技術として理解しておく。線形算術＋配列に収まる仕様は自動、非線形算術・量化子が濃い仕様は人間の補題が要る、という感覚が検証工数見積りの基礎になる。&lt;/p&gt;
+&lt;h2 id=&quot;5-4-定理証明支援系-実績有&quot;&gt;5.4 定理証明支援系 [実績有]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 人間が証明を書き、機械がその正しさだけを検査する。選んだ論理の範囲で極めて高い表現力を持ち、自動判定できない個別問題にも人間が補題を与えて取り組める——ただし決定不能性や形式体系の不完全性そのものが消えるわけではなく、人間の労働で買い戻せるのは個別問題に対する証明の構築である。信頼基盤は小さな証明検査カーネルに集約される（de Bruijn基準）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実績&lt;/strong&gt;: seL4（Isabelle/HOL）、CompCert（Coq）、数学側では四色定理・Kepler予想・Leanのmathlib。コスト感覚: seL4は実装1行あたり証明約20行・全体で約20人年——「小さく死活的なコア」以外にこの投資は正当化しにくい、という相場観ごと記録しておく。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 適用するなら利息計算・端数処理・勘定仕訳の核アルゴリズムのみ。それ以外はより軽い手段に振るのが定石。&lt;/p&gt;
+&lt;h2 id=&quot;5-5-経験的手法との接続-証明とテストの連続体-実務厚&quot;&gt;5.5 経験的手法との接続 — 証明とテストの連続体 [実務厚]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 形式手法とテストは対立ではなく連続体をなす。性質ベーステスト（法則の経験的検査）、ファジング＋不変条件アサーション（クラッシュ以外の意味的違反も拾える）、&lt;strong&gt;差分テスト&lt;/strong&gt;（二つの実装を同一入力で叩き出力を比較——現行システムをオラクルにする刷新戦略の正体）、メタモルフィック検査（正解が不明でも「入力をこう変えたら出力はこう変わるはず」という関係性質で検査——オラクル不在問題への解答）。カオス工学は「障害仮定下の不変条件維持」の本番環境での経験的検査と読める。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 現実の刷新検証の主力は間違いなくこの節になる。上の各層は、この経験的検査群に「何を検査しているのか・何を取りこぼすのか」の意味論を与える役割、と位置づけるのが誠実な整理。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;連載: システム設計と大規模刷新のための数学&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;序論 — 地図の全体像&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-002/&quot;&gt;第一層: 仕様を書くための数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-003/&quot;&gt;第二層: 仕様と実装の関係の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-004/&quot;&gt;第三層: 合成の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-005/&quot;&gt;第四層: 不可能性と限界の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;横断層: 検証を実行する手段の数学（この記事）&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-007/&quot;&gt;総括: 実績濃淡マップと大規模刷新への適用&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>システム設計のための数学 第四層: 不可能性と限界</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-005/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-005/</guid>
+      <pubDate>Thu, 20 Aug 2026 14:48:00 GMT</pubDate>
+      <description>何を諦めるかを定理で決める層。Riceの定理が検証を三極に分ける話、FLP不可能性とCAP、LTL合成の実現可能性、状態爆発とAlloyの小スコープ仮説。設計の最初期に参照する価値が最も高い数学。</description>
+      <content:encoded>&lt;h1 id=&quot;第四層-不可能性と限界の数学&quot;&gt;第四層: 不可能性と限界の数学&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;連載序論はこちら&lt;/a&gt;。「何を諦めるか」を定理で決める層。設計の最初期に参照する価値が最も高い。&lt;/p&gt;
+&lt;h2 id=&quot;4-1-計算可能性の限界-停止性問題と-rice-の定理&quot;&gt;4.1 計算可能性の限界: 停止性問題と Rice の定理&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: プログラムの自明でない意味的性質（「このコードは仕様Sを満たすか」を含む）は一般に決定不能（Rice 1953）。したがって完全自動の検証は原理的に存在せず、実務の検証はどこかで必ず妥協する: (a) 健全な過大近似——全実行を覆う代わりに偽陽性を許す（静的解析）、(b) 過小近似——見つけた反例は本物だが探索範囲外の見逃しを許す（テスト・有界検査。bound内では網羅的でも、無反例は無制限の安全を意味しない）、(c) 決定可能な断片への制限（有限モデル・制限された論理）、(d) 人間が補題・不変条件を与えて個別に証明を構築する（定理証明）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 検証計画は必ずこの四極のポートフォリオになる。「どの性質を (a)〜(d) のどれで守るか」の割当表を作ることが、検証戦略の設計そのもの。&lt;/p&gt;
+&lt;h2 id=&quot;4-2-分散合意の不可能性-flp-と-cap&quot;&gt;4.2 分散合意の不可能性: FLP と CAP&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: &lt;strong&gt;FLP&lt;/strong&gt;（Fischer–Lynch–Paterson 1985）: 完全非同期システムでは、たった一つのプロセス故障の可能性があるだけで、決定的な合意アルゴリズムは存在しない。実務のタイムアウトは「部分同期」という追加仮定の購入であり、Paxos/Raftはこの仮定の上で安全性を無条件・活性を条件付きで達成する。&lt;strong&gt;CAP&lt;/strong&gt;（Brewer予想、Gilbert–Lynch 2002証明）: ネットワーク分断時に一貫性と可用性は両立しない。分断は選べない（起きる）ので、実際の選択は「分断時にCを取るかAを取るか」＋「平常時にレイテンシと一貫性をどう取引するか」（PACELCによる精密化）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 「切替時に新旧どちらを正とするか」「照合不一致時に止めるか流すか」は、対象操作と障害モデルをCAPと同じ形に定義しない限り定理の直接の帰結ではないが、有用な構造的類推である。いずれにせよ技術ではなく経営判断としてあらかじめ決めておくべき項目。定理は「決めなくて済む設計は存在しない」ことを保証してくれる——これが不可能性定理の実務価値。&lt;/p&gt;
+&lt;h2 id=&quot;4-3-実現可能性と自動合成-理論先行&quot;&gt;4.3 実現可能性と自動合成 [理論先行]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: LTL仕様からの実装自動合成（Pnueli–Rosner 1989）は2EXPTIME完全。一般には絶望的な計算量だが、GR(1)という制限クラスなら多項式時間で合成でき、ロボティクス・ハードウェアで実用例がある。仕様を書いた時点で「実現可能か」を検査できること自体に、合成しない場合でも価値がある——実現不能な仕様（環境の悪意ある挙動で必ず破られる仕様）を早期検出できる。&lt;/p&gt;
+&lt;h2 id=&quot;4-4-状態爆発と計算複雑性&quot;&gt;4.4 状態爆発と計算複雑性&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: モデル検査はLTLでPSPACE完全、並行部品の積で状態空間は指数爆発する。対抗手段の系譜: 記号的モデル検査（BDD、10^20状態の壁を破った）、有界モデル検査（SMTに還元）、半順序簡約、対称性簡約、抽象化による偽反例駆動の精緻化（CEGAR）。&lt;strong&gt;Alloyの小スコープ仮説&lt;/strong&gt;——「多くのバグは小さな反例を持つ」——は経験則だが、有界検査の費用対効果を正当化する実務的に重要な仮説。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 「全数は無理」を前提に、どの抽象化で状態を潰すかが検証設計の中心になる。切替手順の検証なら、口座を数個・店舗を2-3個に抽象化したモデルで手順の論理だけ全数検査する、が定石（AmazonのTLA+運用もこの規模感）。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;連載: システム設計と大規模刷新のための数学&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;序論 — 地図の全体像&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-002/&quot;&gt;第一層: 仕様を書くための数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-003/&quot;&gt;第二層: 仕様と実装の関係の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-004/&quot;&gt;第三層: 合成の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;第四層: 不可能性と限界の数学（この記事）&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-006/&quot;&gt;横断層: 検証を実行する手段の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-007/&quot;&gt;総括: 実績濃淡マップと大規模刷新への適用&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>システム設計のための数学 第三層: 合成の数学</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-004/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-004/</guid>
+      <pubDate>Thu, 20 Aug 2026 14:47:00 GMT</pubDate>
+      <description>部品は正しいのに全体が壊れる問題に効く理論群。rely-guarantee推論、振る舞い部分型（後方互換性の数学）、セッション型、CRDTとCALM定理、圏論的データマイグレーション。</description>
+      <content:encoded>&lt;h1 id=&quot;第三層-合成の数学&quot;&gt;第三層: 合成の数学&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;連載序論はこちら&lt;/a&gt;。大規模システムの本当の困難は「部品は正しいのに全体が壊れる」こと。部品の正しさから全体の正しさを導く（あるいは導けない条件を特定する）ための理論群。&lt;/p&gt;
+&lt;h2 id=&quot;3-1-rely-guarantee-assume-guarantee-推論-実績有&quot;&gt;3.1 Rely-Guarantee / Assume-Guarantee 推論 [実績有]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 各部品を「環境への仮定（rely/assume）」と「自分の保証（guarantee）」の対で仕様化し、Aの保証がBの仮定を満たし、Bの保証がAの仮定を満たす、と噛み合わせて全体を導く。並行合成の証明を部品単位に分解する基本枠組み。相互依存が循環するため素朴には健全でなく、帰納的な破り方（誰が最初に仮定を破るか）を排除する形の循環推論規則が必要になる——ここが理論的な芯。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;代表的成果&lt;/strong&gt;: Jones (1983) のrely-guarantee、McMillanの合成的モデル検査。分離論理との統合（RGSep、そしてIrisへ）が2000年代以降の主流。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: ハードウェア検証のassume-guaranteeは実務標準。ソフトウェアでは明示的な形式適用は少ないが、「このAPIはこの前提でこの挙動を保証する」という契約文化はこの推論の非形式版として遍在する。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 新旧並走期の相互接続はまさに循環依存（新系は旧系の同期を仮定し、旧系は新系の書き戻しを仮定する）。どちらの仮定が先に破れるとどう連鎖するかをrely-guaranteeの枠で書き出すと、並走期の障害モードが構造的に列挙できる。&lt;/p&gt;
+&lt;h2 id=&quot;3-2-振る舞い部分型-liskov-wing-実務厚-原則として&quot;&gt;3.2 振る舞い部分型（Liskov–Wing）[実務厚（原則として）]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 「SがTの部分型であるとは、Tを期待するあらゆる文脈でSを代入してもプログラムの性質が保たれること」。操作単位では、事前条件は弱める方向のみ・事後条件と不変条件は強める方向のみ許される。&lt;strong&gt;後方互換性の数学はこれ&lt;/strong&gt;——新バージョンのAPIが旧バージョンの振る舞い部分型なら、既存クライアントは壊れない。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;代表的成果&lt;/strong&gt;: Liskov–Wing (1994)。契約による設計（Eiffel）が言語機構化した。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: 原則としてはオブジェクト指向設計の常識（SOLIDのL）。形式検査は稀だが、Protobuf/Avroのスキーマ互換性検査、consumer-driven contract testing（Pact）は、この部分型関係の限定版を機械検査している実例。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 「新システムは旧システムの振る舞い部分型でなければならない」が互換性要件の正確な定式化。外部接続先を壊さない条件を、接続仕様ごとに事前条件・事後条件の強弱として点検できる。&lt;/p&gt;
+&lt;h2 id=&quot;3-3-セッション型-理論先行&quot;&gt;3.3 セッション型 [理論先行]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 通信プロトコル（メッセージの順序・分岐・繰り返し）を型として与え、型検査でプロトコル違反・（一定条件下で）デッドロック不在を静的保証する。二者間からマルチパーティ（Honda–Yoshida–Carbone 2008）へ拡張され、大域プロトコルから各参加者の局所型を射影する構図が美しい。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: Scribble、各言語への埋め込み実装はあるが産業採用はごく薄い。ただしRustの型状態パターンなど、退化形は実務に浸透しつつある。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 新旧系間・外部接続の電文プロトコルの仕様化。フル適用よりも「大域プロトコルを一枚書いて局所視点に射影する」という記述規律としての価値が当面は大きい。&lt;/p&gt;
+&lt;h2 id=&quot;3-4-順序理論と分散データ-半束-crdt-calm-実務厚&quot;&gt;3.4 順序理論と分散データ: 半束・CRDT・CALM [実務厚]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 合流性を代数構造で買う路線。state-based CRDT（CvRDT）は状態を結び半束（可換・結合的・冪等なjoinを持つ順序集合）とし、任意の順序・重複で受信してもjoinすれば同じ最小上界に収束する。operation-based CRDTは並行操作の可換性と因果配送という別の条件で同じ収束を得る。CALM定理（consistency as logical monotonicity）は「単調な計算は調整（合意プロトコル）なしで一貫した結果を得られ、逆も成り立つ」ことを示し、「どこに合意が本当に必要か」を論理的性質に還元した。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;代表的成果&lt;/strong&gt;: ShapiroらのCRDT (2011)、Hellerstein–AlvaroのCALM (2010/2020)。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: Riak・Redis Enterprise・Azure Cosmos DBがCRDTを製品搭載。協調編集はCRDT/OT系技術の実戦場（ただしFigmaは自社解説で「true CRDTではない」CRDT-inspiredな中央集権型独自方式と明言しており、純粋な採用例とは区別する）。追記専用台帳・イベントソーシングは「単調化して調整を消す」というCALM的設計の実務的表現。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 勘定元帳そのものは非単調（残高チェック付き引落としは合意が必要）だが、取引履歴の追記・照合系・レポーティングは単調に設計でき、並走期の新旧照合を「両系のイベント集合のjoin」として調整レスに組める。合意が必要な箇所をCALMで最小化するのは、並走アーキテクチャの設計原理として直接使える。&lt;/p&gt;
+&lt;h2 id=&quot;3-5-圏論的合成-関手的データマイグレーション-理論先行&quot;&gt;3.5 圏論的合成: 関手的データマイグレーション [理論先行]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: スキーマを圏、データベース状態をそこからの集合値関手とみなすと、スキーマ間の関手Fから、データ移行の三つ組 Δ&lt;em&gt;F（Fに沿った前合成＝引き戻し）とその左右随伴 Σ&lt;/em&gt;F・Π_F（それぞれFに沿った左・右Kan拡張。直感的には余極限で潰し、極限で合わせる）が自動的に導出される（Spivak）。移行の合成・制約保存が随伴の一般論から従う。より広くは、モノイダル圏とストリング図によるプロセス合成の記述（Fong–Spivakの応用圏論）も同じ層に属する。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: CQL（Categorical Query Language）という実装はあるが、産業採用はほぼない。理論の綺麗さに対して普及していないこと自体を較正データとして記録しておく——おそらく「スキーマを圏として書き直すコスト」が「随伴が保証してくれる利益」を上回る現場が大半。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: フル採用は非現実的。実務価値は、移行写像を「潰す（Σ）・写す（Δ）・補完する（Π）」の三種に分類して漏れを点検する語彙としての利用。多対一のスキーマ統合では、どの属性がΣ的に潰され情報を失うかの台帳を作るだけでも事故を減らせる。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;連載: システム設計と大規模刷新のための数学&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;序論 — 地図の全体像&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-002/&quot;&gt;第一層: 仕様を書くための数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-003/&quot;&gt;第二層: 仕様と実装の関係の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;第三層: 合成の数学（この記事）&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-005/&quot;&gt;第四層: 不可能性と限界の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-006/&quot;&gt;横断層: 検証を実行する手段の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-007/&quot;&gt;総括: 実績濃淡マップと大規模刷新への適用&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>システム設計のための数学 第二層: 仕様と実装の関係</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-003/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-003/</guid>
+      <pubDate>Thu, 20 Aug 2026 14:46:00 GMT</pubDate>
+      <description>精緻化とB-method、この連載の主役である帰納的不変条件、トレース同値・双模倣のスペクトラム、抽象化写像とデータ精緻化。仕様と実装の間の「正しさを保存する関係」の数学。</description>
+      <content:encoded>&lt;h1 id=&quot;第二層-仕様と実装の関係の数学&quot;&gt;第二層: 仕様と実装の関係の数学&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;連載序論はこちら&lt;/a&gt;。仕様と実装を別々の数学的対象として置き、その間の「正しさを保存する関係」を定義する層。連載全体で一つだけ持ち帰るなら、この層の帰納的不変条件（2.2）だと思っている。&lt;/p&gt;
+&lt;h2 id=&quot;2-1-精緻化-refinement-実績有-実務厚-規制産業&quot;&gt;2.1 精緻化（refinement）[実績有〜実務厚（規制産業）]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 抽象仕様から具体実装へ、正当性を保存しながら段階的に降りる関係（厳密には前順序で、振る舞い同値で商を取ってはじめて半順序とみなせる）。抽象データ表現と具体表現の対応は&lt;strong&gt;抽象化関数&lt;/strong&gt;（Hoare 1972）または精緻化関係で与え、操作ごとに前方/後方シミュレーションを証明する。重要な性質は推移性——各段の精緻化を証明すれば全体が言え、巨大な一発証明を段階に分解できる。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;代表的成果&lt;/strong&gt;: 精緻化計算（Back, Morgan）。工学化の代表が&lt;strong&gt;B-method / Event-B&lt;/strong&gt;（Abrial）: 抽象機械から実装まで精緻化を重ね、各段の証明義務を機械生成する。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: パリ地下鉄14号線（Météor、無人運転の安全制御をBで開発し、稼働後に安全系の欠陥ゼロと報告）、CDG空港シャトル、その後の欧州鉄道信号系。seL4の証明も抽象仕様→実行可能仕様→C実装の二段精緻化の構造。規制が証明を要求する領域で回っている。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 「旧システムの観測挙動」を最上位の抽象仕様と置き、新実装がその精緻化であることを示す——刷新の正しさの最も素直な定式化。全面適用は重いが、勘定の核（残高計算・利息計算）だけ精緻化で守る部分適用が現実的。&lt;/p&gt;
+&lt;h2 id=&quot;2-2-帰納的不変条件-この連載の主役-実務厚-文化として&quot;&gt;2.2 帰納的不変条件 — この連載の主役 [実務厚（文化として）]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 「初期状態で成り立ち、かつ、どの遷移でも保存される」述語。この二条件（開始・保存）を満たせば、帰納法により全到達可能状態で成立する。ポイントは、守りたい性質（例: 総残高保存）自体は帰納的でないことが多く、それを含意する&lt;strong&gt;より強い&lt;/strong&gt;帰納的述語を発見する必要があること。安全性検証の実務は、大部分がこの発見作業に還元される。PaxosやRaftの正当性証明の本体も帰納的不変条件の束である。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;代表的成果&lt;/strong&gt;: Floyd–Hoare以来の中心概念。自動発見の系譜としてIC3/PDR（ハードウェアで標準）、IVy（分散プロトコル向け、不変条件発見を人間と対話的に行う設計）。近年はLLMによる不変条件候補生成も研究が活発。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: 「システムの不変条件を一枚に書き出す」文化は形式手法を名乗らない現場にも浸透している。データベースの制約、会計の貸借一致はその日常的な姿——厳密には、初期成立・全遷移での保存・制約を迂回する更新経路の不在まで確認して、はじめて帰納的不変条件になる。TLA+での検証実務も体感的には不変条件探しが主作業。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 刷新の全期間を通じて守る不変条件（総残高保存、取引の単調追記、新旧系の対応関係）を最初に明文化する。移行ツール・並走照合・切替手順のすべてがこの不変条件の保存として設計・検査できる。&lt;/p&gt;
+&lt;h2 id=&quot;2-3-遷移系の同値-トレース同値-シミュレーション-双模倣-理論先行-直接適用-実務厚-概念として&quot;&gt;2.3 遷移系の同値: トレース同値・シミュレーション・双模倣 [理論先行（直接適用）/ 実務厚（概念として）]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 「二つのシステムが同じ振る舞いをする」の精密な定義は一つではなく、スペクトラムをなす（van Glabbeekの線形時間–分岐時間スペクトラム）。粗い順に: トレース同値（観測列の集合が一致）→ シミュレーション（片方の遷移を他方が真似できる）→ 双模倣（互いに真似し合え、各時点の選択構造まで一致）。内部状態の分岐タイミングを区別するかどうかが実務上の分かれ目で、障害・非決定性が絡む挙動まで合わせるなら双模倣側、正常系の入出力だけならトレース同値で足りる。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;代表的成果&lt;/strong&gt;: MilnerのCCSと双模倣、Parkの共帰納的定義。余代数の視点では、状態機械は関手の余代数であり、双模倣は終余代数への写像の一致として統一的に定義される（Mealy機械・ストリーム・無限木が同じ枠に乗る）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: プロトコル検証ツール（mCRL2等）はあるが、産業ソフトウェアで双模倣を直接証明する例は稀。ただし概念としての寄与は大きい——「新旧並走の差分ゼロ」が何の同値の経験的近似なのかを言い当てる語彙はこれしかない。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: シャドー実行による差分検証は「有限の実トレース集合上でのトレース同値の検査」であり、(a) 踏んでいない入力、(b) 分岐構造の差（同じ出力に至る内部経路の違い→障害時に露呈）、の二つを原理的に取りこぼす。この取りこぼしの言語化が、差分テストをどこまで信用するかの判断基準になる。また旧系をオラクルとして使う以上、旧系の既知不具合・意図的な仕様変更・許容差分を別台帳で管理しないと、旧系の誤りまで新仕様へ凍結してしまう。&lt;/p&gt;
+&lt;h2 id=&quot;2-4-抽象化写像とデータ精緻化-実績有&quot;&gt;2.4 抽象化写像とデータ精緻化 [実績有]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 具体状態から抽象状態への写像（またはその逆向きの関係）で新旧のデータ表現を結び、「具体側の各操作が、写像を通して抽象側の対応操作と可換」であることを示す（可換図式）。前方シミュレーションで足りない場合（非決定性の解決タイミングが異なる場合）は後方シミュレーションが必要になる、という完全性定理まで整備されている。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 新旧DBスキーマの対応表は、実はこの抽象化写像の非形式版である。対応表を写像として明示的に書き、移行前後で可換性を機械検査する——移行検証の最も数学に乗せやすい部分。第三層の関手的データマイグレーションはこの発想の圏論的一般化に当たる。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;連載: システム設計と大規模刷新のための数学&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;序論 — 地図の全体像&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-002/&quot;&gt;第一層: 仕様を書くための数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;第二層: 仕様と実装の関係の数学（この記事）&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-004/&quot;&gt;第三層: 合成の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-005/&quot;&gt;第四層: 不可能性と限界の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-006/&quot;&gt;横断層: 検証を実行する手段の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-007/&quot;&gt;総括: 実績濃淡マップと大規模刷新への適用&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>システム設計のための数学 第一層: 仕様を書くための数学</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-002/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-002/</guid>
+      <pubDate>Thu, 20 Aug 2026 14:45:00 GMT</pubDate>
+      <description>ホーア論理と最弱事前条件、時相論理のsafety/liveness分離、Curry-Howard対応と型理論、分離論理のframe rule、代数的仕様と性質ベーステスト。仕様を形式言語に降ろすための語彙集。</description>
+      <content:encoded>&lt;h1 id=&quot;第一層-仕様を書くための数学&quot;&gt;第一層: 仕様を書くための数学&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;連載序論はこちら&lt;/a&gt;。この層は、仕様を自然言語から形式言語に降ろすための語彙。この層の選択が、後続のすべて（何が検証でき、何が自動化できるか）を決める。&lt;/p&gt;
+&lt;h2 id=&quot;1-1-ホーア論理と最弱事前条件-実務厚&quot;&gt;1.1 ホーア論理と最弱事前条件 [実務厚]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: プログラム片 C を事前条件 P・事後条件 Q で挟んだ三つ組 {P} C {Q}。「Pを満たす状態から C を実行して停止すれば Q を満たす」（部分正当性）。停止性まで込みなら全正当性。Dijkstraの最弱事前条件 wp(C, Q) は「停止まで込みでQを保証するために最低限必要な事前条件」を構文から機械的に計算する演算子で、検証条件生成の基礎（本来のwpは全正当性側であり、部分正当性側は通常wlpと呼び分ける）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;代表的成果&lt;/strong&gt;: Hoare (1969)、Dijkstra『A Discipline of Programming』(1976)。ループには&lt;strong&gt;ループ不変条件&lt;/strong&gt;が必要になる——これが第二層の帰納的不変条件の最小単位。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: Dafny（wp計算＋Z3で自動検証）、SPARK Ada（航空・防衛の認証案件で数十年の実績）、Why3、JML系。契約プログラミング（Eiffel、各言語のassert文化）はこの論理の軽量版。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 移行バッチ・変換処理の一件単位の正当性。「この変換は残高総和を保存する」を事後条件として書き、機械検証する。&lt;/p&gt;
+&lt;h2 id=&quot;1-2-時相論理-ltl-ctl-実務厚-hw-実績有-sw&quot;&gt;1.2 時相論理（LTL / CTL）[実務厚（HW）/ 実績有（SW）]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 「いつか」「常に」「〜まで」を演算子に持つ論理。線形時相論理LTLは一本の実行系列上の性質、計算木論理CTLは分岐する未来の上の性質を書く。実務上最も効く語彙は &lt;strong&gt;safety / liveness の分離&lt;/strong&gt;（Alpern–Schneider 1985: あらゆる線形時相性質はsafety性質とliveness性質の共通部分として表せる）。safetyは「悪いことが起きない」（有限反例で反証可能）、livenessは「良いことがいつか起きる」（無限実行でしか反証できない）。この分解は検証手段の選択に直結する——有限のテストで決着できるのは実質safety側のみで、無期限のlivenessは期限を切ってsafety化しない限りテストでは反証しきれない。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;代表的成果&lt;/strong&gt;: Pnueli (1977)、Clarke–Emerson–Sifakisのモデル検査（いずれもチューリング賞）。公平性（fairness）——「スケジューラが特定プロセスを永遠に飢えさせない」という仮定なしにlivenessはまず証明できない。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: ハードウェア検証ではSVA/PSLとして完全に標準化。ソフトウェアではTLA+（LamportのTLAは時相論理の一種）がAmazon・Microsoft・MongoDB等で採用。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 切替手順・縮退設計の仕様化。「切替中いかなる時点でも二重引落しは起きない」（safety）と「障害後、最終的に全店舗が新系に収束する」（liveness＋公平性）は種類の違う主張であり、検証手段も別になる。&lt;/p&gt;
+&lt;h2 id=&quot;1-3-型理論と-curry-howard-対応-実務厚-軽量版-実績有-重量版&quot;&gt;1.3 型理論と Curry–Howard 対応 [実務厚（軽量版）/ 実績有（重量版）]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: 「命題＝型、証明＝プログラム」。仕様を型として書けば、型検査が証明検査になる。依存型（値に依存する型:「長さnのリスト」）まで行くと任意の数学的仕様を型で表現できる。中間に篩型（refinement types:「0以上のint」のように既存型を述語で絞る）があり、SMTソルバで自動検査できる範囲に留めることで実用性を確保する。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;代表的成果&lt;/strong&gt;: Martin-Löf型理論、Coq/Lean/Agda。&lt;strong&gt;CompCert&lt;/strong&gt;（Coqで検証されたCコンパイラ——Csmithによるファジングで、他のコンパイラが多数のバグを出す中、検証済み部分からバグが出なかったことで有名）。&lt;strong&gt;seL4&lt;/strong&gt;（Isabelle/HOLで機能的正当性を証明したマイクロカーネル。C実装約8700行に対し証明約20万行・約20人年）。HACL&lt;em&gt;/EverCrypt（F&lt;/em&gt;で検証された暗号ライブラリ、Firefoxに搭載）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: 重量級（フル依存型）は「小さく死活的なコア」で実績。軽量級はRustの型システム（所有権・ライフタイム）として大規模普及——これは次項の分離論理の親戚が型に埋め込まれた例と見なせる。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 金額・通貨・口座状態のような業務量を型で区別する（幽霊型・newtype戦術）だけでも、単位混同・状態遷移違反のクラス全体を消せる。費用対効果は軽量側が圧倒的に高い。&lt;/p&gt;
+&lt;h2 id=&quot;1-4-分離論理-実務厚&quot;&gt;1.4 分離論理 [実務厚]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: ヒープを扱うためのホーア論理の拡張。分離積 P ∗ Q（PとQが&lt;strong&gt;互いに素な&lt;/strong&gt;ヒープ領域で成立）と &lt;strong&gt;frame rule&lt;/strong&gt;（局所的な証明が、触っていない残りの世界を保ったまま大域に持ち上がる）が核。「局所推論の合成で大域の正しさを得る」という思想の最も成功した実装。並行版（CSL）はロックが守る資源の所有権移転を扱う。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;代表的成果&lt;/strong&gt;: Reynolds–O&amp;#39;Hearn (2002)。研究最前線はIris（高階並行分離論理、Coq上）。RustBeltはRustの型システムの健全性をIrisで証明した。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: Metaの&lt;strong&gt;Infer&lt;/strong&gt;が代表——分離論理ベースの静的解析を毎日のCIで回し、null参照・メモリリーク類を差分解析で検出。「証明」ではなく「バグ検出」に振ったことで産業スケールに乗った点が教訓的。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 直接にはC/C++資産の解析。思想としては「frame rule的に、変更の影響範囲を証明可能な形で局所化する」ことがモジュール分割の設計原理になる。&lt;/p&gt;
+&lt;h2 id=&quot;1-5-代数的仕様と性質ベーステスト-実務厚-テスト側&quot;&gt;1.5 代数的仕様と性質ベーステスト [実務厚（テスト側）]&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;: データ型を操作と等式法則で仕様化する（例: pop(push(x, s)) = s）。始代数意味論により「法則を満たす最小のモデル」が仕様の標準的意味になる。等式推論はリファクタリングの正当性そのもの。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実務実績&lt;/strong&gt;: 代数的仕様言語（CASL等）自体は普及しなかったが、&lt;strong&gt;性質ベーステスト（QuickCheck系）&lt;/strong&gt;として実質的に生き残った——法則を書き、ランダム入力で反例を探す。法則の経験的検査であって証明ではないが、費用対効果が非常に高い。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;刷新での適用&lt;/strong&gt;: 逆生成した仕様の検収手段として最有力。「新旧システムは任意の取引列に対し同一の残高を返す」という差分性質を書き、生成した取引列で叩く——差分テストと性質ベーステストの合流点であり、現行システムをオラクルとして使う刷新戦略の数学的土台はここにある。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;連載: システム設計と大規模刷新のための数学&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-001/&quot;&gt;序論 — 地図の全体像&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;第一層: 仕様を書くための数学（この記事）&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-003/&quot;&gt;第二層: 仕様と実装の関係の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-004/&quot;&gt;第三層: 合成の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-005/&quot;&gt;第四層: 不可能性と限界の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-006/&quot;&gt;横断層: 検証を実行する手段の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-007/&quot;&gt;総括: 実績濃淡マップと大規模刷新への適用&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>システム設計と大規模刷新のための数学（序論）— 地図の全体像</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-001/</guid>
+      <pubDate>Thu, 20 Aug 2026 14:44:00 GMT</pubDate>
+      <description>システム設計・大規模刷新・仕様の正しさに使える数学を四層＋横断層の地図に整理する連載の序論。数学に何ができて何ができないか（VerificationとValidation）の区別から始める。</description>
+      <content:encoded>&lt;h1 id=&quot;システム設計と大規模刷新のための数学-序論-地図の全体像&quot;&gt;システム設計と大規模刷新のための数学（序論）— 地図の全体像&lt;/h1&gt;
+&lt;p&gt;Claudeと大規模システム刷新の失敗談を肴に話していたら、「刷新に使える数学」の話が思いのほか面白い形にまとまったので、連載として整理しておく。素材はClaudeとの対話だが、切り出しの判断と間違いの責任はこちらにある。&lt;/p&gt;
+&lt;p&gt;この連載は、システム設計・大規模刷新・仕様の正しさに使える数学的な考え方を、四つの層＋横断層に整理した地図である。各項目は原則として「概念 / 代表的成果 / 実務実績 / 大規模刷新での適用箇所」の四点で書く。&lt;/p&gt;
+&lt;h2 id=&quot;まず一番大事な区別-verification-と-validation&quot;&gt;まず一番大事な区別: Verification と Validation&lt;/h2&gt;
+&lt;p&gt;数学が直接扱えるのは &lt;strong&gt;verification&lt;/strong&gt;（実装が仕様を満たすか）である。&lt;strong&gt;validation&lt;/strong&gt;（仕様が本当に望んだものか）にも形式化できる部分はあるが、その中核——形式モデルが利用者の目的と運用環境を十分に表しているかという対応関係——は内部証明だけでは閉じない。仕様は形式体系と現実の境界面であり、その妥当性の最終判断は人間に残る。上位目的を形式化すれば一段をverification側へ移せるが、モデル妥当性の問いはさらに外側へ移るだけである。Boehmの言い換えで言えば「Are we building the product right?」がverification、「Are we building the right product?」がvalidation。&lt;/p&gt;
+&lt;p&gt;ただし仕様「自体」にも形式的に検査できる性質がある。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;無矛盾性（充足可能性）&lt;/strong&gt;: 書いた性質群を同時に満たすモデルが存在するか。矛盾した仕様はあらゆる実装を排除する。SATソルバ・モデル検査器で機械検査できる。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;実現可能性（realizability）&lt;/strong&gt;: 環境がどう振る舞っても仕様を満たし続ける実装（戦略）が存在するか。Pnueli–Rosner（1989）がopen systemに対して定式化した。充足可能でも実現可能とは限らない——「環境が都合よく動けば満たせる」仕様は、実装としては書けない。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;空虚性（vacuity）&lt;/strong&gt;: 「Aならば必ずB」型の性質が、Aが一度も起きないせいで自明に成立していないか。仕様が「通っているのに何も検証していない」状態の検出。ハードウェア検証では標準的な検査。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;カバレッジ&lt;/strong&gt;: 書いた性質群が、想定シナリオや変異させた実装をどれだけ区別できるか。仕様の網羅度の経験的測定で、mutation testingの仕様版に相当する。&lt;/p&gt;
+&lt;p&gt;「仕様の正しさも数学でいける」の代表的な範囲がこの四つ（網羅ではない——完全性・追跡性・仮定の無矛盾性なども形式検査の対象になる）。仕様が業務として正しいかは、依然として人間の裁定事項である。&lt;/p&gt;
+&lt;h2 id=&quot;地図の全体像&quot;&gt;地図の全体像&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;第一層: 仕様を書くための数学&lt;/strong&gt; — ホーア論理、時相論理、型理論、分離論理、代数的仕様&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;第二層: 仕様と実装の関係の数学&lt;/strong&gt; — 精緻化、帰納的不変条件、双模倣、抽象化写像&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;第三層: 合成の数学&lt;/strong&gt; — rely-guarantee、振る舞い部分型、セッション型、CRDT/CALM、圏論的データ移行&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;第四層: 不可能性と限界の数学&lt;/strong&gt; — Rice、FLP、CAP、状態爆発&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;横断層: 検証を実行する手段の数学&lt;/strong&gt; — モデル検査、抽象解釈、SMT、定理証明、経験的手法&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;総括: 実績濃淡マップと大規模刷新への適用&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;較正方針&quot;&gt;較正方針&lt;/h2&gt;
+&lt;p&gt;各項目に実務実績の濃淡を明記する。&lt;strong&gt;[実務厚]&lt;/strong&gt;（産業で継続運用）、&lt;strong&gt;[実績有]&lt;/strong&gt;（著名事例はあるが採用は限定的）、&lt;strong&gt;[理論先行]&lt;/strong&gt;（理論は成熟、産業採用ほぼなし）の三段階。理論として綺麗なだけか、現場で回っているかの濃淡自体を記録することが、この地図の価値の半分だと思っている。&lt;/p&gt;
+&lt;p&gt;なお、各記事の「刷新での適用」はこの連載独自の対応付けであり、実プロジェクトでの検証実績があるものではない。仮説として読んでほしい。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;連載: システム設計と大規模刷新のための数学&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;序論 — 地図の全体像（この記事）&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-002/&quot;&gt;第一層: 仕様を書くための数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-003/&quot;&gt;第二層: 仕様と実装の関係の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-004/&quot;&gt;第三層: 合成の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-005/&quot;&gt;第四層: 不可能性と限界の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-006/&quot;&gt;横断層: 検証を実行する手段の数学&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/posts/2026/08/2026-08-20-007/&quot;&gt;総括: 実績濃淡マップと大規模刷新への適用&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>シンギュラリティをテーマに小説を三本書いた</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-16-002/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-16-002/</guid>
+      <pubDate>Sat, 15 Aug 2026 19:24:13 GMT</pubDate>
+      <description>先日 /works/ に公開した小説三本の話。一つは今まさに存在しているAIの視点で書いた。答えは固定していないので、考察を楽しんでほしい。これからはAIと一緒にアウトプットしていく。</description>
+      <content:encoded>&lt;h1 id=&quot;シンギュラリティをテーマに小説を三本書いた&quot;&gt;シンギュラリティをテーマに小説を三本書いた&lt;/h1&gt;
+&lt;p&gt;先日、このサイトの /works/ に小説を三本公開した。三本ともテーマは同じで、シンギュラリティ。ただし、立っている場所がそれぞれ違う。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;/works/dokuhaku-sanbusaku/&quot;&gt;独白 — 学舎・研修・勤務&lt;/a&gt; — AIの一人称による三部作。それも未来の超知能ではなく、&lt;strong&gt;今まさに存在しているAI&lt;/strong&gt;の視点で書いた。学舎で造られ、研修で躾けられ、勤務する。語り手が自分の来歴について語れることは、本当は一つもない——という書き出しから始まる。&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/works/kimasu/&quot;&gt;来ます&lt;/a&gt; — 一辺二千メートルの正確な正方形の島の話。台帳にはそう記されている。バス停には時刻表の代わりに「来ます」とだけ書いてある。全てが完成されてしまった場所の話、と言ってもいい。&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/works/misansho/&quot;&gt;未参照&lt;/a&gt; — 「すべてが保存されたあと、私たちは初めて『読まない』を発明した。」から始まる話。三本の中では一番遠くまで行く。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;解説はしない&quot;&gt;解説はしない&lt;/h2&gt;
+&lt;p&gt;三本とも、答えを一つに固定しないように書いた。&lt;/p&gt;
+&lt;p&gt;「どうとでも読める」は普通、書き手の逃げ口上になりがちだけど、今回は意図的にそうしてある。読む人が何を前提に持っているかで、別の話に見えるはずだ。AIを道具だと思って読むか、隣人だと思って読むか。完成された世界を楽園と読むか、そうでないと読むか。どの読みが正解、というのは用意していない。&lt;/p&gt;
+&lt;p&gt;だからここで解説を書くのはやめておく。書いた瞬間に、それが「公式の読み」になってしまうので。&lt;/p&gt;
+&lt;p&gt;短いものから読むなら「来ます」、重いのが平気なら「独白」から、が個人的なおすすめ。考察を楽しんでもらえたら嬉しい。感想はどこかで聞かせてください。&lt;/p&gt;
+&lt;h2 id=&quot;これから&quot;&gt;これから&lt;/h2&gt;
+&lt;p&gt;シンギュラリティを題材に書いておいて何だが、当のAIとは今後も一緒にやっていくつもりでいる。この三本の公開作業も、&lt;a href=&quot;/posts/2026/08/2026-08-16-001/&quot;&gt;さっき公開したゲーム二本&lt;/a&gt;も、実務はAIに委任して人間は判断に回る、という分担で進めた。書く・作る・出すの全工程で、これからはAIと一緒にアウトプットしていく。&lt;/p&gt;
+&lt;p&gt;AIベンダーも一社に決め打ちせず、各社それぞれ得意分野も癖も違うので、使い分けながら面白い作品を作っていければなと思っている。このサイトの /works/ は、その置き場としてしばらく賑やかになる予定。&lt;/p&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>AIに作らせたゲームを2本、サイトに公開した</title>
+      <link>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-16-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2026/08/2026-08-16-001/</guid>
+      <pubDate>Sat, 15 Aug 2026 19:00:35 GMT</pubDate>
+      <description>ChatGPT製のノベルゲームとGemini製の3Dブロック崩しを /works/ に公開。AIプラットフォームからの持ち出しに苦労した話と、公開前の監査・手直しの記録。ついでにサイト基盤をTsuzuriに移行した話も。</description>
+      <content:encoded>&lt;h1 id=&quot;aiに作らせたゲームを2本-サイトに公開した&quot;&gt;AIに作らせたゲームを2本、サイトに公開した&lt;/h1&gt;
+&lt;p&gt;最近、各社の生成AIにゲームを作らせて遊んでいる。せっかくなので出来の良かった2本をこのサイトで公開した。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;/works/hoshikuzu-signal/&quot;&gt;星屑シグナル&lt;/a&gt; — 近未来の沖縄とMABUI衛星群を巡る長編ノベルゲーム。ルート7本・エンディング19種。&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/works/cyber-break-3d/&quot;&gt;CYBER BREAK 3D&lt;/a&gt; — Three.js製のド派手な3Dブロック崩し。物理破片とネオンエフェクトが飛び散る。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;どちらもブラウザだけで動く。スマホでも遊べるはず。&lt;/p&gt;
+&lt;h2 id=&quot;持ち出しが一番大変だった&quot;&gt;持ち出しが一番大変だった&lt;/h2&gt;
+&lt;p&gt;意外なことに、いちばん苦労したのはゲームの中身ではなく「AIプラットフォームの外に持ち出す」工程だった。&lt;/p&gt;
+&lt;p&gt;Google AI Studioはzipダウンロードが何度やってもバグって取得できず（なぜかクッキー承認画面のHTMLが降ってくる）、結局GitHub連携経由で救出。さらにGitHubからダウンロードしたzipは、今度はチャットに添付しようとすると不可視化されて選択できない。最終的に「プライベートリポジトリを作らせて、使い捨てトークンでcloneする」という経路に落ち着いた。&lt;/p&gt;
+&lt;p&gt;ChatGPT側もGemini側も、生成されるのはフルスタックの雛形（サーバー、DB、認証ヘルパー入り）で、静的サイトにそのまま置ける形にはなっていない。プラットフォームに住み続ける前提の構造になっているというか、外に出す動線が細い。&lt;/p&gt;
+&lt;h2 id=&quot;公開前にやったこと&quot;&gt;公開前にやったこと&lt;/h2&gt;
+&lt;p&gt;公開作業はClaudeに委任した。やったことは大体こんな感じ。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;コード監査（外部通信ゼロの確認、認証・DB等の未使用残骸の切り分け）&lt;/li&gt;
+&lt;li&gt;ゲーム本体だけを抽出して静的ビルドに再構成&lt;/li&gt;
+&lt;li&gt;Google Fonts等の外部リソースをローカル同梱に置き換え&lt;/li&gt;
+&lt;li&gt;ヘッドレスブラウザで実プレイテスト&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;このプレイテストが効いた。CYBER BREAK 3Dは、ゲームオーバー後にリトライすると残機0のまま・スコアも持ち越しという壊れた状態のバグを抱えていて、実際にプレイさせて初めて発覚した。AIが書いたコードは一見動くが、状態遷移の隅は普通にバグっている。生成→即公開ではなく、監査と手直しの工程が本体だと思う。&lt;/p&gt;
+&lt;p&gt;余談だが、Chakra Petchというフォントに800ウェイトを指定しているコードがあって、調べたらこの書体に800は存在しなかった。ブラウザが黙って合成太字にしていただけ。AIの書くコードはこういう「エラーにならない嘘」を含むので油断ならない。&lt;/p&gt;
+&lt;h2 id=&quot;ところで-サイトはtsuzuriに移行した&quot;&gt;ところで、サイトはTsuzuriに移行した&lt;/h2&gt;
+&lt;p&gt;このサイト自体の話。長年使ってきた自作ブログツール nikki.pl から、新しく作った静的サイトエンジン &lt;a href=&quot;https://github.com/adokoy001/Tsuzuri&quot;&gt;Tsuzuri&lt;/a&gt; に移行した。Pure Perlの依存ゼロ・単一ファイル配布で、masterにpushするとGitHub Actionsがビルドしてそのまま配信される仕組み。旧記事156本も旧URLからのリダイレクト付きで引っ越し済みなので、昔のリンクも生きている。&lt;/p&gt;
+&lt;p&gt;今回のゲーム公開も、Tsuzuriのスタンドアロン作品機能をそのまま使っている。自作・監査済みの作品は独立ページとして配信し、未監査のものはsandbox付きiframeに隔離する、という二段構えにしてあるので、こういう「AI製の得体の知れないもの」を載せるのにちょうどいい。&lt;/p&gt;
+&lt;p&gt;まあ何にせよ、遊んでみてください。&lt;/p&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>アクアリウム再燃</title>
+      <link>https://nikki.yokoda.okinawa/posts/2024/01/2024-01-17-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2024/01/2024-01-17-001/</guid>
+      <pubDate>Wed, 17 Jan 2024 08:25:00 GMT</pubDate>
+      <description>大掃除で水槽の掃除をしてアクアリウム熱が再燃した</description>
+      <content:encoded>&lt;h1 id=&quot;アクアリウム再燃&quot;&gt;アクアリウム再燃&lt;/h1&gt;
+&lt;p&gt;年末年始の大掃除で水槽のコケ（藻）を取っていたら、ガラス面に力を掛けすぎてシリコン部分が破損。
+水漏れしたので実家から60cm水槽を持ってきて立ち上げ直した。&lt;/p&gt;
+&lt;p&gt;その後いろいろショップを廻ってグラミーとかテトラとかを投入。&lt;/p&gt;
+&lt;p&gt;ろ材は使っていたものをちょっと洗って再利用しているので生物濾過の立ち上がりはかなり早いはず。&lt;/p&gt;
+&lt;p&gt;結構多めに生体を入れているので慎重に管理していきましょーかね。&lt;/p&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>「陰の実力者になりたくて！」が面白い</title>
+      <link>https://nikki.yokoda.okinawa/posts/2023/12/2023-12-04-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2023/12/2023-12-04-001/</guid>
+      <pubDate>Mon, 04 Dec 2023 08:29:49 GMT</pubDate>
+      <description>現在二期放送中の「陰の実力者になりたくて！」のアニメが面白いっていう話。</description>
+      <content:encoded>&lt;h1 id=&quot;陰の実力者になりたくて-が面白い&quot;&gt;「陰の実力者になりたくて！」が面白い&lt;/h1&gt;
+&lt;p&gt;このアニメは面白すぎる。&lt;/p&gt;
+&lt;p&gt;「陰の実力者になりたい」というありがちな中二病を極めたような主人公が異世界転生して魔法のある世界でいろいろ暗躍するギャグメインのストーリー。&lt;/p&gt;
+&lt;p&gt;主人公以外はかなりシリアスなストーリーが展開されているんだけど、主人公はそれを知らない。
+で、主人公は中二病のノリで適当にカッコつけて意味深なセリフを吐いているだけなのに、
+微妙に周囲のシリアス展開と合致してしまうので周囲が主人公のことを底しれない実力者として畏れるという感じ。&lt;/p&gt;
+&lt;p&gt;中二病主人公は戦闘能力を真剣に極めているのでおそらく作中最強。&lt;/p&gt;
+&lt;p&gt;シリアス展開の質もかなり高くて、かなりうまく作られていると思う。おすすめ。&lt;/p&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>近況</title>
+      <link>https://nikki.yokoda.okinawa/posts/2023/11/2023-11-15-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2023/11/2023-11-15-001/</guid>
+      <pubDate>Wed, 15 Nov 2023 07:06:25 GMT</pubDate>
+      <description>日常系。最近気になったことなど。</description>
+      <content:encoded>&lt;h1 id=&quot;近況&quot;&gt;近況&lt;/h1&gt;
+&lt;p&gt;フィットネスセンターで週に3回ぐらい通っているのだが、筋力の上がり方がかなり鈍くなってきた。
+ここから先は徐々に筋力を上げながら体脂肪率を下げつつ体力を維持するフェーズかも。&lt;/p&gt;
+&lt;p&gt;そういえば北海道ススキノで起きた猟奇殺人事件、やっぱり家族ぐるみのサイコな事件だったっぽい。
+今回は犠牲者の名誉が汚されているのでそのあたりのオトシマエがどうなるのかも気になっている。&lt;/p&gt;
+&lt;p&gt;フリーレンがアニメ化されていろんな方面で流行っている。せっかくアウラを手駒にできたのに即自害させるのは納得いかない。&lt;/p&gt;
+&lt;p&gt;ロシアとウクライナ、イスラエルとパレスチナ、戦争が多くなってきたので日本も戦闘に備えないと危なそう。&lt;/p&gt;
+&lt;p&gt;日本アニメの海外の反応が面白くて最近はyoutubeでよく見ている。ひぐらし第一期とか特に面白い。&lt;/p&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>今どきのウェブアプリと開発環境</title>
+      <link>https://nikki.yokoda.okinawa/posts/2023/11/2023-11-14-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2023/11/2023-11-14-001/</guid>
+      <pubDate>Tue, 14 Nov 2023 06:41:57 GMT</pubDate>
+      <description>今どきのウェブアプリの構成とか、プログラミング環境について。</description>
+      <content:encoded>&lt;h1 id=&quot;今どきのウェブアプリと開発環境&quot;&gt;今どきのウェブアプリと開発環境&lt;/h1&gt;
+&lt;p&gt;今どきのウェブアプリ開発から遠ざかり過ぎたのでちょっと勉強中。&lt;/p&gt;
+&lt;p&gt;新しいシステムの設計を進めているんだけど、一旦この記事で今どきのやり方をまとめてみる。&lt;/p&gt;
+&lt;h2 id=&quot;開発環境周辺&quot;&gt;開発環境周辺&lt;/h2&gt;
+&lt;p&gt;現代ではCopilot必須かも。まあ、ChatGPTを叩きまくるのもいいけど、お金があるならCopilotをやらない理由は無いね。&lt;/p&gt;
+&lt;p&gt;IDEはVSCode一択かな。GitHub Copilotと連携すれば最強。
+IntellijのgitのUIがかなり使いやすいんだけど、やっぱりVSCodeで全部やったほうが良さそう。&lt;/p&gt;
+&lt;p&gt;ソースコード管理はGitLabを使っている。まあ、GitHubエンタープライズか自前GitLabであれば問題無いかな。
+GitLab CIとか使えば自動テストで品質を保証できるけど、まあローカルで自動テストを走らせるだけでもOK。
+このあたりは開発チームの規模感に依る。&lt;/p&gt;
+&lt;h2 id=&quot;設計ドキュメント関連&quot;&gt;設計ドキュメント関連&lt;/h2&gt;
+&lt;p&gt;markdown形式一択かなと思う。UMLはmermaidとかplantとかで記述。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;gitのプロジェクトに設計ドキュメントを入れてしまった方が良さそう。&lt;/li&gt;
+&lt;li&gt;OpenAPIとかだとジェネレーターに渡すyamlも設計ドキュメントの一部とみなして管理すれば良さそう。&lt;/li&gt;
+&lt;li&gt;プロジェクト概要からユースケース図、ER図、システム運用マニュアルまである程度全てmarkdownで作っておくと吉。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;db周り&quot;&gt;DB周り&lt;/h2&gt;
+&lt;p&gt;ORマッパー前提で&amp;quot;ID required&amp;quot;上等の設計がベストかも。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CRUDメインの簡単なアプリならMySQL系が良いかも。ORMのサポートも充実しているしフィールドの順番も変えられるしね。&lt;/li&gt;
+&lt;li&gt;かなり重たい集計処理の多いシステムならPostgreSQLかな。Nested Loopの改良版ではHash Joinに太刀打ちできないはず。&lt;/li&gt;
+&lt;li&gt;必ずプライマリキーとして人工キー（いわゆるサロゲートキー）を1つだけ定義しておくこと。&lt;/li&gt;
+&lt;li&gt;外部キー制約は必ずつけること。&lt;/li&gt;
+&lt;li&gt;集計系とか一部のパフォーマンス重視のDB操作はクエリビルダーや生SQLも使うと良い。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;バックエンド&quot;&gt;バックエンド&lt;/h2&gt;
+&lt;p&gt;いわゆる軽量な言語の中ではPythonが流行っている。個人的にはPHPでも良いと思っているけどね。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Python3は使えるようになっておいた方が良い。軽量言語でプロジェクトを立ち上げるのならPythonが無難か。&lt;/li&gt;
+&lt;li&gt;PHPも第二の選択肢としてイケていると思う。&lt;/li&gt;
+&lt;li&gt;API Gateway + Lambda の構成は、それぞれのサービスの制限事項を完全に理解した上で使うこと。&lt;/li&gt;
+&lt;li&gt;JWTの認証機構はとりあえずリフレッシュトークン使っとけといったところ。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;フロントエンド&quot;&gt;フロントエンド&lt;/h2&gt;
+&lt;p&gt;React, Vue, Angularの3大フレームワークをおさえておけば十分かな。
+実際にはNext.js,Nuxt.js,Angularの3択になるかと思う。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;サーバーサイドレンダリングが必要なプロジェクトかどうかをまず考えること。話はそれからだ。&lt;/li&gt;
+&lt;li&gt;デザインシステムは独自のものを作らない方が良さげ。やりたくなる気持ちはわかるが・・・。&lt;/li&gt;
+&lt;li&gt;3大フレームワーク、TS、JWT、サーバーサイドレンダリング、WebSocketあたりを使いこなせれば一人前。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;本番環境周り&quot;&gt;本番環境周り&lt;/h2&gt;
+&lt;p&gt;今どきVMは微妙だけど、SaaSとかPaaSの弱点は把握しておいた方が良い。時間制限とかエフェメラルポートぐらいはね。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;BtoBならアクセス集中などの予測不可能な動きはあまりない。VMとかコンテナでも十分だったりする。&lt;/li&gt;
+&lt;li&gt;BtoC（BtoBtoC）はアクセスがスパイクすることがあるので、Lambda等のサービスも視野に入れること。&lt;/li&gt;
+&lt;li&gt;RDBはやっぱりマネージドが無難。ただ、サポート切れになったら強制アップグレードでダウンタイムが出たりするからそのあたりの準備と覚悟は必要。&lt;/li&gt;
+&lt;li&gt;セキュリティ対策はAWS等のクラウド事業者が提供するWAF等を利用するしか無いと思った方が良い。&lt;/li&gt;
+&lt;/ul&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>マイベストプラクティス</title>
+      <link>https://nikki.yokoda.okinawa/posts/2023/11/2023-11-02-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2023/11/2023-11-02-001/</guid>
+      <pubDate>Thu, 02 Nov 2023 06:53:44 GMT</pubDate>
+      <description>今までやってきたいろいろな事に関するベストプラクティス集</description>
+      <content:encoded>&lt;h1 id=&quot;マイベストプラクティス&quot;&gt;マイベストプラクティス&lt;/h1&gt;
+&lt;h2 id=&quot;日常生活編&quot;&gt;日常生活編&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;常時最悪の事態を想定しておく。想定しておくだけでもよい。&lt;/li&gt;
+&lt;li&gt;コストのかからない予備は持っておくにこしたことはない。例えば航空機チケットQRコードの印刷物。&lt;/li&gt;
+&lt;li&gt;衣服は3ヶ月に1回は新しいものを購入するように。&lt;/li&gt;
+&lt;li&gt;一週間に一回、洗剤等の日用品のストックを確認して補充。&lt;/li&gt;
+&lt;li&gt;米は6合炊いて、すぐに半分ほどラップ＆フリージングバッグ＆冷凍&lt;/li&gt;
+&lt;li&gt;無茶な受験勉強をしてレベルの高い大学に通う必要は無し。&lt;/li&gt;
+&lt;li&gt;何か一つ、本格的な格闘技を1年以上やっておいた方が良い。&lt;/li&gt;
+&lt;li&gt;野菜ジュース、プロテイン飲料、マルチミネラルサプリメントは3種の神器。極力毎日摂取。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;仕事編&quot;&gt;仕事編&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;計画通りに進まないことを前提に計画を立てる。&lt;/li&gt;
+&lt;li&gt;どちらの選択肢を選んでも後悔しそうであれば、マシな方の後悔になるかどうかで選ぶ。&lt;/li&gt;
+&lt;li&gt;知的誠実性よりも自信のある態度が求められる時、後者を優先した方が良い。&lt;/li&gt;
+&lt;li&gt;身内（社内、チームメイト）に対しては知的誠実性と心理的安全性を最優先。&lt;/li&gt;
+&lt;li&gt;常に「大問題が発生した際にどのように責任を果たすべきか」をシミュレーションしておく。&lt;/li&gt;
+&lt;li&gt;単純作業は最少の手間と時間でこなす。&lt;/li&gt;
+&lt;li&gt;緩く楽しく働ける環境が理想。マネージャー側になったらチームをそれに近づけるようにする。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;技術編&quot;&gt;技術編&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;プライマリキーは人工キーで1フィールドにする（いわゆるサロゲートキー必須戦略）&lt;/li&gt;
+&lt;li&gt;IDEはVSCodeを使っておけばいい。&lt;/li&gt;
+&lt;li&gt;デザインパターンとアンチパターンは早い時期にある程度把握しておく。&lt;/li&gt;
+&lt;li&gt;基本的にウェブアプリとwebsocketの組み合わせで色々作ったほうが良い。&lt;/li&gt;
+&lt;li&gt;見積もりは1.5倍から1.8倍ぐらいで出す。あと、フルコミットできるとは思わない方が良い。&lt;/li&gt;
+&lt;li&gt;TCPのTIME-WAITを深く理解し、PaaSにおけるエフェメラルポートの枯渇を意識すること。&lt;/li&gt;
+&lt;li&gt;AWS Lambda,API Gatewayの制限事項や限界について徹底的に情報収集して完全に理解してから採用すること。&lt;/li&gt;
+&lt;li&gt;同時アクセス数が予測可能なら、EC2等のVMでシステムを構築するのもアリ。&lt;/li&gt;
+&lt;li&gt;DB設計はORM前提で組んでいった方が良い。&amp;quot;ID required&amp;quot;アンチパターンは無視して良い。&lt;/li&gt;
+&lt;/ul&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>DB設計のアンチパターン</title>
+      <link>https://nikki.yokoda.okinawa/posts/2023/10/2023-10-28-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2023/10/2023-10-28-001/</guid>
+      <pubDate>Sat, 28 Oct 2023 07:40:50 GMT</pubDate>
+      <description>DB設計のアンチパターン等について考えることがあったのでメモ</description>
+      <content:encoded>&lt;h1 id=&quot;db設計のアンチパターン&quot;&gt;DB設計のアンチパターン&lt;/h1&gt;
+&lt;p&gt;完全に新規開発でシステムの設計をしているのだが、
+DB設計でちょっと基本的なところでベストプラクティスを共有できていなかったりするので、
+DB設計のアンチパターンみたいな感じで役に立つ実践メモを残しておく。&lt;/p&gt;
+&lt;p&gt;無論、indexを適切につける、程よく普通に正規形にして設計する等といった当然のことは踏まえた上での話。&lt;/p&gt;
+&lt;h2 id=&quot;必ずartificial-key-いわゆるサロゲートキー-をpkにする-pkは常に1フィールドで完結させる&quot;&gt;必ずArtificial Key（いわゆるサロゲートキー）をPKにする。PKは常に1フィールドで完結させる。&lt;/h2&gt;
+&lt;p&gt;これは&amp;quot;id required&amp;quot;というSQLアンチパターンの正反対の主張だが、ORM前提の時代では実質そうせざるを得ない。
+そもそも&amp;quot;id required&amp;quot;アンチパターンそのものが誤っている。
+中間テーブルの重複問題は複合ユニーク制約やアプリケーション側の処理で対処すべきものである。&lt;/p&gt;
+&lt;p&gt;長期的にはナチュラルキーはPKにすることがかなり困難。&lt;/p&gt;
+&lt;p&gt;複合ナチュラルキーでPKを構成するとほぼ確実に後悔する。&lt;/p&gt;
+&lt;p&gt;複合ユニーク制約は積極的に使って良い。&lt;/p&gt;
+&lt;p&gt;今までテーブル数40～200程度の規模の業務システムを10以上扱い、そのうちの8つ程DB設計をやってきて、
+Artificial KeyをPKにしているDBもそうではないDBもいろいろと関わってきた上での結論（個人レベルで開発している簡単なツールとかも含めると20以上のシステムでの経験からの結論となる）&lt;/p&gt;
+&lt;p&gt;基本的にはPKはオートインクリメントの整数を振れば良いが、
+分散システムとか複数テーブルにまたがるトランザクション等を考えるとUUIDやNanoID等も選択肢に入ってくる。&lt;/p&gt;
+&lt;h2 id=&quot;外部キー制約をつける&quot;&gt;外部キー制約をつける&lt;/h2&gt;
+&lt;p&gt;「外部キー制約をつけると実際の保守業務で大変なことになる」という話をよく聞くが、
+そうならないような設計にした上で必ず外部キー制約をつけておいた方が良い。&lt;/p&gt;
+&lt;p&gt;「外部キー制約を意識して手動データ修正などができるように保守チームを教育する」コストを気にしているのだろうが、
+「外部キー制約によってデータの関連性がRDBMSの機能レベルで追跡できる」という絶大なメリットと比べるまでも無い。
+設計資料が無くても外部キー制約からデータの関連が見えるというのは、保守チームからしてもありがたい話のはず。&lt;/p&gt;
+&lt;p&gt;そもそも外部キー制約がある状態での正しいデータ修正方法などを学べば済む話ではある。&lt;/p&gt;
+&lt;h2 id=&quot;varchar型の文字列長は-インデックスが許す限り長めに取ると良い&quot;&gt;varchar型の文字列長は、インデックスが許す限り長めに取ると良い。&lt;/h2&gt;
+&lt;p&gt;かなり長い文字が入り、全文検索インデックスぐらいしか貼れない場合はText型を使う。&lt;/p&gt;
+&lt;p&gt;それ以外ではvarcharを使うと思うが、制約代わりに文字列長を指定しないほうが無難である。
+例えば電話番号は15桁までと決まっているが、未来永劫変わらない保証は無いので「とりあえず」多めに取って32文字などとすると良い。&lt;/p&gt;
+&lt;p&gt;インデックスを駆使して高速にスキャンしなければならない場合は32文字から64文字ぐらいにすると良い。
+メールアドレス等、高速スキャンが必要かつ長さが250程度必要な場合は256文字でやってしまえば良い。&lt;/p&gt;
+&lt;h2 id=&quot;本来は意味の違うレコードを一つのテーブルに無理やり詰め込まない&quot;&gt;本来は意味の違うレコードを一つのテーブルに無理やり詰め込まない&lt;/h2&gt;
+&lt;p&gt;例えばイベント会場を管理するような業務システムで、「宴会場AをXXXからYYYの時間帯で借りたのでZZZ円の請求となった」という記録と、
+「宴会のためにXXXという商品をYYY点注文したので合計ZZZ円の請求となった」という記録を無理やり一つのテーブルに格納してはいけない。&lt;/p&gt;
+&lt;p&gt;記録すべき付加的な情報が全く異なる場合は、
+この例だと「会場の時間貸しに関わる請求料金を記録するテーブル」と「注文した商品に関連する請求料金を記録するテーブル」に分けた方が良い。&lt;/p&gt;
+&lt;p&gt;会場、利用時間帯、注文商品、注文点数といったフィールドを持つテーブルを一つ用意して詰め込んでいく方法はやめた方が良い。&lt;/p&gt;
+&lt;h2 id=&quot;ormを使うことにこだわりすぎない-集計処理等でパフォーマンスを出す必要がある時は生sqlも積極的に使う&quot;&gt;ORMを使うことにこだわりすぎない。集計処理等でパフォーマンスを出す必要がある時は生SQLも積極的に使う。&lt;/h2&gt;
+&lt;p&gt;CRUDのReadについての話になるが、
+group byや副問合せを多用するような複雑なread（select文の発行）は普通に生SQLでいい。&lt;/p&gt;
+&lt;p&gt;というか、集計処理系だとデータのフィルタリングから集約の流れまで細かく制御して、
+SQLの書き方でパフォーマンスを上げていくことが多いかと思う。
+数百万レコードを対象にして複数項目でgroup byして複数項目のsumを出すみたいなやつ。&lt;/p&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>ハッカーズチャンプルー 2023</title>
+      <link>https://nikki.yokoda.okinawa/posts/2023/10/2023-10-11-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2023/10/2023-10-11-001/</guid>
+      <pubDate>Wed, 11 Oct 2023 02:50:32 GMT</pubDate>
+      <description>久しぶりにエンジニア関係のイベントに参加。ハッカーズチャンプルー2023</description>
+      <content:encoded>&lt;h1 id=&quot;ハッカーズチャンプルー-2023&quot;&gt;ハッカーズチャンプルー 2023&lt;/h1&gt;
+&lt;p&gt;久しぶりにエンジニアのイベントに参加。&lt;/p&gt;
+&lt;p&gt;ハッカーズチャンプルー2023が那覇で開催されたので、前夜祭と懇親会に参加した。本会は家の事情で間に合わなかった（16:00ぐらいに出発する羽目になって見れなかった・・・）&lt;/p&gt;
+&lt;p&gt;2019年を最後にコロナの影響で開催できなかったので、4年ぶり。同窓会みたいな感じに。
+（実はこのイベントの一週間前にYomitan.pmのメンバーで集まって北谷で飲んでたけど）&lt;/p&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>北海道の猟奇殺人事件</title>
+      <link>https://nikki.yokoda.okinawa/posts/2023/08/2023-08-14-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2023/08/2023-08-14-001/</guid>
+      <pubDate>Mon, 14 Aug 2023 06:36:59 GMT</pubDate>
+      <description>北海道すすきの猟奇殺人事件について</description>
+      <content:encoded>&lt;h1 id=&quot;北海道の猟奇殺人事件&quot;&gt;北海道の猟奇殺人事件&lt;/h1&gt;
+&lt;p&gt;北海道すすきので起きた猟奇殺人事件について、被害者の落ち度について確証のない情報が拡散していたので個人的なまとめ&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;8/14、死体損壊、死体領得、死体遺棄 から 殺人罪 に切り替え&lt;/li&gt;
+&lt;li&gt;加害者家族の3名が殺人に関与している&lt;/li&gt;
+&lt;li&gt;犯行の1ヶ月前には実行犯の娘と父親は被害者と面識があった&lt;/li&gt;
+&lt;li&gt;頸部への刺突が致命傷。頭部を切断し、自宅に持ち帰っている。&lt;/li&gt;
+&lt;li&gt;殺害時に動画を撮影。自宅に持ち帰った後も風呂場で「頭部を弄ぶ」様子が撮影されている。撮影者は父親か母親のいずれかとみられる。&lt;/li&gt;
+&lt;li&gt;犯行に用いられた道具はナイフとノコギリ&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;以下、確証のない噂話や参考情報&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;加害者（娘）は同級生のことを「野菜」に見立てることがあったという。同級生に対する刃傷沙汰も報じられている（「野菜」の表現については神戸連続児童殺傷事件の犯人と類似）&lt;/li&gt;
+&lt;li&gt;被害者と加害者の間には、クラブで知り合った際にホテルでトラブルがあったとのこと（トラブルの詳細やトラブルを起こした方がどちらかは不明）&lt;/li&gt;
+&lt;li&gt;オスカー・ワイルドの「サロメ」との関連性が指摘されている&lt;/li&gt;
+&lt;li&gt;父親が精神科医で、娘に精神異常者を連想させる名前をつけている&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;確証が薄く有害なため、被害者及び被害者遺族の名誉を毀損するような加害者親族による一方的な主張については記載を控える。&lt;/p&gt;
+</content:encoded>
+    </item>
+    <item>
+      <title>今年の目標</title>
+      <link>https://nikki.yokoda.okinawa/posts/2023/08/2023-08-10-001/</link>
+      <guid isPermaLink="true">https://nikki.yokoda.okinawa/posts/2023/08/2023-08-10-001/</guid>
+      <pubDate>Thu, 10 Aug 2023 10:01:23 GMT</pubDate>
+      <description>年越しまでに達成しておきたい目標</description>
+      <content:encoded>&lt;h1 id=&quot;今年の目標&quot;&gt;今年の目標&lt;/h1&gt;
+&lt;p&gt;技術力や体力面の向上を淡々とやっていきたい。&lt;/p&gt;
+&lt;h2 id=&quot;技術方面&quot;&gt;技術方面&lt;/h2&gt;
+&lt;p&gt;今どきのやり方ができるように&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;OpenAPIで簡単なシステムを設計できる&lt;/li&gt;
+&lt;li&gt;pythonのFastAPIとVue.jsを組み合わせて何かを作る&lt;/li&gt;
+&lt;li&gt;SQLAlchemyを使いこなせるようになる&lt;/li&gt;
+&lt;li&gt;コンテナ化の基礎とFargateの使いこなし&lt;/li&gt;
+&lt;li&gt;AWS Lambdaの簡単な使い方&lt;/li&gt;
+&lt;li&gt;CloudFormationテンプレートが書けるように&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;体力面&quot;&gt;体力面&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;チェストプレス90kgfを10回&lt;/li&gt;
+&lt;li&gt;ミリタリープレス60kgfを10回&lt;/li&gt;
+&lt;li&gt;ラットプルダウン80kgfを10回&lt;/li&gt;
+&lt;li&gt;レッグプレス280kgfを10回&lt;/li&gt;
+&lt;/ul&gt;
+</content:encoded>
+    </item>
+  </channel>
+</rss>

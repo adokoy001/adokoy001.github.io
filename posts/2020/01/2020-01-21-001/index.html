@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>FuelPHPでCSRF対策 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="FuelPHPでCSRF対策する際のメモ"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2020/01/2020-01-21-001/"><meta property="og:title" content="FuelPHPでCSRF対策"><meta property="og:description" content="FuelPHPでCSRF対策する際のメモ"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2020/01/2020-01-21-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>FuelPHPでCSRF対策</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-01-21T03:15:07+09:00">2020-01-21T03:15:07+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/fuelphp/">FuelPHP</a><a class="tag" href="/tags/php/">PHP</a><a class="tag" href="/tags/csrf/">CSRF</a><a class="tag" href="/tags/entry-f5480661a48d/">セキュリティ</a><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="fuelphpでcsrf対策">FuelPHPでCSRF対策</h1>
+<p>ウェブアプリケーションフレームワークFuelPHPにはSecurityパッケージにCSRF対策用の便利なツールが入っているので、
+特にこだわりがなければ以下の点に注意して使っておくと良い。</p>
+<ul>
+<li>副作用のある操作でCSRF対策を施す</li>
+<li>フォームへの埋め込みだけ施してpost先での検証を忘れないように注意(ありがち)</li>
+<li>ログアウト処理には使わなくても害は無い</li>
+<li>Configで十分に長く複雑なsaltを設定する</li>
+</ul>
+<h2 id="fuelでのcsrf対策機能の仕組み">FuelでのCSRF対策機能の仕組み</h2>
+<p>Fuelのソースを確認した限りでは、以下のような仕組みのようだ。</p>
+<ul>
+<li>fetch_tokenでCookieにcsrfのtokenの大元を生成＆クライアント側にset</li>
+<li>大元のtokenはFuelサーバー内セッションストレージに保存される訳ではない</li>
+<li>フォーム用としてsaltを付けてハッシュ化された値を生成、それをformのhiddenにセットすることを想定</li>
+<li>クライアントがpostすると、hiddenのtokenの値と最初に生成した大元のtokenをrequest headerに含めて送信</li>
+<li>Fuelサーバーはhiddenのtokenと、cookieで送信されたcsrfの大元の値にsalt付きハッシュを通した値を比較</li>
+<li>一致していればクライアントからの正当なリクエストと判定</li>
+<li>saltはサーバー側でしか保持しないため、改ざんやリバース生成は事実上不可能</li>
+<li>大元token生成アルゴリズム(generate<em>tokenファンクション)に一部mt</em>randが使われているが、time(),uniqid(),salt,sha512を併用しているため実質的に安全であるものと思われる。</li>
+<li>saltはクライアントごとに固有の値を持たせるのではなく、Fuelサーバーで共有されたものを一つだけ持つ</li>
+</ul>
+<p>fetch_tokenの計算コストは無視でき、また、サーバー側ではhash前のtokenを保持しないのでかなり低コストである。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2020/01/2020-01-16-001/">← 暗号化関連のメモ</a><a rel="next" href="/posts/2020/01/2020-01-28-001/">PerlのOpenSSLモジュールで電子署名 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2019/12/2019-12-12-001/">ウェブサイトのセキュリティ：入力バリデーション、正規表現</a></li><li><a href="/posts/2020/09/2020-09-17-001/">perlでパスワードハッシュ</a></li><li><a href="/posts/2020/09/2020-09-14-001/">圧倒的に正しいSQLインジェクション対策</a></li><li><a href="/posts/2020/06/2020-06-02-001/">PerlとPHPの違い</a></li><li><a href="/posts/2020/05/2020-05-26-002/">Laravelも並行して学習中</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

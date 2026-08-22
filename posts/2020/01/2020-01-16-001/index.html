@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>暗号化関連のメモ · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="仕事でクリティカルなデータを扱ったりする必要が出てきたので、暗号化関連をおさらい"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2020/01/2020-01-16-001/"><meta property="og:title" content="暗号化関連のメモ"><meta property="og:description" content="仕事でクリティカルなデータを扱ったりする必要が出てきたので、暗号化関連をおさらい"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2020/01/2020-01-16-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>暗号化関連のメモ</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-01-16T10:42:20+09:00">2020-01-16T10:42:20+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-f5480661a48d/">セキュリティ</a><a class="tag" href="/tags/entry-561749c6bc95/">暗号</a><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="暗号化関連のメモ">暗号化関連のメモ</h1>
+<p>セキュリティ関係で中途半端な事を書くと多方面からいろい（略</p>
+<p>地方自治体の補助金事業絡みで、自治体指定のホスティングサーバーに重要データのバックアップを取らないといけなくなったので、
+自分用として暗号化関連の技術をメモります。</p>
+<h2 id="手っ取り早く特定ディレクトリを丸ごとバックアップ">手っ取り早く特定ディレクトリを丸ごとバックアップ</h2>
+<p>scpやらrsyncやらでリモートへファイルを転送する処理は誰もがご存じだと思いますので、
+「tarでgzip圧縮して、いい感じの名前を付けて暗号化」のコマンドを結論として記します。</p>
+<pre><code>$ tar cz -C /home/some_user/ some_directory | openssl enc -aes-256-cbc -iter 12345 -k yourpassword -out `date &#39;+%Y%m%d_%H%M%S&#39;`_dir_backup.tar.gz.enc</code></pre>
+<h3 id="解説">解説</h3>
+<p>わざわざ一時的にファイルに書き出さずに、パイプを利用して<code>openssl</code>コマンドにデータを流しています。</p>
+<p>opensslコマンドでファイルを暗号化する場合は、<code>-in filename</code> とオプションを追加して指定すればOKです。</p>
+<p><code>-aes-256-cbc</code> は暗号化の種類と鍵長、モードを表しています。wikipediaに結構詳しく書いてありますが、
+ひとまずAESという種類の256bitの鍵長を使っておけばOKだと思います（2020年1月現在）。</p>
+<p><code>-iter 数字</code> で大きめのストレッチング回数を指定してブルートフォース対策。
+<code>-k パスワード</code> でパスワードの指定。このiterとkで指定したものは復号時に必要になるため、忘れないようにしましょう。</p>
+<p>dateコマンドでフォーマットを指定して、「日付<em>時間</em>」をファイル名の先頭に付けています。</p>
+<h2 id="データ暗号化-ハッシュ値化の対象">データ暗号化、ハッシュ値化の対象</h2>
+<p>例えばウェブアプリケーションにおいて、データベースに格納されているあらゆる個人情報を暗号化（saltを含めて）してしまうと、
+SQLのWhereによる問い合わせが困難になり、実用性が失われることでしょう。
+よって、稼働中のデータベースの暗号化またはハッシュ値化すべきフィールドはある程度限られます。</p>
+<p>それに対して、データベースのダンプファイル（バックアップファイル）は暗号化してもシステムの稼働に影響を与えないので、
+面倒くさがらずに必ず暗号化するという運用にした方が好ましい。</p>
+<ul>
+<li>ログインパスワード等はハッシュ値にする。不可逆に変換してしまう。</li>
+<li>そのユーザー固有の、外部システムへの連携用認証情報等は暗号化する。復号に必要な情報はデータベースの外に置く。</li>
+<li>Where等で条件指定されないことが明らかな個人情報項目は暗号化してしまう。</li>
+<li>DBのダンプファイルは暗号化する。</li>
+</ul>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2020/01/2020-01-06-001/">← 連休が終わってしまった</a><a rel="next" href="/posts/2020/01/2020-01-21-001/">FuelPHPでCSRF対策 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2020/09/2020-09-17-001/">perlでパスワードハッシュ</a></li><li><a href="/posts/2020/09/2020-09-14-001/">圧倒的に正しいSQLインジェクション対策</a></li><li><a href="/posts/2019/12/2019-12-12-001/">ウェブサイトのセキュリティ：入力バリデーション、正規表現</a></li><li><a href="/posts/2020/01/2020-01-21-001/">FuelPHPでCSRF対策</a></li><li><a href="/posts/2023/11/2023-11-14-001/">今どきのウェブアプリと開発環境</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>
