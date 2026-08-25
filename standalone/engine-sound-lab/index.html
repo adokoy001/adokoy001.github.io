@@ -3740,15 +3740,29 @@ const Scene3D={
     floor.rotation.x=-Math.PI/2;floor.position.y=-2.5;sc.add(floor);
     this.bindOrbit(canvas);this.resize();
   },
-  ring(grp,x,rDisc,rBlade,nB,mat,bmat,tilt,bw){
+  ring(grp,x,rDisc,rBlade,nB,mat,bmat,tilt,cam,chord){
     const d=new THREE.Mesh(new THREE.CylinderGeometry(rDisc,rDisc,0.05,24),mat);
     d.rotation.z=Math.PI/2;d.position.x=x;grp.add(d);
+    const S=3,r0=rDisc-0.02,r1=rBlade+0.02,pos=[],idx=[];
+    const ch=chord||0.085,c0=ch*1.08,c1=ch*0.92;
+    const sgn=tilt<0?-1:1,a0=(Math.abs(tilt)+0.22)*sgn,a1=(Math.abs(tilt)-0.10)*sgn;
+    for(let k=0;k<=S;k++){
+      const t=k/S,r=r0+(r1-r0)*t,c=c0+(c1-c0)*t,ph=a0+(a1-a0)*t;
+      const dxc=Math.sin(ph),dzc=Math.cos(ph),nxc=Math.cos(ph),nzc=-Math.sin(ph);
+      const cm=(cam||0.10)*c;
+      pos.push(-dxc*c/2,r,-dzc*c/2, nxc*cm,r,nzc*cm, dxc*c/2,r,dzc*c/2);
+    }
+    for(let k=0;k<S;k++){const b=k*3;idx.push(b,b+3,b+1, b+1,b+3,b+4, b+1,b+4,b+2, b+2,b+4,b+5);}
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));
+    geo.setIndex(idx);geo.computeVertexNormals();
+    if(!this._dsCache)this._dsCache=new Map();
+    let dsm=this._dsCache.get(bmat);
+    if(!dsm){dsm=bmat.clone();dsm.side=THREE.DoubleSide;this._dsCache.set(bmat,dsm);}
     for(let i=0;i<nB;i++){
-      const a=i/nB*Math.PI*2,rm=(rDisc+rBlade)/2;
-      const b=new THREE.Mesh(new THREE.BoxGeometry(bw||0.028,rBlade-rDisc+0.06,0.10),bmat);
-      b.position.set(x,Math.cos(a)*rm,Math.sin(a)*rm);
-      b.rotation.x=-a;b.rotateY(tilt);
-      grp.add(b);
+      const m=new THREE.Mesh(geo,dsm);
+      m.position.x=x;m.rotation.x=-(i/nB)*Math.PI*2;
+      grp.add(m);
     }
   },
   build(){
@@ -3784,16 +3798,16 @@ const Scene3D={
     fd.rotation.z=Math.PI/2;fd.position.x=-1.98;g1.add(fd);
     const sh1=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,4.6,12),this.mat.shaft);
     sh1.rotation.z=Math.PI/2;sh1.position.x=0.1;g1.add(sh1);
-    this.ring(g1,2.10,0.30,0.50,16,this.mat.hot,this.mat.hot,0.5);   // LPT ×2
-    this.ring(g1,2.32,0.30,0.50,16,this.mat.hot,this.mat.hot,0.5);
+    this.ring(g1,2.10,0.30,0.50,20,this.mat.hot,this.mat.hot,-0.55,0.20,0.10);   // LPT ×2 (turbine buckets)
+    this.ring(g1,2.32,0.30,0.50,20,this.mat.hot,this.mat.hot,-0.55,0.20,0.10);
     E.add(g1);
     // ---- N2: HP core ----
     const g2=this.n2Grp=new THREE.Group();
     for(let i=0;i<5;i++){
       const x=-1.05+i*0.21,rr=0.52-i*0.028;
-      this.ring(g2,x,rr-0.13,rr,14,this.mat.disc,this.mat.blade,0.6);
+      this.ring(g2,x,rr-0.13,rr,24,this.mat.disc,this.mat.blade,0.62,0.09,0.062);
     }
-    this.ring(g2,1.82,0.28,0.46,14,this.mat.hot,this.mat.blade,0.5); // HPT
+    this.ring(g2,1.82,0.28,0.46,22,this.mat.hot,this.mat.blade,-0.55,0.22,0.085); // HPT (turbine buckets)
     E.add(g2);
     // ---- combustor ----
     const cc=new THREE.Mesh(new THREE.CylinderGeometry(0.60,0.60,0.95,20,1,true),this.mat.comb);
