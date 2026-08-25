@@ -1012,6 +1012,22 @@ const Scene3D={
       g.position.set(2.62,Math.cos(a)*0.24,Math.sin(a)*0.24);g.rotation.x=-a;
       E.add(g);
     }
+    // AB zone rings: concentric spray-ring flames, lit ring by ring with zone staging
+    this.abRings=[];
+    {
+      const RC=[0xfff0d0,0xffcf80,0xffb050,0xff9a40,0xff8830];
+      const disc=new THREE.Mesh(new THREE.CircleGeometry(0.14,20),
+        new THREE.MeshBasicMaterial({color:RC[0],transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+      disc.rotation.y=Math.PI/2;disc.position.x=3.05;E.add(disc);
+      this.abRings.push({m:disc,env:0});
+      const RR=[0.24,0.35,0.46,0.56];
+      for(let k=0;k<4;k++){
+        const tor=new THREE.Mesh(new THREE.TorusGeometry(RR[k],0.045,10,28),
+          new THREE.MeshBasicMaterial({color:RC[k+1],transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
+        tor.rotation.y=Math.PI/2;tor.position.x=3.05+k*0.045;
+        E.add(tor);this.abRings.push({m:tor,env:0});
+      }
+    }
     // ---- vectoring nozzle (petals) + plume ----
     this.vecGrp=new THREE.Group();this.vecGrp.position.set(3.95,0,0);E.add(this.vecGrp);
     // C-D feather nozzle: convergent + divergent petal pairs, shingled in two radius rows
@@ -1054,6 +1070,13 @@ const Scene3D={
         new THREE.MeshBasicMaterial({color:0xcfe0ff,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
       d.scale.set(2.0,1,1);
       this.plume.add(d);this.diamonds.push(d);
+    }
+    this.machDisks=[];
+    for(let i=0;i<6;i++){
+      const md=new THREE.Mesh(new THREE.CircleGeometry(0.16,16),
+        new THREE.MeshBasicMaterial({color:0xdfe9ff,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+      md.rotation.y=Math.PI/2;
+      this.plume.add(md);this.machDisks.push(md);
     }
     // stand
     for(const x of[-1.4,2.8]){
@@ -1538,6 +1561,17 @@ const Scene3D={
       d.material.opacity=ab*(1-i/8)*(0.75+0.25*Math.random());
       const ds=(0.13+0.10*ab)*(1-i*0.08);
       d.scale.set(ds*2.2,ds,ds);
+      const md=this.machDisks[i];
+      md.position.x=d.position.x;
+      md.material.opacity=d.material.opacity*0.55;
+      md.scale.setScalar(((0.10+0.09*ab)*(1-i*0.07))/0.16);
+    }
+    // staged zone rings: each lights (with a soft lag) as its zone ignites
+    for(let k=0;k<this.abRings.length;k++){
+      const R=this.abRings[k],on=(S.zone||0)>=k+1?1:0;
+      R.env+=(on-R.env)*Math.min(1,dt/0.13);
+      R.m.material.opacity=R.env*(0.55+0.30*Math.random())*(0.75+0.25*Math.min(1,S.fuel*1.3));
+      R.m.visible=R.env>0.02;
     }
     this.renderer.render(this.scene,this.camera);
   },
@@ -1854,7 +1888,7 @@ function loop(now){
       pert:Jet.pert,gust:Jet.gust,blown:Jet.blown?1:0,blowId:Jet.blowId});
   }
   Scene3D.update(dt,{n1:Jet.n1,n2:Jet.n2,ts:timeScale,fuel:Jet.fuel,ab:Jet.abLevel,
-    tit:Jet.tit,nozA:Jet.nozA,vec:Jet.vec,ign:Jet.ign,loId:Jet.loId,
+    tit:Jet.tit,nozA:Jet.nozA,vec:Jet.vec,ign:Jet.ign,loId:Jet.loId,zone:Jet.abZone,
     mach:Jet.mach,bpr:Jet.bpr,pert:Jet.pert,gust:Jet.gust,blown:Jet.blown,blowId:Jet.blowId});
   $('rpmBig').firstChild.nodeValue=Jet.thrust.toFixed(1);
   $('hudPct').textContent=(Jet.n1*100).toFixed(1);
