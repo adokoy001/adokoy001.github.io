@@ -3388,9 +3388,9 @@ class JetDSP{
     for(let k=0;k<16;k++){this.bzA[k]=(0.55+0.45*Math.abs(rnd()))/Math.pow(k+1,0.72);this.bzD[k]=1+rnd()*0.006;}
     // whine partials {s:spool, f0 at 100%, exp, gain}
     this.partials=[
-      {s:1,f0:3674,e:1.8,g:0.030},{s:1,f0:3712,e:1.8,g:0.022},
+      {s:1,f0:3674,e:1.8,g:0.030},{s:1,f0:3712,e:1.8,g:0.012},
       {s:1,f0:1837,e:1.7,g:0.018},
-      {s:2,f0:5900,e:2.2,g:0.014},{s:2,f0:2210,e:1.7,g:0.028},{s:2,f0:2231,e:1.7,g:0.021}
+      {s:2,f0:5900,e:2.2,g:0.014},{s:2,f0:2210,e:1.7,g:0.028},{s:2,f0:2231,e:1.7,g:0.011}
     ];
     this.ph=new Float32Array(this.partials.length);
     this.jit=new Float32Array(this.partials.length);
@@ -3403,7 +3403,7 @@ class JetDSP{
     this.t=0;this.tickEnv=0;this.tickPh=0;this.tickF=4000;this.tickNext=0;
     this.rnd=424242;
   }
-  nz(){this.rnd=(this.rnd*1103515245+12345)&0x7fffffff;return (this.rnd/0x3fffffff)-1;}
+  nz(){let x=this.rnd|0;x^=x<<13;x^=x>>>17;x^=x<<5;this.rnd=x|0;return (x|0)/2147483648;}
   setParams(p){
     if(p.n1!==undefined)this.tN1=p.n1;
     if(p.n2!==undefined)this.tN2=p.n2;
@@ -3556,9 +3556,11 @@ class JetDSP{
       let L=gas*0.98+(buzz+whine)*0.95+hiss*1.05+ig+tick;
       let R=gas*1.04+(buzz+whine)*1.0+hiss*0.95+ig*0.9+tick;
       const sd=(0.041*fs)|0;
-      L+=0.08*this.slapL[(this.si-sd+2048)&2047];
-      R+=0.08*this.slapR[(this.si-sd-23+2048)&2047];
-      this.slapL[this.si]=L;this.slapR[this.si]=R;this.si=(this.si+1)&2047;
+      const dryL=L,dryR=R;
+      const sg=0.08*(1-0.55*ab);
+      L+=sg*this.slapL[(this.si-sd+2048)&2047];
+      R+=sg*this.slapR[(this.si-sd-23+2048)&2047];
+      this.slapL[this.si]=dryL;this.slapR[this.si]=dryR;this.si=(this.si+1)&2047;
       let yl=L-this.dcL[0]+0.9967*this.dcL[1];this.dcL[0]=L;this.dcL[1]=yl;
       let yr=R-this.dcR[0]+0.9967*this.dcR[1];this.dcR[0]=R;this.dcR[1]=yr;
       const v=this.vol*this.vol*1.30;
@@ -3755,12 +3757,28 @@ const Scene3D={
     const g1=this.n1Grp=new THREE.Group();
     const spin=new THREE.Mesh(new THREE.ConeGeometry(0.30,0.55,16),this.mat.disc);
     spin.rotation.z=Math.PI/2;spin.position.x=-2.30;g1.add(spin);
-    for(let i=0;i<22;i++){
-      const a=i/22*Math.PI*2,rm=0.65;
-      const b=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.78,0.24),this.mat.fan);
-      b.position.set(-1.98,Math.cos(a)*rm,Math.sin(a)*rm);
-      b.rotation.x=-a;b.rotateY(0.55);
-      g1.add(b);
+    {
+      // wide-chord fan: twisted (axial root -> near-tangential tip), tapered, cambered
+      const S=7,pos=[],idx=[];
+      for(let k=0;k<=S;k++){
+        const t=k/S,r=0.30+0.76*t;
+        const c=0.13+0.17*t;
+        const ph=0.95-0.62*t;
+        const dxc=Math.sin(ph),dzc=Math.cos(ph);
+        const nxc=Math.cos(ph),nzc=-Math.sin(ph);
+        const cam=0.10*c;
+        pos.push(-dxc*c/2,r,-dzc*c/2, nxc*cam,r,nzc*cam, dxc*c/2,r,dzc*c/2);
+      }
+      for(let k=0;k<S;k++){const b=k*3;idx.push(b,b+3,b+1, b+1,b+3,b+4, b+1,b+4,b+2, b+2,b+4,b+5);}
+      const geo=new THREE.BufferGeometry();
+      geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));
+      geo.setIndex(idx);geo.computeVertexNormals();
+      const bm=new THREE.MeshStandardMaterial({color:0x9aa4b0,metalness:0.85,roughness:0.30,side:THREE.DoubleSide});
+      for(let i=0;i<22;i++){
+        const m=new THREE.Mesh(geo,bm);
+        m.position.x=-1.98;m.rotation.x=-(i/22)*Math.PI*2;
+        g1.add(m);
+      }
     }
     const fd=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.34,0.16,20),this.mat.disc);
     fd.rotation.z=Math.PI/2;fd.position.x=-1.98;g1.add(fd);
