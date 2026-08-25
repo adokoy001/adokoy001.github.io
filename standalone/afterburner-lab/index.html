@@ -808,7 +808,7 @@ const Jet={
     this.abLevel+=(this.abZone/5-this.abLevel)*Math.min(1,dt/0.22);
     if(this.abLevel<0.002)this.abLevel=0;
     // nozzle area: closes toward mil, opens wide with AB
-    const aT=this.nozMode==='auto'?(0.30+0.25*(1-dryThr*0.5)+0.55*this.abLevel):0.85;
+    const aT=this.nozMode==='auto'?(0.42+0.38*(1-dryThr)+0.55*this.abLevel):0.85;
     this.nozA+=(Math.max(0.30,Math.min(1,aT))-this.nozA)*Math.min(1,dt/0.30);
     // TIT & outputs
     const lit=this.fuel>0.03&&st!=='off'&&st!=='starter';
@@ -1014,15 +1014,28 @@ const Scene3D={
     }
     // ---- vectoring nozzle (petals) + plume ----
     this.vecGrp=new THREE.Group();this.vecGrp.position.set(3.95,0,0);E.add(this.vecGrp);
+    // C-D feather nozzle: convergent + divergent petal pairs, shingled in two radius rows
+    const trap=(L,w0,w1)=>{
+      const g=new THREE.BufferGeometry();
+      g.setAttribute('position',new THREE.BufferAttribute(new Float32Array([
+        0,0,-w0/2, 0,0,w0/2, L,0,w1/2, L,0,-w1/2]),3));
+      g.setIndex([0,1,2, 0,2,3]);
+      g.computeVertexNormals();
+      return g;
+    };
+    const gConv=trap(0.46,0.30,0.17),gDiv=trap(0.42,0.165,0.26);
+    const pmDS=this.mat.petal.clone();pmDS.side=THREE.DoubleSide;
     this.petals=[];
     for(let i=0;i<14;i++){
-      const a=i/14*Math.PI*2;
+      const a=i/14*Math.PI*2,rr=0.655+(i%2?0.014:-0.014);
       const hinge=new THREE.Group();
-      hinge.position.set(0,Math.cos(a)*0.63,Math.sin(a)*0.63);
-      hinge.rotation.x=-a;
-      const p=new THREE.Mesh(new THREE.BoxGeometry(0.68,0.045,0.31),this.mat.petal);
-      p.position.x=0.34;
-      hinge.add(p);
+      hinge.position.set(0,Math.cos(a)*rr,Math.sin(a)*rr);
+      hinge.rotation.x=a;
+      const conv=new THREE.Group();hinge.add(conv);
+      conv.add(new THREE.Mesh(gConv,pmDS));
+      const div=new THREE.Group();div.position.x=0.46;conv.add(div);
+      div.add(new THREE.Mesh(gDiv,pmDS));
+      hinge.userData={conv:conv,div:div};
       this.vecGrp.add(hinge);this.petals.push(hinge);
     }
     // plume: blue core + orange sheath + shock diamonds
@@ -1491,8 +1504,13 @@ const Scene3D={
     if(S.ign&&this.sparkT<=0){this.sparkT=0.16;this.spark.material.opacity=1;}
     this.spark.material.opacity*=Math.exp(-dt*22);
     // nozzle petals: converge tight at dry, flare open with AB
-    const conv=(1-S.nozA)*0.52;
-    for(let i=0;i<this.petals.length;i++)this.petals[i].children[0].rotation.z=-conv+(this.petalDmg?this.petalDmg[i]||0:0);
+    const thC=0.10+0.55*(1-S.nozA);
+    const flare=thC+0.05+0.45*S.nozA;
+    for(let i=0;i<this.petals.length;i++){
+      const u=this.petals[i].userData,dmg=this.petalDmg?this.petalDmg[i]||0:0;
+      u.conv.rotation.z=-thC+dmg;
+      u.div.rotation.z=flare+dmg*0.6;
+    }
     // thrust vector
     this.vecGrp.rotation.z=S.vec*D2R;
     // plume
@@ -1574,7 +1592,7 @@ const Config={abMode:'zone',nozMode:'auto',gov:'fadec',liner:'on',flow:'on'};
 const HINTS={
   ab:{zone:'段階ゾーン点火(標準)。踏み込みに応じてゾーン1→5が0.3秒間隔で順に点火し、そのたび「ドン」と推力が段付きで立ち上がります。',
       full:'フルAB即時。ABデテントを越えた瞬間に全ゾーンへ一気に燃料投入。点火の衝撃は最大ですが燃費は最悪です。'},
-  noz:{auto:'C-D可変ノズル自動(標準)。ドライでは絞り、AB点火と同時にペタルが大きく開いて背圧を維持します。開閉は3Dで見えます。',
+  noz:{auto:'C-D可変ノズル自動(標準)。アイドルでは大きく開き、スロットルに応じてドライ全開へ向け絞り込み、AB点火と同時にペタルが再び大きく開きます。実機の「呼吸」です。',
        fixed:'ノズル開固定。背圧が抜けてドライ推力が落ち、ジェット音も低く太くなります。故障モードの再現。'},
   gov:{fadec:'FADEC(標準)。スロットル=N2目標。燃料が先行しサージ余裕を守りながら最速でスプールします。',
        manual:'マニュアル燃料。スロットル=燃料流量直結。応答は鈍く、急開でTITが跳ねます。旧世代の手応え。'},
