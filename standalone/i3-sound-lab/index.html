@@ -1943,7 +1943,10 @@ const AudioSys = {
   async init() {
     if (this.ready) { this.kick(); return; }
     this.kick();
-    const src = I3DSP.toString() + `
+    // クラス外の定数(ENG)もWorkletスコープへ持ち込む。
+    // これを忘れると Worklet 側だけ ReferenceError になり、
+    // メインスレッドには例外が出ないまま「無音」になる。
+    const src = 'const ENG = ' + JSON.stringify(ENG) + ';\n' + I3DSP.toString() + `
 class I3Proc extends AudioWorkletProcessor{
   constructor(){super();this.dsp=new I3DSP(sampleRate);this.port.onmessage=e=>this.dsp.setParams(e.data);}
   process(inp,out){const o=out[0];this.dsp.render(o[0],o[1]||o[0]);return true;}
@@ -1953,11 +1956,21 @@ registerProcessor('i3',I3Proc);`;
       const url = URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
       await this.ctx.audioWorklet.addModule(url); URL.revokeObjectURL(url);
       const node = new AudioWorkletNode(this.ctx, 'i3', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] });
+      node.onprocessorerror = () => { if (!this.fellBack) { this.fellBack = true; this.useFallback(); } };
       const lim = this.ctx.createDynamicsCompressor();
       lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.12;
       lim.connect(this.ctx.destination); node.connect(lim);
       this.send = p => node.port.postMessage(p);
+      this.node = node; this.mode = 'worklet';
     } catch (e) {
+      this.useFallback();
+    }
+    this.ready = true;
+    this.kick();
+  },
+  /* AudioWorkletが使えない/落ちたときの保険(メインスレッド合成) */
+  useFallback() {
+    try {
       const dsp = new I3DSP(this.ctx.sampleRate);
       const sp = this.ctx.createScriptProcessor(1024, 0, 2);
       sp.onaudioprocess = ev => dsp.render(ev.outputBuffer.getChannelData(0), ev.outputBuffer.getChannelData(1));
@@ -1965,9 +1978,8 @@ registerProcessor('i3',I3Proc);`;
       lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.12;
       lim.connect(this.ctx.destination); sp.connect(lim);
       this.send = p => dsp.setParams(p);
-    }
-    this.ready = true;
-    this.kick();
+      this.mode = 'fallback';
+    } catch (e2) { }
   }
 };
 /* どのタップでも、止まっていたら鳴らし直す(iOSは2回目の操作で通ることがある) */
