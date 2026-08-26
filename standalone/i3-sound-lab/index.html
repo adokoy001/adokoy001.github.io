@@ -112,6 +112,7 @@ input[type=range]:disabled{opacity:.35;cursor:default}
 #chipSpin{color:var(--ember);border-color:rgba(255,106,61,.55)}
 #chipFade{color:var(--amber);border-color:rgba(255,194,75,.5)}
 #chipVapor{color:var(--red);border-color:rgba(255,59,48,.6);animation:blink .3s steps(2) infinite}
+#chipMute{color:var(--intake);border-color:rgba(84,200,255,.55)}
 @keyframes blink{50%{opacity:.25}}
 #tachBox{position:absolute;top:12px;right:14px;width:228px;pointer-events:none;user-select:none}
 #tachCv{width:100%;display:block;filter:drop-shadow(0 4px 18px rgba(0,0,0,.55))}
@@ -573,6 +574,7 @@ input[type=range]:disabled{opacity:.35;cursor:default}
     <span class="chip" id="chipSpin">ホイールスピン</span>
     <span class="chip" id="chipFade">ブレーキフェード</span>
     <span class="chip" id="chipVapor">ベイパーロック</span>
+    <span class="chip" id="chipMute">画面をタップして音を有効化（iPhoneはマナーモード解除も）</span>
   </div>
   <div id="tachBox"><canvas id="tachCv" width="456" height="456"></canvas><span id="boostWrap"><canvas id="boostCv" width="300" height="300"></canvas></span></div>
   <div id="pedalBox">
@@ -1919,11 +1921,28 @@ const Trans = {
    Audio glue
    ================================================================ */
 const AudioSys = {
-  ctx: null, send: null, ready: false,
-  async init() {
-    if (this.ctx) return;
+  ctx: null, send: null, ready: false, silent: null,
+  /* iOS対策: ユーザー操作のハンドラ内で「同期的に」AudioContextを作って resume する。
+     await を挟んだ後の resume はユーザー操作の資格を失って無視されることがある。 */
+  kick() {
     const AC = window.AudioContext || window.webkitAudioContext;
-    this.ctx = new AC({ latencyHint: 'interactive' });
+    if (!AC) return null;
+    if (!this.ctx) this.ctx = new AC({ latencyHint: 'interactive' });
+    if (this.ctx.state !== 'running') { try { this.ctx.resume(); } catch (e) { } }
+    // iOSのマナーモード(消音スイッチ)でWeb Audioが黙るのを防ぐ
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { }
+    if (!this.silent) {
+      try {
+        const a = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=');
+        a.loop = true; a.volume = 0.0001; a.setAttribute('playsinline', ''); a.play().catch(() => { });
+        this.silent = a;
+      } catch (e) { }
+    }
+    return this.ctx;
+  },
+  async init() {
+    if (this.ready) { this.kick(); return; }
+    this.kick();
     const src = I3DSP.toString() + `
 class I3Proc extends AudioWorkletProcessor{
   constructor(){super();this.dsp=new I3DSP(sampleRate);this.port.onmessage=e=>this.dsp.setParams(e.data);}
@@ -1948,8 +1967,17 @@ registerProcessor('i3',I3Proc);`;
       this.send = p => dsp.setParams(p);
     }
     this.ready = true;
+    this.kick();
   }
 };
+/* どのタップでも、止まっていたら鳴らし直す(iOSは2回目の操作で通ることがある) */
+if (typeof addEventListener === 'function') {
+  for (const ev of ['pointerdown', 'touchend', 'keydown']) {
+    addEventListener(ev, () => {
+      if (AudioSys.ctx && AudioSys.ctx.state !== 'running') AudioSys.kick();
+    }, { passive: true });
+  }
+}
 
 'use strict';
 /* ================================================================
@@ -4473,8 +4501,9 @@ const startBtn = $('startBtn');
 startBtn.addEventListener('click', async () => {
   if (Engine.starter || Engine.priming > 0) return;
   if (!Engine.running) {
+    AudioSys.kick();                      // await の前に(同期で)音を起こす
     await AudioSys.init();
-    if (AudioSys.ctx.state === 'suspended') await AudioSys.ctx.resume();
+    AudioSys.kick();
     AudioSys.send({
       manifold: Config.manifold, scroll: Config.scroll, cat: Config.cat, muffler: Config.muffler,
       injN: Config.injN, spread: Config.spread, bs: Config.bs, vol: Pedal.vol,
@@ -4638,6 +4667,8 @@ function loop(now) {
       + (Trans.corners.some(c => c.lock) ? ' ・ タイヤロック中' : '');
     $('chipFade').classList.toggle('show', Trans.padFade > 0.25 && Trans.brake > 0.05);
     $('chipVapor').classList.toggle('show', Trans.vaporMax > 0.15);
+  $('chipMute').classList.toggle('show',
+    !!AudioSys.ctx && AudioSys.ctx.state !== 'running' && (Engine.running || Engine.starter || Engine.priming > 0));
   }
   meter('mCapRV', 'mCapRB', Math.round(Trans.capR) + ' Nm', Trans.capR / 2600, Trans.slipping ? 'hot' : '');
   meter('mCapFV', 'mCapFB', Trans.drive === 'awd' ? Math.round(Trans.capF) + ' Nm' : '— (後輪駆動)', Trans.capF / 2600);
