@@ -1,0 +1,1022 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>アクアラボ実装ノート — 水槽と熱帯魚を厳密にシミュレートする</title>
+<meta name="description" content="アクアリウム生態系シミュレータ「アクアラボ」の調査ノートと実装ノート。窒素循環の正値性、水草のP–I曲線とCO2、魚の骨格と重心、ヌマエビの可動域まで、文献と数値と失敗を並べて書いた。">
+<style>
+:root{
+  color-scheme: dark;
+  --void:#07110d; --panel:#0a1710; --panel2:#0d1d15; --panel3:#102419;
+  --mint:#9af4b5; --mint-soft:#76bf8b; --ink:#e4f2e8; --muted:#8aa091; --dim:#637c6b;
+  --line:#294535; --line-bright:#3d684d; --code:#0f2418;
+  --water:#7fd3ec; --leaf:#8ee08c; --amber:#e8c37a; --rose:#ef9090; --violet:#c4a8ee;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --jp: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+}
+*{box-sizing:border-box}
+html{background:var(--void); -webkit-text-size-adjust:100%}
+body{
+  margin:0; color:var(--ink); background:var(--void);
+  font-family:var(--mono), var(--jp); font-size:15px; line-height:1.85;
+  overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background-image:linear-gradient(rgba(130,237,164,.06) 1px, transparent 1px),
+                   linear-gradient(90deg, rgba(130,237,164,.06) 1px, transparent 1px);
+  background-size:44px 44px;
+}
+a{color:var(--mint); text-underline-offset:.22em}
+a:hover{color:#c8ffd7}
+img,svg,canvas{display:block; max-width:100%}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--mint); outline-offset:3px}
+::selection{color:#06110b; background:var(--mint)}
+
+.wrap{max-width:1180px; margin:0 auto; padding:0 20px}
+header.top{border-bottom:1px solid var(--line); padding:34px 0 26px; margin-bottom:8px}
+.eyebrow{font-size:11.5px; letter-spacing:.16em; color:var(--mint-soft); text-transform:uppercase}
+h1{font-size:clamp(23px,4.6vw,38px); line-height:1.35; margin:.5em 0 .3em; font-weight:700; letter-spacing:-.01em}
+.lede{max-width:52rem; color:var(--ink); font-size:15.5px}
+.meta{margin-top:18px; display:flex; flex-wrap:wrap; gap:8px 10px; font-size:12px; color:var(--muted)}
+.chip{border:1px solid var(--line); background:var(--panel); padding:3px 9px; border-radius:999px; white-space:nowrap}
+.chip.go{border-color:var(--line-bright); color:var(--mint)}
+
+.cols{display:block}
+main{max-width:52rem}
+h2{font-size:19px; line-height:1.5; margin:64px 0 6px; padding-top:18px; border-top:1px solid var(--line); letter-spacing:-.005em}
+h2 .num{color:var(--mint-soft); margin-right:.6em; font-size:13px; letter-spacing:.08em}
+h3{font-size:15.5px; margin:34px 0 4px; color:var(--mint)}
+p{margin:1em 0}
+ul,ol{padding-left:1.35em; margin:1em 0}
+li{margin:.42em 0}
+code{font-family:var(--mono); background:var(--code); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:.9em; color:#cfeedb}
+strong{color:#fff}
+small{color:var(--muted)}
+hr{border:0; border-top:1px solid var(--line); margin:40px 0}
+
+.eq{background:var(--code); border:1px solid var(--line); border-left:2px solid var(--mint-soft);
+    padding:14px 16px; margin:18px 0; overflow-x:auto; font-size:13.5px; line-height:1.9; color:#d6f2e2}
+.eq .cm{color:var(--dim)}
+.note{border:1px solid var(--line); border-left:2px solid var(--amber); background:rgba(232,195,122,.05);
+      padding:12px 15px; margin:20px 0; font-size:13.5px}
+.note b{color:var(--amber)}
+.find{border:1px solid var(--line-bright); border-left:2px solid var(--mint); background:rgba(154,244,181,.055);
+      padding:12px 15px; margin:20px 0; font-size:13.5px}
+.find b{color:var(--mint)}
+.tag{display:inline-block; font-size:10.5px; letter-spacing:.06em; border:1px solid var(--line);
+     border-radius:3px; padding:0 5px; margin-right:6px; vertical-align:.12em; color:var(--muted)}
+.tag.lit{color:var(--water); border-color:#2e5566}
+.tag.est{color:var(--amber); border-color:#5a4a2c}
+
+table{border-collapse:collapse; width:100%; margin:20px 0; font-size:12.5px; display:block; overflow-x:auto; white-space:nowrap}
+th,td{border:1px solid var(--line); padding:6px 10px; text-align:left}
+th{background:var(--panel2); color:var(--mint-soft); font-weight:600}
+td.n{text-align:right; font-variant-numeric:tabular-nums}
+
+/* 図 */
+figure.fig{margin:30px 0; border:1px solid var(--line); background:var(--panel); border-radius:6px; overflow:hidden}
+.fig-hd{display:flex; align-items:baseline; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--panel2)}
+.fig-hd .no{font-size:11px; letter-spacing:.12em; color:var(--mint); white-space:nowrap}
+.fig-hd .ti{font-size:13px; color:var(--ink)}
+.fig-body{padding:14px}
+.fig-body canvas{width:100%; height:auto; background:#061009; border:1px solid var(--line); border-radius:4px}
+.ctrls{display:flex; flex-wrap:wrap; gap:12px 18px; margin-top:12px; font-size:12px; align-items:center}
+.ctrl{display:flex; align-items:center; gap:8px; flex:1 1 210px; min-width:190px}
+.ctrl label{color:var(--muted); white-space:nowrap}
+.ctrl input[type=range]{flex:1; min-width:80px; accent-color:var(--mint); background:transparent}
+.ctrl output{color:var(--mint); font-variant-numeric:tabular-nums; min-width:5.2em; text-align:right}
+.seg{display:flex; border:1px solid var(--line); border-radius:4px; overflow:hidden}
+.seg button{background:var(--panel2); border:0; border-right:1px solid var(--line); padding:5px 11px; color:var(--muted); cursor:pointer; font-size:12px}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--mint); color:#06110b}
+.readout{margin-top:12px; display:flex; flex-wrap:wrap; gap:8px}
+.ro{border:1px solid var(--line); background:var(--panel2); border-radius:4px; padding:6px 10px; font-size:11.5px; color:var(--muted); flex:1 1 130px}
+.ro b{display:block; font-size:15px; color:var(--ink); font-variant-numeric:tabular-nums; margin-top:1px}
+.ro.bad b{color:var(--rose)}
+.ro.good b{color:var(--mint)}
+figcaption{padding:11px 14px 14px; border-top:1px solid var(--line); font-size:12px; color:var(--muted); line-height:1.75}
+.legend{display:flex; flex-wrap:wrap; gap:12px; margin-top:10px; font-size:11.5px; color:var(--muted)}
+.legend i{display:inline-block; width:16px; height:2px; vertical-align:.3em; margin-right:5px}
+
+/* 目次 */
+nav.toc{border:1px solid var(--line); background:var(--panel); border-radius:6px; padding:14px 16px; margin:26px 0 8px; font-size:13px}
+nav.toc .h{font-size:11px; letter-spacing:.14em; color:var(--mint-soft); margin-bottom:8px}
+nav.toc ol{margin:0; padding-left:1.4em; columns:1}
+nav.toc li{margin:.24em 0}
+nav.toc a{text-decoration:none; color:var(--ink)}
+nav.toc a:hover{color:var(--mint); text-decoration:underline}
+
+footer.bot{margin:70px 0 40px; border-top:1px solid var(--line); padding-top:22px; font-size:12.5px; color:var(--muted)}
+footer.bot a{color:var(--mint-soft)}
+.refs{font-size:12.5px; color:var(--muted)}
+.refs li{margin:.5em 0}
+.back{display:inline-block; margin-top:16px; border:1px solid var(--line-bright); border-radius:4px; padding:7px 14px; color:var(--mint); text-decoration:none; font-size:13px}
+.back:hover{background:var(--panel2)}
+
+@media (min-width:1080px){
+  .cols{display:grid; grid-template-columns:1fr 230px; gap:44px; align-items:start}
+  .rail{position:sticky; top:24px; font-size:12px; border-left:1px solid var(--line); padding-left:16px; max-height:88vh; overflow:auto}
+  .rail .h{font-size:10.5px; letter-spacing:.14em; color:var(--mint-soft); margin-bottom:10px}
+  .rail a{display:block; color:var(--muted); text-decoration:none; padding:2.5px 0; line-height:1.5}
+  .rail a:hover{color:var(--mint)}
+  .rail a.on{color:var(--mint)}
+  nav.toc{display:none}
+  figure.fig{width:min(100%, 46rem)}
+}
+@media (max-width:1079px){ .rail{display:none} }
+@media (max-width:520px){ body{font-size:14.5px} .fig-body{padding:10px} }
+</style>
+</head>
+<body><div class="wrap">
+<header class="top">
+  <div class="eyebrow">実装ノート / 2026-08-29</div>
+  <h1>水槽と熱帯魚を、できるだけ厳密にシミュレートする</h1>
+  <p class="lede">アクアリウムの生態系シミュレータ「アクアラボ」の実装ノートである。硝化菌を4集団に分け、水草19種の光合成を P–I 曲線で解き、エビは8体節の外骨格、魚は椎骨をもつ骨格として扱っている。窒素収支は台帳として相対誤差 1e-9 未満で閉じる。以下、調査した内容、実装上の判断、および発見した誤りを記録する。</p>
+  <div class="meta">
+    <span class="chip go"><a href="/works/aqua-lab/" style="text-decoration:none">▶ シミュレータ本体を開く</a></span>
+    <span class="chip">v0.8 / 単一HTML 1.1MB / three.js r128</span>
+    <span class="chip">Nodeテスト 60本</span>
+    <span class="chip">図は本ページ内で計算している</span>
+  </div>
+</header>
+
+<div class="cols">
+<main>
+
+<nav class="toc">
+  <div class="h">目次</div>
+  <ol>
+    <li><a href="#s1">対象と、「厳密」の定義</a></li>
+    <li><a href="#s2">窒素：正値性と保存の同時達成</a></li>
+    <li><a href="#s3">硝化菌の4集団</a></li>
+    <li><a href="#s4">境界層とアルカリ度</a></li>
+    <li><a href="#s5">水草：CO2は飽和値を下げるが初期勾配を変えない</a></li>
+    <li><a href="#s6">藻類：律速は栄養ではなく付着面積</a></li>
+    <li><a href="#s7">魚：重心まわりの剛体回転ではない</a></li>
+    <li><a href="#s8">進行波の包絡は全長基準である</a></li>
+    <li><a href="#s9">ヌマエビ：25°という制約</a></li>
+    <li><a href="#s10">水流：MAC格子による非圧縮流れ</a></li>
+    <li><a href="#s11">数値実装上の誤り</a></li>
+    <li><a href="#s12">検証：60本のテスト</a></li>
+    <li><a href="#s13">未解決：シェーダの移植性</a></li>
+    <li><a href="#s14">限界</a></li>
+    <li><a href="#refs">参考文献</a></li>
+  </ol>
+</nav>
+
+<h2 id="s1"><span class="num">01</span>対象と、「厳密」の定義</h2>
+
+<p>ブラウザ上で動作する単一HTMLのアクアリウム・シミュレータである。30cmキューブの水草水槽から600cmのリーフタンクまで5槽が同時に走り、水温・pH・KH・アンモニア・亜硝酸・硝酸・溶存酸素・CO2・DOC・塩分が実時間で更新される。三次元描画は計算コアの出力を読むだけの層であり、体の曲がりや歩脚の接地も同一のモデルから導いている。</p>
+
+<p>本実装で「厳密」と呼ぶ条件を3つ定義した。</p>
+
+<h3>1. 収支が閉じること</h3>
+<p>窒素は生成も消滅もしない。餌として投入された窒素は、魚の体・生物膜・デトリタス・水草・藻類・エビ・換水による排出・脱窒による離脱のいずれかに必ず存在する。この収支を毎ステップ台帳に記録し、テストで<strong>相対残差 1e-9 未満</strong>を要求する。水量についても同様に 1e-6 L 未満を要求する。この制約は検証手段として有効であり、実装上の誤りの半数はここで検出された（<a href="#s11">§11</a>）。</p>
+
+<h3>2. 文献値と推定値を区別すること</h3>
+<p>全パラメータに確度 A/B/C を付与している。<span class="tag lit">文献</span>は出典のある実測値、<span class="tag est">推定</span>は挙動を合わせるために設定した値である。UI上にも根拠を表示する。区別を保存しないと、後から数値の由来を追跡できなくなる。</p>
+
+<h3>3. 真値と計器を分離すること</h3>
+<p>内部状態の真値と、利用者が読み取れる値は別に扱う。試薬（テトラ6in1・API）は段階に丸め、発色待ち時間を持ち、pHペンはドリフトし校正を要する。亜硝酸 0.5 mg/L が試薬では 0 とも 1 とも読める、という状況を再現している。これは演出ではなく、実際の飼育において誤判断が生じる主要因だからである。</p>
+
+<h2 id="s2"><span class="num">02</span>窒素：正値性と保存の同時達成</h2>
+
+<p>窒素循環は8プール間の輸送として記述できる。</p>
+
+<div class="eq">
+c = [ TAN, NO2, NO3, Df<sub>N</sub>, Ds<sub>N</sub>, X<sub>N</sub>, Df<sub>F</sub>, zeo<sub>N</sub> ]<br>
+<span class="cm">    溶存アンモニア / 亜硝酸 / 硝酸 / 易分解デトリタス / 難分解デトリタス / 生物膜 / 濾過槽トラップ / ゼオライト吸着</span><br><br>
+dc<sub>i</sub>/dt = Σ<sub>j</sub> R<sub>ij</sub> − Σ<sub>j</sub> R<sub>ji</sub> + P<sub>i</sub><sup>ext</sup> − D<sub>i</sub><sup>ext</sup>
+</div>
+
+<p>問題となるのは時間刻みである。内部 dt は60秒だが、倍速再生時にはより粗い刻みで進めたい。陽的オイラー法では、硝化速度が大きいときに TAN が負値をとる。負の濃度は物理的に無意味であるうえ、Monod 式の分母に入って発散する。</p>
+
+<p>一方、負値を 0 にクリップすると窒素が消失し、収支が閉じない。</p>
+
+<p>採用したのは<b>修正Patankar–Euler法</b>（Burchard, Deleersnijder &amp; Meister 2003）である。破壊項に加えて生成項も未知数側の比 c<sub>j</sub><sup>n+1</sup>/c<sub>j</sub><sup>n</sup> で重み付けし、線形系を解く。</p>
+
+<div class="eq">
+c<sub>i</sub><sup>n+1</sup> = c<sub>i</sub><sup>n</sup> + Δt [ Σ<sub>j≠i</sub> R<sub>ij</sub> · <b>c<sub>j</sub><sup>n+1</sup>/c<sub>j</sub><sup>n</sup></b> − Σ<sub>j≠i</sub> R<sub>ji</sub> · <b>c<sub>i</sub><sup>n+1</sup>/c<sub>i</sub><sup>n</sup></b> ]
+</div>
+
+<p>各輸送項について「出る側の減少」と「入る側の増加」が同一量になるため、<strong>厳密に保存し、かつ無条件に正である</strong>。8×8のガウス消去を毎ステップ実行するコストは、この保証に対して十分小さい。</p>
+
+<p>下図は同一の硝化連鎖を3手法で解いたものである。Δt を大きくすると差が現れる。</p>
+
+<figure class="fig" id="fig1">
+  <div class="fig-hd"><span class="no">図 01</span><span class="ti">陽的オイラー / Patankar / 修正Patankar（TAN→NO2→NO3）</span></div>
+  <div class="fig-body">
+    <canvas id="c1" width="880" height="330"></canvas>
+    <div class="ctrls">
+      <div class="ctrl"><label>時間刻み Δt</label><input id="f1dt" type="range" min="0.05" max="6" step="0.05" value="0.4"><output id="f1dto">0.40 h</output></div>
+      <div class="ctrl"><label>初期TAN</label><input id="f1t0" type="range" min="0.2" max="6" step="0.1" value="2.0"><output id="f1t0o">2.0 mg/L</output></div>
+      <div class="seg" id="f1seg">
+        <button data-m="0" aria-pressed="true">陽的Euler</button><button data-m="1" aria-pressed="false">Patankar</button><button data-m="2" aria-pressed="true">修正Patankar</button>
+      </div>
+    </div>
+    <div class="readout" id="f1ro"></div>
+    <div class="legend">
+      <span><i style="background:var(--amber)"></i>TAN</span>
+      <span><i style="background:var(--rose)"></i>NO2−N</span>
+      <span><i style="background:var(--water)"></i>NO3−N</span>
+      <span><i style="background:var(--dim)"></i>参照解（Δt=0.002h）</span>
+    </div>
+  </div>
+  <figcaption>2段Monod（v<sub>1</sub>=0.9, K<sub>1</sub>=0.5 / v<sub>2</sub>=0.7, K<sub>2</sub>=0.9 mg/L·h）を24時間積分した。<b>陽的Euler</b>は保存するが、Δt を上げると濃度が負に落ち、Monod の分母を経由して振動する。<b>素のPatankar</b>は正値を保つが、生成側を重み付けしないため全窒素がずれる。<b>修正Patankar</b>のみが両条件を満たす。読み取り欄の「全N誤差」と「最小値」を比較されたい。</figcaption>
+</figure>
+
+<h2 id="s3"><span class="num">03</span>硝化菌の4集団</h2>
+
+<p>一般の解説では硝化菌は一括して扱われることが多いが、少なくとも4集団に分けないと観測される現象が再現できない。</p>
+
+<table>
+<tr><th>集団</th><th>役割</th><th>Ks (mg N/L)</th><th>性質</th></tr>
+<tr><td>AOB（<i>Nitrosomonas</i>）</td><td>NH3→NO2</td><td class="n">大</td><td>高アンモニア濃度で有利。立ち上げ期に優占</td></tr>
+<tr><td>AOA（アンモニア酸化古細菌）</td><td>NH3→NO2</td><td class="n">0.0019</td><td>極低濃度に強い。<b>光で阻害される</b>。成熟槽で優占</td></tr>
+<tr><td>コマモックス</td><td>NH3→NO3（完全酸化）</td><td class="n">小</td><td>淡水で優占しやすい。<b>海水では検出されない</b></td></tr>
+<tr><td>NOB（<i>Nitrospira</i>）</td><td>NO2→NO3</td><td class="n">中</td><td>AOBより Ks が大きい</td></tr>
+</table>
+
+<p>分離した結果、いくつかの経験則が明示的な記述なしに再現された。</p>
+
+<div class="find"><b>創発した現象。</b>濾材を水道水で洗浄した際に生じるのは、アンモニアではなく<strong>亜硝酸のスパイク</strong>である。NOB の Ks が AOB より大きいため、生物膜が同率で減少したとき、先に律速となるのは NO2→NO3 側になる。この挙動は個別に記述しておらず、Ks の差から導出された。</div>
+
+<p>海水版では文献の状況が異なっていた。Sauder et al. 2024 は海水観賞魚水槽8槽すべてで<strong>コマモックスを検出しておらず</strong>、AOA優占5槽・AOB優占2槽・同程度1槽と報告している。AOA は 60 µE 程度の光で顕著に阻害され、120 µE 連続照射では停止して暗期にも回復しない（Merbt et al. 2012）。そこで面ごとに「光の当たる割合」を保持している（ライブロック0.35・砂0.6・ガラス0.5・濾過槽0）。リーフ照明下では、ライブロック表面の AOA 活性係数が 0.69 まで低下する。</p>
+
+<p>また AOA はカタラーゼを持たないため、過酸化水素 0.2 µM で停止する（Kim et al. 2016）。藻類対策として過酸化水素を投与するとアンモニアが一時的に上昇する挙動をテスト51で確認している（3 mg/L 投入で4時間後に TAN が1.3倍、30時間で復帰）。</p>
+
+<h2 id="s4"><span class="num">04</span>境界層とアルカリ度</h2>
+
+<h3>境界層による物質移動の上限</h3>
+<p>生物膜の硝化速度を Monod 式のみで記述すると、成熟槽の1パス除去率が99%となり、TAN が 0.001 mg/L まで低下する。実測はこれほど低くない。欠落していたのは<strong>生物膜表面の拡散境界層</strong>である。膜の活性がどれだけ高くても、基質が膜面へ到達する速度に上限がある。</p>
+<div class="eq">k<sub>D</sub> ≈ 1.3 m/日 <span class="cm">（境界層の物質移動係数。面積速度に直列で作用させる）</span></div>
+<p>導入後は1パス除去率が40%程度、TAN 0.02–0.04 mg/L で定常となり、実測と整合する範囲に収まった。</p>
+
+<h3>アルカリ度の正味消費は 7.14 ではなく 3.57</h3>
+<p>硝化によるアルカリ度消費として広く引用される「7.14 mg CaCO<sub>3</sub> / mg N」は、<b>NH<sub>4</sub>Cl を外部から投入するフィッシュレスサイクリングの場合にのみ</b>成立する。</p>
+<div class="eq">
+アンモニア酸化: NH<sub>4</sub><sup>+</sup> + 2O<sub>2</sub> → NO<sub>3</sub><sup>−</sup> + H<sub>2</sub>O + 2H<sup>+</sup> &nbsp;<span class="cm">→ −2 eq/mol N</span><br>
+魚の排泄・有機物のアンモニア化: R−NH<sub>2</sub> + H<sub>2</sub>O → NH<sub>4</sub><sup>+</sup> + OH<sup>−</sup> &nbsp;<span class="cm">→ +1 eq/mol N</span><br>
+<b>正味 −1 eq/mol N = 3.57 mg CaCO<sub>3</sub> / mg N</b>
+</div>
+<p>魚が在籍する水槽ではアンモニアがタンパク質の分解に由来するため、その段階でアルカリ度が 1 eq 回復する。それでも大型オスカーの90cm水槽では1日あたり 0.4 dKH 減少する。東京の水道水（KH 2.5）では1週間持たない。</p>
+
+<div class="find"><b>創発した現象。</b>KH を補給せずにフィッシュレスサイクリングを行うと、<strong>10日で pH が 6 を下回り硝化が停止する</strong>。「サイクリング中の pH クラッシュ」として知られる現象が、化学量論のみから導出された。</div>
+
+<h2 id="s5"><span class="num">05</span>水草：CO2は飽和値を下げるが初期勾配を変えない</h2>
+
+<p>本実装で最も校正に時間を要した箇所である。</p>
+
+<p>当初、水草の光合成を次のように記述した。光の効果 f<sub>L</sub> と CO2 の効果 f<sub>C</sub> を独立に計算して乗じる形である。</p>
+
+<div class="eq">
+<span class="cm">// 当初の（誤った）実装</span><br>
+f<sub>L</sub> = 1 − exp(−PAR / E<sub>k</sub>) &nbsp;&nbsp; f<sub>C</sub> = CO2 / (K<sub>½</sub> + CO2)<br>
+P = p<sub>max</sub> · f<sub>L</sub> · f<sub>C</sub> · f(T) · f(養分)
+</div>
+
+<p>この実装では、CO2 添加なしの30cm水槽でアヌビアスとウィローモスが枯死した。実物のアヌビアスは CO2 無添加かつ低光量の条件下でも長期間生存する。</p>
+
+<p>P–I 曲線の文献を再確認したところ、誤りが判明した。CO2 制限は<strong>飽和光下の上限（プラトー）を下げるが、初期勾配 α = p<sub>max</sub>/E<sub>k</sub> は変えない</strong>。低光量域では光子束そのものが律速であり、CO2 濃度が低くても光子1個あたりの固定量は変化しないためである。乗算形の実装は、律速でない要因に対して二重に制限を課していた。</p>
+
+<div class="eq">
+<span class="cm">// 修正後（E<sub>k</sub> も f<sub>C</sub> でスケールする）</span><br>
+P = p<sub>max</sub> · f<sub>C</sub> · ( 1 − exp( −PAR / (E<sub>k</sub> · f<sub>C</sub>) ) ) · f(T) · f(養分) · f(健康)<br><br>
+<span class="cm">PAR → 0 のとき  P → p<sub>max</sub>·PAR/E<sub>k</sub>  （f<sub>C</sub> が消去され、初期勾配は不変）</span>
+</div>
+
+<p>下図で CO2 スライダを下げると、修正後の式では低光量側の傾きが保たれるのに対し、乗算形は原点から曲線全体が潰れる。CO2 無添加の水槽（CO2 はおよそ 1–3 mg/L）でアヌビアスを選ぶと、PAR 30 における純光合成が乗算形では修正後の <strong>1/3 程度</strong>まで低下する。実装ではこれに健康度のフィードバック（成長が止まる → 健康度が下がる → さらに成長が落ちる）が重なるため、数十日で枯死に至っていた。</p>
+
+<figure class="fig" id="fig2">
+  <div class="fig-hd"><span class="no">図 02</span><span class="ti">P–I曲線とCO2 — 乗算形は弱光域を過小評価する</span></div>
+  <div class="fig-body">
+    <canvas id="c2" width="880" height="360"></canvas>
+    <div class="ctrls">
+      <div class="ctrl"><label>CO2</label><input id="f2co2" type="range" min="0.2" max="40" step="0.2" value="2"><output id="f2co2o">4.0 mg/L</output></div>
+      <div class="ctrl"><label>種</label>
+        <select id="f2sp" style="flex:1; background:var(--panel2); border:1px solid var(--line); border-radius:4px; padding:4px 6px">
+          <option value="anubias">アヌビアス・ナナ（陰性）</option>
+          <option value="moss">ウィローモス（陰性）</option>
+          <option value="crypt">クリプトコリネ（中速）</option>
+          <option value="rotala" selected>ロタラ（速い有茎）</option>
+          <option value="hornwort">マツモ（HCO3利用）</option>
+        </select>
+      </div>
+    </div>
+    <div class="readout" id="f2ro"></div>
+    <div class="legend">
+      <span><i style="background:var(--leaf)"></i>修正後（実装）</span>
+      <span><i style="background:var(--rose)"></i>乗算形（当初の実装）</span>
+      <span><i style="background:var(--dim);height:0;border-top:1px dashed var(--dim)"></i>暗呼吸 R</span>
+      <span><i style="background:var(--water)"></i>30cm低光量 / 60cmハイテクのPAR</span>
+    </div>
+  </div>
+  <figcaption>p<sub>max</sub> は Nielsen &amp; Sand-Jensen 1989 の CO2 富化時の範囲（1.76–47.11 mg O<sub>2</sub>/gDW/h）に収めた<span class="tag lit">文献</span>。E<sub>k</sub> は葉レベルの文献値 200–400 ではなく、水槽での成長速度（ロタラ 5–8 cm/週、アヌビアス 1葉/3–6週）に合わせて 85–190 へ校正した<span class="tag est">推定</span>。CO2 半飽和定数は需要に比例させ K<sub>½</sub> = 1.6 + 0.11·p<sub>max</sub>（速い種で 4.8 mg/L = 108 µM: Maberly &amp; Madsen 1998）。暗呼吸は補償点から R ≈ 0.03·p<sub>max</sub>。</figcaption>
+</figure>
+
+<p>重炭酸（HCO<sub>3</sub><sup>−</sup>）を利用できる種は限られる。バリスネリア・マツモ・ハイグロフィラは利用可能（Sand-Jensen &amp; Gordon 1984 ほか）、アヌビアスやブセファランドラは不可である。「CO2 無添加でも育つ水草」の一部はこの差に起因する。</p>
+
+<div class="note"><b>校正過程で発見した誤りが他に2件ある。</b><br>
+(a) 健康度の判定に瞬時の PAR を用いていたため、<b>夜間は全個体が光不足と判定され</b>、平均健康度が 0.46 まで低下していた。日平均 PAR を保持し、日照時間で積分した量と比較するよう修正。<br>
+(b) 成長速度の上限 rgr<sub>max</sub> を1日あたりで定義したまま毎ステップ適用していたため、実際に成長が生じる明期のみで見ると上限が過度に厳しかった。<code>cap = B·rgr<sub>max</sub>/(86400·光周期)·Δt</code> に変更。<br>
+3件はいずれも「水草が痩せる」という同一の症状を呈するため、切り分けに時間を要した。</div>
+
+<h2 id="s6"><span class="num">06</span>藻類：律速は栄養ではなく付着面積</h2>
+
+<p>藻類5種（珪藻・緑スポット・糸状藻・黒髭・ラン藻）を導入したところ、栄養が存在する限り増殖が止まらず、酸素を消費してオスカーの成長を阻害した（成長試験が 25.9 cm で不合格）。</p>
+
+<p>欠落していたのは<strong>付着可能面積</strong>である。藻類は浮遊しているのではなく、ガラス・葉・流木・底床に付着している。面積あたりの上限（3.5–9 g乾重/m²<span class="tag est">推定</span>）を種ごとの付着先に応じて与えたところ、試験は合格した（29.9 cm）。</p>
+
+<p>そのうえで、健全な水草が存在すると藻類は抑制される。これはアレロパシー項を記述した結果ではなく、光と栄養が先に消費されるためである。水草なし・強光・過給餌の60cm水槽では60日で乾重 0.97 g（ラン藻優占）、同条件でも密植した場合は1/10以下となる。</p>
+
+<h2 id="s7"><span class="num">07</span>魚：重心まわりの剛体回転ではない</h2>
+
+<p>魚が向きを変える際、重心まわりに剛体回転するのではなく、頭部を先に切り込ませ、体幹がその軌跡を追従する。これを<b>ルールとして直接記述しない</b>ことを目標とした。記述すべきは骨格と流体力学であり、頭部先行は結果として生じるべきである。</p>
+
+<h3>骨格</h3>
+<ul>
+<li>剛体の頭蓋（吻端〜後頭顆、全長の 0.25–0.30）<span class="tag est">推定</span></li>
+<li>椎骨チェーン。<strong>スズメダイ科26・ニザダイ科22（9+13）は科の標準形質</strong><span class="tag lit">文献</span>、オスカー27・ピラニア36は科の範囲からの推定<span class="tag est">推定</span>。ピラニアの前4椎はウェーバー器官で癒合し可撓性を持たない</li>
+<li>尾鰭の受動節2つ（筋による駆動を持たず、流体力で撓む）</li>
+<li>椎間関節の側方可撓性 flex = 0.25 + 0.75·s<sup>1.3</sup>（頭→尾で増加）<span class="tag est">推定</span></li>
+</ul>
+
+<h3>重心</h3>
+<p>超楕円断面（Γ関数から面積係数を得る）の面積分布を Simpson 則で積分し、局所密度に頭蓋 +12%、鰾（u = 0.28–0.65 で局所断面の最大22%、淡水）を与える。得られた重心位置は<strong>吻端から全長比 0.34–0.38</strong> であり、Webb 1978（マス 0.36 TL）および Domenici &amp; Blake 1997（0.35–0.40 TL）と整合する<span class="tag lit">文献</span>。体を曲げた状態でも重心が各節の質量和と一致することをテスト52で検証している。</p>
+
+<h3>力</h3>
+<p>水平面の剛体フレーム動力学として、未知数を「重心の横速度」と「頭蓋フレームのヨー角速度」の2つに限定し、各節について以下を加算する。</p>
+<ul>
+<li>抵抗力理論（Taylor 1952）の法線抗力 ½ρC<sub>n</sub>S|v<sub>n</sub>|v<sub>n</sub></li>
+<li>低速域の線形粘性減衰</li>
+<li>細長体理論（Lighthill 1971）の付加質量 πρ(d/2)²、およびその運動量が体軸に沿って後方へ輸送される対流項</li>
+<li>尾鰭の揚力 ½ρC<sub>Lα</sub>US</li>
+<li><strong>形状変化にともなう角運動量</strong>（体を曲げると反動で尾が逆方向へ振れる）</li>
+</ul>
+<p>2×2の半陰的連立方程式を毎サブステップ解く（無条件安定）。</p>
+
+<p>この構成では、屈曲した体は抵抗の異方性により<strong>自身の中心線に沿って滑る</strong>ため、旋回が follow-the-leader となる。下図は同じ 90° 転回を両方式で描いたものである。</p>
+
+<figure class="fig" id="fig3">
+  <div class="fig-hd"><span class="no">図 03</span><span class="ti">同じ 90° 転回：follow-the-leader と 重心まわりの剛体回転</span></div>
+  <div class="fig-body">
+    <canvas id="c3" width="880" height="380"></canvas>
+    <div class="ctrls">
+      <div class="ctrl"><label>旋回の強さ</label><input id="f3w" type="range" min="0.2" max="2.4" step="0.05" value="1.1"><output id="f3wo">1.10 rad/s</output></div>
+      <div class="ctrl"><label>速度</label><input id="f3u" type="range" min="0.4" max="2.2" step="0.05" value="1.1"><output id="f3uo">1.10 BL/s</output></div>
+    </div>
+    <div class="readout" id="f3ro"></div>
+    <div class="legend">
+      <span><i style="background:var(--rose)"></i>鼻先の軌跡</span>
+      <span><i style="background:var(--water)"></i>重心の軌跡</span>
+      <span><i style="background:var(--mint-soft)"></i>体の輪郭（0.34秒ごと）</span>
+    </div>
+  </div>
+  <figcaption>本図は模式図である（本体は節ごとに力を積分しているが、ここでは軌跡追従のみを取り出している）。follow-the-leader では体幹の各点が<b>自身の接線方向</b>に進むため、体が曲がり、頭部が体幹より先に向きを変え、重心は鼻先が通った経路をそのままなぞる（赤と青の線が重なる）。剛体回転では体が直線のまま回るため、体幹に横滑りが生じ、重心の軌跡が鼻先の軌跡から分離し、尾が外側へ大きく振れる。本体ではテスト53で「体幹中央点の進行方向と接線のずれが平均15°未満」「頭部が体幹より8°以上先行」を要求している。</figcaption>
+</figure>
+
+<div class="find"><b>停止状態からの転回は機構が異なる。</b>速度が 0.45 BL/s 未満では滑走旋回が使えないため、Cベンドのキックとなる。要点は<b>屈曲と伸展の時定数を非対称にする</b>ことである（屈曲 τ=0.04秒・伝播 頭→尾 6 L/s、伸展 τ=0.2秒・3 L/s）。抗力が速度の2乗に比例するため、速く曲げて緩やかに伸ばすと正味の回頭が残る。</div>
+
+<h2 id="s8"><span class="num">08</span>進行波の包絡は全長基準である</h2>
+
+<p>魚の遊泳運動学で頻繁に引用される Videler (1993) の横振幅包絡は次の形をとる。</p>
+
+<div class="eq">A(x) = 0.02 − 0.08x + 0.16x² <span class="cm">（x は体軸位置、A は体長比）</span></div>
+
+<p>当初これを<strong>体長（SL、吻端〜尾柄末端）基準</strong>として使用していた。x=1 で A=0.10 となるため「尾柄で 0.10 SL」と解釈していた。</p>
+
+<p>検証で数値が合わず、文献の実測（尾鰭端 0.10 TL）と突き合わせた結果、この式は<strong>全長（TL、尾鰭端まで）基準</strong>であることが判明した。SL 基準で適用すると尾柄の振幅が過大となり（0.10 に対し正しくは 0.062）、波長も過大になる（1 SL に対し 1.22–1.27 SL）。</p>
+
+<p>修正後の実測値（直進 1.2 BL/s）は、鼻先の横振幅 0.014–0.026 L、頭部のヨー ±2.6–3.1°、重心の横振れ ±0.011–0.014 L、尾鰭端 0.066–0.079 L である。Videler の 0.02 / ±4.6° / 0.10 TL に対し、包絡の形状は一致するが尾端はやや小さい。</p>
+
+<div class="note"><b>この項は未完成である。</b>付加質量係数と後流への放出比率を振っても、「頭部ヨー ±4.6°」と「尾端 0.09」を<b>同時に</b>満たす組み合わせは得られなかった。尾鰭を単純な抵抗体として扱っていることが原因と考えている（実際には迎え角をもつ揚力面であり、渦を放出する）。現在は頭部 ±2.6°・尾端 0.07 を採用している。</div>
+
+<h2 id="s9"><span class="num">09</span>ヌマエビ：25°という制約</h2>
+
+<p>ミナミヌマエビとヤマトヌマエビの実装で最も有効だった文献は Arnott, Neil &amp; Ansell 1998（<i>Crangon crangon</i>、体長 11–69 mm）である。テールフリップの高速度撮影から、全屈曲時の<strong>頭胸部軸と尾部軸のなす角が 25.0±4.9°</strong>、最大伸展 128.2±20.3° という実測が得られている。</p>
+
+<p>これを制約として使用した。腹節間の関節は左右一対の顆をもつ蝶番（dicondylic）であり<strong>矢状面1自由度</strong>、側屈および捻れはほぼ生じない。8体節（頭胸部＋A1–A6＋尾節）の関節可動域の総和を 155° に配分すれば、180 − 155 = 25° が導かれる。</p>
+
+<figure class="fig" id="fig4">
+  <div class="fig-hd"><span class="no">図 04</span><span class="ti">ヌマエビの矢状面屈曲 — 8体節・7関節</span></div>
+  <div class="fig-body">
+    <canvas id="c4" width="880" height="340"></canvas>
+    <div class="ctrls">
+      <div class="ctrl"><label>屈曲</label><input id="f4t" type="range" min="0" max="100" step="1" value="0"><output id="f4to">0 %</output></div>
+      <div class="seg" id="f4seg"><button data-m="0" aria-pressed="true">体節</button><button data-m="1" aria-pressed="false">関節角</button></div>
+    </div>
+    <div class="readout" id="f4ro"></div>
+  </div>
+  <figcaption>体節比は Englund &amp; Cai 1999 / Cai &amp; Shih 2019 の記載値（背甲長 CL/TL≈0.24、A6 = 1.38–1.40×A5、尾節 長/幅 3.0）<span class="tag lit">文献</span>、個々の関節への可動域配分は推定である<span class="tag est">推定</span>。第2腹節の側板が第1・第3を前後から覆う <b>caridean hump</b>（コエビ下目の定義形質）を体高で表現している。屈曲を100%にすると、頭胸部軸と尾節軸のなす角が Arnott の実測帯（25.0±4.9°）に入る。</figcaption>
+</figure>
+
+<p>運動側も文献のスケーリングに合わせた。テールフリップの屈曲時間は体長回帰（0.34 ms/mm）からミナミヌマエビ（TL 25 mm）で 20–30 ms、再伸展 25–40 ms、2–3連打。逃避方向は<strong>刺激から ±63° 以内へは向かわず</strong>、最終角 161±55°。歩行は同側が前→後のメタクロナル波（位相 0.33）、対側がほぼ逆相であり、<strong>10本の歩脚のうち常に3本以上が接地する</strong>（テスト59）。</p>
+
+<p>生活史も実装した。脱皮周期は23℃で成体約3週・稚エビ3–4日、1回の脱皮で甲長が1.13倍になる。抱卵数 21–51個、孵化までの日数は 24/28/32℃ でそれぞれ 21/16/12 日（Tropea 2015）、性比は温度依存（20/23/26℃ で ♀ 75/60/40%）。そして<strong>ヤマトヌマエビのゾエアは 8.5–17 ppt 以上の汽水を要求するため、淡水では繁殖しない</strong>。この非対称性をモデルに含めると、「ミナミは増えヤマトは増えない」が自然に生じる。60cm水草水槽にミナミ15匹を導入した場合、180日で29–30匹（脱皮106回）となる。</p>
+
+<h2 id="s10"><span class="num">10</span>水流：MAC格子による非圧縮流れ</h2>
+
+<p>フィルターによる水流は非圧縮流体として解いている。約7000セルの MAC 格子、半ラグランジュ MacCormack 移流 → 運動量源 → Gauss–Seidel 圧力射影という構成で、1ステップあたり 4 ms（60cm水槽）である。</p>
+
+<p>運動量源は3種類ある。吐出口の噴流（Q·u<sub>jet</sub> を噴流域の体積で除した加速度）、気泡プルームの浮力（空気流量 × g / (上昇速度 25 cm/s × 断面積)）、ヒーターの熱対流（gβΔT ≈ 0.12 cm/s²）である。取水口と吐出口は「速度を規定した固体セル」として扱い、面の流量総和が Q に一致するよう構成している（質量保存）。</p>
+
+<p>校正の結果、60cm外掛け（400 L/h）で噴流部 10–15 cm/s、平均 0.6–1 cm/s、遠端は 0.1 cm/s 未満となった。外掛けフィルターの水槽で対角の隅が滞留するという観察と整合する。投げ込み式は気泡プルームにより平均 2–3 cm/s、スポンジおよび底面式は 0.1 cm/s 以下である。</p>
+
+<p>格子が粗いため数値拡散により循環は実物より弱く出ていると考えられる<span class="tag est">推定</span>。</p>
+
+<h2 id="s11"><span class="num">11</span>数値実装上の誤り</h2>
+
+<p>収支が閉じるという制約は、検出手段として有効に機能した。以下、発見順に記録する。</p>
+
+<h3>CO2 が 3.5×10<sup>11</sup> mg/L に発散</h3>
+<p>修正Patankar で解いた後、各プールの比 φ = c<sup>n+1</sup>/c<sup>n</sup> を用いて生物膜量や吸着量を更新している。あるプールが減衰して<strong>非正規化数（6×10<sup>−312</sup>）</strong>に達したとき、この比の計算でガウス消去が精度を失い、φ が発散した。1e-18 未満のプールを 0 に丸め（端数は台帳の除去項に計上）、比の分母に 1e-24 のガードを設けて解決した。</p>
+
+<h3>ソイルが窒素を生成していた（v0.7 以前から存在した誤り）</h3>
+<p>ソイルの初期 NH<sub>4</sub> 溶出を外部生成項 P<sup>ext</sup> として記述していた。すなわち窒素が無から発生していた。正しくは底床の緩効性 N（Ds<sub>N</sub>）から TAN への<b>転送</b>である。R[TAN][Ds<sub>N</sub>] に付け替え、Ds<sub>N</sub> の残量でクランプして修正した。台帳を毎回検証していなければ検出できなかった。</p>
+
+<h3>藻類の被食を二重計上</h3>
+<p>藻類側でもエビによる摂食量を減算し、エビ側でも減算していた。<code>algaeStep</code> は自然な増減のみを扱い、<code>shrimpStep</code> が藻類の現存量から直接減算するよう構造を変更し、ステップ順を 藻類 → エビ → 水草 に固定した。</p>
+
+<h3>エビのデトリタス食で収支が漏れる</h3>
+<p>供給側は易分解（Df<sub>N</sub>）と難分解（Ds<sub>N</sub>）の双方から見積もっているのに対し、消費は全量を Df<sub>N</sub> から減算していた。<code>out.detF</code> / <code>out.detS</code> に分離し、それぞれのプールから減算するよう修正した。最終的な残差は相対 1e-10〜1e-14 である。</p>
+
+<h3>孵化時に稚エビの体重が不一致</h3>
+<p>稚エビの体重を対数正規分布で個体ごとにばらつかせた一方、母体から減算する量は代表値×匹数で計算していた。実際に生成された個体の総和を減算するよう修正した。</p>
+
+<h3>水草の枯死で窒素が増加</h3>
+<p><code>loss = min(loss, B*0.5)</code> でクランプした後に <code>loss += B</code> と記述しており、1.5×B が失われる（= プールに 1.5B 入る）状態だった。</p>
+
+<h3>溶存酸素が飽和度 350% に到達</h3>
+<p>高光量の水草水槽で溶存酸素が 28 mg/L に達した。欠落していたのは<strong>気泡としての脱気（pearling）</strong>である。葉面に付着した気泡が浮上する分を、飽和度125%以上での追加脱気項として導入したところ、150%程度で頭打ちとなった。水草水槽で日中に気泡が発生する現象に対応する。</p>
+
+<h2 id="s12"><span class="num">12</span>検証：60本のテスト</h2>
+
+<p>すべて Node 上で実行される（描画なし）。ブラウザでの確認は最終段階の目視のみであり、挙動の検証はすべてこちら側で行っている。</p>
+
+<table>
+<tr><th>#</th><th>検証内容</th></tr>
+<tr><td class="n">1–7</td><td>物理化学：DO飽和（Benson–Krause）、NH3 の pKa、pH–KH–CO2 の関係、熱収支と蒸発、ヒーター故障時の冷却時定数、冷却ファンの効果</td></tr>
+<tr><td class="n">8–13</td><td>立ち上げ：フィッシュレスサイクリング、過剰投入による遊離アンモニア阻害、成熟槽の群集組成、濾材の選好、換水と硝酸の解析解との一致、<b>N台帳 1e-9</b></td></tr>
+<tr><td class="n">14–28</td><td>生体：成長曲線（オスカー1年 21–29cm・2年 27–35cm）、古い水槽症候群、低酸素耐性、停電、濾材洗浄、残留塩素、塩、絶食と噛みつき</td></tr>
+<tr><td class="n">29–36</td><td>数値と装置：修正Patankar の正値性と保存、多層濾過の直列通過、目詰まり、活性炭、ゼオライト、牡蠣殻</td></tr>
+<tr><td class="n">37–43</td><td>運動と流れ：遊泳運動学、個体差の CV、衝突判定（貫通ゼロ）、機材配置の妥当性、水流ソルバの発散と安定性、トレーサ粒子</td></tr>
+<tr><td class="n">44–51</td><td>海水：Lueker の pK1/pK2、塩分ドリフトと ATO、スキマー、ライブロック、石灰化とドージング、白化、海水の硝化</td></tr>
+<tr><td class="n">52–54</td><td>骨格：椎骨数と重心位置、頭部先行の転回、進行波の包絡と Videler の比較</td></tr>
+<tr><td class="n">55–60</td><td>水草水槽：水草の成長、日周変動、藻類の競合、エビの個体群、エビの運動学、<b>水草水槽の N 台帳</b></td></tr>
+</table>
+
+<p>テスト43（トレーサ粒子の捕捉率）のみ確率的であり、まれに不合格となる。期待値 Q·n/V に対して 0.4–2.4 倍という許容幅を設けているが、それでも統計的な揺らぎが残る。決定論的でないテストとして明示的に残している。</p>
+
+<h2 id="s13"><span class="num">13</span>未解決：シェーダの移植性</h2>
+
+<p>公開版には、<strong>一部の Android 端末で3D描画のシェーダがコンパイルに失敗する</strong>という未解決の不具合がある。</p>
+
+<div class="eq">THREE.WebGLProgram: shader error: 0 35715 false<br>Assertion failed: GVI &amp;&amp; "cannot compute gv size for oob (no global info)"</div>
+
+<p>これは three.js のメッセージではなく、端末側の GPU ドライバまたは ANGLE のシェーダコンパイラが出力しているアサートである。開発環境（SwiftShader）では5槽すべてで再現しない。</p>
+
+<p>GLSL ES 1.00 において必須機能でない構文に依存している箇所を<strong>6箇所まとめて</strong>修正した版を一度公開した。uniform 配列の添字をループ変数（定数添字式）のみに限定し、uniform 数を 64 ベクトルから 24 へ半減し、断片シェーダの <code>precision highp float;</code> 宣言を撤去し（ES 2.0 では断片シェーダの highp は任意機能であり、非対応端末ではこの宣言自体がコンパイルエラーになる）、リンク失敗を検知して簡易シェーダへ退避する経路を追加した。</p>
+
+<p>結果は「魚が表示されなくなった」という報告であり、修正前より悪化したため差し戻した。</p>
+
+<div class="note"><b>この件から得た教訓。</b>再現環境を持たない不具合に対して、複数の修正を同時に投入すべきではない。どの変更が有効でどの変更が退行を招いたかを切り分ける手段が失われる。次は1箇所ずつ変更し、そのつど確認する。</div>
+
+<h2 id="s14"><span class="num">14</span>限界</h2>
+
+<ul>
+<li><strong>疾病が未実装</strong>。白点病・ネオン病・カラムナリスのいずれも扱っていない。ストレス指標 S は外見の変化と食欲低下にのみ作用する</li>
+<li><strong>水上葉／水中葉の転換がない</strong>。実際には購入直後の株がこの過程で一度崩れる</li>
+<li><strong>アレロパシーがない</strong>。藻類との競合は光と栄養の取り合いのみで表現している</li>
+<li><strong>推力が運動学的</strong>。尾から生じる力で前進速度を決定しておらず、歩容モデル（Bainbridge 則）から速度を与えている。力学的に解いているのは旋回と横振れのみである</li>
+<li><strong>エビの背腹方向は剛体</strong>。矢状面の屈曲は正確だが、三次元の捻れは扱っていない</li>
+<li><strong>アナモックスが未実装</strong>。海水の脱窒は従来型のみである</li>
+<li>室温は正弦波で与えている。実測気象データとの連携は未実装</li>
+</ul>
+
+<p>これらの限界を含みつつ、出力される数値は現実と大きく乖離しない範囲に収まっている。60cm ハイテク水草水槽で乾重 28–39 g、ロタラの相対成長率 0.053/日（5–8 cm/週相当）、日中の DO 11.6 mg/L（飽和度150%）・夜間 8.1 mg/L、CO2 25–32 mg/L、pH 5.7–6.1、180日でトリミングにより乾重 50 g を系外へ排出、という値が得られる。</p>
+
+<p><a href="/works/aqua-lab/">▶ アクアラボを開く</a></p>
+
+<h2 id="refs">参考文献</h2>
+<ul class="refs">
+<li>Arnott, S.A., Neil, D.M. &amp; Ansell, A.D. (1998) Tail-flip mechanism and size-dependent kinematics of escape swimming in the brown shrimp <i>Crangon crangon</i>. <i>J. Exp. Biol.</i> 201, 1771–1784.</li>
+<li>Bainbridge, R. (1958) The speed of swimming of fish as related to size and to the frequency and amplitude of the tail beat. <i>J. Exp. Biol.</i> 35, 109–133.</li>
+<li>Burchard, H., Deleersnijder, E. &amp; Meister, A. (2003) A high-order conservative Patankar-type discretisation for stiff systems of production–destruction equations. <i>Appl. Numer. Math.</i> 47, 1–30.</li>
+<li>Cai, Y. &amp; Shih, H.-T. (2019); Englund, R.A. &amp; Cai, Y. (1999) — <i>Neocaridina</i> / <i>Caridina</i> の体節比の記載</li>
+<li>Domenici, P. &amp; Blake, R.W. (1997) The kinematics and performance of fish fast-start swimming. <i>J. Exp. Biol.</i> 200, 1165–1178.</li>
+<li>Kim, J.-G. et al. (2016) Hydrogen peroxide detoxification is a key mechanism for growth of ammonia-oxidizing archaea. <i>PNAS</i> 113, 7888–7893.</li>
+<li>Lighthill, M.J. (1971) Large-amplitude elongated-body theory of fish locomotion. <i>Proc. R. Soc. Lond. B</i> 179, 125–138.</li>
+<li>Lueker, T.J., Dickson, A.G. &amp; Keeling, C.D. (2000) Ocean pCO2 calculated from DIC, TA, and the equations for K1 and K2. <i>Mar. Chem.</i> 70, 105–119.</li>
+<li>Maberly, S.C. &amp; Madsen, T.V. (1998) Affinity for CO2 in relation to the ability of freshwater macrophytes to use HCO3−. <i>Funct. Ecol.</i> 12, 99–106.</li>
+<li>Madsen, T.V. &amp; Cedergreen, N. (2002) Sources of nutrients to rooted submerged macrophytes growing in a nutrient-rich stream. <i>Freshw. Biol.</i> 47, 283–291.</li>
+<li>Martens-Habbena, W. et al. (2009) Ammonia oxidation kinetics determine niche separation of nitrifying Archaea and Bacteria. <i>Nature</i> 461, 976–979.</li>
+<li>Merbt, S.N. et al. (2012) Differential photoinhibition of bacterial and archaeal ammonia oxidation. <i>FEMS Microbiol. Lett.</i> 327, 41–46.</li>
+<li>Nielsen, S.L. &amp; Sand-Jensen, K. (1989) Regulation of photosynthetic rates of submerged rooted macrophytes. <i>Oecologia</i> 81, 364–368.</li>
+<li>Oliveira, A.M. et al. (2008) — カージナルテトラの急性毒性（NH3・NO2・温度・pH の LC50/LT50）<i>Acta Amazonica</i></li>
+<li>Sand-Jensen, K. &amp; Gordon, D.M. (1984) Differential ability of marine and freshwater macrophytes to utilize HCO3− and CO2. <i>Mar. Biol.</i> 80, 247–253.</li>
+<li>Sauder, L.A. et al. (2024) — 海水観賞魚水槽の硝化群集（comammox 不検出、AOA/AOB の拮抗）<i>Appl. Environ. Microbiol.</i></li>
+<li>Taylor, G.I. (1952) Analysis of the swimming of long and narrow animals. <i>Proc. R. Soc. Lond. A</i> 214, 158–183.</li>
+<li>Tropea, C. et al. (2015) — <i>Neocaridina</i> の胚発生と温度</li>
+<li>Videler, J.J. (1993) <i>Fish Swimming</i>. Chapman &amp; Hall.</li>
+<li>Webb, P.W. (1978) Hydrodynamics: nonscombroid fish. In <i>Fish Physiology</i> VII.</li>
+</ul>
+<p><small>※ 一部の文献は要点のみを二次資料で確認している。数値の責任は実装者にある。パラメータの確度 A/B/C はシミュレータの UI 内にも表示される。</small></p>
+
+<footer class="bot">
+  <p>アクアラボ v0.8 — 単一HTML（three.js r128 同梱）。Node 上で動作する計算コアと、それを読むだけの描画層に分離してある。</p>
+  <a class="back" href="/works/aqua-lab/">▶ シミュレータを開く</a>
+  &nbsp;<a class="back" href="/">← 日記へ戻る</a>
+</footer>
+
+</main>
+
+<aside class="rail">
+  <div class="h">CONTENTS</div>
+  <a href="#s1">01 対象と定義</a>
+  <a href="#s2">02 窒素：正値性と保存</a>
+  <a href="#s3">03 硝化菌の4集団</a>
+  <a href="#s4">04 境界層とアルカリ度</a>
+  <a href="#s5">05 CO2と初期勾配</a>
+  <a href="#s6">06 藻類は面積律速</a>
+  <a href="#s7">07 魚：重心で回らない</a>
+  <a href="#s8">08 包絡は全長基準</a>
+  <a href="#s9">09 エビ：25°の制約</a>
+  <a href="#s10">10 水流：MAC格子</a>
+  <a href="#s11">11 数値実装上の誤り</a>
+  <a href="#s12">12 検証：60本のテスト</a>
+  <a href="#s13">13 未解決：シェーダ</a>
+  <a href="#s14">14 限界</a>
+  <a href="#refs">参考文献</a>
+</aside>
+</div>
+</div>
+<script>
+(function(){
+'use strict';
+var C = function(id){return document.getElementById(id);};
+var css = getComputedStyle(document.documentElement);
+var COL = {
+  ink:'#e4f2e8', dim:'#637c6b', muted:'#8aa091', line:'#294535',
+  mint:'#9af4b5', mintSoft:'#76bf8b', water:'#7fd3ec', leaf:'#8ee08c',
+  amber:'#e8c37a', rose:'#ef9090', violet:'#c4a8ee', bg:'#061009', panel:'#0d1d15'
+};
+function fit(cv){
+  var dpr = Math.min(2, window.devicePixelRatio||1);
+  var w = cv.clientWidth || cv.width, h = cv.height/ (cv.width/ (cv.clientWidth||cv.width));
+  var aspect = cv.getAttribute('height')/cv.getAttribute('width');
+  h = Math.round(w*aspect);
+  cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+  cv.style.height = h+'px';
+  var g = cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+  return {g:g, w:w, h:h};
+}
+function ro(host, items){
+  host.innerHTML = '';
+  items.forEach(function(it){
+    var d = document.createElement('div');
+    d.className = 'ro' + (it.k? ' '+it.k : '');
+    d.innerHTML = '<span>'+it.l+'</span><b>'+it.v+'</b>';
+    host.appendChild(d);
+  });
+}
+function axes(g,w,h,pad,x0,x1,y0,y1,xl,yl,xt,yt){
+  g.strokeStyle = COL.line; g.lineWidth = 1; g.fillStyle = COL.dim;
+  g.font = '10px ui-monospace, monospace';
+  var X = function(v){return pad.l + (v-x0)/(x1-x0)*(w-pad.l-pad.r);};
+  var Y = function(v){return h-pad.b - (v-y0)/(y1-y0)*(h-pad.t-pad.b);};
+  var i;
+  for(i=0;i<yt.length;i++){
+    var yy = Y(yt[i]);
+    g.globalAlpha = .5; g.beginPath(); g.moveTo(pad.l,yy); g.lineTo(w-pad.r,yy); g.stroke(); g.globalAlpha=1;
+    g.textAlign='right'; g.textBaseline='middle'; g.fillText(String(yt[i]), pad.l-6, yy);
+  }
+  for(i=0;i<xt.length;i++){
+    var xx = X(xt[i]);
+    g.globalAlpha=.5; g.beginPath(); g.moveTo(xx,pad.t); g.lineTo(xx,h-pad.b); g.stroke(); g.globalAlpha=1;
+    g.textAlign='center'; g.textBaseline='top'; g.fillText(String(xt[i]), xx, h-pad.b+5);
+  }
+  g.strokeStyle = COL.line; g.lineWidth=1;
+  g.beginPath(); g.moveTo(pad.l,pad.t); g.lineTo(pad.l,h-pad.b); g.lineTo(w-pad.r,h-pad.b); g.stroke();
+  g.fillStyle = COL.muted; g.textAlign='right'; g.textBaseline='bottom';
+  g.fillText(xl, w-pad.r, h-pad.b+18);
+  g.save(); g.translate(11, pad.t+2); g.textAlign='left'; g.textBaseline='top'; g.fillText(yl,0,0); g.restore();
+  return {X:X, Y:Y};
+}
+function poly(g, pts, col, dash, wd){
+  g.save(); g.strokeStyle=col; g.lineWidth=wd||1.6; g.setLineDash(dash||[]);
+  g.beginPath();
+  for(var i=0;i<pts.length;i++){ if(i) g.lineTo(pts[i][0],pts[i][1]); else g.moveTo(pts[i][0],pts[i][1]); }
+  g.stroke(); g.restore();
+}
+function seg(id, cb){
+  var host = C(id); if(!host) return;
+  host.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true' ? 'false':'true');
+    cb();
+  });
+}
+function segRadio(id, cb){
+  var host = C(id); if(!host) return;
+  host.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(host.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+    cb();
+  });
+}
+function segVal(id){
+  var host = C(id); var out=[];
+  Array.prototype.forEach.call(host.querySelectorAll('button'), function(b){ if(b.getAttribute('aria-pressed')==='true') out.push(+b.dataset.m); });
+  return out;
+}
+
+/* ---------------- 図1: 陽的Euler / Patankar / 修正Patankar ---------------- */
+var F1 = (function(){
+  var V1=0.9, K1=0.5, V2=0.7, K2=0.9, T=24;
+  function rates(c){
+    var a = Math.max(0,c[0]), b = Math.max(0,c[1]);
+    return [ V1*a/(K1+a), V2*b/(K2+b) ];
+  }
+  function run(mode, dt, t0){
+    var c=[t0,0,0], out=[[0,t0,0,0]], t=0, n=Math.max(1,Math.round(T/dt));
+    for(var k=0;k<n;k++){
+      var r = rates(c), r1=r[0], r2=r[1];
+      if(mode===0){ // 陽的オイラー
+        c = [ c[0]-r1*dt, c[1]+(r1-r2)*dt, c[2]+r2*dt ];
+      } else if(mode===1){ // 素のPatankar（破壊項のみ重み付け → 正値だが非保存）
+        var a0 = c[0]/(1+dt*r1/Math.max(1e-30,c[0]));
+        var a1 = (c[1]+dt*r1)/(1+dt*r2/Math.max(1e-30,c[1]));
+        var a2 = c[2]+dt*r2;
+        c=[a0,a1,a2];
+      } else { // 修正Patankar（生成項も未知数側の比で重み付け → 正値かつ保存）
+        var b0 = c[0]/(1+dt*r1/Math.max(1e-30,c[0]));
+        var b1 = (c[1]+dt*r1*b0/Math.max(1e-30,c[0]))/(1+dt*r2/Math.max(1e-30,c[1]));
+        var b2 = c[2]+dt*r2*b1/Math.max(1e-30,c[1]);
+        c=[b0,b1,b2];
+      }
+      t+=dt; out.push([t,c[0],c[1],c[2]]);
+      if(!isFinite(c[0]+c[1]+c[2])) break;
+    }
+    return out;
+  }
+  function draw(){
+    var cv=C('c1'); if(!cv) return; var f=fit(cv), g=f.g;
+    g.fillStyle=COL.bg; g.fillRect(0,0,f.w,f.h);
+    var dt=+C('f1dt').value, t0=+C('f1t0').value;
+    C('f1dto').textContent = dt.toFixed(2)+' h';
+    C('f1t0o').textContent = t0.toFixed(1)+' mg/L';
+    var ref = run(2, 0.002, t0);
+    var ymax = Math.max(t0*1.15, 0.6), ymin = 0;
+    var picks = segVal('f1seg');
+    var series = picks.map(function(m){ return {m:m, d:run(m,dt,t0)}; });
+    series.forEach(function(s){ s.d.forEach(function(p){ for(var i=1;i<4;i++){ if(isFinite(p[i])){ ymax=Math.max(ymax,p[i]); ymin=Math.min(ymin,p[i]); } } }); });
+    ymax = Math.min(ymax, t0*2.2); ymin = Math.max(ymin, -t0*1.2);
+    var pad={l:44,r:12,t:14,b:26};
+    var yt=[], step = ymax>4?2:(ymax>2?1:0.5);
+    for(var v=Math.ceil(ymin/step)*step; v<=ymax+1e-9; v+=step) yt.push(+v.toFixed(2));
+    var A = axes(g,f.w,f.h,pad,0,T,ymin,ymax,'時間 (h)','mg N/L',[0,6,12,18,24],yt);
+    if(ymin<0){ g.save(); g.strokeStyle=COL.rose; g.globalAlpha=.5; g.setLineDash([3,3]); g.beginPath(); g.moveTo(pad.l,A.Y(0)); g.lineTo(f.w-pad.r,A.Y(0)); g.stroke(); g.restore(); }
+    // 参照解
+    [1,2,3].forEach(function(i){
+      poly(g, ref.map(function(p){return [A.X(p[0]), A.Y(p[i])];}), COL.dim, [], 1);
+    });
+    var dashOf = {0:[5,3], 1:[1,3], 2:[]};
+    var colOf = [COL.amber, COL.rose, COL.water];
+    series.forEach(function(s){
+      [1,2,3].forEach(function(i){
+        var pts = s.d.filter(function(p){return isFinite(p[i]);}).map(function(p){return [A.X(p[0]), A.Y(Math.max(ymin,Math.min(ymax,p[i])))];});
+        poly(g, pts, colOf[i-1], dashOf[s.m], s.m===2?2:1.4);
+      });
+    });
+    // 凡例（線種）
+    g.font='10px ui-monospace, monospace'; g.textAlign='left'; g.textBaseline='top';
+    var names=['陽的Euler（破線）','Patankar（点線）','修正Patankar（実線）'];
+    var yy=pad.t+2;
+    picks.forEach(function(m){ g.fillStyle=COL.muted; g.fillText(names[m], f.w-190, yy); yy+=13; });
+    // 読み取り
+    var items=[];
+    series.forEach(function(s){
+      var mn=1e9, sum0=t0, last=s.d[s.d.length-1];
+      s.d.forEach(function(p){ for(var i=1;i<4;i++) if(isFinite(p[i])) mn=Math.min(mn,p[i]); });
+      var tot = last[1]+last[2]+last[3];
+      var err = Math.abs(tot-sum0)/sum0;
+      items.push({l:names[s.m].replace(/（.*/,'')+' 最小値', v: (isFinite(mn)? mn.toFixed(3):'発散'), k: mn < -1e-9 ? 'bad':'good'});
+      items.push({l:names[s.m].replace(/（.*/,'')+' 全N誤差', v: (isFinite(err)? (err<1e-12?'< 1e-12':(err*100).toFixed(2)+' %'):'発散'), k: err>1e-6?'bad':'good'});
+    });
+    ro(C('f1ro'), items);
+  }
+  return {draw:draw};
+})();
+
+/* ---------------- 図2: P–I 曲線 ---------------- */
+var F2 = (function(){
+  var SP = {
+    anubias:{n:'アヌビアス・ナナ', pmax:6.5, Ek:90, kco2:2.3, hco3:0},
+    moss:{n:'ウィローモス', pmax:9, Ek:85, kco2:2.6, hco3:0},
+    crypt:{n:'クリプトコリネ', pmax:13, Ek:130, kco2:3.0, hco3:0},
+    rotala:{n:'ロタラ', pmax:30, Ek:170, kco2:4.9, hco3:0},
+    hornwort:{n:'マツモ', pmax:34, Ek:160, kco2:5.3, hco3:0.6}
+  };
+  var FHCO3 = 0.35, RESP = 0.03;
+  function fC(sp, co2){ return Math.min(1, co2/(sp.kco2+co2) + sp.hco3*FHCO3); }
+  function draw(){
+    var cv=C('c2'); if(!cv) return; var f=fit(cv), g=f.g;
+    g.fillStyle=COL.bg; g.fillRect(0,0,f.w,f.h);
+    var co2=+C('f2co2').value, sp=SP[C('f2sp').value];
+    C('f2co2o').textContent = co2.toFixed(1)+' mg/L';
+    var fc = Math.max(1e-4, fC(sp,co2));
+    var R = RESP*sp.pmax;
+    var xmax=400, ymax=sp.pmax*1.05;
+    var pad={l:46,r:12,t:14,b:28};
+    var yt=[], st = sp.pmax>20?10:(sp.pmax>10?5:2);
+    for(var v=0;v<=ymax;v+=st) yt.push(v);
+    var A = axes(g,f.w,f.h,pad,0,xmax,0,ymax,'PAR (µmol m⁻² s⁻¹)','総光合成 mg O₂/gDW/h',[0,100,200,300,400],yt);
+    // 典型的なPARの目安
+    [[55,'30cm 低光量'],[150,'60cm ハイテク']].forEach(function(q){
+      var x=A.X(q[0]); g.save(); g.strokeStyle=COL.water; g.globalAlpha=.35; g.setLineDash([2,4]);
+      g.beginPath(); g.moveTo(x,pad.t); g.lineTo(x,f.h-pad.b); g.stroke();
+      g.globalAlpha=.7; g.setLineDash([]); g.fillStyle=COL.water; g.font='9.5px ui-monospace, monospace';
+      g.textAlign='left'; g.textBaseline='top'; g.fillText(q[1], x+4, pad.t+2); g.restore();
+    });
+    // 暗呼吸
+    g.save(); g.strokeStyle=COL.dim; g.setLineDash([4,4]); g.beginPath();
+    g.moveTo(pad.l,A.Y(R)); g.lineTo(f.w-pad.r,A.Y(R)); g.stroke();
+    g.fillStyle=COL.dim; g.font='9.5px ui-monospace, monospace'; g.textAlign='left'; g.textBaseline='bottom';
+    g.fillText('暗呼吸 R = '+R.toFixed(2), pad.l+4, A.Y(R)-3); g.restore();
+    var good=[], bad=[];
+    for(var x=0;x<=xmax;x+=2){
+      good.push([A.X(x), A.Y(sp.pmax*fc*(1-Math.exp(-x/(sp.Ek*fc))))]);
+      bad.push([A.X(x), A.Y(sp.pmax*fc*(1-Math.exp(-x/sp.Ek)))]);
+    }
+    poly(g, bad, COL.rose, [6,3], 1.8);
+    poly(g, good, COL.leaf, [], 2.2);
+    // 補償点
+    function comp(useGood){
+      for(var x=0;x<=xmax;x+=0.5){
+        var P = useGood ? sp.pmax*fc*(1-Math.exp(-x/(sp.Ek*fc))) : sp.pmax*fc*(1-Math.exp(-x/sp.Ek));
+        if(P>=R) return x;
+      }
+      return null;
+    }
+    var cg=comp(true), cb=comp(false);
+    [[cg,COL.leaf],[cb,COL.rose]].forEach(function(q){
+      if(q[0]===null) return;
+      g.save(); g.fillStyle=q[1]; g.beginPath(); g.arc(A.X(q[0]),A.Y(R),3.2,0,7); g.fill(); g.restore();
+    });
+    var pl30g = sp.pmax*fc*(1-Math.exp(-30/(sp.Ek*fc))) - R;
+    var pl30b = sp.pmax*fc*(1-Math.exp(-30/sp.Ek)) - R;
+    ro(C('f2ro'), [
+      {l:'CO₂の効き f_C', v: fc.toFixed(3)},
+      {l:'補償点（修正後）', v: cg===null? '到達しない' : Math.round(cg)+' µE', k: cg===null?'bad':'good'},
+      {l:'補償点（乗算形）', v: cb===null? '到達しない' : Math.round(cb)+' µE', k: cb===null?'bad':''},
+      {l:'PAR 30 の純光合成（修正後）', v: pl30g.toFixed(2), k: pl30g>0?'good':'bad'},
+      {l:'PAR 30 の純光合成（乗算形）', v: pl30b.toFixed(2), k: pl30b>0?'':'bad'},
+      {l:'弱光での比（乗算形 / 修正後）', v: (pl30g>0? (pl30b/pl30g).toFixed(2):'—')+' 倍', k:'bad'}
+    ]);
+  }
+  return {draw:draw};
+})();
+
+/* ---------------- 図3: 転回 ---------------- */
+var F3 = (function(){
+  var NB=19, COMU=0.35, DT=0.008;
+  var WT=[[0,0.010],[0.05,0.046],[0.15,0.073],[0.30,0.079],[0.50,0.063],[0.70,0.039],[0.85,0.021],[1.0,0.011]];
+  function hw(s){
+    for(var i=1;i<WT.length;i++){ if(s<=WT[i][0]){ var a=WT[i-1], b=WT[i], t=(s-a[0])/(b[0]-a[0]); return a[1]+(b[1]-a[1])*t; } }
+    return WT[WT.length-1][1];
+  }
+  function build(mode, U, W){
+    var path=[], x=0, y=0, th=0, turned=0;
+    var nose=[], com=[], frames=[], acc=0, run=0, phase=0;
+    // 助走 0.4 BL → 90°転回 → 直進 0.8 BL
+    while(true){
+      var w=0;
+      if(phase===0){ if(run>=0.8){ phase=1; } }
+      if(phase===1){ w=W; if(turned>=Math.PI/2){ phase=2; run=0; } }
+      if(phase===2 && run>=0.5) break;
+      if(run>12) break;
+      th += w*DT; turned += Math.abs(w)*DT;
+      x += Math.cos(th)*U*DT; y += Math.sin(th)*U*DT; run += U*DT;
+      path.push([x,y,th]);
+      var body=[], i;
+      if(mode===0){
+        for(i=0;i<NB;i++){
+          var sN=i/(NB-1), idx=path.length-1-Math.round(sN/(U*DT));
+          if(idx<0){ var p0=path[0], back=sN-(path.length-1)*U*DT;
+            body.push([p0[0]-Math.cos(p0[2])*back, p0[1]-Math.sin(p0[2])*back]); }
+          else body.push([path[idx][0], path[idx][1]]);
+        }
+      } else {
+        for(i=0;i<NB;i++){ var s2=i/(NB-1); body.push([x-Math.cos(th)*s2, y-Math.sin(th)*s2]); }
+      }
+      nose.push(body[0]);
+      var ci=COMU*(NB-1), i0=Math.floor(ci), fr=ci-i0;
+      com.push([body[i0][0]*(1-fr)+body[i0+1][0]*fr, body[i0][1]*(1-fr)+body[i0+1][1]*fr]);
+      acc+=DT; if(acc>=0.34-1e-9){ acc=0; frames.push(body); }
+    }
+    frames.push(body);
+    return {nose:nose, com:com, frames:frames};
+  }
+  function outline(b){
+    var top=[], bot=[], i;
+    for(i=0;i<b.length;i++){
+      var a=b[Math.max(0,i-1)], c=b[Math.min(b.length-1,i+1)];
+      var dx=c[0]-a[0], dy=c[1]-a[1], L=Math.hypot(dx,dy)||1e-9;
+      var nx=-dy/L, ny=dx/L, h=hw(i/(b.length-1));
+      top.push([b[i][0]+nx*h, b[i][1]+ny*h]);
+      bot.push([b[i][0]-nx*h, b[i][1]-ny*h]);
+    }
+    // 尾鰭
+    var t1=b[b.length-1], t0=b[b.length-2];
+    var dx2=t1[0]-t0[0], dy2=t1[1]-t0[1], L2=Math.hypot(dx2,dy2)||1e-9;
+    var ux=dx2/L2, uy=dy2/L2, vx=-uy, vy=ux, FL=0.17, FH=0.085;
+    var fin=[[t1[0]+ux*FL+vx*FH, t1[1]+uy*FL+vy*FH],[t1[0]+ux*FL*0.6, t1[1]+uy*FL*0.6],[t1[0]+ux*FL-vx*FH, t1[1]+uy*FL-vy*FH]];
+    return top.concat(fin, bot.reverse());
+  }
+  function panel(g,X,Y,r,title,hi,topY,tx){
+    // 軌跡
+    poly(g, r.nose.map(function(p){return [X(p[0]),Y(p[1])];}), COL.rose, [], 2.6);
+    poly(g, r.com.map(function(p){return [X(p[0]),Y(p[1])];}), COL.water, [], 1.3);
+    r.frames.forEach(function(b,i){
+      var a=0.30+0.70*i/Math.max(1,r.frames.length-1);
+      var o=outline(b).map(function(p){return [X(p[0]),Y(p[1])];});
+      var last = (i===r.frames.length-1);
+      g.save(); g.beginPath();
+      for(var k=0;k<o.length;k++){ if(k) g.lineTo(o[k][0],o[k][1]); else g.moveTo(o[k][0],o[k][1]); }
+      g.closePath();
+      g.globalAlpha=last?0.30:a*0.13; g.fillStyle=COL.mint; g.fill();
+      g.globalAlpha=last?1:a*0.85; g.strokeStyle=last?COL.mint:COL.mintSoft; g.lineWidth=last?1.6:1.0; g.stroke();
+      // 重心マーカー
+      var ci=COMU*(NB-1), i0=Math.floor(ci), fr=ci-i0;
+      var cx=b[i0][0]*(1-fr)+b[i0+1][0]*fr, cy=b[i0][1]*(1-fr)+b[i0+1][1]*fr;
+      g.fillStyle=COL.water; g.beginPath(); g.arc(X(cx),Y(cy),2.1,0,7); g.fill();
+      g.restore();
+    });
+    g.fillStyle=hi?COL.mint:COL.muted; g.font='11.5px ui-monospace, monospace';
+    g.textAlign='left'; g.textBaseline='top'; g.fillText(title, tx, topY);
+  }
+  function metrics(r){
+    var mid=Math.round((NB-1)*0.5), slip=0, cnt=0, lead=0;
+    for(var k=3;k<r.frames.length;k++){
+      var b=r.frames[k], bp=r.frames[k-1];
+      var vx=b[mid][0]-bp[mid][0], vy=b[mid][1]-bp[mid][1];
+      var tx=b[mid-1][0]-b[mid+1][0], ty=b[mid-1][1]-b[mid+1][1];
+      slip+=Math.abs(Math.atan2(vx*ty-vy*tx, vx*tx+vy*ty))*180/Math.PI; cnt++;
+      var hy=Math.atan2(b[0][1]-b[2][1], b[0][0]-b[2][0]);
+      var by=Math.atan2(b[mid-2][1]-b[mid+2][1], b[mid-2][0]-b[mid+2][0]);
+      var dd=(hy-by)*180/Math.PI; while(dd>180)dd-=360; while(dd<-180)dd+=360;
+      lead=Math.max(lead, Math.abs(dd));
+    }
+    return {slip:slip/Math.max(1,cnt), lead:lead};
+  }
+  function draw(){
+    var cv=C('c3'); if(!cv) return;
+    var wpx=cv.clientWidth||880, stack=wpx<620;
+    var dpr=Math.min(2, window.devicePixelRatio||1);
+    var hpx=Math.round(stack? wpx*1.15 : wpx*0.44);
+    cv.width=Math.round(wpx*dpr); cv.height=Math.round(hpx*dpr); cv.style.height=hpx+'px';
+    var g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+    g.fillStyle=COL.bg; g.fillRect(0,0,wpx,hpx);
+    var W=+C('f3w').value, U=+C('f3u').value;
+    C('f3wo').textContent=W.toFixed(2)+' rad/s'; C('f3uo').textContent=U.toFixed(2)+' BL/s';
+    var A=build(0,U,W), B=build(1,U,W);
+    var xs=[], ys=[];
+    [A,B].forEach(function(r){ r.frames.forEach(function(b){ outline(b).forEach(function(p){ xs.push(p[0]); ys.push(p[1]); }); }); });
+    var minx=Math.min.apply(null,xs)-0.15, maxx=Math.max.apply(null,xs)+0.15;
+    var miny=Math.min.apply(null,ys)-0.15, maxy=Math.max.apply(null,ys)+0.15;
+    var pw = stack? wpx : wpx/2, ph = stack? hpx/2 : hpx, pad=14;
+    var sc=Math.min((pw-2*pad)/(maxx-minx), (ph-2*pad-14)/(maxy-miny));
+    function mk(ox,oy){ return { X:function(v){return ox+(v-minx)*sc;}, Y:function(v){return oy-(v-miny)*sc;} }; }
+    var offA={x:pad+((pw-2*pad)-(maxx-minx)*sc)/2, y:(stack?ph:hpx)-pad};
+    var offB={x:(stack?0:pw)+pad+((pw-2*pad)-(maxx-minx)*sc)/2, y:(stack?hpx:hpx)-pad};
+    var a1=mk(offA.x,offA.y), b1=mk(offB.x,offB.y);
+    g.save(); g.strokeStyle=COL.line; g.beginPath();
+    if(stack){ g.moveTo(0,ph); g.lineTo(wpx,ph); } else { g.moveTo(pw,10); g.lineTo(pw,hpx-10); }
+    g.stroke(); g.restore();
+    panel(g,a1.X,a1.Y,A,'follow-the-leader（実装）',true, stack?4:6, stack?8:8);
+    panel(g,b1.X,b1.Y,B,'重心まわりの剛体回転',false, stack?ph+4:6, stack?8:pw+8);
+    g.strokeStyle=COL.muted; g.lineWidth=2; g.beginPath(); g.moveTo(10,hpx-6); g.lineTo(10+sc,hpx-6); g.stroke();
+    g.fillStyle=COL.muted; g.font='10px ui-monospace, monospace'; g.textAlign='left'; g.textBaseline='bottom';
+    g.fillText(' 1 BL', 12+sc, hpx-3);
+    var ma=metrics(A), mb=metrics(B);
+    ro(C('f3ro'), [
+      {l:'横滑り角 FTL / 剛体', v: ma.slip.toFixed(1)+' / '+mb.slip.toFixed(1)+' °', k: ma.slip<mb.slip?'good':''},
+      {l:'頭部の先行角 FTL / 剛体', v: ma.lead.toFixed(1)+' / '+mb.lead.toFixed(1)+' °', k:'good'},
+      {l:'転回角', v: '90 °'},
+      {l:'本体テスト53の要求', v: '横滑り<15° / 先行≥8°'}
+    ]);
+  }
+  return {draw:draw};
+})();
+
+/* ---------------- 図4: エビの矢状面屈曲 ---------------- */
+var F4 = (function(){
+  var SEGS=[
+    {id:'頭胸部', x0:0.00, x1:0.35, h:0.075, rest:0,   flex:0},
+    {id:'A1', x0:0.35, x1:0.412, h:0.070, rest:-6, flex:27},
+    {id:'A2', x0:0.412,x1:0.492, h:0.074, rest:-11,flex:24, hump:true},
+    {id:'A3', x0:0.492,x1:0.572, h:0.066, rest:-8, flex:24},
+    {id:'A4', x0:0.572,x1:0.644, h:0.055, rest:4,  flex:18},
+    {id:'A5', x0:0.644,x1:0.721, h:0.046, rest:7,  flex:18},
+    {id:'A6', x0:0.721,x1:0.828, h:0.036, rest:11, flex:24},
+    {id:'尾節',x0:0.828,x1:0.95, h:0.020, rest:9,  flex:20}
+  ];
+  var D2R=Math.PI/180;
+  function pose(t){
+    var px=[0], py=[0], ang=[], a=0, x=0, y=0;
+    for(var i=0;i<SEGS.length;i++){
+      if(i>0){ var th=(1-t)*SEGS[i].rest + t*SEGS[i].flex; a += th*D2R; ang.push(th); }
+      var l=SEGS[i].x1-SEGS[i].x0;
+      x+=Math.cos(a)*l; y-=Math.sin(a)*l;
+      px.push(x); py.push(y);
+    }
+    return {px:px, py:py, ang:ang, tot:a/D2R};
+  }
+  function draw(){
+    var cv=C('c4'); if(!cv) return; var f=fit(cv), g=f.g;
+    g.fillStyle=COL.bg; g.fillRect(0,0,f.w,f.h);
+    var t=+C('f4t').value/100, showAng=(segVal('f4seg')[0]||0)===1;
+    C('f4to').textContent=Math.round(t*100)+' %';
+    var p=pose(t);
+    var xs=p.px.slice(), ys=p.py.slice();
+    var minx=Math.min.apply(null,xs)-0.12, maxx=Math.max.apply(null,xs)+0.12;
+    var miny=Math.min.apply(null,ys)-0.14, maxy=Math.max.apply(null,ys)+0.14;
+    var pad=22;
+    var sc=Math.min((f.w-2*pad)/(maxx-minx), (f.h-2*pad)/(maxy-miny));
+    var ox=pad+((f.w-2*pad)-(maxx-minx)*sc)/2, oy=pad+((f.h-2*pad)+(maxy-miny)*sc)/2;
+    var X=function(v){return ox+(v-minx)*sc;}, Y=function(v){return oy-(v-miny)*sc;};
+    // 体節を台形で
+    for(var i=0;i<SEGS.length;i++){
+      var s=SEGS[i];
+      var ax=p.px[i], ay=p.py[i], bx=p.px[i+1], by=p.py[i+1];
+      var dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1e-9;
+      var nx=-dy/L, ny=dx/L;
+      var h0=s.h, h1=(i+1<SEGS.length? SEGS[i+1].h : s.h*0.55);
+      var hump = s.hump? 1.22 : 1;
+      g.beginPath();
+      g.moveTo(X(ax+nx*h0*hump), Y(ay+ny*h0*hump));
+      g.lineTo(X(bx+nx*h1*hump), Y(by+ny*h1*hump));
+      g.lineTo(X(bx-nx*h1*0.75), Y(by-ny*h1*0.75));
+      g.lineTo(X(ax-nx*h0*0.75), Y(ay-ny*h0*0.75));
+      g.closePath();
+      g.fillStyle = s.hump ? 'rgba(154,244,181,.20)' : 'rgba(154,244,181,.11)';
+      g.fill();
+      g.strokeStyle = COL.mintSoft; g.lineWidth=1.2; g.stroke();
+      if(showAng && i>0){
+        g.fillStyle=COL.amber; g.font='10px ui-monospace, monospace'; g.textAlign='center'; g.textBaseline='bottom';
+        g.fillText(p.ang[i-1].toFixed(0)+'°', X(ax), Y(ay)-6);
+      }
+    }
+    // 中心線と関節点
+    poly(g, p.px.map(function(v,i){return [X(v),Y(p.py[i])];}), COL.mint, [], 1.4);
+    for(i=0;i<p.px.length;i++){ g.fillStyle=COL.mint; g.beginPath(); g.arc(X(p.px[i]),Y(p.py[i]),2,0,7); g.fill(); }
+    // 頭胸部軸と尾節軸
+    var cephA=0, telA=p.tot*D2R;
+    function ray(x,y,a,len,col){
+      g.save(); g.strokeStyle=col; g.globalAlpha=.75; g.setLineDash([4,4]); g.lineWidth=1.3;
+      g.beginPath(); g.moveTo(X(x),Y(y)); g.lineTo(X(x+Math.cos(a)*len), Y(y-Math.sin(a)*len)); g.stroke(); g.restore();
+    }
+    ray(p.px[0],p.py[0],cephA,0.62,COL.water);
+    ray(p.px[7],p.py[7],telA,0.42,COL.violet);
+    var body = 180 - p.tot;
+    ro(C('f4ro'), [
+      {l:'頭胸部軸と尾部軸のなす角', v: body.toFixed(1)+' °', k: (t>0.98 && Math.abs(body-25)<=4.9)?'good':''},
+      {l:'関節角の総和', v: p.tot.toFixed(0)+' °'},
+      {l:'Arnott 1998 実測（全屈曲）', v: '25.0 ± 4.9 °'},
+      {l:'全長（体軸長）', v: (0.95).toFixed(2)+' TL'}
+    ]);
+  }
+  return {draw:draw};
+})();
+
+/* ---------------- 配線 ---------------- */
+function bind(ids, fn){ ids.forEach(function(id){ var e=C(id); if(e){ e.addEventListener('input', fn); e.addEventListener('change', fn); } }); }
+bind(['f1dt','f1t0'], F1.draw); seg('f1seg', F1.draw);
+bind(['f2co2','f2sp'], F2.draw);
+bind(['f3w','f3u'], F3.draw);
+bind(['f4t'], F4.draw); segRadio('f4seg', F4.draw);
+function all(){ F1.draw(); F2.draw(); F3.draw(); F4.draw(); }
+window.addEventListener('resize', function(){ clearTimeout(window.__rt); window.__rt=setTimeout(all,150); });
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', all); else all();
+
+/* 目次のハイライト */
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.rail a'));
+  if(!links.length || !('IntersectionObserver' in window)) return;
+  var map = {};
+  links.forEach(function(a){ var el=document.querySelector(a.getAttribute('href')); if(el) map[el.id]=a; });
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      var a=map[e.target.id]; if(!a) return;
+      if(e.isIntersecting){ links.forEach(function(x){x.classList.remove('on');}); a.classList.add('on'); }
+    });
+  }, {rootMargin:'-10% 0px -80% 0px'});
+  Object.keys(map).forEach(function(id){ io.observe(document.getElementById(id)); });
+})();
+})();
+</script>
+</body>
+</html>
