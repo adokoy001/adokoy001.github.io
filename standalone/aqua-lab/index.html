@@ -98,6 +98,21 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
 #feedhint.show{opacity:1}
 #feedhint.over{border-color:#a8452f;color:#ffb4a2;background:rgba(46,20,16,.92)}
 #app.feeding #gl{cursor:crosshair}
+/* 自由カメラ */
+#viewfoot button.flybtn.on{background:#123a4a;border-color:#4fc3f7;color:#cdefff}
+#flybar{position:absolute;right:12px;bottom:56px;display:none;gap:6px;align-items:center;background:rgba(14,18,24,.72);border:1px solid #2a3138;border-radius:999px;padding:5px 8px;backdrop-filter:blur(6px);z-index:5}
+#flybar.show{display:flex}
+#flybar button{background:rgba(30,38,46,.9);border:1px solid #3a444e;color:#dfe8ee;border-radius:999px;padding:6px 11px;font-size:12px;touch-action:none}
+#flybar button:hover{border-color:#4fc3f7}
+#flybar .sp{color:#9aa4ad;font-size:11px;min-width:56px;text-align:center;font-family:var(--mono)}
+#flyhint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(14,18,24,.8);border:1px solid #2a3138;color:#cfd8de;border-radius:999px;padding:6px 14px;font-size:11.5px;opacity:0;pointer-events:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis;z-index:5}
+#flyhint.show{opacity:1}
+#app.flying #gl{cursor:crosshair}
+#app.gallery #flybar{bottom:64px;right:14px}
+#app.gallery #flyhint{top:auto;bottom:22px;background:rgba(10,14,18,.6)}
+/* 狭い画面ではポインタロックのボタンを出さない（タッチでは意味がないうえ、折り返して崩れる） */
+@media (max-width:520px){#flybar .lockbtn{display:none}#flybar{right:8px;padding:4px 6px}#flybar button{padding:6px 9px}}
+
 #app.gallery #feedhint{bottom:26px;background:rgba(10,14,18,.62);border-color:rgba(255,183,77,.5)}
 </style>
 <!-- ============================================================================
@@ -190,6 +205,219 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     - 沈降速度: ペレット 1.9 / フレーク 0.40（40 秒ほど浮いてから沈む）/ 生餌 2.7 cm/s
     - 粒の見かけの大きさは実寸の 5 倍に誇張。実寸 1–2 mm では引きの画で 1–2 px にしかならない
     - エビは落ちた粒へ歩いて寄るだけ。栄養は既存のデトリタス摂食が担う（二重計上を避ける）
+============================================================================ -->
+
+<!-- ============================================================================
+  水草の当たり判定と、成長モデル（v0.8.4）
+
+  ● 水草が水槽を突き抜けていた
+    頂点シェーダで、ワールド座標に変換したあとに水槽の内寸へ収める（uBox）。
+    ・ガラス … x, z を内寸へクランプ。葉はガラスに当たってそこで寝る
+    ・水面   … 超えた分を水平に倒し、水面のすぐ下へ置く。水面に届いた有茎草が
+               そこから上へ伸びずに水面を這うのと同じ挙動になる
+    高さ自体はモデル側でも水柱の 93% で頭打ちにしてあるが、
+    ・1 本ずつの茎は群の平均高さの 1.15 倍まで振れる
+    ・葉は群の半径からさらに leafLen ぶん外へ出る
+    ・uGrow は作った時点の形を最大 2.2 倍まで引き伸ばす
+    ので、モデル側の上限だけでは足りなかった。群の広がり rmax からも葉の伸びしろを引いている。
+
+  ● 水草: ランナー（匍匐枝）で子株が出る
+    ショートヘアーグラス 7 日 / キューバパール 9 日 / ニューラージパール 10 日 /
+    サジタリア 10 日 / バリスネリア 12 日 / クリプトコリネ 26 日 / エキノドルス 42 日（推定 C）。
+    健康度 0.55 超・株が充実・藻に覆われていない・明期、のときだけ進み、条件が悪いと戻る。
+    子株の生物量は母株から取る（窒素は移動するだけで増えない）。近くに同種の群があれば出さない。
+    群は 48 までで打ち止め。
+
+  ● サンゴ: 骨格の成長を石灰化から導く
+    以前は size を経験式で増やしていたので、アルカリ度の収支（calcG）と成長が別々の式だった。
+    いまは同じ 1 つの石灰化量から両方を出す。
+      骨格質量 M ∝ 径 D^b     b = 枝状 2.3 / 板状 2.1 / 塊状(LPS) 2.6（推定 C）
+      初期質量 = 2.83 g/cm³（アラゴナイト）× 充填率 × (π/6)D³
+      充填率   = 枝状 0.09 / 板状 0.13 / LPS 0.15（群体は隙間だらけなので低い、推定 C）
+    石灰化速度 calc は「生きた組織の面積あたり」の値なので、投影面積に表面積指数 sai を掛ける。
+    枝状の群体の実表面積は投影面積の 3.5 倍ほど。これを省くと、成長もアルカリ度の消費も
+    同じだけ小さく出る（実際、入れる前は 600cm リーフで 0.2 dKH/日 しか消費しなかった）。
+      検証: 1 年で ミドリイシ 25→36.8 cm、コモン 30→34.4 cm、ナガレハナ 15→16.3 cm、
+            石灰化 7.1 kg/年 = 19 g/日 ≈ 0.7 dKH/日。SPS 主体のリーフの実測レンジに入る。
+
+  ● ソフトコーラルとイソギンチャク: 骨格を持たないので組織量で
+    相対成長率 0.28 %/日 × 種の係数 ×（光合成活性）×（イソギンチャクは捕食した分）。
+    Sarcophyton の断片養殖の報告は 0.3–0.9 %/日。水槽は餌も流れも海より弱いので下寄りを採った（C）。
+    調子が悪いと組織を吸収して縮む。イソギンチャクがしぼむのはこれ。
+
+  ● イソギンチャクは歩く
+    光が合わない状態が続くと 8 時間ごとに少しずつ移動する。暗ければ浅い方へ、明るすぎれば深い方へ。
+    落ち着いていれば居着く（settle）。検証: PAR 45 の暗い照明で底に置くと、18 日で水面直下まで登った。
+    十分に大きく（径 13 cm 超）、健康で、餌を取れている状態が 45 日続くと分裂する（足盤裂片・二分裂）。
+    分裂後の径は 2^(-1/3) 倍。サンゴの窒素は M.coralN に集約されているので、個体を分けても台帳は動かない。
+
+  ● 検証
+    5 槽 × 120 日で窒素の相対残差 1e-9 未満、水量残差 1e-9 L 未満、NaN なし。
+    60cm 水草を 1 年回して相対残差 -3.2e-10（同条件の v0.8.3 は -3.0e-10 なので、この変更由来の増分はない）。
+============================================================================ -->
+
+<!-- ============================================================================
+  魚の口と、ヌマエビの造形（v0.8.5）
+
+  ● 魚の口を実体のある構造にした
+    これまで口は断片シェーダで色を暗くした線でしかなく、開閉もしていなかった。
+    いまは頂点シェーダで顎を動かす。uMouth =（口裂の高さ, 顎関節 u, 最大開口角, 上顎の突出）。
+      1. 下顎が顎関節（方形骨-関節骨）まわりに下制する
+      2. 上顎（前上顎骨）が前へ突出する
+      3. 同時に口腔が横へ張る（舌骨の下制）
+      4. わずかに遅れて鰓蓋が張り出す（口から入った水は鰓から抜ける）
+    口の縁は内側へ引き込まれて口腔の壁になり、そこは暗い赤で塗る。
+    口を割るには吻端から関節まで輪が数枚では足りないので、頭部のメッシュ分割を 2 倍にした
+    （u を前寄りに詰め、u = 0–0.30 に 20 枚）。
+
+    種ごとの値（口裂の高さは断面パラメータ、背 +1 / 腹 −1）:
+      オスカー 43° / ピラニア 34° / 小型カラシン 31° / クマノミ 34°
+      ハギ類 23°（吻が下向きで口が小さい）/ スズメダイ 40°（プランクトン食で突出が大きい）
+
+  ● 摂餌の動きを吸引摂餌の運動学に寄せた
+    以前は「届いたら粒が消える」だった。いまはひと吸いを時間に並べる:
+      口が開き始める → 口腔が広がって前の水ごと吸い込む → 開口のピークで口に入る → 閉じる
+      →（体長 6 cm 超は口内で 1–3 回処理する）
+    吸い込み流は口径のあたりで最大、そこから距離の 3 乗で落とす。吸引摂餌が至近距離でしか
+    効かない理由がそのまま挙動に出て、粒は口へ吸い寄せられてから消える。空振りもする。
+    検証: 38 回のストライクのうち 24 回成功（63%）。
+
+    開口のピークまでの時間は実測で小型魚 15–25 ms、大型 40–60 ms。そのままだと 60 fps で
+    1–2 コマにしかならず何が起きたか見えないので、下限を 35 ms に置いて少し伸ばしてある（C）。
+      tOpen = max(35 ms, 11 ms × √体長[cm])、閉じるのはその 1.6 倍
+
+  ● 実装中に踏んだもの
+    断面は t≥0 で dorsal×t、t<0 で (−ventral)×t なので、顎関節の y は口裂の高さ line から
+    引かなければならない。背側の輪郭から計算していたため、上顎が跳ね上がっていた。
+    さらに +x が尾側なので、下顎の下制は回転角 +ang。符号も逆にしていた。
+
+  ● ヌマエビの造形を作り直した
+    以前の形の問題:
+      ・断面がほぼ真円で、左右から押しつぶされたカリデア類の体型になっていない
+      ・側板（pleura）が無く、節がただの輪切りの筒に見える
+      ・額角が「先を細めた円錐」で、薄い刃になっていない
+      ・尾部が三角形 1 枚だけ（尾節も尾肢もない）
+      ・眼が体表に埋まった球で、眼柄がない
+      ・節の端が開いたままで、曲げると中が見える
+    直したこと:
+      ・断面を上下で別の式に。背側は丸いアーチ、腹側は側板が下へ垂れ、下縁近くまで幅を保って
+        板として薄く終わる（真円だと「筒」に見える原因はここだった）
+      ・側板の垂れは第 2 腹節が最大。A2 の側板が A1・A3 を前後から覆うのがコエビ下目の定義形質
+      ・頭胸部を 10 ステーションで作り直し。額角は薄い刃で中心を眼の高さまで持ち上げ、
+        背甲は鰓域（u ≈ 0.26）で最大、後縁でわずかに絞る
+      ・尾扇: 尾節の板＋尾肢（外肢・内肢）2 対。上から見ると扇になる（横から見ると薄いのは
+        尾扇が背腹に扁平だから。これは実物どおり）
+      ・眼柄＋角膜、触角鱗片（scaphocerite）を追加
+      ・各節の前後端をふさいだ
+============================================================================ -->
+
+<!-- ============================================================================
+  自由カメラ / フライモード（v0.8.6）
+
+  ● できること
+    前後左右上下と向きを自分で動かす。水槽の中にも入れる（ガラスは素通りする。
+    当たり判定は入れていない。見たいところへ行くのが目的なので）。
+    ギャラリーの自動カメラと排他。給餌の「構える」ともドラッグの意味が衝突するので排他。
+
+  ● 操作
+    キーボード  W/S 前後・A/D 左右・Space/E/R 上・Q/F/C 下・Shift 加速(×3.2)・Ctrl 減速(×0.28)
+                +/− で基準速度、ホイールでも速度
+    マウス      ドラッグで視線。「マウス固定」でポインタロック（本来のフライ操作）
+    タッチ      画面の左半分＝移動スティック（半径 70 px）、右半分＝視線、右下のボタンで上下
+    Esc         終了（ギャラリー中は、まず自由カメラを抜けてからギャラリーを抜ける）
+
+  ● 運動
+    入力から「行きたい速度」を作り、時定数 0.12 秒で実際の速度を寄せる。いきなり最高速に
+    ならず、離しても滑って止まる。基準速度は水槽幅の 0.35 倍/秒（14–220 cm/s にクランプ）。
+    出入りは今のカメラの位置と向きをそのまま引き継ぐので、画が飛ばない。抜けるときは
+    見ていた先へオービットの注視点を寄せてから戻す。
+
+  ● 水中に入ったときの減衰を直した
+    水中の光路長 dIn は「カメラは水槽の外にいる」前提の近似だった:
+      dIn = max(0, D/2 + dot(断片 − 水槽中心, 視線方向))
+    自由カメラで水に潜るとこの式は光路長を大きく見積もりすぎ、画面全体が水色に潰れる。
+    カメラが水の中にいるときは、光路長はカメラから断片までの距離そのものなので、
+    uCamIn（カメラが水中にあるか 0/1）でそちらへ寄せる。魚・底床の両シェーダに入れた。
+    これは自由カメラのためだけの修正ではなく、もともとの式が水中視点で誤っていたのを直したもの。
+
+  ● 制限
+    動ける範囲は水槽まわりの箱に収める（部屋の外の何もない空間まで出ないため）。
+    水面をまたいでも屈折や水滴は出ない。カメラは常に水中にいるものとして扱う。
+============================================================================ -->
+
+<!-- ============================================================================
+  底床の地形と、石・流木の造形（v0.8.7）
+
+  ● 底床が透けていた
+    盛り上がりは PlaneGeometry 1 枚（片面の板）で、その下に一定厚の箱が別にあった。
+    ・板には側面が無いので、横や手前から見ると裏側が見えて中が透ける
+    ・板の高さと箱の高さが合っておらず、前縁では箱の平らな上面が板の下から露出する
+    いまは高さ場 h(x,z) から「上面＋側面のスカート＋底面」を持つ閉じた立体を作り、
+    箱そのものを置き換えた。板は描かない。
+
+  ● 地形
+    高さ場は 1 箇所（AQ.terrain）で定義し、描画と水草の植え込み高さで共有する。重ねているもの:
+      ・前を薄く奥を厚くする基本傾斜（ADA の作例は前 3–4 cm・後 8–10 cm）
+      ・低周波のうねり 2 オクターブ（値ノイズ）。平らな砂漠にしないため
+      ・手前中央の窪み。奥行きを錯覚させる前景の「道」
+      ・石や流木の背後に盛る土。実際に石を組んでから後ろへ土を寄せるので、そう見せる
+      ・ガラス際は薄くする
+    一番厚いところでも水深の 40% までに抑える（盛りすぎると「土に埋まった箱」に見える）。
+    検証: 30cm キューブ 0.9–8.3 cm（水深比 37%）、60cm 1.3–10.6 cm（40%）、90cm 1.1–7.2 cm（20%）。
+
+    実装で踏んだもの: 側面を作るとき上面の頂点を使い回すと、computeVertexNormals が
+    水平面と垂直面の法線を平均してしまう。底床シェーダは法線の y で焦線（caustics）の強さを
+    決めているので、垂直な前面にまで水面の光の模様が乗る。縁の頂点は複製する。
+
+  ● 石
+    正二十面体を正弦波で膨らませただけだったので「芋」に見えていた。青龍石の見え方に寄せて、
+    ほぼ水平の層理（y を段に量子化）、層の境の切れ込み、方位角に走る縦の割れ、
+    3 オクターブの fbm を重ねた。層に沿って淡い脈を頂点色で入れている。
+    分割は 4（5120 面）。段と切れ込みを強くすると宝石の切子のようになるので控えめにした。
+
+  ● 流木
+    7 角柱の連結だったため稜線がはっきり見えていた。円周 14 分割・長さ 5 分割の筒にして、
+    樹皮のうねり（縦に伸びた繊維状の凹凸 2 スケール）を頂点で乗せ、溝を暗くする頂点色を付けた。
+    滑らかシェーディング。
+
+  ● 石と流木は地形の高さに沿って埋める
+    平らな面を前提に置いていたため、盛り土の斜面から浮くことがあった。
+============================================================================ -->
+
+<!-- ============================================================================
+  地形との当たり判定（v0.8.8）
+
+  v0.8.7 で底床を高さ場から作った立体にしたが、生体の側は「底 = ガラス上面 + 底床厚」という
+  平らな面を前提のままだった。そのため:
+    ・エビが盛り土の斜面から浮く（前縁では 5 cm 近く浮いていた）／奥の盛り上がりでは埋まる
+    ・魚が盛り土をすり抜ける
+    ・沈んだ餌の粒が地形の上ではなく宙に止まる
+
+  ● 高さ場を毎フレーム引ける形にした
+    AQ.terrain の h(x,z) はノイズと盛り土のループを毎回まわすので、1 フレームに数千回は呼べない。
+    レイアウトごとに 1 度だけ 64×48 の格子へ焼き、双一次補間で読む（AQ.groundY）。
+    キャッシュはレイアウトに貼り付けてあるので、機材や水位が変わって layout が作り直されれば捨てられる。
+    地面の法線（AQ.groundN）は中心差分から出す。
+
+  ● エビ
+    底面に貼り付くときの y をその場の地面に合わせ、up ベクトルを地面の法線にした。
+    斜面では体が斜面に沿って傾く。ガラスや流木に貼り付いている個体も、
+    最後のクランプの下限を地面にしてあるので土に埋まらない。
+
+  ● 魚
+    ・衝突: 脊椎の点ごとにその場の地面を引いて押し戻す（従来は平らな面 1 枚だった）
+    ・遊泳層: 「平らな底からの割合」ではなく「その場の地面からの割合」。盛り土の上では
+      底層魚もそのぶん持ち上がる
+    ・回避: 前方 0.8 体長先の地面も見て、ぶつかってから押し戻されるのではなく手前で避ける
+    ・死んだ個体も地面に積もる
+
+  ● 餌の粒
+    着底の高さを地形にした。
+
+  ● 検証（60cm 水草・80 秒ぶんの魚時間）
+    エビの地面からの高さ: 底面 0.24 cm、石の上 0.20、水草 0.20–8.77、流木 1.75–7.43、ガラス 2.31–9.09。
+    いずれも貼り付いている面として妥当な範囲で、宙に浮いている個体はいない。
+    魚の脊椎点が地面に食い込んだ量: 最大 0 cm、食い込んだ点 0 個。
 ============================================================================ -->
 </head>
 <body>
@@ -333,12 +561,12 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   //  par: 必要光量 μmol/m²/s の目安 [下限, 最適], calc: 健康時の石灰化 g CaCO3/日/cm²（足場面積あたり）, grow: cm/月（直径）
   //  文献: SPS の石灰化 ≈ 2–10 mg CaCO3/cm²/日（Acropora, Anthony 2008 等）、LPS はその 1/3、ソフトコーラルはほぼ 0
   DB.CORALS = {
-    acropora: { id: 'acropora', name: 'ミドリイシ（SPS・枝状）', sci: 'Acropora sp.', kind: 'sps', par: [200, 400], calc: 0.006, grow: 1.0, no3Max: 10, po4Max: 0.08, Tbleach: 30, alk: [7, 11], conf: 'B/C' },
-    montipora: { id: 'montipora', name: 'コモンサンゴ（SPS・板状）', sci: 'Montipora capricornis', kind: 'sps', par: [150, 350], calc: 0.005, grow: 1.2, no3Max: 15, po4Max: 0.1, Tbleach: 30, alk: [7, 11], conf: 'B/C' },
-    euphyllia: { id: 'euphyllia', name: 'ナガレハナサンゴ（LPS）', sci: 'Euphyllia ancora', kind: 'lps', par: [80, 200], calc: 0.002, grow: 0.5, no3Max: 25, po4Max: 0.15, Tbleach: 30.5, alk: [7, 11], conf: 'C' },
-    sarcophyton: { id: 'sarcophyton', name: 'ウミキノコ（ソフト）', sci: 'Sarcophyton sp.', kind: 'soft', par: [60, 200], calc: 0.0, grow: 1.5, no3Max: 40, po4Max: 0.3, Tbleach: 31, alk: [6, 12], conf: 'C' },
-    clavularia: { id: 'clavularia', name: 'スターポリプ（ソフト・マット）', sci: 'Briareum / Clavularia', kind: 'soft', par: [50, 200], calc: 0.0, grow: 2.0, no3Max: 40, po4Max: 0.3, Tbleach: 31, alk: [6, 12], conf: 'C' },
-    anemone: { id: 'anemone', name: 'センジュイソギンチャク', sci: 'Heteractis crispa', kind: 'anemone', par: [100, 300], calc: 0.0, grow: 1.0, no3Max: 20, po4Max: 0.15, Tbleach: 30, alk: [6, 12], host: ['clown'], conf: 'C' }
+    acropora: { id: 'acropora', sai: 3.5, sizeMax: 45, name: 'ミドリイシ（SPS・枝状）', sci: 'Acropora sp.', kind: 'sps', par: [200, 400], calc: 0.006, grow: 1.0, no3Max: 10, po4Max: 0.08, Tbleach: 30, alk: [7, 11], conf: 'B/C' },
+    montipora: { id: 'montipora', sai: 1.7, sizeMax: 60, name: 'コモンサンゴ（SPS・板状）', sci: 'Montipora capricornis', kind: 'sps', par: [150, 350], calc: 0.005, grow: 1.2, no3Max: 15, po4Max: 0.1, Tbleach: 30, alk: [7, 11], conf: 'B/C' },
+    euphyllia: { id: 'euphyllia', sai: 1.5, sizeMax: 35, name: 'ナガレハナサンゴ（LPS）', sci: 'Euphyllia ancora', kind: 'lps', par: [80, 200], calc: 0.002, grow: 0.5, no3Max: 25, po4Max: 0.15, Tbleach: 30.5, alk: [7, 11], conf: 'C' },
+    sarcophyton: { id: 'sarcophyton', sai: 1.8, sizeMax: 40, name: 'ウミキノコ（ソフト）', sci: 'Sarcophyton sp.', kind: 'soft', par: [60, 200], calc: 0.0, grow: 1.5, no3Max: 40, po4Max: 0.3, Tbleach: 31, alk: [6, 12], conf: 'C' },
+    clavularia: { id: 'clavularia', sai: 1.2, sizeMax: 60, name: 'スターポリプ（ソフト・マット）', sci: 'Briareum / Clavularia', kind: 'soft', par: [50, 200], calc: 0.0, grow: 2.0, no3Max: 40, po4Max: 0.3, Tbleach: 31, alk: [6, 12], conf: 'C' },
+    anemone: { id: 'anemone', sai: 1.0, sizeMax: 45, name: 'センジュイソギンチャク', sci: 'Heteractis crispa', kind: 'anemone', par: [100, 300], calc: 0.0, grow: 1.0, no3Max: 20, po4Max: 0.15, Tbleach: 30, alk: [6, 12], host: ['clown'], conf: 'C' }
   };
   DB.LIVEROCK = { ssaEff: 0.35, denit: 12, conf: 'C', note: 'ライブロック 1 kg あたり実効硝化面 0.35 m²（外面＋孔隙）、脱窒 12 mg N/日（NO3 10 mg/L・易分解 DOC 十分のとき）。キュアリング済みは硝化菌を持ち込む' };
   // ---------- プロテインスキマー（海水） ----------
@@ -1543,10 +1771,36 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         if (c.health < 0.1) { c.deadT = (c.deadT || 0) + dt; if (c.deadT > 20 * DAY) { c.alive = false; this.ev(`${cs.name} が死亡（${Object.entries(st).sort((a, b) => b[1] - a[1])[0][0]}）`, 'death'); } } else c.deadT = 0;
         const fL = clamp((pa - cs.par[0] * 0.3) / (cs.par[0] * 0.7), 0, 1); const act = c.health * fL; // 光合成活性
         const foot = Math.PI * Math.pow(c.size / 2, 2); // cm²
-        calcG += cs.calc * foot * act * clamp((om.omega - 1) / 2.5, 0, 1) / DAY * dt; // g CaCO3
+        // 石灰化量は下の成長（骨格質量）と同じ 1 つの値を使う。dCalc は下で定義する
         const po4m = M.PO4 / V; const upt = 0.25 * foot * act / DAY * po4m / (0.02 + po4m); const tanShare = Math.min(1, e.cTAN / 0.05); coralTAN += upt * tanShare; coralNO3 += upt * (1 - tanShare) * e.cNO3 / (0.5 + e.cNO3); // mg N/s: NH4 優先、次に NO3（Monod）
-        c.size += cs.grow / 30 * act / DAY * dt * (c.size < 40 ? 1 : 0.3);
-        if (cs.kind === 'anemone' && c.gutN > 0) { const k = 0.5 / DAY * dt; c.gutN -= c.gutN * k; } }
+        // ---- 成長
+        //  石灰化する種（SPS/LPS）は「骨格の質量」から径を出す。石灰化速度は上の calcG と同じ量なので、
+        //  アルカリ度・Ca の収支と成長が同じ 1 本の式から出る（別々の経験式にしない）。
+        //  骨格質量と径の関係 M ∝ D^b は群体の形で変わる: 枝状 2.3 / 板状 2.1 / 塊状（LPS）2.6（推定 C）
+        const dCalc = cs.calc * foot * (cs.sai || 1) * act * clamp((om.omega - 1) / 2.5, 0, 1) / DAY * dt; // g CaCO3
+        calcG += dCalc;
+        const sizeMax = Math.min(cs.sizeMax || 45, this.inner.W * 0.38);
+        if (cs.calc > 0) {
+          if (c.skel == null) { c.size0 = c.size; c.skel0 = this.skelMass(cs, c.size); c.skel = c.skel0; }
+          c.skel += dCalc;
+          const b = cs.kind === 'lps' ? 2.6 : (c.type === 'montipora' ? 2.1 : 2.3);
+          c.size = Math.min(sizeMax, c.size0 * Math.pow(c.skel / Math.max(1e-6, c.skel0), 1 / b));
+        } else {
+          // 軟体（ソフト・イソギンチャク）は骨格を持たない。組織そのものが増減する。
+          //  伸びる: 光合成の活性ぶん。イソギンチャクは捕食したぶんも上乗せ
+          //  縮む : 調子が悪いと組織を吸収して小さくなる（イソギンチャクがしぼむのはこれ）
+          if (c.tis == null) { c.size0 = c.size; c.tis = 1; }
+          const fed = cs.kind === 'anemone' ? Math.min(0.6, (c.gutN || 0) / 3) : 0;
+          const up = cs.grow * 0.0028 * (0.2 + 0.8 * act) * (1 + fed);      // 組織の相対成長率 /日（C）\n          //  Sarcophyton 断片の養殖報告は 0.3–0.9 %/日。水槽は餌も流れも海より弱いので下寄りを採った
+          const dn = 0.035 * Math.max(0, 0.55 - c.health);
+          c.tis *= Math.exp((up - dn) / DAY * dt);
+          c.tis = clamp(c.tis, 0.12, 40);
+          c.size = clamp(c.size0 * Math.pow(c.tis, 1 / 3), 1.5, sizeMax);
+        }
+        if (cs.kind === 'anemone') {
+          if (c.gutN > 0) { const k = 0.5 / DAY * dt; c.gutN -= c.gutN * k; }
+          this.anemoneMove(c, cs, pa, yTop, dt);
+        } }
       // 石灰化: 1 g CaCO3 = 20 meq Alk + 400.8 mg Ca
       if (calcG > 0) { M.alk -= calcG * 20; M.Ca -= calcG * 400.8; this.ledger.calcG += calcG; }
       // ドージング（KH/Ca を設定値へ、最大速度以内）
@@ -1605,6 +1859,71 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     trimAll(frac = 0.35) { let c = 0; for (const g of this.plants) if (g.alive && (g.sp.form === 'stem' || g.sp.form === 'carpet' || g.sp.form === 'moss')) c += this.trimPlant(g, frac); return c; }
     removePlant(g) { if (!g || !g.alive) return; const n = g.B * g.sp.tissueN * 1000; this.M.plantN -= n; this.ledger.removedN += n; g.alive = false; g.B = 0; this.ev(`${g.sp.name} を撤去`, 'event'); }
     // 水草: 光合成（Videler ではなく Nielsen & Sand-Jensen 型の飽和式）→ 成長 → 養分要求
+    // ---- ランナー（匍匐枝）で子株を出す種と、条件が良いときの発生間隔（日）。文献ではなく実感に合わせた推定 C
+    //  有茎草は脇芽が株元に出るだけなので対象外（被覆 cov の増加として既に表れている）
+    runnerDays(sp) {
+      const D2 = { hairgrass: 7, hc: 9, montecarlo: 10, sagittaria: 10, vallisneria: 12, crypt: 26, echinodorus: 42 };
+      return D2[sp.id] || 0;
+    }
+    // 群 g からランナーで子株を1つ出す。生物量は母株から取るので、窒素は移動するだけで増えない
+    emitRunner(g) {
+      const sp = g.sp, iW = this.inner.W, iD = this.inner.D;
+      if (this.plants.filter(p => p.alive).length >= 48) return null;      // 群が増えすぎないように
+      const take = Math.min(g.B * 0.10, sp.gPerUnit * 0.6);
+      if (take <= 0 || g.B - take < g.n * sp.gPerUnit * 0.35) return null; // 母株が痩せるなら出さない
+      const r = this.rng, a = r() * Math.PI * 2, d = sp.spread * (0.9 + 0.8 * r());
+      const x = clamp((g.x || 0) + Math.cos(a) * d, -iW / 2 + 3, iW / 2 - 3);
+      const z = clamp((g.z || 0) + Math.sin(a) * d, -iD / 2 + 3, iD / 2 - 3);
+      // すでに同じ種の群が近くにあるなら出さない（同じ場所で二重に生えるのを防ぐ）
+      for (const q of this.plants) if (q.alive && q !== g && q.type === g.type && Math.hypot((q.x || 0) - x, (q.z || 0) - z) < sp.spread * 0.7) return null;
+      g.B -= take;
+      const c = { id: (this.plantSeq = (this.plantSeq || 0) + 1), type: g.type, sp, n: 1, B: take,
+        health: Math.min(0.9, g.health), age: 0, alive: true, seed: r(), x, z, base: g.base || 0, attach: 'sub',
+        h: Math.max(1, sp.hMax * 0.18), cov: sp.spread * sp.spread * 0.4, parDay: g.parDay,
+        melt: 0, meltT: 0, algae: 0, par: 0, lim: 'ok', trimmed: 0, fromRunner: true,
+        // plantAfter は plantStep が置く want/needN/rootShare/loss を読む。子株はループの途中で生まれるので
+        // このステップの plantStep を通っていない。未定義のまま渡すと B が NaN になる
+        want: 0, needN: 0, rootShare: 0, loss: 0, runT: 0 };
+      this.plants.push(c);
+      this.ev(`${sp.name} がランナーで子株を出した`, 'event');
+      return c;
+    }
+    // 群体の骨格質量の目安 (g CaCO3)。アラゴナイトの密度 2.83 g/cm³ に、群体としての充填率をかける。
+    //  枝状の群体は隙間だらけなので充填率が低い（枝状 0.09 / 板状 0.13 / 塊状 0.30、推定 C）
+    skelMass(cs, size) {
+      const fill = cs.kind === 'lps' ? 0.15 : (cs.id === 'montipora' ? 0.13 : 0.09);
+      return 2.83 * fill * (Math.PI / 6) * Math.pow(Math.max(1, size), 3);
+    }
+    // イソギンチャクは足盤で歩く。光が合わないと数日かけて場所を変え、十分に太ると分裂する。
+    anemoneMove(c, cs, pa, yTop, dt) {
+      const st = c.stress, iW = this.inner.W, iD = this.inner.D, r = this.rng;
+      const bed = this.tank.glass + (this.substrate.depth || 0);
+      // 光が合わない状態が続いたときだけ動く。落ち着いていれば居着く
+      const bad = (st.light || 0) + Math.max(0, (st.T || 0) * 0.3);
+      c.settle = (c.settle || 0) + (bad > 0.10 ? -dt : dt);
+      c.settle = clamp(c.settle, -6 * DAY, 3 * DAY);
+      if (c.settle < -12 * HOUR && this.t - (c.moveT || 0) > 8 * HOUR) {
+        c.moveT = this.t;
+        const want = (cs.par[0] + cs.par[1]) / 2;
+        const up = pa < want ? 1 : -1;                       // 暗ければ浅い方へ、明るすぎれば深い方へ
+        const y0 = c.y || bed + 10, x0 = c.x || 0, z0 = c.z || 0;
+        c.y = clamp(y0 + up * (1.2 + 2.2 * r()), bed + 2, yTop - 6);
+        c.x = clamp(x0 + (r() - 0.5) * 7, -iW / 2 + 4, iW / 2 - 4);
+        c.z = clamp(z0 + (r() - 0.5) * 7, -iD / 2 + 4, iD / 2 - 4);
+        // 端まで来て動けないなら「移動した」とは数えない。登り切った先で毎回ログを出さないため
+        if (Math.hypot(c.y - y0, c.x - x0, c.z - z0) < 0.6) return;
+        c.moved = (c.moved || 0) + 1;
+        if (c.moved === 1 || c.moved % 24 === 0) this.ev(`${cs.name} が移動している（光が合っていない）`, 'warn');
+      }
+      // 分裂（足盤裂片・二分裂）。調子が良く、餌を取れていて、十分な大きさのときだけ
+      c.fedDays = (c.fedDays || 0) + ((c.gutN || 0) > 0.2 ? dt / DAY : 0);
+      if (c.health > 0.80 && c.size > 13 && c.fedDays > 45 && this.corals.length < 24 && r() < dt / (25 * DAY)) {
+        const k = Math.pow(0.5, 1 / 3);
+        c.size *= k; if (c.tis != null) c.tis *= 0.5; c.fedDays = 0; c.size0 = c.size0 * k;
+        const d = this.addCoral(c.type, c.size, { x: clamp(c.x + (r() - 0.5) * 10, -iW / 2 + 4, iW / 2 - 4), z: c.z, y: c.y, health: c.health * 0.9 });
+        if (d) { d.tis = c.tis; d.size0 = c.size0; d.fedDays = 0; this.ev(`${cs.name} が分裂した`, 'event'); }
+      }
+    }
     plantStep(dt, e) {
       const M = this.M, V = this.V, T = this.T; const alive = this.plants.filter(p => p.alive);
       const out = { o2: 0, co2: 0, tan: 0, no2: 0, no3: 0, dsN: 0, melt: 0, meltC: 0, k: 0, fe: 0, po4: 0, groups: [] };
@@ -1655,6 +1974,14 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         // 生物量の上限（1 株あたり gMax の 1.6 倍で頭打ち＝密度で自己制限）
         if (dB > 0 && frac > 1.5) dB *= Math.max(0, (1.6 - frac) / 0.1);
         g.want = Math.max(0, dB);
+        // --- ランナー: 元気で、株が充実しているときだけ進む。暗い・栄養が足りない・調子が悪いと止まる
+        const rd = this.runnerDays(sp);
+        if (rd > 0) {
+          const ok = g.health > 0.55 && frac > 0.85 && g.algae < 0.4 && on;
+          g.runT = (g.runT || 0) + (ok ? dt * g.health * Math.min(1, fL * fNut / 0.35) : -dt * 0.15);
+          if (g.runT < 0) g.runT = 0;
+          if (g.runT > rd * DAY) { g.runT = 0; this.emitRunner(g); }
+        }
         // --- メルト（移植ショック）と老化・枯死
         let loss = 0;
         if (g.melt > 0.01) { const k = g.melt * 0.10 * Math.exp(-g.age / (8 * DAY)); loss += g.B * k / DAY * dt; g.melt *= Math.exp(-dt / (12 * DAY)); }
@@ -2302,6 +2629,124 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     return cacheVal;
   };
   function segLen(path, k) { const a = path[k].p, b = path[k + 1].p; return Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); }
+
+  // ---------- 底床の地形 ----------
+  //  高さ場 h(x,z) を 1 箇所で定義し、描画（立体）と水草の植え込み高さで共有する。
+  //  実際の水景の作法に寄せて、次を重ねている:
+  //    ・前を薄く奥を厚くする基本傾斜（ADA の作例は前 3–4cm・後 8–10cm）
+  //    ・低周波のうねり 2 オクターブ。平らな砂漠にしないため
+  //    ・手前中央の窪み。奥行きを錯覚させる常套手段（前景の「道」）
+  //    ・石や流木の背後に土を盛る。実際に組んだあと後ろへ土を寄せるので、そう見せる
+  // 底床上面のワールド y。地形が無い水槽（ベアタンク）では従来どおり平らな面を返す
+  AQ.groundY = function (s, x, z) {
+    const L = AQ.layoutCached ? AQ.layoutCached(s) : null; if (!L) return s.tank.glass + (s.inner.subDepth || 0);
+    let T = L.__terr; if (T === undefined) T = L.__terr = AQ.terrain(s, L);
+    return T ? T.gl + T.hf(x, z) : s.tank.glass + (s.inner.subDepth || 0);
+  };
+  AQ.groundN = function (s, x, z) {
+    const L = AQ.layoutCached ? AQ.layoutCached(s) : null; if (!L) return { x: 0, y: 1, z: 0 };
+    let T = L.__terr; if (T === undefined) T = L.__terr = AQ.terrain(s, L);
+    return T ? T.nrm(x, z) : { x: 0, y: 1, z: 0 };
+  };
+  AQ.terrain = function (s, L) {
+    const depth = s.substrate.depth || 0;
+    if (!depth) return null;
+    const iW = s.inner.W, iD = s.inner.D, gl = s.tank.glass;
+    const sl = L && L.subSlope ? L.subSlope : { front: depth * 0.55, back: depth * 1.75 };
+    const seed = ((s.seed || 1) * 7919) | 0;
+    const hash = (i, j) => { let n = (i * 374761393 + j * 668265263 + seed) | 0; n = (n ^ (n >> 13)) * 1274126177; return ((n ^ (n >> 16)) >>> 0) / 4294967296; };
+    const vnoise = (x, z) => {                       // 値ノイズ（双三次の代わりに smoothstep 補間）
+      const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi;
+      const u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+      const a = hash(xi, zi), b = hash(xi + 1, zi), c = hash(xi, zi + 1), d = hash(xi + 1, zi + 1);
+      return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+    };
+    // 石・流木の背後に盛る山（前後方向に非対称にして「後ろへ寄せた」形にする）
+    const mounds = [];
+    for (const st of (L && L.stones) || []) mounds.push({ x: st.x, z: st.z, r: Math.max(st.rx, st.rz) * 2.2, a: Math.min(depth * 0.40, st.ry * 0.38) });
+    for (const br of (L && L.wood) || []) if (br.r0 > 1.2) mounds.push({ x: br.x0, z: br.z0, r: br.r0 * 4.5, a: depth * 0.24 });
+
+    const clamp2 = (v, a, b) => Math.max(a, Math.min(b, v));
+    const h = (x, z) => {
+      const t = clamp2((z + iD / 2) / iD, 0, 1);                 // 0 = 奥, 1 = 手前
+      let y = sl.back + (sl.front - sl.back) * Math.pow(t, 0.72);  // 基本傾斜
+      y += (vnoise(x * 0.055 + 11, z * 0.055 + 7) - 0.5) * depth * 0.34;   // うねり（粗）
+      y += (vnoise(x * 0.16 + 31, z * 0.16 + 3) - 0.5) * depth * 0.16;     // うねり（細）
+      // 手前中央の窪み（前景の道）
+      const dv = Math.exp(-Math.pow(x / (iW * 0.16), 2)) * Math.exp(-Math.pow((t - 0.92) / 0.30, 2));
+      y -= dv * depth * 0.42;
+      for (const m of mounds) {                                   // 背後の盛り土
+        const dx = (x - m.x) / m.r, dz = (z - m.z) / m.r;
+        const back = clamp2(0.55 - dz * 1.6, 0, 1.35);            // 石の奥側ほど高く
+        y += m.a * Math.exp(-(dx * dx + dz * dz) * 1.4) * back;
+      }
+      // ガラス際は少し落とす（実際、前面のガラスに向かって土は薄くなる）
+      const edge = Math.min(1, (iW / 2 - Math.abs(x)) / 3) * Math.min(1, (iD / 2 - Math.abs(z)) / 3);
+      y *= 0.72 + 0.28 * clamp2(edge, 0, 1);
+      // 一番厚いところでも水深の 4 割まで。盛りすぎると水槽が「土に埋まった箱」に見える
+      return clamp2(y, Math.max(0.9, depth * 0.22), Math.min(depth * 2.3, (s.waterH || 30) * 0.40));
+    };
+    // --- 格子へ焼く（魚・エビ・餌が毎フレーム引くため）
+    const GX = 64, GZ = 48, grid = new Float32Array((GX + 1) * (GZ + 1));
+    for (let j = 0; j <= GZ; j++) for (let i = 0; i <= GX; i++)
+      grid[j * (GX + 1) + i] = h(-iW / 2 + iW * i / GX, -iD / 2 + iD * j / GZ);
+    const hf = (x, z) => {                                  // 双一次補間
+      const u = clamp2((x + iW / 2) / iW, 0, 1) * GX, v = clamp2((z + iD / 2) / iD, 0, 1) * GZ;
+      const i0 = Math.min(GX - 1, Math.floor(u)), j0 = Math.min(GZ - 1, Math.floor(v));
+      const fu = u - i0, fv = v - j0, r0 = j0 * (GX + 1) + i0, r1 = r0 + GX + 1;
+      return (grid[r0] * (1 - fu) + grid[r0 + 1] * fu) * (1 - fv) + (grid[r1] * (1 - fu) + grid[r1 + 1] * fu) * fv;
+    };
+    const eps = Math.max(0.6, iW / GX);
+    // 地面の法線（エビが斜面に沿って傾くのに使う）
+    const nrm = (x, z) => { const dx = (hf(x + eps, z) - hf(x - eps, z)) / (2 * eps), dz = (hf(x, z + eps) - hf(x, z - eps)) / (2 * eps);
+      const l = Math.hypot(dx, 1, dz); return { x: -dx / l, y: 1 / l, z: -dz / l }; };
+    return { h, hf, nrm, depth, y0: gl + depth, gl, iW, iD };
+  };
+
+  // 底床の立体（上面の高さ場＋側面のスカート＋底面）。閉じた立体なので、横から見ても中が透けない
+  AQ.substrateSolid = function (THREE, s, L) {
+    const T = AQ.terrain(s, L); if (!T) return null;
+    const NX = Math.max(28, Math.min(72, Math.round(T.iW / 1.6))), NZ = Math.max(22, Math.min(56, Math.round(T.iD / 1.6)));
+    const pos = [], idx = [];
+    const P = (x, y, z) => { pos.push(x, y, z); return pos.length / 3 - 1; };
+    const top = [];
+    for (let j = 0; j <= NZ; j++) {
+      const row = [];
+      for (let i = 0; i <= NX; i++) {
+        const x = -T.iW / 2 + T.iW * i / NX, z = -T.iD / 2 + T.iD * j / NZ;
+        row.push(P(x, T.gl + T.h(x, z), z));
+      }
+      top.push(row);
+    }
+    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+      const a = top[j][i], b = top[j][i + 1], c = top[j + 1][i + 1], d = top[j + 1][i];
+      idx.push(a, c, b, a, d, c);
+    }
+    // 側面: 上面の縁から底（ガラス上面）まで垂らす。
+    //  上面の頂点をそのまま使い回すと computeVertexNormals が水平面と垂直面の法線を平均してしまい、
+    //  側面にも上向き成分が残る。底床シェーダは法線の y で焦線（caustics）の強さを決めているので、
+    //  垂直な前面にまで水面の光の模様が乗ってしまう。縁の頂点は複製する。
+    const skirt = (ring, flip) => {
+      for (let k = 0; k < ring.length - 1; k++) {
+        const a = ring[k], b = ring[k + 1];
+        const ax = pos[a * 3], ay = pos[a * 3 + 1], az = pos[a * 3 + 2];
+        const bx = pos[b * 3], by = pos[b * 3 + 1], bz = pos[b * 3 + 2];
+        const a1 = P(ax, ay, az), b1 = P(bx, by, bz);          // 上端（複製）
+        const a2 = P(ax, T.gl, az), b2 = P(bx, T.gl, bz);      // 下端
+        if (flip) idx.push(a1, b1, b2, a1, b2, a2); else idx.push(a1, b2, b1, a1, a2, b2);
+      }
+    };
+    skirt(top[0].slice(), true);                                  // 奥
+    skirt(top[NZ].slice(), false);                                // 手前
+    skirt(top.map(r => r[0]), false);                             // 左
+    skirt(top.map(r => r[NX]), true);                             // 右
+    { const c0 = P(-T.iW / 2, T.gl, -T.iD / 2), c1 = P(T.iW / 2, T.gl, -T.iD / 2), c2 = P(T.iW / 2, T.gl, T.iD / 2), c3 = P(-T.iW / 2, T.gl, T.iD / 2);
+      idx.push(c0, c1, c2, c0, c2, c3); }                         // 底面
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx); g.computeVertexNormals(); return g;
+  };
+
   AQ.POROSITY = POROSITY; AQ.FILTER_DIMS = DIMS;
 })(globalThis);
 
@@ -2553,6 +2998,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   const PROFILES = {
     // タイガーオスカー: 楕円形の体（体高 ≈ 0.40）、大きな頭と厚い唇、太い尾柄、長い背鰭（後半が丸く高い）、丸い大きな尾鰭
     oscar: {
+      mouth: { line: -0.20, hinge: 0.150, gapeAng: 0.75, protrude: 0.028 },
       dorsal: [0.015, 0.1, 0.165, 0.205, 0.22, 0.22, 0.21, 0.185, 0.147, 0.108, 0.085],
       ventral: [-0.02, -0.11, -0.165, -0.195, -0.21, -0.21, -0.2, -0.175, -0.138, -0.099, -0.076],
       width: [0.02, 0.085, 0.11, 0.118, 0.114, 0.104, 0.09, 0.074, 0.058, 0.046, 0.04],
@@ -2564,6 +3010,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     },
     // ピラニア・ナッテリー: 側扁した深い体（体高 ≈ 0.48）、丸い額と突き出た下顎、短い背鰭と脂鰭、長い臀鰭、二叉の尾鰭
     piranha: {
+      mouth: { line: -0.05, hinge: 0.140, gapeAng: 0.60, protrude: 0.010 },
       dorsal: [0.02, 0.15, 0.215, 0.25, 0.258, 0.248, 0.218, 0.178, 0.123, 0.081, 0.051],
       ventral: [-0.045, -0.145, -0.2, -0.23, -0.238, -0.228, -0.203, -0.168, -0.121, -0.078, -0.051],
       width: [0.02, 0.065, 0.082, 0.088, 0.085, 0.078, 0.067, 0.054, 0.042, 0.033, 0.028],
@@ -2576,6 +3023,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     // ---- 小型カラシン（水草水槽）: 体高比は Hyphessobrycon cantoi 等の記載値（体高 30–34 %SL, 頭長 25–29, 尾柄高 7–10）から（B/C）
     // ネオンテトラ: 細身の紡錘形、脂鰭あり、二叉の尾鰭、大きな眼
     neon: {
+      mouth: { line: -0.25, hinge: 0.085, gapeAng: 0.55, protrude: 0.008 },
       dorsal: [0.02, 0.088, 0.125, 0.135, 0.128, 0.115, 0.098, 0.078, 0.058, 0.042, 0.032],
       ventral: [-0.02, -0.09, -0.132, -0.14, -0.132, -0.118, -0.10, -0.08, -0.058, -0.04, -0.03],
       width: [0.014, 0.048, 0.062, 0.066, 0.063, 0.058, 0.05, 0.041, 0.032, 0.025, 0.021],
@@ -2586,6 +3034,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       pectoral: { u: 0.26, y: -0.045, len: 0.10, w: 0.05 }, pelvic: { u: 0.46, len: 0.075, w: 0.03 }, adipose: { u0: 0.82, u1: 0.88, h: 0.024 }
     },
     cardinal: {
+      mouth: { line: -0.25, hinge: 0.085, gapeAng: 0.55, protrude: 0.008 },
       dorsal: [0.02, 0.09, 0.128, 0.14, 0.132, 0.12, 0.10, 0.08, 0.058, 0.042, 0.032],
       ventral: [-0.02, -0.095, -0.138, -0.148, -0.14, -0.125, -0.105, -0.083, -0.06, -0.042, -0.031],
       width: [0.014, 0.048, 0.062, 0.066, 0.063, 0.058, 0.05, 0.041, 0.032, 0.025, 0.021],
@@ -2597,6 +3046,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     },
     // エンバーテトラ: やや体高のある小型カラシン、全身が橙
     ember: {
+      mouth: { line: -0.22, hinge: 0.082, gapeAng: 0.55, protrude: 0.008 },
       dorsal: [0.02, 0.10, 0.148, 0.16, 0.152, 0.138, 0.118, 0.094, 0.068, 0.048, 0.034],
       ventral: [-0.022, -0.105, -0.152, -0.163, -0.155, -0.14, -0.12, -0.095, -0.068, -0.047, -0.033],
       width: [0.014, 0.05, 0.066, 0.07, 0.067, 0.061, 0.053, 0.043, 0.034, 0.026, 0.022],
@@ -2608,6 +3058,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     },
     // ラミーノーズテトラ: やや体高があり、尾鰭に黒白の横縞、頭部が赤い
     rummynose: {
+      mouth: { line: -0.35, hinge: 0.080, gapeAng: 0.50, protrude: 0.007 },
       dorsal: [0.02, 0.10, 0.145, 0.155, 0.148, 0.134, 0.114, 0.09, 0.065, 0.046, 0.034],
       ventral: [-0.022, -0.104, -0.15, -0.16, -0.152, -0.137, -0.116, -0.092, -0.066, -0.046, -0.033],
       width: [0.014, 0.05, 0.065, 0.07, 0.067, 0.061, 0.053, 0.043, 0.034, 0.027, 0.023],
@@ -2620,6 +3071,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     // ---- 海水魚（体型は FishBase の写真・図版から。単位は体長 1）
     // カクレクマノミ: 卵形で厚みのある体、丸い鰭、連続した背鰭（棘条部と軟条部の間に浅い切れ込み）、丸い尾鰭
     clown: {
+      mouth: { line: -0.20, hinge: 0.115, gapeAng: 0.60, protrude: 0.016 },
       dorsal: [0.02, 0.12, 0.185, 0.225, 0.24, 0.235, 0.215, 0.18, 0.133, 0.09, 0.068], ventral: [-0.03, -0.12, -0.17, -0.195, -0.205, -0.2, -0.185, -0.16, -0.119, -0.081, -0.06],
       width: [0.02, 0.075, 0.098, 0.105, 0.102, 0.095, 0.083, 0.068, 0.053, 0.042, 0.037], round: [2.2, 2.0], eye: { u: 0.14, y: 0.05, r: 0.036 },
       dorsalFin: { u0: 0.28, u1: 0.90, h: [0.06, 0.075, 0.08, 0.07, 0.06, 0.075, 0.095, 0.10, 0.095, 0.08, 0.06], lobe: 0.04, rake: 0.04 },
@@ -2628,6 +3080,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     },
     // ナンヨウハギ: 楕円形で薄い体、尖った吻、長く連続した背鰭・臀鰭、やや湾入した尾鰭、尾柄に棘
     bluetang: {
+      mouth: { line: -0.50, hinge: 0.105, gapeAng: 0.40, protrude: 0.004 },
       dorsal: [0.01, 0.1, 0.165, 0.205, 0.22, 0.22, 0.205, 0.175, 0.128, 0.081, 0.051], ventral: [-0.01, -0.09, -0.15, -0.185, -0.2, -0.2, -0.19, -0.165, -0.123, -0.076, -0.047],
       width: [0.015, 0.052, 0.07, 0.075, 0.073, 0.068, 0.06, 0.05, 0.039, 0.03, 0.025], round: [2.0, 1.8], eye: { u: 0.12, y: 0.06, r: 0.034 },
       dorsalFin: { u0: 0.22, u1: 0.92, h: [0.06, 0.075, 0.085, 0.09, 0.09, 0.09, 0.085, 0.08, 0.07, 0.055, 0.035], lobe: 0.02, rake: 0.03 },
@@ -2636,6 +3089,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     },
     // キイロハギ: 円盤状の高い体、突き出た吻、帆のように高い背鰭と臀鰭、截形の尾鰭
     yellowtang: {
+      mouth: { line: -0.50, hinge: 0.100, gapeAng: 0.40, protrude: 0.004 },
       dorsal: [0.02, 0.13, 0.22, 0.275, 0.3, 0.295, 0.27, 0.225, 0.157, 0.09, 0.051], ventral: [-0.02, -0.11, -0.19, -0.245, -0.27, -0.27, -0.25, -0.21, -0.147, -0.085, -0.047],
       width: [0.015, 0.047, 0.062, 0.066, 0.064, 0.06, 0.053, 0.044, 0.035, 0.028, 0.024], round: [2.0, 1.8], eye: { u: 0.13, y: 0.09, r: 0.032 },
       dorsalFin: { u0: 0.26, u1: 0.90, h: [0.08, 0.13, 0.18, 0.21, 0.22, 0.21, 0.19, 0.16, 0.13, 0.09, 0.05], lobe: 0.02, rake: 0.02 },
@@ -2644,6 +3098,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     },
     // ルリスズメダイ: 小型のスズメダイ型、やや細長い楕円、後方が高い軟条部、浅く二叉の尾鰭
     damsel: {
+      mouth: { line: -0.20, hinge: 0.100, gapeAng: 0.70, protrude: 0.020 },
       dorsal: [0.02, 0.11, 0.165, 0.2, 0.21, 0.205, 0.19, 0.165, 0.123, 0.081, 0.055], ventral: [-0.02, -0.1, -0.15, -0.18, -0.19, -0.185, -0.17, -0.145, -0.109, -0.072, -0.051],
       width: [0.015, 0.058, 0.075, 0.08, 0.078, 0.072, 0.063, 0.052, 0.041, 0.033, 0.028], round: [2.1, 1.9], eye: { u: 0.13, y: 0.05, r: 0.038 },
       dorsalFin: { u0: 0.28, u1: 0.88, h: [0.05, 0.06, 0.065, 0.065, 0.07, 0.085, 0.10, 0.10, 0.09, 0.07, 0.05], lobe: 0.03, rake: 0.04 },
@@ -2652,6 +3107,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     },
     // デバスズメダイ: 細身、深く二叉の尾鰭、小さな口
     chromis: {
+      mouth: { line: -0.20, hinge: 0.100, gapeAng: 0.70, protrude: 0.022 },
       dorsal: [0.02, 0.1, 0.15, 0.18, 0.19, 0.185, 0.17, 0.145, 0.104, 0.067, 0.043], ventral: [-0.02, -0.09, -0.135, -0.16, -0.17, -0.165, -0.15, -0.13, -0.095, -0.063, -0.038],
       width: [0.015, 0.052, 0.067, 0.072, 0.07, 0.065, 0.057, 0.047, 0.037, 0.029, 0.024], round: [2.0, 1.8], eye: { u: 0.13, y: 0.045, r: 0.036 },
       dorsalFin: { u0: 0.30, u1: 0.86, h: [0.05, 0.06, 0.065, 0.065, 0.065, 0.07, 0.08, 0.08, 0.07, 0.055, 0.04], lobe: 0.02, rake: 0.04 },
@@ -2848,7 +3304,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       const alive = fishes.filter(f => f.alive).map(f => this.get(f));
       const n = Math.max(1, Math.ceil(dtFish / 0.04)), h = dtFish / n;
       for (let k = 0; k < n; k++) { this.time += h; for (const a of alive) { a.contact = false; this.step(a, alive, b, h, env); } this.separate(alive); for (const a of alive) this.collide(a, b); }
-      for (const f of fishes) if (!f.alive) { const a = this.get(f); a.speed = 0; a.amp = 0; a.pec = 0; a.breathHz = 0; a.roll = Math.min(Math.PI, a.roll + dtFish * 0.8); a.p.y = Math.max(b.y0 + 0.2 * f.L, a.p.y - 2 * dtFish); a.th.fill(0); a.kJ.fill(0); AQ.Body.shape(a.body, a.th, a.sh); this.updateSpine(a); }
+      for (const f of fishes) if (!f.alive) { const a = this.get(f); a.speed = 0; a.amp = 0; a.pec = 0; a.breathHz = 0; a.roll = Math.min(Math.PI, a.roll + dtFish * 0.8); a.p.y = Math.max((AQ.groundY ? AQ.groundY(s, a.p.x, a.p.z) : b.y0) + 0.2 * f.L, a.p.y - 2 * dtFish); a.th.fill(0); a.kJ.fill(0); AQ.Body.shape(a.body, a.th, a.sh); this.updateSpine(a); }
       for (const id of Array.from(this.map.keys())) if (!fishes.find(f => f.id === id)) this.map.delete(id);
     }
     // ---- 体（骨格）の状態: 関節角・筋指令の遅延線・節の相対位置（重心基準, 頭蓋座標）・描画サンプル・世界座標の脊椎
@@ -2877,7 +3333,9 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       let dx = 0, dz = 0, dy = 0, minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
       for (let k = 0; k <= n; k++) { const sg = B.segs[Math.min(k, n - 1)]; const w = sg.w * L * mo.width + 0.15, hd = sg.hd * L * mo.depth; const x = S[3 * k], y = S[3 * k + 1], z = S[3 * k + 2];
         if (x - w < minx) minx = x - w; if (x + w > maxx) maxx = x + w; if (z - w < minz) minz = z - w; if (z + w > maxz) maxz = z + w;
-        if (y - hd < b.y0) dy = Math.max(dy, b.y0 - (y - hd)); if (y + hd * 0.9 > b.y1) dy = Math.min(dy, b.y1 - (y + hd * 0.9)); }
+        // 底は平らな面ではなく地形。脊椎の点ごとにその場の地面を引く
+        const gy = AQ.groundY ? AQ.groundY(this.sim, x, z) : b.y0;
+        if (y - hd < gy) dy = Math.max(dy, gy - (y - hd)); if (y + hd * 0.9 > b.y1) dy = Math.min(dy, b.y1 - (y + hd * 0.9)); }
       if (minx < b.x0) dx = b.x0 - minx; else if (maxx > b.x1) dx = b.x1 - maxx; if (minz < b.z0) dz = b.z0 - minz; else if (maxz > b.z1) dz = b.z1 - maxz;
       // 機材の箱: 箱（体幅ぶん膨らませる）の中にある関節点をまとめて、4 方向のうち全点を外に出す最小の移動で押し出す（2 回反復、ガラス優先）
       for (let it = 0; it < 2; it++) {
@@ -2932,8 +3390,11 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         a.target = Math.max(a.target, sp.burstBL * (0.30 + 0.45 * (tr.bold != null ? tr.bold : 0.5)) * Math.pow(tr.appetite || 1, 0.5)); }
       // 望む方向 d（欲求: 遊泳層・徘徊・群れ・摂餌・驚愕）→ 壁・機材のコンテキスト操舵 → 壁からの離脱 → 現ヘディング維持 → 低域通過
       const d = new V3();
-      let targetY = b.y0 + (b.y1 - b.y0) * (a.yPref != null ? a.yPref : sp.layer);
-      if (hypoxic) targetY = b.y1 - 1.5; else if (hiding) targetY = b.y0 + (b.y1 - b.y0) * 0.15; if (feeding) targetY = b.y1 - 2;
+      // 遊泳層は「平らな底からの割合」ではなく「その場の地面からの割合」。
+      // 盛り土の上では底層魚もそのぶん持ち上がる
+      const gy0 = AQ.groundY ? AQ.groundY(this.sim, a.p.x, a.p.z) : b.y0;
+      let targetY = gy0 + (b.y1 - gy0) * (a.yPref != null ? a.yPref : sp.layer);
+      if (hypoxic) targetY = b.y1 - 1.5; else if (hiding) targetY = gy0 + (b.y1 - gy0) * 0.15; if (feeding) targetY = b.y1 - 2;
       // 粒を狙っているあいだは遊泳層の好みより粒の高さが勝つ。
       // これを入れないと、底に落ちた粒の 3 cm 上でホバリングしたまま永遠に届かない
       if (a.foodTgt) { targetY = a.foodTgt.y; d.y += (targetY - a.p.y) / Math.max(L, 5) * 1.6; }
@@ -2994,7 +3455,12 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       const m = clamp(0.5 * L, 2, 12);
       const side = (dist, dir) => { if (dist < m) { d.add(dir, (m - dist) / m * 1.5); a.drift.add(dir, (m - dist) / m); } };
       side(a.p.x - b.x0, new V3(1, 0, 0)); side(b.x1 - a.p.x, new V3(-1, 0, 0)); side(a.p.z - b.z0, new V3(0, 0, 1)); side(b.z1 - a.p.z, new V3(0, 0, -1));
-      const my = clamp(0.3 * L, 1.5, 8); // 底・水面からの余裕（体高の半分＋α） if (a.p.y - b.y0 < my) d.add(new V3(0, 1, 0), (my - (a.p.y - b.y0)) / my * 0.8); if (b.y1 - a.p.y < my) d.add(new V3(0, -1, 0), (my - (b.y1 - a.p.y)) / my * 0.8);
+      const my = clamp(0.3 * L, 1.5, 8); // 底・水面からの余裕（体高の半分＋α）
+      // 前方 0.8 BL 先の地面も見る。斜面を登るときに、ぶつかってから押し戻されるのではなく手前で避ける
+      const ahead = AQ.groundY ? AQ.groundY(this.sim, a.p.x + hx * L * 0.8, a.p.z + hz * L * 0.8) : b.y0;
+      const gnd = Math.max(gy0, ahead);
+      if (a.p.y - gnd < my) d.add(new V3(0, 1, 0), (my - (a.p.y - gnd)) / my * 0.9);
+      if (b.y1 - a.p.y < my) d.add(new V3(0, -1, 0), (my - (b.y1 - a.p.y)) / my * 0.8);
       // 機材（障害物）: 前方 1 BL の点が箱に入るなら箱の中心から離れる
       for (const o of b.obs) { const ax = a.p.x + hx * 0.7 * L, az = a.p.z + hz * 0.7 * L; const pad = clamp(0.25 * L, 2, 6); if (ax > o.x0 - pad && ax < o.x1 + pad && az > o.z0 - pad && az < o.z1 + pad && a.p.y > o.y0 - 2 && a.p.y < o.y1 + 2) { const cx = (o.x0 + o.x1) / 2, cz = (o.z0 + o.z1) / 2; const vx = a.p.x - cx, vz = a.p.z - cz; const l = Math.hypot(vx, vz) + 1e-6; d.add(new V3(vx / l, 0, vz / l), 1.2); } }
       // 現在のヘディングを弱く維持し、望む方向は低域通過（τ≈0.5 s）してふらつきを抑える
@@ -3295,7 +3761,13 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     // 面の上の位置へ吸着（up ベクトルも決める）
     stick(a, b) {
       const s = a.surf; if (!s) { a.up = V3(0, 1, 0); return; }
-      if (s.kind === 'floor') { a.p.y = b.y0 + 0.25; a.up = V3(0, 1, 0); }
+      if (s.kind === 'floor') {
+        // 底床は平らではないので、その場の高さに載せ、法線に合わせて体を傾ける
+        const gy = AQ.groundY ? AQ.groundY(this.sim, a.p.x, a.p.z) : b.y0;
+        a.p.y = gy + 0.25;
+        const n = AQ.groundN ? AQ.groundN(this.sim, a.p.x, a.p.z) : { x: 0, y: 1, z: 0 };
+        a.up = V3(n.x, n.y, n.z);
+      }
       else if (s.kind === 'glass') {
         if (s.z != null) { a.p.z = s.z + s.n.z * 0.35; a.p.y = clamp(a.p.y, b.y0 + 0.3, b.y1 - 0.6); }
         else { a.p.x = s.x + s.n.x * 0.35; a.p.y = clamp(a.p.y, b.y0 + 0.3, b.y1 - 0.6); }
@@ -3310,7 +3782,10 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         a.p.y = clamp(a.p.y, b.y0 + 0.3, b.y0 + (o.h || 5));
         a.up = V3((a.p.x - o.x) / d * 0.5, 0.86, (a.p.z - o.z) / d * 0.5);
       }
-      a.p.x = clamp(a.p.x, b.x0 + 0.4, b.x1 - 0.4); a.p.z = clamp(a.p.z, b.z0 + 0.4, b.z1 - 0.4); a.p.y = clamp(a.p.y, b.y0 + 0.2, b.y1 - 0.4);
+      a.p.x = clamp(a.p.x, b.x0 + 0.4, b.x1 - 0.4); a.p.z = clamp(a.p.z, b.z0 + 0.4, b.z1 - 0.4);
+      // 下限は平らな面ではなく、その場の地面（ガラス面に貼り付いている個体も土に埋まらない）
+      const gy2 = AQ.groundY ? AQ.groundY(this.sim, a.p.x, a.p.z) : b.y0;
+      a.p.y = clamp(a.p.y, gy2 + 0.2, b.y1 - 0.4);
     }
     step(a, b, h, surfs, fishAg) {
       const sh = a.s, sp = sh.sp, TL = (sh.TL || Math.pow(sh.W / sp.lwA, 1 / 3)) / 10; // cm
@@ -3679,7 +4154,9 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         grp.add(inst); parts.push({ m: inst, mat: tMat, kind: 'shader' });
         myAnim = ((dt, t, h, cc) => { const fed = cc.fedT != null && (s.t - cc.fedT) < 600; const sc = 0.35 + 0.65 * h; const e = new THREE.Euler(); for (let k = 0; k < n; k++) { const q = tents[k]; d.position.set(q.x, R * 0.56, q.z); const sway = 0.15 * Math.sin(t * 1.1 + q.ph); const tilt = q.tilt * (fed ? 0.4 : 1) * 0.8 + sway; e.set(0, -q.th, -tilt + 0.1 * Math.cos(t * 0.9 + q.ph * 2), 'YXZ'); d.rotation.copy(e); d.scale.set(sc, sc * (0.92 + 0.08 * Math.sin(t * 0.7 + q.ph)), sc); d.updateMatrix(); inst.setMatrixAt(k, d.matrix); } inst.instanceMatrix.needsUpdate = true; }); }
       // 健康度 → 色（白化）・縮小。1 秒ごとに更新
-      const cRef = c; perSec.push((lightInt) => { const h = cRef.alive ? cRef.health : 0; for (const p of parts) { if (p.kind === 'shader') { p.mat.uniforms.uHealth.value = h; p.mat.uniforms.uLight.value = 0.5 + 0.7 * lightInt; } else if (p.kind === 'phong') { const k = clamp((h - 0.05) / 0.55, 0, 1); p.mat.color.setRGB(0.95 + (p.col[0] - 0.95) * k, 0.94 + (p.col[1] - 0.94) * k, 0.9 + (p.col[2] - 0.9) * k); } } const scl = 0.6 + 0.4 * h; grp.scale.set(scl, scl, scl); if (!cRef.alive) grp.scale.set(0.5, 0.5, 0.5); });
+      // 形状は作った時点の size で焼いてあるので、その後の成長・縮小は倍率で見せる。
+      // 骨格の成長は年単位の話なので、作り直さずに拡大して十分（イソギンチャクの伸縮も同じ経路）
+      const cRef = c, size0 = c.size; perSec.push((lightInt) => { const h = cRef.alive ? cRef.health : 0; for (const p of parts) { if (p.kind === 'shader') { p.mat.uniforms.uHealth.value = h; p.mat.uniforms.uLight.value = 0.5 + 0.7 * lightInt; } else if (p.kind === 'phong') { const k = clamp((h - 0.05) / 0.55, 0, 1); p.mat.color.setRGB(0.95 + (p.col[0] - 0.95) * k, 0.94 + (p.col[1] - 0.94) * k, 0.9 + (p.col[2] - 0.9) * k); } } const gs = clamp(cRef.size / Math.max(0.5, size0), 0.25, 4); const scl = gs * (0.6 + 0.4 * h); grp.scale.set(scl, scl, scl); if (cRef.x != null) grp.position.set(cRef.x, cRef.y, cRef.z); if (!cRef.alive) grp.scale.set(gs * 0.5, gs * 0.5, gs * 0.5); });
       grp.userData.coral = c; grp.userData.anim = myAnim;
     }
     let acc = 1;
@@ -3704,6 +4181,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   attribute float hFrac;   // 根元 0 → 先端 1
   attribute float phase;   // 個体ごとの位相
   uniform float uTime, uSway, uGrow, uBend;
+  uniform vec4 uBox;      // 内寸半幅 / 内寸半奥行 / 底床上面 y / 水面 y（すべてワールド座標）
   varying float vH; varying vec3 vN, vWp; varying vec2 vUv;
   void main(){
     vH = hFrac; vUv = uv;
@@ -3712,7 +4190,21 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     float s = hFrac*hFrac;
     p.x += sin(uTime*1.1 + phase)*uSway*s + uBend*s;
     p.z += cos(uTime*0.83 + phase*1.7)*uSway*0.7*s;
-    vec4 wp = modelMatrix*vec4(p,1.0); vWp = wp.xyz; vN = normalize(mat3(modelMatrix)*normal);
+    vec4 wp = modelMatrix*vec4(p,1.0);
+    // --- 水槽との当たり判定（uBox = 内寸半幅, 内寸半奥行, 底床上面 y, 水面 y）
+    // 水面を超えた分は水平に倒す。水面に届いた有茎草は、そこから先は上へ伸びず水面を這う
+    float ov = wp.y - uBox.w;
+    if (ov > 0.0) {
+      vec2 dr = wp.xz - modelMatrix[3].xz; float dl = length(dr);
+      dr = dl > 0.05 ? dr/dl : vec2(cos(phase), sin(phase));
+      wp.xz += dr * ov * 0.9;
+      wp.y = uBox.w - 0.30 - ov*0.03;
+    }
+    // ガラスの内側へ。葉はガラスに当たってそこで寝る
+    wp.x = clamp(wp.x, -uBox.x, uBox.x);
+    wp.z = clamp(wp.z, -uBox.y, uBox.y);
+    wp.y = max(wp.y, uBox.z - 0.4);
+    vWp = wp.xyz; vN = normalize(mat3(modelMatrix)*normal);
     gl_Position = projectionMatrix*viewMatrix*wp;
   }`;
   const PLANT_FS = `
@@ -3737,6 +4229,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     const tip = new THREE.Color(c[0] * (1 + red * 1.6) + red * 0.25, c[1] * (1 - red * 0.35), c[2] * (1 - red * 0.3));
     return new THREE.ShaderMaterial({ vertexShader: PLANT_VS, fragmentShader: PLANT_FS, side: THREE.DoubleSide, uniforms: {
       uTime: { value: 0 }, uSway: { value: 0.25 }, uGrow: { value: 1 }, uBend: { value: 0 },
+      uBox: { value: new THREE.Vector4(1e4, 1e4, -1e4, 1e4) },
       uColor: { value: new THREE.Vector3(base.r, base.g, base.b) }, uTip: { value: new THREE.Vector3(tip.r, tip.g, tip.b) },
       uAlgae: { value: 0 }, uHealth: { value: 1 }, uLightInt: { value: 1 }, uDepthTint: { value: 0.3 }, uRed: { value: red },
       uLightDir: { value: new THREE.Vector3(0.1, 1, 0.3) }, uWaterColor: { value: new THREE.Vector3(0.45, 0.72, 0.82) }, uCamPos: { value: new THREE.Vector3() } } });
@@ -3828,23 +4321,73 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   }
 
   // ---------- 石・流木 ----------
-  function stoneMesh(THREE, st) {
-    const g = new THREE.IcosahedronGeometry(1, 3); const pos = g.attributes.position; const sd = st.seed * 53;
-    for (let i = 0; i < pos.count; i++) { let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
-      const strat = Math.sin((y + sd) * 6.0) * 0.06;                    // 層状の割れ（青龍石風）
-      const n = (Math.sin(x * 7 + sd) * Math.cos(z * 6.3 - sd) + Math.sin(y * 9 + sd * 2) * 0.6) * 0.075;
-      const k = 1 + strat + n; pos.setXYZ(i, x * k, y * k * 0.9, z * k); }
+  function stoneMesh(THREE, st, groundY) {
+    // 青龍石（Seiryu stone）の見え方に寄せる: ほぼ水平の層理、その層に沿った段差、
+    // 縦に走る割れ、角の効いた面。丸い塊を正弦波で膨らませただけだと「芋」になる。
+    const g = new THREE.IcosahedronGeometry(1, 4);            // 5120 面。石は 3–5 個なので許容
+    const pos = g.attributes.position, sd = st.seed * 53;
+    const hash = (i, j, k) => { let n = (i * 92837111 + j * 689287499 + k * 283923481 + (sd * 1e4 | 0)) | 0;
+      n = (n ^ (n >> 13)) * 1274126177; return ((n ^ (n >> 16)) >>> 0) / 4294967296; };
+    const vn = (x, y, z) => { const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+      const xf = x - xi, yf = y - yi, zf = z - zi;
+      const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), w = zf * zf * (3 - 2 * zf);
+      const L2 = (a, b, t) => a + (b - a) * t;
+      return L2(L2(L2(hash(xi, yi, zi), hash(xi + 1, yi, zi), u), L2(hash(xi, yi + 1, zi), hash(xi + 1, yi + 1, zi), u), v),
+                L2(L2(hash(xi, yi, zi + 1), hash(xi + 1, yi, zi + 1), u), L2(hash(xi, yi + 1, zi + 1), hash(xi + 1, yi + 1, zi + 1), u), v), w);
+    };
+    const fbm = (x, y, z) => vn(x, y, z) * 0.55 + vn(x * 2.1, y * 2.1, z * 2.1) * 0.28 + vn(x * 4.3, y * 4.3, z * 4.3) * 0.17;
+    const col = [], cA = [0.40, 0.43, 0.46], cB = [0.60, 0.62, 0.63];   // 灰青と、層に沿った淡い脈
+    for (let i = 0; i < pos.count; i++) {
+      let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      const f = fbm(x * 2.6 + 5, y * 2.6, z * 2.6 - 3) - 0.5;
+      // 層理: y をおおまかに段にして、段の境目に切れ込みを入れる
+      const nb = 5 + Math.floor(sd % 3), ly = y * nb + f * 0.35;
+      const frac = ly - Math.floor(ly);
+      const step = (Math.floor(ly) / nb - y) * 0.30;                    // 段（強くすると宝石の切子のようになる）
+      const notch = -Math.exp(-Math.pow((frac - 0.5) / 0.13, 2)) * 0.045; // 層の境の切れ込み
+      // 縦の割れ（方位角で数本）
+      const az = Math.atan2(z, x), crack = -Math.exp(-Math.pow(Math.sin(az * 3.5 + sd), 2) / 0.025) * 0.032;
+      const k = 1 + step + notch + crack + f * 0.20;
+      pos.setXYZ(i, x * k, y * k * 0.92, z * k);
+      const vein = Math.exp(-Math.pow((frac - 0.5) / 0.20, 2)) * (0.25 + 0.45 * fbm(x * 5, y * 5, z * 5));
+      col.push(cA[0] + (cB[0] - cA[0]) * vein, cA[1] + (cB[1] - cA[1]) * vein, cA[2] + (cB[2] - cA[2]) * vein);
+    }
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     g.computeVertexNormals();
-    const m = new THREE.Mesh(g, new THREE.MeshPhongMaterial({ color: 0x8a9099, shininess: 8, flatShading: true }));
-    m.scale.set(st.rx, st.ry, st.rz); m.position.set(st.x, st.y, st.z); m.rotation.z = st.tilt; m.rotation.y = st.seed * 6.28;
+    const m = new THREE.Mesh(g, new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 14, specular: 0x22262a, flatShading: true }));
+    m.scale.set(st.rx, st.ry, st.rz); m.rotation.z = st.tilt; m.rotation.y = st.seed * 6.28;
+    // 底床の起伏に埋める（平らな面に置くと、盛り土の斜面から浮く）
+    const gy = groundY ? groundY(st.x, st.z) : st.y;
+    m.position.set(st.x, Math.min(st.y, gy + st.ry * 0.72), st.z);
     return m;
   }
-  function woodMesh(THREE, br) {
+  function woodMesh(THREE, br, groundY) {
     const grp = new THREE.Group();
-    const mat = new THREE.MeshPhongMaterial({ color: 0x4a3527, shininess: 5, flatShading: true });
+    if (groundY) { const gy = groundY(br.x0, br.z0); br.y0 = Math.min(br.y0, gy - 0.6); }
+    // 枝は 7 角柱の連結だった。稜線がはっきり見えて「木」に見えないので、
+    // 円周 14 分割・長さ方向 5 分割の筒にして、表面に樹皮のうねりを乗せる（滑らかシェーディング）
+    const mat = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 3, specular: 0x1a1410, flatShading: false });
+    const wsd = (br.seed || 0.5) * 137;
+    const wn = (a, b) => { const v = Math.sin(a * 12.9898 + b * 78.233 + wsd) * 43758.5453; return v - Math.floor(v); };
     const seg = (x0, y0, z0, x1, y1, z1, r0, r1) => {
       const dx = x1 - x0, dy = y1 - y0, dz = z1 - z0, len = Math.hypot(dx, dy, dz) || 0.01;
-      const gg = new THREE.CylinderGeometry(r1, r0, len, 7, 1); const m = new THREE.Mesh(gg, mat);
+      const RS = 14, LS = 5;
+      const gg = new THREE.CylinderGeometry(r1, r0, len, RS, LS);
+      const p = gg.attributes.position, cols = [];
+      for (let i = 0; i < p.count; i++) {
+        const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+        const rr = Math.hypot(x, z), th = Math.atan2(z, x);
+        // 樹皮: 縦に伸びた繊維状の凹凸。縦方向の周期を長く、周方向を細かく
+        const rib = (wn(Math.round(th * 4.2 / Math.PI * 6), Math.round(y * 0.8)) - 0.5) * 0.30
+                  + (wn(Math.round(th * 9 / Math.PI * 6) + 40, Math.round(y * 2.2)) - 0.5) * 0.14;
+        const k = 1 + rib;
+        if (rr > 1e-4) p.setXYZ(i, x * k, y, z * k);
+        const sh = 0.55 + 0.45 * (0.5 + rib);                       // 溝は暗く
+        cols.push(0.30 * sh, 0.215 * sh, 0.155 * sh);
+      }
+      gg.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+      gg.computeVertexNormals();
+      const m = new THREE.Mesh(gg, mat);
       m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
       m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx / len, dy / len, dz / len)); grp.add(m); };
     // 主枝を 3 分割して少し曲げる
@@ -3862,30 +4405,26 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   // ---------- ビルダ ----------
   AQ.buildPlanted = function (THREE, L, s) {
     const grp = new THREE.Group(); const rng = mulberry(((s.seed || 1) * 977 + 31) | 0);
-    // 底床の傾斜（前を薄く後ろを厚く）
-    if (L.subSlope) {
-      const w = L.iW, d = L.iD, f = L.subSlope.front, b = L.subSlope.back, base = s.substrate.depth || 0;
-      const gg = new THREE.PlaneGeometry(w, d, 12, 12); const p = gg.attributes.position;
-      for (let i = 0; i < p.count; i++) { const zz = p.getY(i); const t = clamp((-zz / d) + 0.5, 0, 1); // 手前 0 → 奥 1
-        p.setZ(i, (f + (b - f) * Math.pow(t, 1.4)) - base + (rng() - 0.5) * 0.25); }
-      gg.computeVertexNormals();
-      const col = s.substrate.id.indexOf('soil') === 0 ? 0x2a2018 : 0x6b5f4e;
-      const m = new THREE.Mesh(gg, new THREE.MeshPhongMaterial({ color: col, shininess: 2, flatShading: false }));
-      m.rotation.x = -Math.PI / 2; m.position.y = L.y0; grp.add(m); grp.userData.soil = m;
-    }
-    for (const st of L.stones || []) grp.add(stoneMesh(THREE, st));
-    for (const br of L.wood || []) grp.add(woodMesh(THREE, br));
+    // 底床の起伏は AQ.substrateSolid（描画側）が立体として描く。
+    // ここで片面の板を重ねると、横から見たときに板の裏が透けるので描かない。
+    const TR = AQ.terrain ? AQ.terrain(s, L) : null;
+    const groundY = (x, z) => TR ? TR.gl + TR.h(x, z) : L.y0;
+    for (const st of L.stones || []) grp.add(stoneMesh(THREE, st, groundY));
+    for (const br of L.wood || []) grp.add(woodMesh(THREE, br, groundY));
     // 水草
     const plants = [];
     for (const p of (L.plants || [])) {
       const mat = plantMat(THREE, p.sp, p.seed);
-      p.rmax = Math.max(2, Math.min(L.iW / 2 - Math.abs(p.x || 0) - 1.2, L.iD / 2 - Math.abs(p.z || 0) - 1.2, L.iW * 0.42));
+      // 葉は群の半径からさらに leafLen ぶん外へ出るので、その分を引いておく
+      const leafOut = (p.sp.leafLen || 2) * 0.45 + 1.2;
+      p.rmax = Math.max(1.5, Math.min(L.iW / 2 - Math.abs(p.x || 0) - leafOut, L.iD / 2 - Math.abs(p.z || 0) - leafOut, L.iW * 0.42));
       const geo = buildGroup(THREE, p, mulberry(((p.seed || 0.5) * 99991) | 0));
-      const mesh = new THREE.Mesh(geo, mat); mesh.position.set(p.x || 0, L.y0 + (p.base || 0), p.z || 0);
+      // 株元は地形の高さに合わせる（平らな面に植えると、起伏のある底床から浮く）
+      const mesh = new THREE.Mesh(geo, mat); mesh.position.set(p.x || 0, groundY(p.x || 0, p.z || 0) - 0.3 + (p.base || 0), p.z || 0);
       mesh.frustumCulled = false; grp.add(mesh);
       plants.push({ p, mesh, mat, geoH: p.h, geoC: p.cov, seed: (p.seed || 0.5) });
     }
-    return { group: grp, plants, L,
+    return { group: grp, plants, L, sim: s, nAlive: (s.plants || []).filter(p => p.alive).length,
       animate(dt, e) {
         const t = e.time || 0;
         for (const q of this.plants) { const p = q.p; const u = q.mat.uniforms;
@@ -3893,11 +4432,13 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
           u.uLightInt.value = e.lightInt != null ? e.lightInt : 1; if (e.waterColor) u.uWaterColor.value.copy(e.waterColor);
           if (e.camPos) u.uCamPos.value.copy(e.camPos); if (e.depthTint != null) u.uDepthTint.value = e.depthTint;
           u.uSway.value = 0.18 + 0.5 * (e.flow || 0.3);
+          if (e.box) u.uBox.value.set(e.box[0], e.box[1], e.box[2], e.box[3]);
           u.uGrow.value = clamp(p.h / Math.max(0.5, q.geoH), 0.25, 2.2);
           q.mesh.visible = p.alive && p.B > 1e-4;
         }
       },
-      needsRebuild() { return this.plants.some(q => q.p.alive && (Math.abs(q.p.h - q.geoH) / Math.max(0.5, q.geoH) > 0.35 || Math.abs(q.p.cov - q.geoC) / Math.max(4, q.geoC) > 0.5)); },
+      needsRebuild() { return (this.sim.plants || []).filter(p => p.alive).length !== this.nAlive
+        || this.plants.some(q => q.p.alive && (Math.abs(q.p.h - q.geoH) / Math.max(0.5, q.geoH) > 0.35 || Math.abs(q.p.cov - q.geoC) / Math.max(4, q.geoC) > 0.5)); },
       dispose() { this.group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.dispose) o.material.dispose(); }); }
     };
   };
@@ -3938,45 +4479,132 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   }`;
 
   function shrimpGeometry(THREE, B) {
-    const S = B.segs, NX = 4, NR = 10;
+    const S = B.segs, NR = 16;
     const pos = [], nor = [], seg = [], idx = [], ph = [];
     const push = (x, y, z, nx, ny, nz, si) => { pos.push(x, y, z); nor.push(nx, ny, nz); seg.push(si); ph.push(0); return pos.length / 3 - 1; };
-    let ring0 = null;
-    for (let i = 0; i < S.length; i++) {
-      const s = S[i], len = s.x1 - s.x0;
-      for (let k = 0; k <= NX; k++) {
-        const t = k / NX, xl = t * len, u = s.x0 + xl;
-        // 額角（先端を細く尖らせる）と尾扇（薄く広げる）
-        let hh = s.h, ww = s.w;
-        if (i === 0) { const q = u / s.x1; hh = s.h * (q < 0.32 ? 0.12 + 0.9 * (q / 0.32) : Math.min(1, 0.7 + 0.5 * Math.sin(q * 2.2))); ww = s.w * (q < 0.32 ? 0.1 + 0.9 * (q / 0.32) : 1); }
-        if (i === S.length - 1) { const q = t; hh = s.h * (1 - 0.55 * q); ww = s.w * (1 - 0.8 * q); }
-        if (s.hump) hh *= 1.12;
-        const ring = [];
-        for (let j = 0; j < NR; j++) { const a = j / NR * Math.PI * 2; const cy = Math.cos(a), sz = Math.sin(a);
-          const yy = hh * cy * (cy > 0 ? 1 : 0.85), zz = ww * sz;
-          ring.push(push(xl, yy, zz, 0, cy, sz, i)); }
-        if (ring0 && (k > 0 || i > 0)) { /* 隣接リング接続は同じ節内のみ（節間は独立に曲がる） */ }
-        if (k > 0) { const prev = ring0; for (let j = 0; j < NR; j++) { const a = prev[j], b = prev[(j + 1) % NR], c = ring[(j + 1) % NR], d = ring[j]; idx.push(a, b, c, a, c, d); } }
-        ring0 = ring;
+
+    // ---- 断面。カリデア類の腹節は左右から押しつぶされ、腹側に側板（pleura）が薄く垂れる。
+    //  背側は丸いアーチ、側面はやや平ら（超楕円 n=2.4）、腹側は側板ぶん下へ伸びて下縁は薄い。
+    const ring = (xl, h, w, yc, pl, si) => {
+      const out = [];
+      for (let j = 0; j < NR; j++) {
+        const a = j / NR * Math.PI * 2, cy = Math.cos(a), sz = Math.sin(a);
+        let yy, env;
+        if (cy >= 0) {                                  // 背側は丸いアーチ
+          yy = yc + h * cy;
+          env = Math.pow(Math.max(0, 1 - Math.pow(cy, 1.9)), 1 / 1.9);
+        } else {                                        // 腹側は側板。下縁近くまで幅を保ち、板として薄く終わる
+          const t = -cy;
+          yy = yc - (h * 0.55 + pl) * t;
+          env = Math.pow(Math.max(0, 1 - Math.pow(t, 3.4)), 1 / 3.4) * (1 - 0.32 * t);
+        }
+        out.push(push(xl, yy, w * env * (sz >= 0 ? 1 : -1), 0, cy, sz, si));
       }
-      ring0 = null;
+      return out;
+    };
+    const bridge = (A, C) => { for (let j = 0; j < NR; j++) { const a = A[j], b = A[(j + 1) % NR], c = C[(j + 1) % NR], d = C[j]; idx.push(a, b, c, a, c, d); } };
+    // 節の端をふさぐ（曲げたときに中が見えないように）
+    const cap = (R, xl, yc, si, dir) => { const c = push(xl, yc, 0, dir, 0, 0, si);
+      for (let j = 0; j < NR; j++) { const a = R[j], b = R[(j + 1) % NR]; if (dir > 0) idx.push(c, b, a); else idx.push(c, a, b); } };
+
+    // ---- 頭胸部（額角＋背甲）。u は TL 比、yc は断面中心の高さ。
+    //  額角は「薄い刃」なので幅を極端に細くし、中心を眼の高さまで持ち上げる。
+    //  背甲は鰓域（u≈0.26）で最大になり、後縁でわずかに絞る。
+    const CEPH = [
+      [0.000, 0.0035, 0.0025, 0.054, 0.000], [0.030, 0.011, 0.0035, 0.052, 0.000],
+      [0.060, 0.018, 0.0045, 0.048, 0.000], [0.090, 0.026, 0.0075, 0.041, 0.002],
+      [0.115, 0.034, 0.016, 0.032, 0.005], [0.150, 0.054, 0.034, 0.019, 0.012],
+      [0.200, 0.069, 0.053, 0.008, 0.019], [0.260, 0.074, 0.061, 0.003, 0.021],
+      [0.310, 0.070, 0.056, 0.001, 0.017], [0.350, 0.063, 0.047, 0.000, 0.012]
+    ];
+    {
+      const si = 0; let prev = null;
+      for (let k = 0; k < CEPH.length; k++) {
+        const c = CEPH[k], R = ring(c[0], c[1], c[2], c[3], c[4], si);
+        if (k === 0) cap(R, c[0], c[3], si, -1);
+        if (prev) bridge(prev, R);
+        prev = R;
+      }
+      cap(prev, CEPH[CEPH.length - 1][0], 0, si, 1);
     }
-    // 尾扇（telson の後ろに扇）
-    { const s = S[S.length - 1], si = S.length - 1, len = s.x1 - s.x0;
-      const base = pos.length / 3; const R = 0.075, N = 7;
-      push(len, 0, 0, 0, 1, 0, si);
-      for (let j = 0; j <= N; j++) { const a = (-1 + 2 * j / N) * 1.15; push(len + R * Math.cos(a) * 0.9, 0.004, R * Math.sin(a) * 1.5, 0, 1, 0, si); }
-      for (let j = 0; j < N; j++) idx.push(base, base + 1 + j, base + 2 + j);
+
+    // ---- 腹節。側板の垂れは第 2 腹節が最大（caridean hump: A2 の側板が A1・A3 を前後から覆う）
+    const PLEURA = { a1: 0.026, a2: 0.036, a3: 0.028, a4: 0.017, a5: 0.011, a6: 0.005, telson: 0 };
+    for (let i = 1; i < S.length; i++) {
+      const s = S[i], len = s.x1 - s.x0, si = i, NXk = 4;
+      const pl0 = PLEURA[s.id] || 0;
+      let prev = null;
+      for (let k = 0; k <= NXk; k++) {
+        const t = k / NXk, xl = t * len;
+        // 節の前後端は少し細める（節と節が重なる部分は細い）
+        const taper = 1 - 0.10 * Math.pow(Math.abs(t - 0.45) / 0.55, 2);
+        let hh = s.h * taper, ww = s.w * taper;
+        // 側板は節の中ほどで一番垂れ、前後で引く
+        const plv = pl0 * Math.sin(Math.PI * Math.min(1, 0.15 + t * 0.85));
+        if (s.id === 'telson') { hh = s.h * (1 - 0.62 * t); ww = s.w * (1 - 0.80 * t); }  // 尾節は先細り
+        const R = ring(xl, hh, ww, 0, plv, si);
+        if (k === 0) cap(R, xl, 0, si, -1);
+        if (prev) bridge(prev, R);
+        prev = R;
+        if (k === NXk) cap(R, xl, 0, si, 1);
+      }
     }
-    // 眼（頭胸部）
-    for (const sgn of [1, -1]) { const cx = 0.10, cy = 0.038, cz = sgn * 0.030, R = 0.017, base = pos.length / 3;
-      for (let a = 0; a <= 5; a++) for (let b = 0; b <= 8; b++) { const phi = a / 5 * Math.PI, th = b / 8 * Math.PI * 2;
-        push(cx + R * Math.sin(phi) * Math.cos(th), cy + R * Math.cos(phi), cz + R * Math.sin(phi) * Math.sin(th), Math.sin(phi) * Math.cos(th), Math.cos(phi), Math.sin(phi) * Math.sin(th), 0); }
-      for (let a = 0; a < 5; a++) for (let b = 0; b < 8; b++) { const i0 = base + a * 9 + b, i1 = i0 + 9; idx.push(i0, i1, i0 + 1, i1, i1 + 1, i0 + 1); } }
+
+    // ---- 尾扇: 尾節の先の棘と、尾肢（外肢・内肢）2 対
+    //  尾肢は第 6 腹節から出て尾節と同じかやや長い。遊泳時に開き、テールフリップで水を掻く面になる
+    const blade = (si, x0, y0, z0, len, wid, yaw, pitch, tipZ) => {
+      const base = pos.length / 3, N = 6;
+      const cy2 = Math.cos(yaw), sy2 = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const L = [], Rr = [];
+      for (let k = 0; k <= N; k++) {
+        const t = k / N, x = len * t;
+        const w2 = wid * Math.sin(Math.PI * Math.min(1, 0.10 + t * 0.92)) * (1 - 0.25 * t);
+        const px = x0 + (x * cy2) * cp, py = y0 + x * sp, pz = z0 + x * sy2 + tipZ * t * t;
+        L.push(push(px, py + w2 * 0.10, pz + w2, 0, 1, 0.2, si));
+        Rr.push(push(px, py - w2 * 0.10, pz - w2, 0, 1, -0.2, si));
+      }
+      for (let k = 0; k < N; k++) idx.push(L[k], L[k + 1], Rr[k], Rr[k], L[k + 1], Rr[k + 1]);
+      return base;
+    };
+    {
+      const tl = S[S.length - 1], a6 = S[S.length - 2], si6 = S.length - 2, siT = S.length - 1;
+      const tLen = tl.x1 - tl.x0;
+      // 尾節の先（薄い板＋先端の棘）
+      blade(siT, tLen * 0.50, 0, 0, tLen * 0.68, 0.019, 0, 0.02, 0);
+      // 尾肢（第 6 腹節の後端から。外肢が長く、内肢がやや短い）
+      const a6len = a6.x1 - a6.x0;
+      for (const sgn of [1, -1]) {
+        blade(si6, a6len * 0.90, -0.005, sgn * a6.w * 0.55, tLen * 1.10, 0.037, sgn * 0.38, -0.02, sgn * 0.022);  // 外肢（幅の広い櫂）
+        blade(si6, a6len * 0.90, -0.008, sgn * a6.w * 0.28, tLen * 0.95, 0.029, sgn * 0.20, -0.04, sgn * 0.010);  // 内肢
+      }
+    }
+
+    // ---- 眼（眼柄＋角膜）。体表に埋まった球ではなく、前外側へ突き出す短い柄の先につく
+    for (const sgn of [1, -1]) {
+      const bx = 0.128, by = 0.044, bz = sgn * 0.020;
+      const ex = 0.098, ey = 0.052, ez = sgn * 0.034;
+      const N = 6, rr = 0.0075, base = pos.length / 3;
+      for (let k = 0; k <= 1; k++) {
+        const t = k, cx = bx + (ex - bx) * t, cy2 = by + (ey - by) * t, cz = bz + (ez - bz) * t;
+        for (let j = 0; j < N; j++) { const a = j / N * Math.PI * 2;
+          push(cx, cy2 + rr * Math.cos(a), cz + rr * Math.sin(a), 0, Math.cos(a), Math.sin(a), 0); }
+      }
+      for (let j = 0; j < N; j++) { const a = base + j, b = base + (j + 1) % N, c = base + N + (j + 1) % N, d = base + N + j; idx.push(a, b, c, a, c, d); }
+      // 角膜（黒い球）
+      const R2 = 0.0165, b2 = pos.length / 3;
+      for (let a2 = 0; a2 <= 5; a2++) for (let b3 = 0; b3 <= 8; b3++) { const phi = a2 / 5 * Math.PI, th = b3 / 8 * Math.PI * 2;
+        push(ex + R2 * Math.sin(phi) * Math.cos(th), ey + R2 * Math.cos(phi), ez + R2 * Math.sin(phi) * Math.sin(th),
+          Math.sin(phi) * Math.cos(th), Math.cos(phi), Math.sin(phi) * Math.sin(th), 0); }
+      for (let a2 = 0; a2 < 5; a2++) for (let b3 = 0; b3 < 8; b3++) { const i0 = b2 + a2 * 9 + b3, i1 = i0 + 9; idx.push(i0, i1, i0 + 1, i1, i1 + 1, i0 + 1); }
+    }
+
+    // ---- 触角鱗片（scaphocerite）: 第 2 触角の基部にある薄い板。エビらしさが出る部位
+    for (const sgn of [1, -1]) blade(0, 0.140, 0.010, sgn * 0.016, 0.090, 0.020, sgn * 0.12, 0.05, -sgn * 0.006);
+
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
     g.setAttribute('segI', new THREE.Float32BufferAttribute(seg, 1)); g.setAttribute('phase', new THREE.Float32BufferAttribute(ph, 1));
-    g.setIndex(idx); return g;
+    g.setIndex(idx); g.computeVertexNormals(); return g;
   }
 
   AQ.buildShrimpRender = function (THREE, sim, agents) {
@@ -4092,10 +4720,12 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   }`;
   const FISH_VS = `
   attribute float bodyU; attribute float bodyH; attribute float part;
-  uniform float uTail, uAmp, uL, uTime, uSeed, uPec, uPecPhase, uFold, uBreath, uRipple;
+  uniform float uTail, uAmp, uL, uTime, uSeed, uPec, uPecPhase, uFold, uBreath, uRipple, uGape, uFlare;
+  uniform vec4 uMouth;        // 口裂の高さ / 関節 u / 最大開口角 / 上顎の突出
+  uniform float uHingeY;      // 顎関節の y（回転軸）
   uniform vec3 uPecBase;
   ${SPINE_GLSL}
-  varying float vU, vH, vPart; varying vec3 vN, vWp; varying vec2 vUv;
+  varying float vU, vH, vPart, vMouth; varying vec3 vN, vWp; varying vec2 vUv;
   void main(){
     vU=bodyU; vH=bodyH; vPart=part; vUv=uv;
     vec3 p=position;
@@ -4114,6 +4744,26 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     if(part>0.5&&part<1.5&&u>0.28&&u<0.96){ p.z+=0.012*uv.y*uRipple*sin(u*22.0-uTime*7.0+uSeed*5.0); } // 軟条鰭のさざ波
     if(u>1.0){ p.y*=1.0+0.18*uAmp; } // 尾鰭: 拍動時に広がる（撓みは脊椎の受動節に含まれる）
     if(part<0.5){ float w=smoothstep(0.10,0.18,u)*smoothstep(0.36,0.27,u); float br=sin(uBreath)*w; p.z*=1.0+0.035*br; p.z+=0.008*br*(p.z>0.0?1.0:-1.0); } // 鰓の拍動
+    // ---- 口。uMouth = (口裂の高さ[bodyH], 関節 u, 最大開口角 rad, 上顎の突出[体長比])
+    //  吸引摂餌の順序をそのまま動かす: 下顎が関節まわりに下がり、上顎（前上顎骨）が前へ出て、
+    //  同時に口腔が横へ膨らむ（舌骨の下制）。少し遅れて鰓蓋が張る
+    vMouth = 0.0;
+    if(part<0.5 && u < uMouth.y*1.6){
+      float g = uGape;
+      float w = 1.0 - smoothstep(uMouth.y*0.75, uMouth.y*1.6, u);   // 関節より前だけ効く
+      float low = smoothstep(uMouth.x+0.22, uMouth.x-0.22, bodyH);  // 1 = 下顎側, 0 = 上顎側
+      float ang = g*uMouth.z*w*low;
+      vec2 o = vec2(p.x - uMouth.y, p.y - uHingeY);
+      float c = cos(ang), s = sin(ang);                             // +x が尾側なので、下制は +ang
+      p.x = uMouth.y + o.x*c - o.y*s;
+      p.y = uHingeY   + o.x*s + o.y*c;
+      p.x -= g*uMouth.w*w*(1.0-low);                                // 前上顎骨の突出（前 = -x）
+      p.z *= 1.0 + 0.20*g*smoothstep(0.0, uMouth.y, u)*w;           // 口腔が横へ張る（関節寄りで最大）
+      vMouth = w*(1.0 - abs(low*2.0-1.0))*g;                        // 口の縁 = 口腔の壁
+      p.z *= 1.0 - 0.35*vMouth;                                     // 縁は内側へ引き込まれる
+    }
+    // 鰓蓋の張り出し（開口よりわずかに遅れる）
+    if(part<0.5){ float w2=smoothstep(0.16,0.24,u)*smoothstep(0.40,0.30,u); p.z*=1.0+0.16*uFlare*w2; }
     vec3 n=normal; spineMap(p, n);
     vec4 wp=modelMatrix*vec4(p,1.0); vWp=wp.xyz; vN=normalize(mat3(modelMatrix)*n);
     gl_Position=projectionMatrix*viewMatrix*wp;
@@ -4130,9 +4780,10 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   const FISH_FS = `
   precision highp float;
   ${NOISE}
+  uniform float uCamIn;
   uniform float uSpecies, uMaturity, uPale, uWound, uSeed, uSeedR, uCond, uAlpha, uLightInt, uDepthTint, uHalf, uCover, uHue, uPScale, uContrast, uRed, uGold, uSpot, uDark;
   uniform vec3 uLightDir, uWaterColor, uCamPos, uCenter;
-  varying float vU, vH, vPart; varying vec3 vN, vWp; varying vec2 vUv;
+  varying float vU, vH, vPart, vMouth; varying vec3 vN, vWp; varying vec2 vUv;
   void main(){
     vec3 N=normalize(vN); vec3 V=normalize(uCamPos-vWp); vec3 Ld=normalize(uLightDir);
     float ndl=dot(N,Ld); float diff=max(ndl,0.0)*0.75+0.35+0.15*max(-ndl,0.0);
@@ -4269,17 +4920,18 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     if(fin){ float ray=0.88+0.12*sin(vUv.x*44.0+uSeed); col*=ray; }
     // 傷・ストレス・痩せ
     float w=smoothstep(0.62,0.7,vnoise(vec3(vU*9.0+uSeed, vH*4.0, 2.0)))*clamp(uWound,0.0,3.0)*0.35; col=mix(col, vec3(0.75,0.15,0.1), w*float(body));
+    col = mix(col, vec3(0.16,0.045,0.05), clamp(vMouth*1.7,0.0,0.92));   // 口腔の内側は暗い赤
     col=mix(col, vec3(dot(col,vec3(0.33)))*1.1, uPale*0.6);
     col*=mix(1.0,0.85,clamp((1.0-uCond)*3.0,0.0,1.0));
     vec3 c=col*diff*uLightInt+spec*specK*uLightInt;
-    float dIn=max(0.0, uHalf + dot(vWp-uCenter, -V)); c=mix(c, uWaterColor, clamp(1.0-exp(-uDepthTint*0.02*dIn),0.0,0.85));
+    float dIn=mix(max(0.0, uHalf + dot(vWp-uCenter, -V)), length(uCamPos-vWp), uCamIn); c=mix(c, uWaterColor, clamp(1.0-exp(-uDepthTint*0.02*dIn),0.0,0.85));
     gl_FragColor=vec4(c,alpha);
   }`;
 
   const SUB_VS = `varying vec3 vWp; varying vec3 vN; void main(){ vec4 wp=modelMatrix*vec4(position,1.0); vWp=wp.xyz; vN=normalize(mat3(modelMatrix)*normal); gl_Position=projectionMatrix*viewMatrix*wp; }`;
   const SUB_FS = `
   precision highp float; ${NOISE}
-  uniform vec3 uColA, uColB, uWaterColor, uCamPos, uCenter; uniform float uTime, uCaustic, uLightInt, uDepthTint, uDetritus, uHalf;
+  uniform vec3 uColA, uColB, uWaterColor, uCamPos, uCenter; uniform float uTime, uCaustic, uLightInt, uDepthTint, uDetritus, uHalf, uCamIn;
   varying vec3 vWp; varying vec3 vN;
   void main(){
     float n=vnoise(vWp*1.7), n2=vnoise(vWp*6.0+3.0);
@@ -4290,7 +4942,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     float c2=sin(vWp.x*1.5-uTime*1.4+vnoise(vWp*0.4)*3.0)+sin(vWp.z*1.3+uTime*1.0);
     float ca=pow(clamp(1.0-abs(c1*0.33),0.0,1.0),8.0)*0.9+pow(clamp(1.0-abs(c2*0.5),0.0,1.0),10.0)*0.5;
     col*= (0.6+0.4*up) * uLightInt; col+= ca*uCaustic*up*vec3(0.85,0.95,1.0);
-    vec3 V=normalize(uCamPos-vWp); float dIn=max(0.0, uHalf + dot(vWp-uCenter, -V)); col=mix(col, uWaterColor, clamp(1.0-exp(-uDepthTint*0.02*dIn),0.0,0.85));
+    vec3 V=normalize(uCamPos-vWp); float dIn=mix(max(0.0, uHalf + dot(vWp-uCenter, -V)), length(uCamPos-vWp), uCamIn); col=mix(col, uWaterColor, clamp(1.0-exp(-uDepthTint*0.02*dIn),0.0,0.85));
     gl_FragColor=vec4(col,1.0);
   }`;
 
@@ -4303,13 +4955,15 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   const catmull = AQ.catmull, PROFILES = AQ.PROFILES;
   const SPECIES_CODE = { oscar: 0, piranha: 1, clown: 2, bluetang: 3, yellowtang: 4, damsel: 5, chromis: 6, neon: 7, cardinal: 8, ember: 9, rummynose: 10 };
   function fishGeometry(spId) {
-    const P = PROFILES[spId] || PROFILES.oscar; const NX = 34, NR = 24;
+    const P = PROFILES[spId] || PROFILES.oscar; const NX = 46, NR = 24;
+    // 頭部に輪を集める（口を割るため）。tt<0.45 の 20 枚が u=0–0.30 に入る
+    const uWarp = tt => tt < 0.45 ? 0.30 * Math.pow(tt / 0.45, 1.08) : 0.30 + 0.70 * Math.pow((tt - 0.45) / 0.55, 0.98);
     const pos = [], nor = [], uv = [], bu = [], bh = [], part = [], idx = [];
     const push = (x, y, z, nx, ny, nz, u, v, U, H, pid) => { pos.push(x, y, z); nor.push(nx, ny, nz); uv.push(u, v); bu.push(U); bh.push(H); part.push(pid); return pos.length / 3 - 1; };
     const dor = u => catmull(P.dorsal, u), ven = u => catmull(P.ventral, u), wid = u => catmull(P.width, u);
     // 胴体: 超楕円断面の押し出し（吻端と尾柄は丸める）
     for (let i = 0; i <= NX; i++) {
-      const u = i / NX; const h1 = dor(u), h2 = -ven(u), w = wid(u) * (u < 0.06 ? Math.sqrt(u / 0.06) : 1);
+      const u = uWarp(i / NX); const h1 = dor(u), h2 = -ven(u), w = wid(u) * (u < 0.06 ? Math.sqrt(u / 0.06) : 1);
       for (let j = 0; j <= NR; j++) {
         const th = j / NR * Math.PI * 2; const t = Math.cos(th), sg = Math.sin(th) >= 0 ? 1 : -1;
         const r = t >= 0 ? P.round[0] : P.round[1];
@@ -4397,8 +5051,13 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       const sub = s.substrate; this.subMesh = null;
       if (sub.depth) {
         const cols = { oiso: [[0.22, 0.21, 0.21], [0.42, 0.40, 0.37]], tasuna: [[0.62, 0.55, 0.42], [0.78, 0.72, 0.58]], soil: [[0.16, 0.11, 0.07], [0.30, 0.22, 0.14]], soil_powder: [[0.13, 0.09, 0.06], [0.26, 0.19, 0.12]], soil_rich: [[0.12, 0.08, 0.05], [0.25, 0.18, 0.11]], coral: [[0.85, 0.84, 0.78], [0.97, 0.96, 0.9]], aragonite: [[0.86, 0.84, 0.77], [0.98, 0.97, 0.92]] }[sub.id] || [[0.4, 0.4, 0.4], [0.6, 0.6, 0.6]];
-        this.subMat = new THREE.ShaderMaterial({ vertexShader: SUB_VS, fragmentShader: SUB_FS, uniforms: { uColA: { value: new THREE.Vector3(...cols[0]) }, uColB: { value: new THREE.Vector3(...cols[1]) }, uWaterColor: { value: new THREE.Vector3(0.45, 0.7, 0.8) }, uCamPos: { value: new THREE.Vector3() }, uTime: { value: 0 }, uCaustic: { value: 0.5 }, uLightInt: { value: 1 }, uDepthTint: { value: 0.3 }, uDetritus: { value: 0 }, uCenter: { value: new THREE.Vector3(0, 20, 0) }, uHalf: { value: 20 } } });
-        const m = new THREE.Mesh(new THREE.BoxGeometry(i.W, sub.depth, i.D), this.subMat); m.position.set(0, gl + sub.depth / 2, 0); G.add(m); this.subMesh = m;
+        this.subMat = new THREE.ShaderMaterial({ vertexShader: SUB_VS, fragmentShader: SUB_FS, uniforms: { uColA: { value: new THREE.Vector3(...cols[0]) }, uColB: { value: new THREE.Vector3(...cols[1]) }, uWaterColor: { value: new THREE.Vector3(0.45, 0.7, 0.8) }, uCamPos: { value: new THREE.Vector3() }, uTime: { value: 0 }, uCaustic: { value: 0.5 }, uLightInt: { value: 1 }, uDepthTint: { value: 0.3 }, uDetritus: { value: 0 }, uCenter: { value: new THREE.Vector3(0, 20, 0) }, uHalf: { value: 20 }, uCamIn: { value: 0 } } });
+        // 底床は一定厚の箱ではなく、高さ場から作った閉じた立体（AQ.substrateSolid）。
+        // 箱のままだと、前縁で箱の平らな上面が盛り土の板の下から露出して見える
+        const sg = (AQ.substrateSolid && AQ.substrateSolid(THREE, s, L)) || new THREE.BoxGeometry(i.W, sub.depth, i.D);
+        const m = new THREE.Mesh(sg, this.subMat);
+        if (!AQ.substrateSolid) m.position.set(0, gl + sub.depth / 2, 0);
+        G.add(m); this.subMesh = m;
       } else {
         const bot = new THREE.Mesh(new THREE.PlaneGeometry(i.W, i.D), new THREE.MeshPhongMaterial({ color: 0x223036, shininess: 60 })); bot.rotation.x = -Math.PI / 2; bot.position.y = gl + 0.05; G.add(bot);
       }
@@ -4431,8 +5090,15 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       let m = this.fishMeshes.get(f.id);
       if (!m) {
         const geo = this.geos[f.sp.id] || (this.geos[f.sp.id] = fishGeometry(f.sp.id));
+        const PF = PROFILES[f.sp.id] || PROFILES.oscar;
+        const MP = PF.mouth || { line: -0.20, hinge: 0.11, gapeAng: 0.55, protrude: 0.010 };
+        // 顎関節の y。断面は t>=0 で dorsal*t、t<0 で (-ventral)*t なので、口裂の高さ line から引く
+        const hingeY = MP.line >= 0 ? catmull(PF.dorsal, MP.hinge) * MP.line : -catmull(PF.ventral, MP.hinge) * MP.line;
         const spine = new Float32Array(64), spineT = new Float32Array(64); for (let k = 0; k < 32; k++) { spine[2 * k] = 1.3 * k / 31; spineT[2 * k] = 1; }
-        const mat = new THREE.ShaderMaterial({ vertexShader: FISH_VS, fragmentShader: FISH_FS, transparent: true, side: THREE.DoubleSide, uniforms: { uSpine: { value: spine }, uSpineT: { value: spineT }, uTail: { value: 0 }, uAmp: { value: 0.5 }, uL: { value: 1 }, uTime: { value: 0 }, uPec: { value: 1 }, uPecPhase: { value: 0 }, uFold: { value: 0 }, uBreath: { value: 0 }, uRipple: { value: 1 }, uPecBase: { value: geo.userData.pecBase.clone() }, uSpecies: { value: SPECIES_CODE[f.sp.id] != null ? SPECIES_CODE[f.sp.id] : 0 }, uMaturity: { value: 0 }, uPale: { value: 0 }, uWound: { value: 0 }, uSeed: { value: f.traits ? f.traits.pattern.seed : f.seedPos }, uSeedR: { value: f.traits ? f.traits.pattern.seedR : f.seedPos + 0.37 }, uCover: { value: f.traits ? f.traits.pattern.coverage : 0.45 }, uHue: { value: f.traits ? f.traits.pattern.hue : 0.5 }, uPScale: { value: f.traits ? f.traits.pattern.scale : 1 }, uContrast: { value: f.traits ? f.traits.pattern.contrast : 0.6 }, uRed: { value: f.traits ? f.traits.pattern.red : 0.6 }, uGold: { value: f.sp.id === 'damsel' ? (f.sex === 'M' ? 1 : 0) : (f.traits ? f.traits.pattern.gold : 0.4) }, uSpot: { value: f.traits ? f.traits.pattern.spot : 0.6 }, uDark: { value: f.traits ? f.traits.pattern.dark : 0.5 }, uCond: { value: 1 }, uAlpha: { value: 1 }, uLightInt: { value: 1 }, uDepthTint: { value: 0.3 }, uLightDir: { value: new THREE.Vector3(0.2, 1, 0.4) }, uWaterColor: { value: new THREE.Vector3(0.45, 0.7, 0.8) }, uCamPos: { value: new THREE.Vector3() }, uCenter: { value: new THREE.Vector3(0, 20, 0) }, uHalf: { value: 20 } } });
+        const mat = new THREE.ShaderMaterial({ vertexShader: FISH_VS, fragmentShader: FISH_FS, transparent: true, side: THREE.DoubleSide, uniforms: { uSpine: { value: spine }, uSpineT: { value: spineT }, uTail: { value: 0 }, uAmp: { value: 0.5 }, uL: { value: 1 }, uTime: { value: 0 }, uPec: { value: 1 }, uPecPhase: { value: 0 }, uFold: { value: 0 }, uBreath: { value: 0 }, uRipple: { value: 1 }, uPecBase: { value: geo.userData.pecBase.clone() },
+          uGape: { value: 0 }, uFlare: { value: 0 },
+          uMouth: { value: new THREE.Vector4(MP.line, MP.hinge, MP.gapeAng, MP.protrude) },
+          uHingeY: { value: hingeY }, uSpecies: { value: SPECIES_CODE[f.sp.id] != null ? SPECIES_CODE[f.sp.id] : 0 }, uMaturity: { value: 0 }, uPale: { value: 0 }, uWound: { value: 0 }, uSeed: { value: f.traits ? f.traits.pattern.seed : f.seedPos }, uSeedR: { value: f.traits ? f.traits.pattern.seedR : f.seedPos + 0.37 }, uCover: { value: f.traits ? f.traits.pattern.coverage : 0.45 }, uHue: { value: f.traits ? f.traits.pattern.hue : 0.5 }, uPScale: { value: f.traits ? f.traits.pattern.scale : 1 }, uContrast: { value: f.traits ? f.traits.pattern.contrast : 0.6 }, uRed: { value: f.traits ? f.traits.pattern.red : 0.6 }, uGold: { value: f.sp.id === 'damsel' ? (f.sex === 'M' ? 1 : 0) : (f.traits ? f.traits.pattern.gold : 0.4) }, uSpot: { value: f.traits ? f.traits.pattern.spot : 0.6 }, uDark: { value: f.traits ? f.traits.pattern.dark : 0.5 }, uCond: { value: 1 }, uAlpha: { value: 1 }, uLightInt: { value: 1 }, uDepthTint: { value: 0.3 }, uLightDir: { value: new THREE.Vector3(0.2, 1, 0.4) }, uWaterColor: { value: new THREE.Vector3(0.45, 0.7, 0.8) }, uCamPos: { value: new THREE.Vector3() }, uCenter: { value: new THREE.Vector3(0, 20, 0) }, uHalf: { value: 20 }, uCamIn: { value: 0 } } });
         m = new THREE.Mesh(geo, mat); m.renderOrder = 5; this.scene.add(m); this.fishMeshes.set(f.id, m);
         // 骨格（X 線）: aqua_body.js の線画を同じ脊椎写像で変形。魚メッシュの子として同じ変換を受ける
         const bgeo = this.boneGeos[f.sp.id] || (this.boneGeos[f.sp.id] = (() => { const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(AQ.Body.get(f.sp.id).bones, 3)); return g2; })());
@@ -4461,13 +5127,18 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       const lvl = s.levelFrac(); const yTop = this.yWater0 + this.waterH * lvl; this.surfMesh.position.y = yTop; this.waterBox.scale.y = lvl; this.waterBox.position.y = (this.yWater0 + yTop) / 2; this.waterBox2.scale.y = lvl; this.waterBox2.position.y = this.waterBox.position.y;
       // カメラ
       const o = this.orbit;
-      if (this.cine && this.cine.active) { /* ギャラリー: シネマカメラが位置と注視点を直接持つ */ }
+      if ((this.fly && this.fly.active) || (this.cine && this.cine.active)) { /* 自由カメラ・シネマカメラが位置と注視点を直接持つ */ }
       else if (this.follow === 'shoal') { const al = s.fish.filter(f => f.alive); if (al.length) { const c = new THREE.Vector3(); for (const f of al) { const a = ag.get(f); c.x += a.p.x; c.y += a.p.y; c.z += a.p.z; } c.multiplyScalar(1 / al.length); o.target.lerp(c, Math.min(1, dtReal * 2)); } else this.follow = null; }
       else if (this.follow) { const ff = s.fish.find(f => f.id === this.follow); if (ff) { const a = ag.get(ff); o.target.lerp(new THREE.Vector3(a.p.x, a.p.y, a.p.z), Math.min(1, dtReal * 3)); } else this.follow = null; }
       let cp;
-      if (this.cine && this.cine.active) { cp = this.cine.apply(dtReal); }
+      if (this.fly && this.fly.active) { cp = this.fly.apply(dtReal); }
+      else if (this.cine && this.cine.active) { cp = this.cine.apply(dtReal); }
       else { cp = new THREE.Vector3(o.target.x + o.radius * Math.sin(o.phi) * Math.sin(o.theta), o.target.y + o.radius * Math.cos(o.phi), o.target.z + o.radius * Math.sin(o.phi) * Math.cos(o.theta)); this.camera.position.copy(cp); this.camera.lookAt(o.target); }
       const ctr = new THREE.Vector3(0, (this.yWater0 + yTop) / 2, 0), half = this.sim.inner.D / 2;
+      // カメラが水の中にいるか。自由カメラで潜ったときに水中の減衰を正しく出すため
+      const ii = this.sim.inner;
+      const camIn = (Math.abs(cp.x) < ii.W / 2 && Math.abs(cp.z) < ii.D / 2 && cp.y > this.yWater0 && cp.y < yTop) ? 1 : 0;
+      if (this.subMat) this.subMat.uniforms.uCamIn.value = camIn;
       if (this.subMat) { const u = this.subMat.uniforms; u.uTime.value = this.time; u.uCamPos.value.copy(cp); u.uCenter.value.copy(ctr); u.uHalf.value = half; u.uCaustic.value = 0.45 * this.lightInt * (1 - wc.turb) * (1 - wc.yellow * 0.6); u.uLightInt.value = 0.45 + 0.5 * this.lightInt; u.uDepthTint.value = wc.tint; u.uWaterColor.value.copy(wv); u.uDetritus.value = clamp((s.M.DfN + s.M.DsN) / s.V / 5, 0, 1); }
       this.surfMat.uniforms.uTime.value = this.time; this.surfMat.uniforms.uCamPos.value.copy(cp); this.surfMat.uniforms.uWaterColor.value.copy(wv); this.surfMat.uniforms.uLightInt.value = 0.5 + 0.6 * this.lightInt;
       // 魚
@@ -4479,7 +5150,10 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         { const mo = f.traits ? f.traits.morph : { depth: 1, width: 1 }; m.scale.set(f.L, f.L * mo.depth, f.L * mo.width); }
         const u = m.material.uniforms; u.uSpine.value.set(a.qs); u.uSpineT.value.set(a.ts);
         { const bones = m.userData.bones, com = m.userData.com; bones.visible = this.skeleton; com.visible = this.skeleton; m.material.depthWrite = !this.skeleton; if (this.skeleton) { com.position.set(a.p.x, a.p.y, a.p.z); const rr = Math.max(0.25, 0.022 * f.L); com.scale.set(rr, rr, rr); } }
-        u.uTime.value = ag.time; u.uTail.value = a.tail; u.uAmp.value = f.alive ? (a.amp || 0) : 0; u.uPec.value = a.pec || 0; u.uPecPhase.value = a.pecPhase || 0; u.uFold.value = a.fold || 0; u.uBreath.value = a.breath || 0; u.uRipple.value = a.ripple || 0; u.uMaturity.value = f.maturity; u.uPale.value = f.alive ? clamp((f.S - 0.3) / 0.6, 0, 1) : 1; u.uWound.value = f.wounds; u.uCond.value = clamp(f.cond, 0.5, 1.1); u.uLightInt.value = 0.55 + 0.6 * this.lightInt; u.uDepthTint.value = wc.tint; u.uWaterColor.value.copy(wv); u.uCamPos.value.copy(cp); u.uCenter.value.copy(ctr); u.uHalf.value = half; u.uAlpha.value = (f.alive ? 1 : 0.85) * (this.skeleton ? 0.3 : 1);
+        u.uTime.value = ag.time; u.uTail.value = a.tail; u.uAmp.value = f.alive ? (a.amp || 0) : 0; u.uPec.value = a.pec || 0; u.uPecPhase.value = a.pecPhase || 0; u.uFold.value = a.fold || 0; u.uBreath.value = a.breath || 0; u.uRipple.value = a.ripple || 0;
+        // 口: 呼吸で常にわずかに開閉し、摂餌のときだけ大きく開く
+        u.uGape.value = clamp((a.gape || 0) + 0.11 * (0.5 + 0.5 * Math.sin(a.breath || 0)), 0, 1.15);
+        u.uFlare.value = a.flare || 0; u.uMaturity.value = f.maturity; u.uPale.value = f.alive ? clamp((f.S - 0.3) / 0.6, 0, 1) : 1; u.uWound.value = f.wounds; u.uCond.value = clamp(f.cond, 0.5, 1.1); u.uLightInt.value = 0.55 + 0.6 * this.lightInt; u.uDepthTint.value = wc.tint; u.uWaterColor.value.copy(wv); u.uCamPos.value.copy(cp); u.uCamIn.value = camIn; u.uCenter.value.copy(ctr); u.uHalf.value = half; u.uAlpha.value = (f.alive ? 1 : 0.85) * (this.skeleton ? 0.3 : 1);
       }
       for (const [id, m] of this.fishMeshes) if (!seen.has(id)) { this.scene.remove(m); if (m.userData.com) this.scene.remove(m.userData.com); m.material.dispose(); this.fishMeshes.delete(id); }
       // 気泡（各エミッタ: エアストーンは空気流量に応じて、エアリフト式フィルターは常時）
@@ -4489,7 +5163,8 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       if (this.equip) this.equip.animate(dtReal, { on: power, heaterOn: s.heaterOn, lightInt: this.lightInt });
       if (this.reef) this.reef.animate(dtReal, { time: this.time, lightInt: this.lightInt });
       if (this.planted) { const need = this.planted.needsRebuild(); if (need && this.time - (this.lastPlantBuild || -99) > 8) { this.lastPlantBuild = this.time; this.buildTank(); }
-        else this.planted.animate(dtReal, { time: this.time, lightInt: this.lightInt, waterColor: wv, camPos: cp, depthTint: wc.tint, flow: 0.3 }); }
+        else this.planted.animate(dtReal, { time: this.time, lightInt: this.lightInt, waterColor: wv, camPos: cp, depthTint: wc.tint, flow: 0.3,
+          box: [s.inner.W / 2 - 0.35, s.inner.D / 2 - 0.35, this.yWater0, yTop - 0.2] }); }
       if (this.shrimpR && this.shrimpAgents) this.shrimpR.update(dtReal, { lightInt: this.lightInt, waterColor: wv, camPos: cp, depthTint: wc.tint });
       // 水流トレーサ（実時間の物理）
       if (this.flowMode && this.flowMode !== 'off') {
@@ -4509,13 +5184,13 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     resize() { const w = this.canvas.clientWidth, h = this.canvas.clientHeight; if (!w || !h) return; this.r.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
     bindInput() {
       const c = this.canvas; let drag = null, pinch = null; const o = this.orbit;
-      const down = (x, y, id) => { if (this.foodMode) { this.foodDown = true; this.onFood && this.onFood(x, y, false); return; } drag = { x, y, id, moved: 0 }; };
-      const move = (x, y) => { if (this.foodMode) { this.onFood && this.onFood(x, y, !!this.foodDown); return; } if (!drag) return; const dx = x - drag.x, dy = y - drag.y; drag.x = x; drag.y = y; drag.moved += Math.abs(dx) + Math.abs(dy); o.theta -= dx * 0.006; o.phi = clamp(o.phi - dy * 0.005, 0.25, 1.55); };
-      const up = (x, y) => { if (this.foodMode) { this.foodDown = false; return; } if (drag && drag.moved < 4 && this.onTap) this.onTap(x, y); drag = null; };
+      const down = (x, y, id) => { if (this.fly && this.fly.active) return; if (this.foodMode) { this.foodDown = true; this.onFood && this.onFood(x, y, false); return; } drag = { x, y, id, moved: 0 }; };
+      const move = (x, y) => { if (this.fly && this.fly.active) return; if (this.foodMode) { this.onFood && this.onFood(x, y, !!this.foodDown); return; } if (!drag) return; const dx = x - drag.x, dy = y - drag.y; drag.x = x; drag.y = y; drag.moved += Math.abs(dx) + Math.abs(dy); o.theta -= dx * 0.006; o.phi = clamp(o.phi - dy * 0.005, 0.25, 1.55); };
+      const up = (x, y) => { if (this.fly && this.fly.active) return; if (this.foodMode) { this.foodDown = false; return; } if (drag && drag.moved < 4 && this.onTap) this.onTap(x, y); drag = null; };
       c.addEventListener('mousedown', e => down(e.clientX, e.clientY)); window.addEventListener('mousemove', e => move(e.clientX, e.clientY)); window.addEventListener('mouseup', e => up(e.clientX, e.clientY));
-      c.addEventListener('wheel', e => { e.preventDefault(); o.radius = clamp(o.radius * (1 + e.deltaY * 0.001), 40, 600); }, { passive: false });
-      c.addEventListener('touchstart', e => { if (e.touches.length === 1) down(e.touches[0].clientX, e.touches[0].clientY); else if (e.touches.length === 2) { drag = null; pinch = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } }, { passive: true });
-      c.addEventListener('touchmove', e => { if (e.touches.length === 1) move(e.touches[0].clientX, e.touches[0].clientY); else if (e.touches.length === 2 && pinch) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); o.radius = clamp(o.radius * pinch / d, 40, 600); pinch = d; } e.preventDefault(); }, { passive: false });
+      c.addEventListener('wheel', e => { if (this.fly && this.fly.active) return; e.preventDefault(); o.radius = clamp(o.radius * (1 + e.deltaY * 0.001), 40, 600); }, { passive: false });
+      c.addEventListener('touchstart', e => { if (this.fly && this.fly.active) return; if (e.touches.length === 1) down(e.touches[0].clientX, e.touches[0].clientY); else if (e.touches.length === 2) { drag = null; pinch = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } }, { passive: true });
+      c.addEventListener('touchmove', e => { if (this.fly && this.fly.active) return; if (e.touches.length === 1) move(e.touches[0].clientX, e.touches[0].clientY); else if (e.touches.length === 2 && pinch) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); o.radius = clamp(o.radius * pinch / d, 40, 600); pinch = d; } e.preventDefault(); }, { passive: false });
       c.addEventListener('touchend', e => { if (e.touches.length === 0) { if (drag && drag.moved < 6 && this.onTap) this.onTap(drag.x, drag.y); drag = null; pinch = null; } });
     }
   }
@@ -4595,7 +5270,8 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       const L = AQ.layoutCached ? AQ.layoutCached(s) : null;
       const intakes = [];
       if (L) for (const F of L.filters || []) for (const it of F.intakes || []) if (it.box) intakes.push(it.box);
-      const yBed = b.y0;
+      // 着底の高さは平らな面ではなく地形（AQ.groundY）。無ければ従来どおり
+      const gAt = (x, z) => (AQ.groundY ? AQ.groundY(s, x, z) : b.y0);
 
       // --- 物理: 沈降・漂い・取水口への吸い込み・着底
       for (let i = this.ps.length - 1; i >= 0; i--) {
@@ -4614,7 +5290,8 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
           let sucked = false;
           for (const bx of intakes) if (p.x > bx.x0 - 1.5 && p.x < bx.x1 + 1.5 && p.y > bx.y0 - 1.5 && p.y < bx.y1 + 1.5 && p.z > bx.z0 - 1.5 && p.z < bx.z1 + 1.5) { sucked = true; break; }
           if (sucked) { s.trapFood(p.m, p.type); this.ps.splice(i, 1); continue; }
-          if (p.y <= yBed + K.r) { p.y = yBed + K.r; p.st = 1; p.age = 0; p.vx = p.vz = 0; }
+          const bed = gAt(p.x, p.z);
+          if (p.y <= bed + K.r) { p.y = bed + K.r; p.st = 1; p.age = 0; p.vx = p.vz = 0; }
         } else {
           if (p.age > LIFE * (0.7 + 0.6 * p.seed)) { s.settleFood(p.m, p.type); this.ps.splice(i, 1); continue; }
         }
@@ -4627,17 +5304,50 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       if (this.shrimpAgents) this.lureShrimp();
     }
 
+    // ---- ひと吸いの経過。吸引摂餌の順序をそのまま時間に並べる:
+    //   口が開き始める → 口腔が広がって前の水ごと吸い込む → 獲物が口に入る → 閉じる →（大きい獲物なら口内で処理）
+    //   開口のピークまでの時間は小型魚で 15–25 ms、大型で 40–60 ms（実測）。それだと 60fps で 1–2 コマにしかならず
+    //   何が起きたか見えないので、下限を 35 ms に置いて少し伸ばしてある（C）
+    stepStrike(a, f, h) {
+      const s = this.sim, st = a.strike, e = this.t - st.t0, r = this.rng;
+      const S = a.spine, mx = S ? S[0] : a.p.x, my = S ? S[1] : a.p.y, mz = S ? S[2] : a.p.z;
+      a.gape = e < st.tO ? Math.sin(Math.PI / 2 * e / st.tO) : Math.max(0, 1 - (e - st.tO) / st.tC);
+      // 鰓蓋の張り出しは開口よりわずかに遅れる（口から入った水は鰓から抜ける）
+      a.flare = clamp((e - st.tO * 0.55) / (st.tO * 0.9), 0, 1) * (1 - clamp((e - st.tO - st.tC * 0.4) / (st.tC * 0.6), 0, 1));
+      const p = st.p;
+      if (p && this.ps.indexOf(p) >= 0) {
+        const dx = mx - p.x, dy = my - p.y, dz = mz - p.z, d = Math.hypot(dx, dy, dz) + 1e-6;
+        // 吸い込み流。口径のあたりで最大、そこから距離の 3 乗で急に落ちる（吸引摂餌が至近距離でしか効かない理由）
+        const dm = Math.max(0.25, f.L * 0.15), vmax = Math.min(120, 20 * f.L);
+        const suck = a.gape * vmax / (1 + Math.pow(d / dm, 3));
+        p.x += dx / d * suck * h; p.y += dy / d * suck * h; p.z += dz / d * suck * h;
+        if (!st.done && e >= st.tO * 0.7 && d < Math.max(0.8, f.L * 0.40)) {
+          const took = s.eatFood(f, p.m, p.type);
+          const k = this.ps.indexOf(p); if (k >= 0) this.ps.splice(k, 1);
+          st.done = true; this.bites = (this.bites || 0) + 1;
+          a.foodChewT = this.t + (took > 0 ? 0.18 + 0.35 * r() : 8);   // 胃が一杯なら興味を失う
+          if (f.L > 6) st.chew = 1 + Math.floor(r() * 3);              // 大きい魚は口内で処理する
+        }
+      }
+      if (e > st.tO + st.tC) {
+        if (st.chew > 0) { st.chew--; st.t0 = this.t; st.p = null; st.tO *= 0.85; st.tC *= 0.9; }
+        else { a.strike = null; a.gape = 0; a.flare = 0; if (!st.done) a.foodChewT = this.t + 0.35; }  // 空振り
+      }
+    }
+
     // ---- 魚の食いつき。個体差は traits（食欲・大胆さ）と、いまの空腹・ストレスから
     eatFish(h, b) {
       const s = this.sim, ag = this.agents, r = this.rng;
       for (const f of s.fish) {
         if (!f.alive || f.act <= 0) continue;
         const a = ag.get(f); if (!a) continue;
+        if (a.strike) { this.stepStrike(a, f, h); continue; }   // ひと吸いの最中は他を見ない
         const tr = f.traits || {}, bold = tr.bold != null ? tr.bold : 0.5, app = tr.appetite || 1;
         // 空腹は f.hunger（sim.step 更新）ではなく胃の詰まり具合から直に出す。
         // ポーズ中や低倍率でも、食べた瞬間に満腹へ向かうのが見えるようにするため
         const fill = f.gut / Math.max(1e-6, s.gutCap(f));
         const hun = clamp(1 - fill, 0, 1);
+        if (a.gape) { a.gape = Math.max(0, a.gape - h * 6); a.flare = Math.max(0, (a.flare || 0) - h * 6); }
         if (hun < 0.10) { a.foodTgt = null; continue; }        // 満腹の個体は見向きもしない
         // 反応の遅れ: 撒かれた「そのひと山」に対して 1 回だけ引く。
         // 大胆な個体はほぼ即、臆病な個体は数秒ためらってから寄る（Bell 2009 の個性の反復率に対応させた推定 C）
@@ -4677,14 +5387,13 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         // 届く距離に入ったら 1 秒あたり 3 回の割合で「ひと吸い」を試みる確率過程にしてある（C）
         const strike = clamp(f.L * 0.5, 1.1, 6);
         const dx = best.x - mx, dy = best.y - my, dz = best.z - mz;
+        // 口が届く距離に入ったら「ひと吸い」を始める。捕らえるのは開口のピークで、
+        //  それまでのあいだ粒は吸い込み流に引かれて口へ寄る（即座に消さない）
         const near = dx * dx + dy * dy + dz * dz <= strike * strike;
         if (near && r() < 1 - Math.exp(-4.0 * h)) {
-          const took = s.eatFood(f, best.m, best.type);
-          const k = this.ps.indexOf(best); if (k >= 0) this.ps.splice(k, 1);
-          if (took <= 0) { a.foodTgt = null; a.foodChewT = this.t + 8; continue; }   // 胃が一杯 → しばらく興味を失う
-          a.foodChewT = this.t + 0.15 + 0.35 * r();   // 咀嚼と向き直りの間
+          const tO = Math.max(0.035, 0.011 * Math.sqrt(Math.max(1, f.L)));
+          a.strike = { p: best, t0: this.t, tO, tC: tO * 1.6, done: false, chew: 0 };
           a.foodBiteT = this.t;
-          this.bites = (this.bites || 0) + 1;
         }
       }
     }
@@ -4755,6 +5464,158 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   }
 
   AQ.FoodField = FoodField; AQ.FOOD_KIND = KIND;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* aqua_fly.js — 自由カメラ（フライモード）
+
+   水槽の中でも外でも、前後左右上下と向きを自分で動かす。ギャラリーの自動カメラと違って
+   ガラスは素通りする（見たいところに行くのが目的なので、当たり判定は入れていない）。
+
+   操作:
+     キーボード  W/S 前後・A/D 左右・Space/Shift↑↓（または Q/E）・Shift 加速・Ctrl 減速
+                 R/F でも上下、+/− で基準速度
+     マウス      画面をドラッグで視線。「マウス固定」でポインタロック（本来のフライ操作）
+     タッチ      画面の左半分＝移動スティック、右半分＝視線、右下のボタンで上下
+
+   運動: 入力から「行きたい速度」を作り、時定数 0.12 秒で実際の速度を寄せる。
+   いきなり最高速にならず、離しても滑って止まる。手持ちのカメラを振り回す感じに近い。
+
+   単位 cm、座標は描画と同じ。
+*/
+(function (g) {
+  'use strict';
+  const AQ = g.AQ || (g.AQ = {}), THREE = g.THREE;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  class FlyCam {
+    constructor(renderer) {
+      this.r = renderer; this.active = false;
+      this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3();
+      this.yaw = 0; this.pitch = 0; this.speed = 40; this.bound = false;
+      this.keys = {}; this.stick = { x: 0, y: 0 }; this.vstick = 0;
+      this.look = { x: 0, y: 0 };            // このフレームで処理する視線の入力（px）
+      this.touch = { move: null, look: null };
+    }
+    // いまのカメラの位置と向きをそのまま引き継いで始める（画が飛ばない）
+    start() {
+      const cam = this.r.camera;
+      this.pos.copy(cam.position); this.vel.set(0, 0, 0);
+      const d = new THREE.Vector3(); cam.getWorldDirection(d);
+      this.yaw = Math.atan2(-d.x, -d.z); this.pitch = Math.asin(clamp(d.y, -1, 1));
+      const s = this.r.sim; this.speed = clamp(s.tank.W * 0.35, 14, 220);
+      this.active = true; this.keys = {}; this.stick.x = this.stick.y = 0; this.vstick = 0;
+      this.bind();
+    }
+    stop() { this.active = false; this.keys = {}; this.stick.x = this.stick.y = 0; this.vstick = 0; this.exitLock(); }
+
+    forward() { const cp = Math.cos(this.pitch); return new THREE.Vector3(-Math.sin(this.yaw) * cp, Math.sin(this.pitch), -Math.cos(this.yaw) * cp); }
+    right() { return new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw)); }
+
+    // 動ける範囲。部屋の外の何もない空間まで出ないように、水槽まわりに広めの箱を置く
+    limits() {
+      const s = this.r.sim, L = AQ.layoutCached ? AQ.layoutCached(s) : null;
+      const W = s.tank.W, D = s.tank.D, H = s.tank.H, st = (L && L.standH) || 60;
+      return { x: W / 2 + Math.max(60, W * 0.9), yLo: -st + 8, yHi: H + Math.max(50, H * 1.2), zLo: -D / 2 - 40, zHi: D / 2 + Math.max(90, D * 2.2) };
+    }
+
+    apply(dt) {
+      const k = this.keys, cam = this.r.camera;
+      dt = Math.min(0.1, dt);
+      // 視線（ドラッグ / ポインタロック / タッチ）
+      this.yaw -= this.look.x * 0.0032; this.pitch = clamp(this.pitch - this.look.y * 0.0028, -1.50, 1.50);
+      this.look.x = this.look.y = 0;
+      // 移動入力
+      let fw = (k.w ? 1 : 0) - (k.s ? 1 : 0), rt = (k.d ? 1 : 0) - (k.a ? 1 : 0), up = (k.up ? 1 : 0) - (k.dn ? 1 : 0);
+      fw += this.stick.y; rt += this.stick.x; up += this.vstick;
+      const mag = Math.hypot(fw, rt, up);
+      const sp = this.speed * (k.boost ? 3.2 : 1) * (k.slow ? 0.28 : 1);
+      const want = new THREE.Vector3();
+      if (mag > 1e-3) {
+        want.addScaledVector(this.forward(), fw).addScaledVector(this.right(), rt);
+        want.y += up;
+        if (want.length() > 1) want.normalize();
+        want.multiplyScalar(sp);
+      }
+      this.vel.lerp(want, 1 - Math.exp(-dt / 0.12));   // 急発進・急停止しない
+      this.pos.addScaledVector(this.vel, dt);
+      const b = this.limits();
+      this.pos.x = clamp(this.pos.x, -b.x, b.x); this.pos.y = clamp(this.pos.y, b.yLo, b.yHi); this.pos.z = clamp(this.pos.z, b.zLo, b.zHi);
+      cam.position.copy(this.pos);
+      cam.up.set(0, 1, 0); cam.lookAt(this.pos.clone().add(this.forward()));
+      if (Math.abs(cam.fov - 55) > 1e-3) { cam.fov = 55; cam.updateProjectionMatrix(); }   // 自由カメラは広めの画角
+      return this.pos;
+    }
+
+    // ---------------- 入力 ----------------
+    requestLock() { const c = this.r.canvas; if (c.requestPointerLock) { try { c.requestPointerLock(); } catch (e) {} } }
+    exitLock() { if (document.pointerLockElement && document.exitPointerLock) { try { document.exitPointerLock(); } catch (e) {} } }
+    get locked() { return document.pointerLockElement === this.r.canvas; }
+
+    bind() {
+      if (this.bound) return; this.bound = true;
+      const c = this.r.canvas, self = this;
+      const KEY = { KeyW: 'w', KeyS: 's', KeyA: 'a', KeyD: 'd', ArrowUp: 'w', ArrowDown: 's', ArrowLeft: 'a', ArrowRight: 'd',
+        Space: 'up', KeyE: 'up', KeyR: 'up', KeyQ: 'dn', KeyF: 'dn', KeyC: 'dn' };
+      window.addEventListener('keydown', e => {
+        if (!self.active) return;
+        const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+        const k = KEY[e.code]; if (k) { self.keys[k] = true; e.preventDefault(); }
+        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') self.keys.boost = true;
+        if (e.code === 'ControlLeft' || e.code === 'ControlRight') self.keys.slow = true;
+        if (e.code === 'Equal' || e.code === 'NumpadAdd') self.speed = clamp(self.speed * 1.35, 4, 900);
+        if (e.code === 'Minus' || e.code === 'NumpadSubtract') self.speed = clamp(self.speed / 1.35, 4, 900);
+      });
+      window.addEventListener('keyup', e => {
+        const k = KEY[e.code]; if (k) self.keys[k] = false;
+        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') self.keys.boost = false;
+        if (e.code === 'ControlLeft' || e.code === 'ControlRight') self.keys.slow = false;
+      });
+      window.addEventListener('blur', () => { self.keys = {}; });
+      // マウス: ポインタロック中は移動量をそのまま、そうでなければドラッグ中だけ
+      let md = false;
+      c.addEventListener('mousedown', e => { if (self.active) { md = true; e.preventDefault(); } });
+      window.addEventListener('mouseup', () => { md = false; });
+      window.addEventListener('mousemove', e => {
+        if (!self.active) return;
+        if (self.locked) { self.look.x += e.movementX || 0; self.look.y += e.movementY || 0; }
+        else if (md) { self.look.x += e.movementX || 0; self.look.y += e.movementY || 0; }
+      });
+      c.addEventListener('wheel', e => { if (!self.active) return; e.preventDefault(); self.speed = clamp(self.speed * (1 - e.deltaY * 0.0012), 4, 900); }, { passive: false });
+      // タッチ: 左半分＝移動スティック、右半分＝視線
+      const T = self.touch;
+      c.addEventListener('touchstart', e => {
+        if (!self.active) return;
+        for (const t of e.changedTouches) {
+          const left = t.clientX < window.innerWidth * 0.5;
+          if (left && !T.move) T.move = { id: t.identifier, x0: t.clientX, y0: t.clientY };
+          else if (!left && !T.look) T.look = { id: t.identifier, x: t.clientX, y: t.clientY };
+        }
+      }, { passive: true });
+      c.addEventListener('touchmove', e => {
+        if (!self.active) return; e.preventDefault();
+        for (const t of e.changedTouches) {
+          if (T.move && t.identifier === T.move.id) {
+            const R = 70;   // スティックの半径 px
+            self.stick.x = clamp((t.clientX - T.move.x0) / R, -1, 1);
+            self.stick.y = clamp(-(t.clientY - T.move.y0) / R, -1, 1);
+          } else if (T.look && t.identifier === T.look.id) {
+            self.look.x += t.clientX - T.look.x; self.look.y += t.clientY - T.look.y;
+            T.look.x = t.clientX; T.look.y = t.clientY;
+          }
+        }
+      }, { passive: false });
+      const end = e => {
+        for (const t of e.changedTouches) {
+          if (T.move && t.identifier === T.move.id) { T.move = null; self.stick.x = self.stick.y = 0; }
+          if (T.look && t.identifier === T.look.id) T.look = null;
+        }
+      };
+      c.addEventListener('touchend', end); c.addEventListener('touchcancel', end);
+    }
+  }
+
+  AQ.FlyCam = FlyCam;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
@@ -5212,7 +6073,9 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       this.renderer = new AQ.Renderer($('#gl'), this.sim, this.agents); this.renderer.shrimpAgents = this.shrimpAgents; this.renderer.onTap = (x, y) => this.tapGlass(x, y);
       this.renderer.onFood = (x, y, d) => this.onFoodInput(x, y, d);
       this.renderer.foodField = this.food;
-      window.addEventListener('keydown', e => { if (e.key === 'Escape' && this.foodArmed && !this.gallery) this.foodArm(false); });
+      window.addEventListener('keydown', e => { if (e.key !== 'Escape') return;
+        if (this.flyOn && !this.gallery) { this.flyExit(); return; }
+        if (this.foodArmed && !this.gallery) this.foodArm(false); });
       this.buildViewfoot(); this.buildHud();
       window.addEventListener('resize', () => this.renderer.resize()); this.renderer.resize();
       this.last = performance.now(); this.lastUI = 0; requestAnimationFrame(t => this.frame(t));
@@ -5235,7 +6098,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       this.attachRenderer(); this.rebuildTabs(); this.buildTankBar(); this.toast(`${T.name}: ${scn.name}`);
     }
     select(i) { if (i === this.cur) return; this.cur = i; this.attachRenderer(); this.rebuildTabs(); this.buildTankBar(); this.updateUI(true); this.toast(`水槽を切替: ${this.tank.name}`); }
-    attachRenderer() { if (this.hud && this.hudMarine !== !!this.sim.marine) this.buildHud(); const r = this.renderer; if (!r) return; this.foodArm(false); r.sim = this.sim; r.agents = this.agents; r.shrimpAgents = this.shrimpAgents; r.foodField = this.food; for (const [, m] of r.fishMeshes) r.scene.remove(m); r.fishMeshes.clear(); r.follow = null; r.buildTank(); r.orbit.theta = 0.35; r.orbit.phi = 1.25; }
+    attachRenderer() { if (this.hud && this.hudMarine !== !!this.sim.marine) this.buildHud(); const r = this.renderer; if (!r) return; this.foodArm(false); this.flyExit(); r.sim = this.sim; r.agents = this.agents; r.shrimpAgents = this.shrimpAgents; r.foodField = this.food; for (const [, m] of r.fishMeshes) r.scene.remove(m); r.fishMeshes.clear(); r.follow = null; r.buildTank(); r.orbit.theta = 0.35; r.orbit.phi = 1.25; }
     buildTankBar() {
       const bar = $('#tanks'); if (!bar) return; bar.innerHTML = '';
       this.tanks.forEach((T, i) => { const n = T.sim.fish.filter(f => f.alive).length; bar.append(h('button', { class: i === this.cur ? 'on' : '', onclick: () => this.select(i) }, T.name, h('small', {}, `${T.active ? '稼働中' : '停止中'}・生体 ${n}`))); });
@@ -5263,6 +6126,68 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       if (now - this.lastUI > 250) { this.lastUI = now; this.updateUI(); }
       requestAnimationFrame(t => this.frame(t));
     }
+    // ---- 自由カメラ（フライモード）
+    //  ギャラリーの自動カメラと排他。給餌の「構える」ともドラッグが衝突するので排他にしてある。
+    flyToggle() { this.flyOn ? this.flyExit() : this.flyEnter(); }
+    flyEnter() {
+      const r = this.renderer; if (!r || this.flyOn) return;
+      if (!AQ.FlyCam) return;
+      this.foodArm(false);
+      if (!r.fly) r.fly = new AQ.FlyCam(r);
+      if (r.cine) r.cine.active = false;
+      r.follow = null;
+      this.flyOn = true; r.fly.start();
+      $('#app').classList.add('flying');
+      this.flyBuild(); this.flyBar.classList.add('show');
+      clearTimeout(this.flyHintT); this.flyHint.classList.add('show');
+      this.flyHintT = setTimeout(() => this.flyHint.classList.remove('show'), 7000);
+      if (this.flyBtn) this.flyBtn.classList.add('on');
+      if (this.galFlyBtn) this.galFlyBtn.classList.add('on');
+      this.flyTick();
+    }
+    flyExit() {
+      const r = this.renderer; if (!r || !this.flyOn) return;
+      this.flyOn = false; if (r.fly) r.fly.stop();
+      $('#app').classList.remove('flying');
+      if (this.flyBar) this.flyBar.classList.remove('show');
+      if (this.flyHint) this.flyHint.classList.remove('show');
+      if (this.flyBtn) this.flyBtn.classList.remove('on');
+      if (this.galFlyBtn) this.galFlyBtn.classList.remove('on');
+      clearInterval(this.flyTimer); this.flyTimer = null;
+      // オービットを、いま見ている先へ寄せてから戻す（画が飛ばない）
+      const o = r.orbit, cam = r.camera, d = new THREE.Vector3(); cam.getWorldDirection(d);
+      o.target.copy(cam.position).addScaledVector(d, o.radius);
+      o.target.y = clamp(o.target.y, 0, this.sim.tank.H);
+      o.theta = Math.atan2(cam.position.x - o.target.x, cam.position.z - o.target.z);
+      o.phi = clamp(Math.acos(clamp((cam.position.y - o.target.y) / Math.max(1, cam.position.distanceTo(o.target)), -1, 1)), 0.25, 1.55);
+      cam.fov = this.gallery ? cam.fov : 38; cam.updateProjectionMatrix();
+      if (this.gallery && r.cine) { r.cine.active = true; r.cine.shot = null; r.cine.fade = 1; r.cine.fadeT = 0.5; }
+    }
+    flyBuild() {
+      if (this.flyBar) return;
+      const bar = this.flyBar = h('div', { id: 'flybar' });
+      this.flySpd = h('span', { class: 'sp' }, '');
+      const btn = (t, on) => h('button', { onpointerdown: e => { e.preventDefault(); on(true); }, onpointerup: () => on(false), onpointerleave: () => on(false) }, t);
+      const f = () => this.renderer.fly;
+      bar.append(
+        btn('▲', v => { const q = f(); if (q) q.vstick = v ? 1 : 0; }),
+        btn('▼', v => { const q = f(); if (q) q.vstick = v ? -1 : 0; }),
+        h('button', { onclick: () => { const q = f(); if (q) q.speed = Math.max(4, q.speed / 1.5); } }, '遅'),
+        h('button', { onclick: () => { const q = f(); if (q) q.speed = Math.min(900, q.speed * 1.5); } }, '速'),
+        this.flySpd,
+        h('button', { class: 'lockbtn', onclick: () => { const q = f(); if (!q) return; q.locked ? q.exitLock() : q.requestLock(); } }, 'マウス固定'),
+        h('button', { onclick: () => this.flyExit() }, '終了'));
+      this.flyHint = h('div', { id: 'flyhint' },
+        'W/S 前後・A/D 左右・Space/Q 上下・Shift 加速・ドラッグで視線（タッチは左半分＝移動 / 右半分＝視線）');
+      $('#view').append(bar, this.flyHint);
+    }
+    flyTick() {
+      clearInterval(this.flyTimer);
+      this.flyTimer = setInterval(() => {
+        if (!this.flyOn) { clearInterval(this.flyTimer); return; }
+        const q = this.renderer.fly; if (q && this.flySpd) this.flySpd.textContent = `${q.speed.toFixed(0)} cm/s`;
+      }, 200);
+    }
     // ---- 手で撒く給餌（全モード共通）
     //  2 段階にしてある: [餌をあげる] で構える → 水面をタップ/ドラッグして撒く。
     //  1 タップで餌が出ないので、カメラを回す・ガラスを叩くときの誤爆が起きない。
@@ -5270,6 +6195,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     foodArm(on) {
       const r = this.renderer; if (!r) return;
       if (on && !this.food) return;
+      if (on && this.flyOn) this.flyExit();
       this.foodArmed = !!on; r.foodMode = !!on; this.foodDown = false;
       if (this.feedBtn) this.feedBtn.classList.toggle('on', !!on);
       if (this.galFeedBtn) this.galFeedBtn.classList.toggle('on', !!on);
@@ -5343,14 +6269,15 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       this.galFade = $('#galfade'); this.galCap = $('#galcap');
       const ui = $('#galui'); ui.innerHTML = '';
       this.galFeedBtn = h('button', { onclick: () => { this.foodArm(!this.foodArmed); this.galPoke(); } }, '餌をあげる');
-      ui.append(this.galFeedBtn, h('button', { onclick: () => { this.renderer.cine.next(); this.galPoke(); } }, '次のカット'),
+      this.galFlyBtn = h('button', { onclick: () => { this.flyToggle(); this.galPoke(); } }, '自由カメラ');
+      ui.append(this.galFeedBtn, this.galFlyBtn, h('button', { onclick: () => { this.renderer.cine.next(); this.galPoke(); } }, '次のカット'),
         h('button', { onclick: () => this.exitGallery() }, '終了'));
       this.galUI = ui;
       const poke = () => { if (this.gallery) this.galPoke(); };
       $('#view').addEventListener('mousemove', poke); $('#view').addEventListener('touchstart', poke, { passive: true });
       window.addEventListener('keydown', ev => {
         if (!this.gallery) return;
-        if (ev.key === 'Escape') { this.exitGallery(); }
+        if (ev.key === 'Escape') { if (this.flyOn) this.flyExit(); else this.exitGallery(); }
         else if (ev.key === ' ' || ev.key === 'ArrowRight') { ev.preventDefault(); this.renderer.cine.next(); this.galPoke(); }
       });
       document.addEventListener('fullscreenchange', () => { if (this.gallery && this.galFS && !document.fullscreenElement) this.exitGallery(); });
@@ -5378,7 +6305,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     }
     exitGallery() {
       if (!this.gallery) return; const r = this.renderer, s = this.galSave || {};
-      this.gallery = false; this.foodArm(false); r.cine && r.cine.stop();
+      this.gallery = false; this.foodArm(false); this.flyExit(); r.cine && r.cine.stop();
       $('#app').classList.remove('gallery');
       if (this.galFade) this.galFade.style.opacity = 0;
       if (this.galCap) this.galCap.classList.remove('show');
@@ -5404,6 +6331,8 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       const flowSel = h('select', { onchange: e => { this.renderer.flowMode = e.target.value; } }, ...[['off', '水流: なし'], ['on', '水流: 軌跡粒子'], ['dense', '水流: 軌跡粒子（多め）']].map(([v, l]) => h('option', { value: v }, l)));
       const skelSel = h('select', { onchange: e => { this.renderer.skeleton = e.target.value === 'xray'; } }, h('option', { value: 'normal' }, '生体: 通常'), h('option', { value: 'xray' }, '生体: 骨格（X 線）＋重心'));
       vf.append(sel, flowSel, skelSel, link, h('button', { onclick: () => { const o = this.renderer.orbit; o.theta = 0.35; o.phi = 1.25; this.renderer.follow = null; this.renderer.buildTank(); } }, 'カメラ初期化'), h('button', { onclick: () => { this.renderer.follow = this.renderer.follow === 'shoal' ? null : 'shoal'; if (this.renderer.follow) this.renderer.orbit.radius = Math.max(50, (this.sim.fish[0] ? this.sim.fish[0].L : 10) * 6); } }, '群れを追う'), h('button', { onclick: () => this.tapGlass(innerWidth / 2, 0) }, 'ガラスをコンコン'), h('button', { onclick: () => this.enterGallery() }, '▶ ギャラリー（全画面）'));
+      this.flyBtn = h('button', { class: 'flybtn', onclick: () => this.flyToggle() }, '自由カメラ');
+      vf.append(this.flyBtn);
       this.feedBtn = h('button', { class: 'feedbtn', onclick: () => this.foodArm(!this.foodArmed) }, '餌をあげる');
       vf.append(this.feedBtn);
     }
