@@ -76,7 +76,121 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   #hud{display:none}
   header{padding:4px 8px}#clock{min-width:0}
 }
+/* --- ギャラリーモード: 計器・パネル・ヘッダを全部消して 3D だけにする --- */
+#app.gallery header,#app.gallery aside#panel,#app.gallery #hud,#app.gallery #viewfoot,#app.gallery #toast{display:none!important}
+#app.gallery main{flex:1}
+#app.gallery #view{background:#000;flex:1!important;height:auto!important;min-height:0}
+/* スマホ幅では #view が height:44vh 固定なので、ギャラリー中はそれを解除して全画面にする */
+#app.gallery #galui{right:10px;top:10px}
+#gallery{position:absolute;inset:0;pointer-events:none;display:none}
+#app.gallery #gallery{display:block}
+#galfade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+#galvig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 86% 82% at 50% 48%,rgba(0,0,0,0) 56%,rgba(0,0,0,.13) 82%,rgba(0,0,0,.34) 100%)}
+#galui{position:absolute;right:14px;top:14px;display:flex;gap:8px;opacity:0;transition:opacity .35s;pointer-events:none}
+#galui.show{opacity:1;pointer-events:auto}
+#galui button{background:rgba(12,16,20,.62);border:1px solid rgba(255,255,255,.20);color:#eaf2f6;border-radius:999px;padding:7px 14px;font-size:12px;backdrop-filter:blur(6px)}
+#galui button:hover{border-color:#9fe1ff;background:rgba(16,42,56,.72)}
+#galcap{position:absolute;left:20px;bottom:18px;color:rgba(238,246,250,.86);font-size:13px;letter-spacing:.06em;text-shadow:0 1px 6px rgba(0,0,0,.85);opacity:0;transition:opacity .8s;pointer-events:none}
+#galcap.show{opacity:1}
+/* 給餌モード */
+#viewfoot button.feedbtn.on,#galui button.on{background:#5a3b12;border-color:#ffb74d;color:#ffe6bd}
+#feedhint{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);background:rgba(20,24,30,.9);border:1px solid #7a5a20;color:#ffd9a0;padding:6px 14px;border-radius:999px;font-size:12px;opacity:0;pointer-events:none;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+#feedhint.show{opacity:1}
+#feedhint.over{border-color:#a8452f;color:#ffb4a2;background:rgba(46,20,16,.92)}
+#app.feeding #gl{cursor:crosshair}
+#app.gallery #feedhint{bottom:26px;background:rgba(10,14,18,.62);border-color:rgba(255,183,77,.5)}
 </style>
+<!-- ============================================================================
+  ギャラリーモード（v0.8.2）— 計器を一切出さない全画面の自動カメラ
+
+  目的: 「実際に水槽を眺めている」状態を作る。数値・ゲージ・偽色・骨格表示は全部消し、
+        カメラだけが自動で動く。実装は aqua_cine.js（AQ.Cine）。
+
+  ● 入ると変わること
+    - header / 計器盤(#panel) / HUDゲージ / フッターのセレクタ / トーストを CSS で非表示
+    - ブラウザの全画面を要求（拒否されても動作は同じ）
+    - 時間倍率を ×1 に落とし、魚とエビの動きを常に実時間へ（倍率連動を切る）。
+      停止中の水槽でも生体は通常の速さで泳ぐ（sim は進めない）
+    - 偽色オーバーレイ / 骨格(X線) / 水流粒子 / 追尾を解除
+    - 抜けるときは上記すべてと画角を退避値から復元する
+
+  ● カメラ（AQ.Cine）
+    - ショット = 開始位置・終了位置・注視点・画角。easeInOutSine（両端だけ柔らかく、
+      途中はほぼ等速）で補間する。実機のドリーの速度プロファイルに近い形。
+    - 10 種類: 全景 / 正面の横流し / 角からの回り込み / 寄り / 接写 /
+      水面の見上げ / 前縁からの覗き込み / 1 匹の追尾 / 群れの周回 / エビの接写
+    - 直前と同じ種類は引かない。1 ショット 8–18 秒。画角は 19–44°（レンズを替える感じ）
+    - カットのたびに 0.34 秒の暗転からの立ち上がり（#galfade）
+
+  ● 制約と、その理由
+    - カメラは必ずガラスの外に留める（safe / at2）。現実に水槽を見るのと同じ視点である
+      ことが第一だが、実装上の理由もある: 水中に入れると水中シェーダ(subMat)の
+      uCamPos から水面までの光路長計算が破綻する。
+    - 寄りのショットは「方向は保ったまま、ガラスの外に出るまで距離だけ伸ばす」(at2)。
+      被写体が奥にあるほど寄れないのは実物と同じ。
+    - 見かけの大きさを決めるのは中心までの距離ではなく前面ガラスまでの距離なので、
+      全景では fitDist に D/2 を足す（足さないと必ず寄りすぎる）。
+    - 覗き込みショットはカメラを水槽高さの少し上までに制限する。それ以上上げると
+      吊り下げた照明器具の裏側が画面の大半を占める。
+    - 追尾ショットの構図中心は魚そのものではなく、水柱の中に引き戻した高さ。
+      素直に魚を追うと、魚が水面に上がったとき画面の上半分が蓋と照明で埋まる。
+    - 群れの広がりは最大値ではなく RMS で測る。はぐれた 1 匹に引きずられて
+      画が全景と変わらなくなるのを防ぐ。
+    - 寄り・接写・エビは、線分 vs AABB（layout の obstacles）で遮蔽を判定し、
+      石や流木の裏の被写体は選び直す（最大 8 回）。
+
+  ● 近似・推定（C）
+    - 手持ちの微振動は振幅 = 被写体距離 × 0.16%、0.08–0.19 Hz の正弦の重ね合わせ。
+      三脚に載せた実機でも呼吸と床の振動でこの程度は動く、という程度の当て込み。
+    - ショットの重み・尺・画角の範囲はすべて見た目で決めた値で、根拠はない。
+
+  ● 操作
+    Esc = 終了 / Space・→ = 次のカット / マウス移動・タップで操作ボタンが 2.8 秒出る
+============================================================================ -->
+
+<!-- ============================================================================
+  手で撒く給餌（v0.8.3）— 全モードで使える、粒としての給餌
+
+  ● 操作（誤爆しない 2 段階）
+    [餌をあげる] で構える → 水面をタップ、またはなぞって撒く。
+    1 タップでは餌が出ないので、カメラを回す・ガラスを叩く操作と衝突しない。
+    構えている間はカメラのドラッグを止め、15 秒放置すると自動で解除する。
+    ギャラリーモードでも同じ。構えるとシネマカメラがそのショットで停止し、狙いを定められる。
+
+  ● なぜ Sim.feed() と別経路なのか
+    既存の feed() は「与えた乾物をその場で順位と胃の空きに応じて配る」抽象モデルで、
+    時間倍率 ×600 でも成立する。自動給餌はこちらのまま。
+    粒は実時間でしか意味がないので、構えている間と粒が残っている間だけ倍率を ×1 として扱う
+    （this.speed は変えない。ボタンの選択は残す）。
+
+  ● 窒素（プールを新設していない）
+    撒く       … 乾物ぜんぶを DfN/DfC（懸濁デトリタス）へ入れ、ledger.feedN に計上
+    食べる     … DfN → その個体の胃 gutN（DfN の残量でクランプ）
+    底に落ちる … DfN → DsN、フィルターに吸われる … DfN → DfF
+    すべて stockN() の中の移動なので窒素台帳はそのまま閉じる。
+    検証: 60cm 水草 / 90cm / 海水 600cm で 3 ラウンド撒いて食わせ切り、その後 33 時間進めても
+    相対残差 1e-13 以下。
+
+  ● 魚の食いつき（個体差はここに出る）
+    反応の遅れ … 撒かれたひと山ごとに 1 回だけ引く。0.15 + 2.8×(1−大胆さ) + 0〜0.9 秒。
+                 大胆な個体はほぼ即、臆病な個体は数秒ためらってから寄る（Bell 2009 の
+                 個性の反復率に対応させた推定 C）
+    見つける距離 … (6 + 体長×2.5) × 空腹 × 大胆さ × (1−0.45×ストレス) × √食欲、6–60 cm。
+                 体長だけに比例させると 2 cm のテトラがほぼ盲目になるので下駄を履かせている（C）
+    突っ込む速さ … バースト速度 × (0.30 + 0.45×大胆さ) × √食欲
+    1 粒も見えないときは餌の雲の重心へ向かう（粒を識別する前に群れが移動する挙動）
+    着底した粒は見つけにくい。底を意識する種（遊泳層が低い種）ほど気づく
+    満腹（胃の詰まり 90% 超）の個体は見向きもしない。胃は eatFood で即時に埋まるので、
+    食べた個体から順に興味を失っていくのがその場で見える
+
+  ● 近似（C）
+    - 吸い込み摂餌は「口から体長の 0.5 倍まで詰めたら 1 秒あたり 4 回の割合で捕らえる」確率過程。
+      操舵の分解能では粒とぴったり重ならないため。実際の吸引摂餌は 0.3–1 体長で効く
+    - 距離は重心ではなく吻端（脊椎の先頭 = 口）から測る。重心だと体長の 0.45 倍ぶん遠く見積もる
+    - 沈降速度: ペレット 1.9 / フレーク 0.40（40 秒ほど浮いてから沈む）/ 生餌 2.7 cm/s
+    - 粒の見かけの大きさは実寸の 5 倍に誇張。実寸 1–2 mm では引きの画で 1–2 px にしかならない
+    - エビは落ちた粒へ歩いて寄るだけ。栄養は既存のデトリタス摂食が担う（二重計上を避ける）
+============================================================================ -->
 </head>
 <body>
 <div id="app">
@@ -93,6 +207,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       <div id="hud"></div>
       <div id="viewfoot"></div>
       <div id="toast"></div>
+      <div id="gallery"><div id="galvig"></div><div id="galfade"></div><div id="galcap"></div><div id="galui"></div></div>
     </div>
     <aside id="panel">
       <nav id="tabs"></nav>
@@ -991,6 +1106,46 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       this.ledger.feedN += dry * nPerG; this.ledger.feedG += dry; this.ledger.uneatenG += rem;
       this.ev(`給餌 ${grams.toFixed(2)} g (${fd.name}) 摂食 ${eaten.toFixed(2)} g / 残餌 ${rem.toFixed(2)} g`, 'event');
       return { eaten, uneaten: rem };
+    }
+    // ---- 粒としての給餌（手で撒く・実時間）。feed() の抽象版とは別経路。
+    //  プールは新設せず、既存のプール間の移動だけで表す:
+    //    撒く       … 乾物ぜんぶを DfN/DfC（懸濁デトリタス）へ入れ、ledger.feedN に計上
+    //    食べる     … DfN → その個体の胃（gutN）
+    //    底に落ちる … DfN → DsN
+    //    吸われる   … DfN → DfF（フィルターの物理濾過）
+    //  どれも stockN() の中での移動なので、窒素台帳はそのまま閉じる。
+    dropFood(grams, type = 'pellet') {
+      const fd = DB.FEEDS[type] || DB.FEEDS.pellet; const dry = grams * fd.dryFrac; if (!(dry > 0)) return 0;
+      const nPerG = this.feedN(type), cPerG = nPerG * fd.CN;
+      this.M.DfN += dry * nPerG; this.M.DfC += dry * cPerG; this.M.PO4 += dry * 12 * 0.65 * 0.5;
+      this.ledger.feedN += dry * nPerG; this.ledger.feedG += dry;
+      return dry;
+    }
+    // 1 粒を 1 匹が食べる。実際に取れた乾物 g を返す（胃が一杯なら 0）
+    eatFood(f, dryG, type = 'pellet') {
+      if (!f || !f.alive || !(dryG > 0)) return 0;
+      const fd = DB.FEEDS[type] || DB.FEEDS.pellet;
+      const nPerG = this.feedN(type), cPerG = nPerG * fd.CN;
+      const cap = Math.max(0, this.gutCap(f) - f.gut);
+      // 漂っているあいだに一部は無機化されているので、DfN の残量でも頭を押さえる
+      const take = Math.min(dryG, cap, this.M.DfN / Math.max(1e-12, nPerG));
+      if (!(take > 1e-12)) return 0;
+      this.M.DfN -= take * nPerG; this.M.DfC = Math.max(0, this.M.DfC - take * cPerG);
+      f.gut += take; f.gutN += take * nPerG; f.gutC += take * cPerG;
+      f.gutDigest = fd.digest; f.gutType = type; f.lastMealT = this.t;
+      return take;
+    }
+    settleFood(dryG, type = 'pellet') {
+      const fd = DB.FEEDS[type] || DB.FEEDS.pellet, nPerG = this.feedN(type), cPerG = nPerG * fd.CN;
+      const n = Math.min(dryG * nPerG, this.M.DfN); this.M.DfN -= n; this.M.DsN += n;
+      const c = Math.min(dryG * cPerG, this.M.DfC); this.M.DfC -= c; this.M.DsC += c;
+      this.ledger.uneatenG += dryG;
+    }
+    trapFood(dryG, type = 'pellet') {
+      const fd = DB.FEEDS[type] || DB.FEEDS.pellet, nPerG = this.feedN(type), cPerG = nPerG * fd.CN;
+      const n = Math.min(dryG * nPerG, this.M.DfN); this.M.DfN -= n; this.M.DfF += n;
+      const c = Math.min(dryG * cPerG, this.M.DfC); this.M.DfC -= c; this.M.DfFC = (this.M.DfFC || 0) + c;
+      this.ledger.uneatenG += dryG;
     }
     gutCap(f) { return this.cmax(f) * 0.6; }
     cmax(f) { const sp = f.sp, tr = f.traits; const fT = Math.exp(-Math.pow((this.T - sp.Topt) / 6, 2)); const taper = clamp(1.5 * (1 - Math.pow(f.L / f.Linf, 3.0)), 0.12, 1); return sp.c0 * tr.appetite * taper * Math.pow(f.W, 0.7) * fT * (1 - 0.8 * f.S); } // g dry/日（個体の L∞ に近づくと食欲が落ちて漸近）
@@ -2771,11 +2926,18 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         a.yPref = clamp(sp.layer + (r() - 0.5) * 0.7, 0.1, 0.92); // 遊泳層のまわりで深さの好みを変える（底で休む・上層を回る）
       }
       if (feeding && a.state !== 'burst') { a.state = 'cruise'; a.target = Math.max(a.target, sp.burstBL * 0.45); a.beating = true; }
+      // 粒に向かうときの速さ。大胆で食欲のある個体ほど速く突っ込む（個体差はここに出る）
+      if (a.foodTgt && a.state !== 'burst') { const tr = f.traits || {};
+        a.state = 'cruise'; a.beating = true;
+        a.target = Math.max(a.target, sp.burstBL * (0.30 + 0.45 * (tr.bold != null ? tr.bold : 0.5)) * Math.pow(tr.appetite || 1, 0.5)); }
       // 望む方向 d（欲求: 遊泳層・徘徊・群れ・摂餌・驚愕）→ 壁・機材のコンテキスト操舵 → 壁からの離脱 → 現ヘディング維持 → 低域通過
       const d = new V3();
       let targetY = b.y0 + (b.y1 - b.y0) * (a.yPref != null ? a.yPref : sp.layer);
       if (hypoxic) targetY = b.y1 - 1.5; else if (hiding) targetY = b.y0 + (b.y1 - b.y0) * 0.15; if (feeding) targetY = b.y1 - 2;
-      d.y += (targetY - a.p.y) / Math.max(L, 5) * 0.4;
+      // 粒を狙っているあいだは遊泳層の好みより粒の高さが勝つ。
+      // これを入れないと、底に落ちた粒の 3 cm 上でホバリングしたまま永遠に届かない
+      if (a.foodTgt) { targetY = a.foodTgt.y; d.y += (targetY - a.p.y) / Math.max(L, 5) * 1.6; }
+      else d.y += (targetY - a.p.y) / Math.max(L, 5) * 0.4;
       const hx = Math.sin(a.yaw), hz = Math.cos(a.yaw);
       // 群れ（ゾーンモデル）
       if (!a.drift) a.drift = new V3(); if (sp.social !== 'shoal' && sp.social !== 'pair' && sp.social !== 'loose') a.drift.set(0, 0, 0);
@@ -2790,6 +2952,8 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         const bold2 = f.traits ? f.traits.bold : 0.5; d.add(sep, 1.0); a.drift.copy(sep); if (nA) d.add(ali.scale(1 / nA), 0.9 * kSoc * (startled ? 2 : 1)); if (nC) d.add(coh.scale(1 / nC), 0.45 * kSoc * (1.3 - 0.6 * bold2) * (startled || hiding ? 2 : 1));
         a.shoalN = nA; a.speedCap = ahead < 1.5 * L ? clamp((ahead - 0.6 * L) / (0.9 * L), 0.15, 1) : 1; a.shoalU = nA ? spdSum / nA : null; // 前が詰まれば減速、群れの速さに合わせる
       } else { a.speedCap = 1; a.shoalU = null; }
+      // 粒の餌（aqua_food.js）が見えている個体は、その 1 粒に向かう。foodTgt は FoodField が毎フレーム決める
+      if (a.foodTgt) { const v = new V3(a.foodTgt.x - a.p.x, a.foodTgt.y - a.p.y, a.foodTgt.z - a.p.z); const l = v.len() + 1e-6; d.add(v.scale(1 / l), 2.8); }
       if (feeding) { const v = new V3(this.foodPos.x - a.p.x, this.foodPos.y - a.p.y, this.foodPos.z - a.p.z); const l = v.len() + 1e-6; if (l > 1.5 * L) d.add(v.scale(1 / l), 2.0); else d.add(new V3(r() - 0.5, -0.3, r() - 0.5), 1.5); }
       if (startled) { const v = new V3(a.p.x - this.startleFrom.x, 0, a.p.z - this.startleFrom.z); const l = v.len() + 1e-6; d.add(v.scale(1 / l), 3); }
       // 徘徊 / オスカーは空腹時に前面ガラスへ
@@ -2861,7 +3025,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         const cyc = G.burstCoast * (a.target > G.gaitBL ? 1 : 0.4);
         a.phaseT -= h;
         if (a.phaseT <= 0) { if (a.beating && r() < cyc) { a.beating = false; a.phaseT = G.coastT[0] + (G.coastT[1] - G.coastT[0]) * r(); } else { a.beating = true; a.phaseT = G.beatT[0] + (G.beatT[1] - G.beatT[0]) * r(); } }
-        let tBL = a.target; if (a.shoalU != null && !feeding0) tBL = 0.6 * tBL + 0.4 * clamp(a.shoalU / 1.2, G.cruiseBL[0], G.cruiseBL[1]); // 群れでは速さを揃える
+        let tBL = a.target; if (a.shoalU != null && !feeding0 && !a.foodTgt) tBL = 0.6 * tBL + 0.4 * clamp(a.shoalU / 1.2, G.cruiseBL[0], G.cruiseBL[1]); // 群れでは速さを揃える
         target = a.beating ? tBL * L * 1.2 * (a.speedCap || 1) : 0;
         const brake = 0.35 * L + 0.3 * a.speed; if (a.wallNear < brake) target = Math.max(0.06 * L, target * a.wallNear / brake); // 鼻先が壁（旋回半径＋0.3 s ぶん）: 尾鰭で壁に押し付けず、回頭を優先
       }
@@ -3180,6 +3344,13 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
           else if (pr < 0.12) { a.mode = 'swim'; a.modeT = 1.5 + 3 * r(); a.surf = null; }
           else if (pr < 0.55) { a.mode = 'feed'; a.modeT = 3 + 9 * r(); }
           else { a.mode = 'walk'; a.modeT = 3 + 7 * r(); a.yawTgt = a.yaw + (r() - 0.5) * 2.2; }
+        }
+        // 落ちた粒が近くにあれば、そちらへ向き直って歩く（FoodField が foodTgt を置く）。
+        // 栄養は既存のデトリタス摂食（shrimpStep）が担うので、ここでは寄るだけ。二重計上を避ける
+        if (a.foodTgt && a.mode !== 'flip' && a.mode !== 'molt') {
+          const dx = a.foodTgt.x - a.p.x, dz = a.foodTgt.z - a.p.z, dh = Math.hypot(dx, dz);
+          if (dh > 0.9) { a.mode = 'walk'; a.modeT = Math.max(a.modeT, 1.2); a.yawTgt = Math.atan2(dx, dz); }
+          else { a.mode = 'feed'; a.modeT = Math.max(a.modeT, 2.5); }
         }
         const restT = Body.restAngles();
         for (let i = 0; i < 7; i++) a.thT[i] = restT[i] + Math.sin(this.time * 0.7 + i * 0.5 + a.seed * 6) * 1.5;
@@ -4290,9 +4461,12 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       const lvl = s.levelFrac(); const yTop = this.yWater0 + this.waterH * lvl; this.surfMesh.position.y = yTop; this.waterBox.scale.y = lvl; this.waterBox.position.y = (this.yWater0 + yTop) / 2; this.waterBox2.scale.y = lvl; this.waterBox2.position.y = this.waterBox.position.y;
       // カメラ
       const o = this.orbit;
-      if (this.follow === 'shoal') { const al = s.fish.filter(f => f.alive); if (al.length) { const c = new THREE.Vector3(); for (const f of al) { const a = ag.get(f); c.x += a.p.x; c.y += a.p.y; c.z += a.p.z; } c.multiplyScalar(1 / al.length); o.target.lerp(c, Math.min(1, dtReal * 2)); } else this.follow = null; }
+      if (this.cine && this.cine.active) { /* ギャラリー: シネマカメラが位置と注視点を直接持つ */ }
+      else if (this.follow === 'shoal') { const al = s.fish.filter(f => f.alive); if (al.length) { const c = new THREE.Vector3(); for (const f of al) { const a = ag.get(f); c.x += a.p.x; c.y += a.p.y; c.z += a.p.z; } c.multiplyScalar(1 / al.length); o.target.lerp(c, Math.min(1, dtReal * 2)); } else this.follow = null; }
       else if (this.follow) { const ff = s.fish.find(f => f.id === this.follow); if (ff) { const a = ag.get(ff); o.target.lerp(new THREE.Vector3(a.p.x, a.p.y, a.p.z), Math.min(1, dtReal * 3)); } else this.follow = null; }
-      const cp = new THREE.Vector3(o.target.x + o.radius * Math.sin(o.phi) * Math.sin(o.theta), o.target.y + o.radius * Math.cos(o.phi), o.target.z + o.radius * Math.sin(o.phi) * Math.cos(o.theta)); this.camera.position.copy(cp); this.camera.lookAt(o.target);
+      let cp;
+      if (this.cine && this.cine.active) { cp = this.cine.apply(dtReal); }
+      else { cp = new THREE.Vector3(o.target.x + o.radius * Math.sin(o.phi) * Math.sin(o.theta), o.target.y + o.radius * Math.cos(o.phi), o.target.z + o.radius * Math.sin(o.phi) * Math.cos(o.theta)); this.camera.position.copy(cp); this.camera.lookAt(o.target); }
       const ctr = new THREE.Vector3(0, (this.yWater0 + yTop) / 2, 0), half = this.sim.inner.D / 2;
       if (this.subMat) { const u = this.subMat.uniforms; u.uTime.value = this.time; u.uCamPos.value.copy(cp); u.uCenter.value.copy(ctr); u.uHalf.value = half; u.uCaustic.value = 0.45 * this.lightInt * (1 - wc.turb) * (1 - wc.yellow * 0.6); u.uLightInt.value = 0.45 + 0.5 * this.lightInt; u.uDepthTint.value = wc.tint; u.uWaterColor.value.copy(wv); u.uDetritus.value = clamp((s.M.DfN + s.M.DsN) / s.V / 5, 0, 1); }
       this.surfMat.uniforms.uTime.value = this.time; this.surfMat.uniforms.uCamPos.value.copy(cp); this.surfMat.uniforms.uWaterColor.value.copy(wv); this.surfMat.uniforms.uLightInt.value = 0.5 + 0.6 * this.lightInt;
@@ -4325,14 +4499,19 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
         this.frameEma = (this.frameEma || dtReal) * 0.9 + dtReal * 0.1; this.frameK = (this.frameK || 0) + 1; const every = this.frameEma > 0.08 ? 4 : this.frameEma > 0.04 ? 2 : 1; // 低フレームレートではソルバを間引く（粒子は凍結した場で進む）
         this.flow.update(Math.min(dtReal, 0.1), nP, this.frameK % every === 0); this.flowRender.update(this.flow); this.flowRender.group.visible = true;
       } else if (this.flowRender) this.flowRender.group.visible = false;
+      // 餌の粒（aqua_food.js）
+      if (AQ.FoodRender) {
+        if (!this.foodRender) this.foodRender = new AQ.FoodRender(this.scene);
+        this.foodRender.update(this.foodField, this.time);
+      }
       this.r.render(this.scene, this.camera);
     }
     resize() { const w = this.canvas.clientWidth, h = this.canvas.clientHeight; if (!w || !h) return; this.r.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
     bindInput() {
       const c = this.canvas; let drag = null, pinch = null; const o = this.orbit;
-      const down = (x, y, id) => { drag = { x, y, id, moved: 0 }; };
-      const move = (x, y) => { if (!drag) return; const dx = x - drag.x, dy = y - drag.y; drag.x = x; drag.y = y; drag.moved += Math.abs(dx) + Math.abs(dy); o.theta -= dx * 0.006; o.phi = clamp(o.phi - dy * 0.005, 0.25, 1.55); };
-      const up = (x, y) => { if (drag && drag.moved < 4 && this.onTap) this.onTap(x, y); drag = null; };
+      const down = (x, y, id) => { if (this.foodMode) { this.foodDown = true; this.onFood && this.onFood(x, y, false); return; } drag = { x, y, id, moved: 0 }; };
+      const move = (x, y) => { if (this.foodMode) { this.onFood && this.onFood(x, y, !!this.foodDown); return; } if (!drag) return; const dx = x - drag.x, dy = y - drag.y; drag.x = x; drag.y = y; drag.moved += Math.abs(dx) + Math.abs(dy); o.theta -= dx * 0.006; o.phi = clamp(o.phi - dy * 0.005, 0.25, 1.55); };
+      const up = (x, y) => { if (this.foodMode) { this.foodDown = false; return; } if (drag && drag.moved < 4 && this.onTap) this.onTap(x, y); drag = null; };
       c.addEventListener('mousedown', e => down(e.clientX, e.clientY)); window.addEventListener('mousemove', e => move(e.clientX, e.clientY)); window.addEventListener('mouseup', e => up(e.clientX, e.clientY));
       c.addEventListener('wheel', e => { e.preventDefault(); o.radius = clamp(o.radius * (1 + e.deltaY * 0.001), 40, 600); }, { passive: false });
       c.addEventListener('touchstart', e => { if (e.touches.length === 1) down(e.touches[0].clientX, e.touches[0].clientY); else if (e.touches.length === 2) { drag = null; pinch = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } }, { passive: true });
@@ -4343,6 +4522,555 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
   AQ.Renderer = Renderer; AQ.fishGeometry = fishGeometry;
 })(globalThis);
 
+</script>
+<script>
+/* aqua_food.js — 粒としての餌（手で撒く給餌）と、魚・エビの食いつき
+
+   なぜ別経路なのか:
+     既存の Sim.feed() は「与えた乾物を、その場で順位と胃の空きに応じて配る」抽象モデル。
+     時間倍率が ×600 でも成立するので自動給餌はこちらのまま。
+     こちらは実時間で粒を撒いて、魚が 1 粒ずつ見つけて食べるところを見るための経路。
+
+   窒素の扱い（プールを新設しない）:
+     撒いた瞬間に乾物ぜんぶを「懸濁デトリタス DfN/DfC」として系に入れ、ledger.feedN に計上する。
+     魚が 1 粒食べたら DfN → その個体の胃（gutN）へ移す。底に落ちたら DfN → DsN、
+     フィルターに吸われたら DfN → DfF。どれも既存のプール間の移動なので、台帳はそのまま閉じる。
+     （粒が漂っている間はデトリタスとして無機化が少し進む。食べる量は DfN の残量でクランプする）
+
+   エビ: 落ちた粒に「歩いて寄る」ところまで。栄養は既存のデトリタス摂食（shrimpStep が
+     DfN/DsN から取る）に任せる。二重計上を避けるため、粒からエビへ直接は移さない。
+
+   単位 cm・g（乾物）・秒。座標は agents / layout と同じ。
+*/
+(function (g) {
+  'use strict';
+  const AQ = g.AQ || (g.AQ = {});
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  // 粒の種類ごとの物性。沈降速度は市販餌の実測レンジ（沈降性ペレット 2–4 cm/s、
+  // フレークはほぼ中性浮力）からの推定（C）。1 粒あたりの乾物も推定（C）。
+  const KIND = {
+    pellet:   { sink: 1.9,  mPer: 0.0016, r: 0.10, col: [0.55, 0.38, 0.20], soak: 0,   wob: 0.25 },
+    flake:    { sink: 0.40, mPer: 0.0007, r: 0.15, col: [0.72, 0.54, 0.27], soak: 40,  wob: 1.10 },
+    fishmeat: { sink: 2.7,  mPer: 0.0042, r: 0.20, col: [0.66, 0.31, 0.25], soak: 0,   wob: 0.18 }
+  };
+  const LIFE = 150;          // 底に落ちた粒がデトリタスに崩れるまでの秒数（実時間, C）
+
+  class FoodField {
+    constructor(sim, agents, shrimpAgents) {
+      this.sim = sim; this.agents = agents; this.shrimpAgents = shrimpAgents || null;
+      this.ps = []; this.t = 0; this.seq = 0; this.rng = AQ.mulberry32(7717);
+      this.sessionG = 0; this.lastDropT = -1e9;
+    }
+    get count() { return this.ps.length; }
+    get active() { return this.ps.length > 0; }
+
+    // 水面の (x, z) に grams を撒く。乾物 g を返す
+    drop(x, z, grams, type = 'pellet') {
+      const s = this.sim, b = this.agents.bounds();
+      const dry = s.dropFood(grams, type); if (!dry) return 0;
+      const K = KIND[type] || KIND.pellet, r = this.rng;
+      const n = clamp(Math.round(dry / K.mPer), 3, 120), m = dry / n;
+      const spread = clamp(b.x1 * 0.10, 1.2, 4.0);           // ひとつまみの散らばり
+      for (let i = 0; i < n; i++) {
+        this.ps.push({
+          id: ++this.seq, type, m,
+          x: clamp(x + (r() - 0.5) * 2 * spread, b.x0 + 0.6, b.x1 - 0.6),
+          y: b.y1 - 0.2 - r() * 0.6,
+          z: clamp(z + (r() - 0.5) * 2 * spread, b.z0 + 0.6, b.z1 - 0.6),
+          vx: (r() - 0.5) * 0.6, vz: (r() - 0.5) * 0.6,
+          age: 0, st: 0, ph: r() * 6.283, seed: r()
+        });
+      }
+      this.sessionG += grams; this.lastDropT = this.t;
+      return dry;
+    }
+    clear() { this.ps.length = 0; }
+
+    // ---- 毎フレーム（h = 魚と同じ時間刻み［実時間 × 魚の倍率］秒）
+    update(h) {
+      if (!this.ps.length) { this.t += h; return; }
+      h = Math.min(0.2, h); this.t += h;
+      const s = this.sim, b = this.agents.bounds(), r = this.rng;
+      const L = AQ.layoutCached ? AQ.layoutCached(s) : null;
+      const intakes = [];
+      if (L) for (const F of L.filters || []) for (const it of F.intakes || []) if (it.box) intakes.push(it.box);
+      const yBed = b.y0;
+
+      // --- 物理: 沈降・漂い・取水口への吸い込み・着底
+      for (let i = this.ps.length - 1; i >= 0; i--) {
+        const p = this.ps[i], K = KIND[p.type] || KIND.pellet;
+        p.age += h;
+        if (p.st === 0) {
+          const floating = K.soak > 0 && p.age < K.soak * (0.6 + 0.8 * p.seed);
+          if (floating) { p.y = b.y1 - 0.15 - 0.1 * Math.sin(this.t * 1.7 + p.ph); }
+          else { p.y -= K.sink * (0.75 + 0.5 * p.seed) * h; }
+          // 漂い: 弱いランダムウォーク＋フレークはひらひら横に流れる
+          p.vx += (r() - 0.5) * 1.4 * K.wob * h; p.vz += (r() - 0.5) * 1.4 * K.wob * h;
+          p.vx *= Math.exp(-h / 1.2); p.vz *= Math.exp(-h / 1.2);
+          p.x += p.vx * h; p.z += p.vz * h;
+          p.x = clamp(p.x, b.x0 + 0.4, b.x1 - 0.4); p.z = clamp(p.z, b.z0 + 0.4, b.z1 - 0.4);
+          // 取水口に入ったらフィルターが物理濾過（DfN → DfF）
+          let sucked = false;
+          for (const bx of intakes) if (p.x > bx.x0 - 1.5 && p.x < bx.x1 + 1.5 && p.y > bx.y0 - 1.5 && p.y < bx.y1 + 1.5 && p.z > bx.z0 - 1.5 && p.z < bx.z1 + 1.5) { sucked = true; break; }
+          if (sucked) { s.trapFood(p.m, p.type); this.ps.splice(i, 1); continue; }
+          if (p.y <= yBed + K.r) { p.y = yBed + K.r; p.st = 1; p.age = 0; p.vx = p.vz = 0; }
+        } else {
+          if (p.age > LIFE * (0.7 + 0.6 * p.seed)) { s.settleFood(p.m, p.type); this.ps.splice(i, 1); continue; }
+        }
+      }
+      // 餌の雲の重心（遠くの個体が「あっちに何かある」と向かう先）
+      if (this.ps.length) { let cx = 0, cy = 0, cz = 0; for (const p of this.ps) { cx += p.x; cy += p.y; cz += p.z; }
+        this.centroid = { x: cx / this.ps.length, y: cy / this.ps.length, z: cz / this.ps.length }; }
+      else this.centroid = null;
+      this.eatFish(h, b);
+      if (this.shrimpAgents) this.lureShrimp();
+    }
+
+    // ---- 魚の食いつき。個体差は traits（食欲・大胆さ）と、いまの空腹・ストレスから
+    eatFish(h, b) {
+      const s = this.sim, ag = this.agents, r = this.rng;
+      for (const f of s.fish) {
+        if (!f.alive || f.act <= 0) continue;
+        const a = ag.get(f); if (!a) continue;
+        const tr = f.traits || {}, bold = tr.bold != null ? tr.bold : 0.5, app = tr.appetite || 1;
+        // 空腹は f.hunger（sim.step 更新）ではなく胃の詰まり具合から直に出す。
+        // ポーズ中や低倍率でも、食べた瞬間に満腹へ向かうのが見えるようにするため
+        const fill = f.gut / Math.max(1e-6, s.gutCap(f));
+        const hun = clamp(1 - fill, 0, 1);
+        if (hun < 0.10) { a.foodTgt = null; continue; }        // 満腹の個体は見向きもしない
+        // 反応の遅れ: 撒かれた「そのひと山」に対して 1 回だけ引く。
+        // 大胆な個体はほぼ即、臆病な個体は数秒ためらってから寄る（Bell 2009 の個性の反復率に対応させた推定 C）
+        if (a.foodDrop !== this.lastDropT) { a.foodDrop = this.lastDropT; a.foodLat = 0.15 + 2.8 * (1 - bold) + 0.9 * r(); }
+        if (this.t - this.lastDropT < a.foodLat) { a.foodTgt = null; continue; }
+        if (a.foodChewT && this.t < a.foodChewT) continue;      // 一口ごとの間合い
+        // 見つけられる距離。体長だけに比例させると 2 cm のテトラがほぼ盲目になるので、
+        // 体長によらない下駄（6 cm）を履かせている（水槽の端の餌にも気づく、という実感に合わせた推定 C）
+        const R = clamp((6 + f.L * 2.5) * (0.7 + 0.9 * hun) * (0.65 + 0.7 * bold) * (1 - 0.45 * f.S) * Math.pow(app, 0.5), 6, 60);
+        const R2 = R * R;
+        // 底の粒は、底を意識する種（遊泳層が低い種）ほど見つけやすい
+        const bottomish = 1 - clamp(f.sp.layer != null ? f.sp.layer : 0.5, 0, 1);
+        // 距離は重心 a.p ではなく吻端（a.spine の先頭 = 口）から測る。
+        // 重心から測ると体長の 0.45 倍ぶん遠く見積もることになり、小型魚がいつまでも粒に届かない
+        const S = a.spine, mx = S ? S[0] : a.p.x, my = S ? S[1] : a.p.y, mz = S ? S[2] : a.p.z;
+        let best = null, bd = R2;
+        for (const p of this.ps) {
+          const dx = p.x - mx, dy = p.y - my, dz = p.z - mz;
+          let d2 = dx * dx + dy * dy + dz * dz; if (d2 > bd) continue;
+          if (p.st === 1) d2 *= (1.8 - 1.2 * bottomish);        // 着底した粒は見つけにくい（底を意識する種ほど気づく）
+          if (d2 < bd) { bd = d2; best = p; }
+        }
+        // 1 粒も見つからなくても、餌の「かたまり」が視界にあれば、とりあえずそちらへ泳ぐ。
+        // 実際の水槽でも、粒を識別する前に散った雲のほうへ群れが移動する
+        if (!best) {
+          const c = this.centroid;
+          if (c && hun > 0.35) {
+            const dx = c.x - mx, dy = c.y - my, dz = c.z - mz, d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 < R2 * 6.0) { a.foodTgt = { x: c.x, y: c.y, z: c.z }; continue; }
+          }
+          a.foodTgt = null; continue;
+        }
+        a.foodTgt = { x: best.x, y: best.y, z: best.z };
+        // 口が届いたら 1 粒くわえる
+        // 吸い込み摂餌。口から体長の 0.5 倍ほどまで詰めれば吸い込める（硬骨魚の吸引摂餌は
+        // おおむね 0.3–1 体長で効く）。ぴったり重なるまで操舵で詰めるのは無理なので、
+        // 届く距離に入ったら 1 秒あたり 3 回の割合で「ひと吸い」を試みる確率過程にしてある（C）
+        const strike = clamp(f.L * 0.5, 1.1, 6);
+        const dx = best.x - mx, dy = best.y - my, dz = best.z - mz;
+        const near = dx * dx + dy * dy + dz * dz <= strike * strike;
+        if (near && r() < 1 - Math.exp(-4.0 * h)) {
+          const took = s.eatFood(f, best.m, best.type);
+          const k = this.ps.indexOf(best); if (k >= 0) this.ps.splice(k, 1);
+          if (took <= 0) { a.foodTgt = null; a.foodChewT = this.t + 8; continue; }   // 胃が一杯 → しばらく興味を失う
+          a.foodChewT = this.t + 0.15 + 0.35 * r();   // 咀嚼と向き直りの間
+          a.foodBiteT = this.t;
+          this.bites = (this.bites || 0) + 1;
+        }
+      }
+    }
+
+    // ---- エビ: 落ちた粒へ歩いて寄る（見た目だけ。栄養は既存のデトリタス摂食が担う）
+    lureShrimp() {
+      const sa = this.shrimpAgents, s = this.sim;
+      const settled = this.ps.filter(p => p.st === 1); if (!settled.length) return;
+      for (const sh of s.shrimpAlive || []) {
+        const a = sa.get(sh); if (!a) continue;
+        let best = null, bd = 12 * 12;
+        for (const p of settled) { const dx = p.x - a.p.x, dz = p.z - a.p.z, dy = p.y - a.p.y; const d2 = dx * dx + dy * dy + dz * dz; if (d2 < bd) { bd = d2; best = p; } }
+        a.foodTgt = best ? { x: best.x, y: best.y, z: best.z } : null;
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------- 描画（THREE があるときだけ）
+  if (typeof g.THREE !== 'undefined') {
+    const THREE = g.THREE;
+    const sprite = () => {
+      const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d');
+      const gr = x.createRadialGradient(16, 16, 0, 16, 16, 16);
+      gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.95)');
+      gr.addColorStop(0.8, 'rgba(255,255,255,0.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      x.fillStyle = gr; x.fillRect(0, 0, 32, 32); return new THREE.CanvasTexture(c);
+    };
+    class FoodRender {
+      constructor(scene) {
+        this.group = new THREE.Group(); scene.add(this.group); this.scene = scene;
+        const tex = this.tex = sprite(); this.sys = {};
+        for (const k in KIND) {
+          const K = KIND[k], N = 1500;
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+          // 粒の見かけの大きさは実寸の 5 倍に誇張してある（実寸 1–2 mm だと引きの画で 1–2 px にしかならず、
+          // 魚が何に向かっているのか分からなくなるため）。物理と摂食は実寸の質量で回している
+          const mat = new THREE.PointsMaterial({ color: new THREE.Color(K.col[0], K.col[1], K.col[2]),
+            size: K.r * 5.0, map: tex, transparent: true, opacity: 1, sizeAttenuation: true, depthWrite: false });
+          const pts = new THREE.Points(geo, mat); pts.frustumCulled = false; pts.renderOrder = 6;
+          this.group.add(pts); this.sys[k] = { pts, geo, N };
+        }
+        const ring = new THREE.Mesh(new THREE.RingGeometry(0.85, 1.2, 30),
+          new THREE.MeshBasicMaterial({ color: 0xffd07a, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false, depthTest: false }));
+        ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 40;
+        this.group.add(ring); this.ring = ring;
+      }
+      update(field, t) {
+        for (const k in this.sys) { const S = this.sys[k]; S.n = 0; }
+        if (field) for (const p of field.ps) {
+          const S = this.sys[p.type] || this.sys.pellet; if (!S || S.n >= S.N) continue;
+          const arr = S.geo.attributes.position.array, i = S.n * 3;
+          arr[i] = p.x; arr[i + 1] = p.y; arr[i + 2] = p.z; S.n++;
+        }
+        for (const k in this.sys) {
+          const S = this.sys[k]; S.geo.setDrawRange(0, S.n);
+          S.geo.attributes.position.needsUpdate = true; S.pts.visible = S.n > 0;
+        }
+        if (this.ring.visible) { const k = 1 + 0.10 * Math.sin(t * 5.5); this.ring.scale.set(k, k, 1); }
+      }
+      setMarker(p) {
+        if (!p) { this.ring.visible = false; return; }
+        this.ring.visible = true; this.ring.position.set(p.x, p.y + 0.25, p.z);
+      }
+      dispose() { this.group.parent && this.group.parent.remove(this.group); }
+    }
+    AQ.FoodRender = FoodRender;
+  }
+
+  AQ.FoodField = FoodField; AQ.FOOD_KIND = KIND;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* aqua_cine.js — ギャラリーモードの自動カメラ（計器を一切出さず「実際に水槽を眺めている」画を作る）
+
+   考え方:
+   ・ショットの列を自動生成して切り替える。1 ショット = 開始位置 / 終了位置 / 注視点 / 画角 で、
+     easeInOutSine（両端だけ柔らかい、途中はほぼ等速）で動かす。実際のドリーの速度プロファイルに近い。
+   ・カメラは必ずガラスの外側に留める。現実に水槽を見るときと同じ視点で、水中には入らない。
+     （水中に入れると subMat の光路長計算が破綻するという実装上の理由もある）
+   ・被写体は毎回 sim / agents / layout から選び直す。魚・群れ・水草の群・石・流木・サンゴ・エビ・吐出口。
+   ・微細な手持ち揺れ（振幅 数 mm、0.08–0.19 Hz）を足して、固定カメラの「死んだ画」を避ける。
+     三脚に載せた実機でも呼吸と床の振動でこの程度は動く。
+   ・カットのたびに 0.3 秒弱の暗転からの立ち上がりを入れる（DOM のオーバーレイ側で描く）。
+
+   座標は render と同じ cm 系: x=幅（−W/2..W/2）, y=上（0 = 底ガラス下面）, z=奥行き（+D/2 が前面）
+*/
+(function (g) {
+  'use strict';
+  const AQ = g.AQ || (g.AQ = {}), THREE = g.THREE;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const V3 = (x, y, z) => new THREE.Vector3(x || 0, y || 0, z || 0);
+  const easeIO = t => 0.5 - 0.5 * Math.cos(Math.PI * clamp(t, 0, 1));   // easeInOutSine
+
+  class Cine {
+    constructor(renderer) {
+      this.r = renderer; this.active = false;
+      this.shot = null; this.t = 0; this.time = 0; this.lastKind = null; this.n = 0;
+      this.onFade = null; this.fade = 0;
+      this.ph = [0, 1.7, 3.1, 4.4, 5.9, 0.8].map((v, i) => v + i * 0.37);
+    }
+    start() { this.active = true; this.shot = null; this.t = 0; this.n = 0; this.lastKind = null; this.fade = 1; this.fadeT = 0.9; }
+    stop() { this.active = false; this.shot = null; if (this.onFade) this.onFade(0); }
+    next() { if (this.shot) this.t = this.shot.dur; }
+
+    // ---------- 水槽の幾何 ----------
+    env() {
+      const r = this.r, s = r.sim, L = AQ.layoutCached(s), b = r.agents.bounds();
+      return { s, L, b, W: s.tank.W, D: s.tank.D, H: s.tank.H, iW: s.inner.W, iD: s.inner.D, y0: b.y0, yTop: b.y1, standH: L.standH || 60 };
+    }
+    // 画角 fov で 半幅 hw・半高 hh を収めるのに要る距離
+    fitDist(hw, hh, fov) {
+      const asp = this.r.camera.aspect || 1.6;
+      const vy = fov * Math.PI / 360, vx = Math.atan(Math.tan(vy) * asp);
+      return Math.max(hh / Math.tan(vy), hw / Math.tan(vx));
+    }
+    // 高さだけで合わせる距離。縦画面（スマホ）でガラス越しに見るショットに使う。
+    // 幅で合わせると、横長の水槽を縦長の画面に収めようとして極端に後ろへ下がってしまう
+    fitH(hh, fov) { return hh / Math.tan(fov * Math.PI / 360); }
+    get narrow() { return (this.r.camera.aspect || 1.6) < 1.25; }
+    // カメラをガラスの外へ押し出す（前面・側面・上面のうち一番近い面から出す。背面へは回り込ませない）
+    safe(p) {
+      const e = this.E, m = 7;
+      const inX = Math.abs(p.x) < e.W / 2 + m, inZ = p.z < e.D / 2 + m, inY = p.y < e.H + m && p.y > -3;
+      if (inX && inZ && inY) {
+        const dX = (e.W / 2 + m) - Math.abs(p.x), dZ = (e.D / 2 + m) - p.z, dY = (e.H + m) - p.y;
+        if (dX <= dZ && dX <= dY) p.x = (p.x < 0 ? -1 : 1) * (e.W / 2 + m);
+        else if (dY < dZ) p.y = e.H + m;
+        else p.z = e.D / 2 + m;
+      }
+      p.z = Math.max(p.z, -e.D / 2 - 30);                   // 背面の壁に埋まらない
+      p.y = Math.max(p.y, -e.standH + 14);                  // 床を抜けない
+      return p;
+    }
+    // 被写体候補（レイアウト・生体から）
+    pois() {
+      const e = this.E, s = e.s, L = e.L, out = [];
+      const add = (x, y, z, r, w, kind) => { if (isFinite(x) && isFinite(y) && isFinite(z)) out.push({ p: V3(x, y, z), r: Math.max(3.5, r), w, kind }); };
+      for (const h of L.hard || []) add(h.x, h.y + (h.h || 6) * 0.15, h.z, (h.r || 5) * 1.9 + (h.h || 6) * 0.35, 1.0, 'hard');
+      for (const rk of L.rocks || []) if (rk.tier > 0 || Math.random() < 0.4) add(rk.x, rk.y + rk.ry * 0.4, rk.z, Math.max(rk.rx, rk.ry) * 1.7, 0.7, 'rock');
+      for (const c of s.corals || []) if (c.x != null && c.health > 0.05) add(c.x, c.y + 4, c.z, 11 + (c.sp && c.sp.kind === 'anemone' ? 8 : 0), 1.8, 'coral');
+      const front = z => 0.55 + 0.9 * clamp((z + e.iD / 2) / Math.max(1, e.iD), 0, 1); // 手前のものほど寄りやすい
+      for (const p of s.plants || []) if (p.alive && p.B > 0.06) add(p.x, e.y0 + (p.base || 0) + (p.h || 6) * 0.45, p.z, Math.max(7, (p.h || 6) * 0.62), 1.1 * front(p.z), 'plant');
+      for (const F of L.filters || []) for (const o of F.outlets || []) { const bx = o.box; if (bx) add((bx.x0 + bx.x1) / 2, (bx.y0 + bx.y1) / 2, (bx.z0 + bx.z1) / 2, 9, 0.5, 'outlet'); }
+      if (L.airstone) { const a = L.airstone; add(a.x != null ? a.x : 0, e.y0 + 4, a.z != null ? a.z : 0, 10, 0.5, 'air'); }
+      if (!out.length) add(0, (e.y0 + e.yTop) / 2, 0, e.iW * 0.3, 1, 'tank');
+      return out;
+    }
+    pickPoi(kinds, needClear) {
+      let c = this.pois(); if (kinds) { const f = c.filter(o => kinds.indexOf(o.kind) >= 0); if (f.length) c = f; }
+      const draw = () => { let tot = 0; for (const o of c) tot += o.w; let x = Math.random() * tot;
+        for (const o of c) { x -= o.w; if (x <= 0) return o; } return c[c.length - 1]; };
+      if (!needClear) return draw();
+      const e = this.E;
+      for (let k = 0; k < 8; k++) { const o = draw(); if (this.clear(V3(o.p.x, o.p.y + o.r * 0.3, e.D / 2 + 12), o.p)) return o; }
+      return draw();
+    }
+    aliveFish() { const s = this.E.s; return s.fish.filter(f => f.alive); }
+    // カメラ位置 p から被写体 l までが石・流木・機材で塞がれていないか（線分 vs AABB のスラブ法）。
+    // 寄りのショットで岩の裏の被写体を選んでしまうのを避ける
+    clear(p, l) {
+      const obs = this.E.L.obstacles || []; const d = l.clone().sub(p); const len = d.length(); if (len < 1e-3) return true;
+      d.multiplyScalar(1 / len); const eps = 1.2;               // 被写体の直前で当たるのは無視する余裕
+      for (const b of obs) {
+        let t0 = 0, t1 = len - eps; let hit = true;
+        for (const ax of ['x', 'y', 'z']) {
+          const lo = b[ax + '0'], hi = b[ax + '1'], o = p[ax], dd = d[ax];
+          if (Math.abs(dd) < 1e-6) { if (o < lo || o > hi) { hit = false; break; } continue; }
+          let a0 = (lo - o) / dd, a1 = (hi - o) / dd; if (a0 > a1) { const t = a0; a0 = a1; a1 = t; }
+          t0 = Math.max(t0, a0); t1 = Math.min(t1, a1); if (t0 > t1) { hit = false; break; }
+        }
+        if (hit) return false;
+      }
+      return true;
+    }
+
+    // ---------- ショット生成 ----------
+    cut() {
+      this.E = this.env(); this.t = 0; this.n++;
+      const has = this.aliveFish().length, sh = this.E.s.shrimpAlive || [];
+      const menu = [
+        ['establish', 1.0], ['glide', 1.5], ['corner', 1.2], ['push', 1.4],
+        ['low', 0.9], ['high', 0.7], ['macro', 1.1],
+        ['follow', has ? 1.8 : 0], ['shoal', has >= 3 ? 1.4 : 0],
+        ['shrimp', sh.length ? 0.8 : 0]
+      ].filter(m => m[1] > 0 && m[0] !== this.lastKind);
+      let kind = 'establish';
+      if (this.n > 1) { let tot = 0; for (const m of menu) tot += m[1]; let x = Math.random() * tot; for (const m of menu) { x -= m[1]; if (x <= 0) { kind = m[0]; break; } } }
+      this.shot = this['sh_' + kind](); this.shot.kind = kind; this.lastKind = kind;
+      this.fade = 1; this.fadeT = 0.34;
+    }
+    // ふたつの視点をつくる小物: 注視点 l を見る位置 p を、方位 th（0 = 正面）・仰角 el・距離 d で
+    at(l, th, el, d) { return V3(l.x + d * Math.cos(el) * Math.sin(th), l.y + d * Math.sin(el), l.z + d * Math.cos(el) * Math.cos(th)); }
+    // 同上。ただし「方向は保ったまま、ガラスの外に出るまで距離だけ伸ばす」。
+    // 水槽の中の被写体に寄るショットで、前面ガラスより手前に必ず立たせるため
+    at2(l, th, el, d) {
+      const e = this.E, m = 8;
+      const dx = Math.cos(el) * Math.sin(th), dy = Math.sin(el), dz = Math.cos(el) * Math.cos(th);
+      let dd = d;
+      if (dz > 1e-3) dd = Math.max(dd, (e.D / 2 + m - l.z) / dz);       // 前面ガラスの外まで下がる
+      else if (Math.abs(dx) > 1e-3) dd = Math.max(dd, (e.W / 2 + m - Math.abs(l.x)) / Math.abs(dx));
+      return V3(l.x + dd * dx, l.y + dd * dy, l.z + dd * dz);
+    }
+
+    // 全景。水槽が画面いっぱいに収まる引きから、わずかに寄る
+    sh_establish() {
+      const e = this.E, fov = 40 + Math.random() * 5;
+      const c = V3(0, e.H * 0.46, 0);
+      // 見かけの大きさを決めるのは中心までの距離ではなく前面ガラスまでの距離なので D/2 を足す
+      // 縦画面（スマホ）では左右の余白を削らないと水槽が画面の中で小さくなりすぎる
+      const nar = (this.r.camera.aspect || 1.6) < 1.25;
+      const d = this.fitDist(e.W * (nar ? 0.53 : 0.60), e.H * (nar ? 0.60 : 0.70), fov) + e.D / 2;
+      const th0 = (Math.random() - 0.5) * 0.5, th1 = th0 + (Math.random() - 0.5) * 0.35;
+      return { dur: 11 + Math.random() * 4, fov, fov2: fov - 3,
+        from: { p: this.at(c, th0, 0.10, d * 1.10), l: c.clone() },
+        to: { p: this.at(c, th1, 0.06, d * 0.94), l: c.clone().add(V3(0, -e.H * 0.02, 0)) } };
+    }
+    // 正面をゆっくり横に流す。ガラスの前を歩いて眺めるときの見え方
+    sh_glide() {
+      const e = this.E, fov = 32 + Math.random() * 6, dir = Math.random() < 0.5 ? -1 : 1;
+      const hh = e.yTop - e.y0;
+      const y = e.y0 + hh * (0.35 + Math.random() * 0.35);
+      const d = e.D / 2 + (this.narrow ? this.fitH(hh * 0.56, fov) : this.fitDist(e.iW * 0.30, e.iW * 0.20, fov));
+      const ax = e.iW * (0.20 + Math.random() * 0.16);
+      return { dur: 13 + Math.random() * 5, fov,
+        from: { p: V3(-dir * ax, y, d), l: V3(-dir * ax * 0.55, y - 1, -e.D * 0.15) },
+        to: { p: V3(dir * ax, y + (Math.random() - 0.5) * 6, d), l: V3(dir * ax * 0.55, y - 2, -e.D * 0.15) } };
+    }
+    // 斜め前からゆっくり回り込む。角から覗く定番の角度
+    sh_corner() {
+      const e = this.E, fov = 34 + Math.random() * 5;
+      const c = V3(0, e.H * 0.44, 0);
+      const nar = (this.r.camera.aspect || 1.6) < 1.25;
+      const d = this.fitDist(Math.hypot(e.W, e.D) * (nar ? 0.30 : 0.34), e.H * (nar ? 0.55 : 0.62), fov) + e.D / 4;
+      const s = Math.random() < 0.5 ? -1 : 1, th0 = s * (0.30 + Math.random() * 0.35), th1 = s * (0.75 + Math.random() * 0.30);
+      const rev = Math.random() < 0.5;
+      return { dur: 12 + Math.random() * 4, fov,
+        from: { p: this.at(c, rev ? th1 : th0, 0.13, d), l: c.clone() },
+        to: { p: this.at(c, rev ? th0 : th1, 0.05, d * 0.94), l: c.clone() } };
+    }
+    // 被写体に寄る
+    sh_push() {
+      const e = this.E, o = this.pickPoi(null, true), fov = 29 + Math.random() * 6;
+      const d = this.fitDist(o.r, o.r * 0.72, fov);
+      const th = (Math.random() - 0.5) * 1.0, el = -0.02 + Math.random() * 0.24;
+      const l0 = o.p.clone().add(V3(0, o.r * 0.25, 0)), l1 = o.p.clone();
+      return { dur: 10 + Math.random() * 4, fov, fov2: fov - 2,
+        from: { p: this.at2(l0, th, el, d * 1.75), l: l0 },
+        to: { p: this.at2(l1, th * 0.8, el * 0.7, d * 0.85), l: l1 } };
+    }
+    // 底床すれすれから水面を見上げる
+    sh_low() {
+      const e = this.E, fov = 38 + Math.random() * 6, dir = Math.random() < 0.5 ? -1 : 1;
+      const hh = e.yTop - e.y0, y = e.y0 + hh * 0.16;
+      const d = e.D / 2 + Math.max(e.iD * (0.35 + Math.random() * 0.35), this.narrow ? this.fitH(hh * 0.45, fov) : 0);
+      const lx = dir * e.iW * 0.16;
+      // 注視点は水面の少し下。水面より上を見ると蓋と照明で画面が埋まる
+      const ly = e.yTop - hh * 0.10;
+      return { dur: 9 + Math.random() * 4, fov,
+        from: { p: V3(-lx * 0.7, y, d), l: V3(lx * 0.3, ly, -e.D * 0.2) },
+        to: { p: V3(lx * 0.7, y + 3, d), l: V3(-lx * 0.2, ly + hh * 0.04, -e.D * 0.2) } };
+    }
+    // 立って見下ろす。水面の揺れと上から見た陣形
+    sh_high() {
+      const e = this.E, fov = 38 + Math.random() * 6;
+      // 水槽の前縁から身を乗り出して覗き込む位置。照明より高くすると器具の裏で画面が埋まるので H の少し上まで
+      const y = e.H * (1.02 + Math.random() * 0.16);
+      const z = e.D / 2 + e.iD * (0.10 + Math.random() * 0.22);
+      const x0 = (Math.random() - 0.5) * e.iW * 0.4;
+      const ly = e.y0 + (e.yTop - e.y0) * 0.30;
+      return { dur: 9 + Math.random() * 3, fov,
+        from: { p: V3(x0, y, z), l: V3(x0 * 0.25, ly, -e.D * 0.10) },
+        to: { p: V3(-x0 * 0.6, y * 0.96, z * 0.88), l: V3(-x0 * 0.1, ly, -e.D * 0.14) } };
+    }
+    // 接写。葉先・石肌・サンゴのポリプなど
+    sh_macro() {
+      const e = this.E, o = this.pickPoi(['plant', 'coral', 'hard', 'rock', 'outlet', 'air'], true), fov = 25 + Math.random() * 5;
+      const rr = Math.min(o.r, 13);
+      const d = this.fitDist(rr, rr * 0.7, fov);
+      const th = (Math.random() - 0.5) * 0.9, el = -0.05 + Math.random() * 0.3;
+      const dr = V3((Math.random() - 0.5) * rr * 0.6, (Math.random() - 0.5) * rr * 0.35, 0);
+      return { dur: 8 + Math.random() * 4, fov,
+        from: { p: this.at2(o.p, th, el, d * 1.15).sub(dr), l: o.p.clone().sub(dr.clone().multiplyScalar(0.3)) },
+        to: { p: this.at2(o.p, th * 0.7, el, d * 0.95).add(dr), l: o.p.clone().add(dr.clone().multiplyScalar(0.3)) } };
+    }
+    // 1 匹を追う。カメラは前面ガラスの外に留まり、横位置と高さだけ遅れて付いていく
+    sh_follow() {
+      const e = this.E, al = this.aliveFish(); if (!al.length) return this.sh_glide();
+      al.sort((a, b) => b.L - a.L);
+      const f = al[Math.floor(Math.random() * Math.min(al.length, Math.max(1, Math.ceil(al.length * 0.6))))];
+      const fov = 28 + Math.random() * 6;
+      const d = clamp(f.L * (7 + Math.random() * 5), 22, e.W * 1.2);
+      const side = Math.random() < 0.5 ? -1 : 1;              // 被写体を画面の左右どちらに置くか
+      const st = { p: null, l: null };
+      const self = this;
+      const hh = e.yTop - e.y0;
+      return { dur: 11 + Math.random() * 5, fov, track(u, ea, dt) {
+          const a = self.r.agents.get(f);
+          // 構図の中心は魚そのものではなく、水柱の中に引き戻した高さ。
+          // そのまま追うと魚が水面に上がったとき画面の上半分が蓋と照明で埋まる
+          const cy = clamp(a.p.y, e.y0 + hh * 0.14, e.yTop - hh * 0.24);
+          const q = V3(a.p.x, cy, a.p.z);
+          const want = V3(clamp(a.p.x + side * d * 0.13, -e.iW * 0.6, e.iW * 0.6), cy + 1.5, e.D / 2 + d);
+          if (!st.p) { st.p = want.clone(); st.l = q.clone(); }
+          st.p.lerp(want, 1 - Math.exp(-dt / 0.9)); st.l.lerp(q, 1 - Math.exp(-dt / 0.42));
+          return { p: st.p.clone(), l: st.l.clone().add(V3(-side * d * 0.055, 0, 0)) };   // 三分割: 被写体を中心から外す
+        }, dead() { return !f.alive; } };
+    }
+    // 群れ。重心のまわりをゆっくり回る
+    sh_shoal() {
+      const e = this.E, al = this.aliveFish(); if (al.length < 2) return this.sh_glide();
+      const fov = 33 + Math.random() * 5, self = this;
+      const s0 = Math.random() < 0.5 ? -1 : 1, th0 = s0 * (0.15 + Math.random() * 0.5);
+      const st = { c: null };
+      const dur = 11 + Math.random() * 5;
+      return { dur, fov, track(u, ea, dt) {
+          const c = V3(); let n = 0, sp = 0;
+          for (const f of al) if (f.alive) { const a = self.r.agents.get(f); c.x += a.p.x; c.y += a.p.y; c.z += a.p.z; n++; }
+          if (!n) return { p: st.p || V3(0, e.H * 0.5, e.D), l: V3(0, e.H * 0.45, 0) };
+          c.multiplyScalar(1 / n);
+          // 広がりは最大値ではなく RMS。1 匹のはぐれ個体に引きずられて画が遠くなるのを防ぐ
+          for (const f of al) if (f.alive) { const a = self.r.agents.get(f); const dx = a.p.x - c.x, dy = a.p.y - c.y, dz = a.p.z - c.z; sp += dx * dx + dy * dy + dz * dz; }
+          sp = Math.sqrt(sp / n);
+          const hh = e.yTop - e.y0; c.y = clamp(c.y, e.y0 + hh * 0.18, e.yTop - hh * 0.32);
+          if (!st.c) st.c = c.clone(); st.c.lerp(c, 1 - Math.exp(-dt / 1.4));
+          const d = clamp(self.fitDist(sp * 1.7 + 7, sp * 1.2 + 5, fov), e.W * 0.42, e.W * 1.05);
+          const th = th0 + (s0 > 0 ? -1 : 1) * ea * 0.7;
+          const p = self.at2(st.c, th, 0.03 + 0.07 * Math.sin(ea * Math.PI), d);
+          st.p = p; return { p, l: st.c.clone() };
+        } };
+    }
+    // エビ。面に貼り付いているので低い位置から寄る
+    sh_shrimp() {
+      const e = this.E, sa = this.r.shrimpAgents, list = e.s.shrimpAlive || [];
+      if (!sa || !list.length) return this.sh_macro();
+      // 前面ガラスに近い個体を選ぶ。カメラはガラスの外にしか立てないので、奥の個体には寄れない
+      const near = list.map(x => ({ x, p: sa.get(x).p })).sort((a, b) => b.p.z - a.p.z);
+      const pool = near.slice(0, Math.max(1, Math.ceil(near.length * 0.4)));
+      let pick = null;
+      for (let k = 0; k < 8 && !pick; k++) {
+        const cand = pool[Math.floor(Math.random() * pool.length)];
+        const q = V3(cand.p.x, cand.p.y + 0.6, cand.p.z);
+        if (this.clear(V3(q.x, q.y + 5, e.D / 2 + 10), q)) pick = cand.x;
+      }
+      const sh = pick || pool[0].x;
+      const fov = 19 + Math.random() * 4, self = this;
+      const TL = sh.TL || Math.pow(sh.W / sh.sp.lwA, 1 / 3) || 2.2;
+      const d = clamp(TL * 5.5, 8, 19);
+      const st = {};
+      return { dur: 9 + Math.random() * 4, fov, track(u, ea, dt) {
+          const a = sa.get(sh); const q = V3(a.p.x, a.p.y + 0.6, a.p.z);
+          const want = V3(clamp(q.x, -e.iW * 0.5, e.iW * 0.5), q.y + d * 0.20, Math.max(e.D / 2 + 6, q.z + d));
+          if (!st.p) { st.p = want.clone(); st.l = q.clone(); }
+          st.p.lerp(want, 1 - Math.exp(-dt / 1.1)); st.l.lerp(q, 1 - Math.exp(-dt / 0.5));
+          return { p: st.p.clone(), l: st.l.clone() };
+        } };
+    }
+
+    // ---------- 毎フレーム ----------
+    apply(dt) {
+      const r = this.r, cam = r.camera;
+      this.time += dt; this.t += dt;
+      if (this.hold && this.shot) { this.t -= dt; }     // 給餌で構えている間はショットを進めない（狙いを定めさせる）
+      if (!this.shot || this.t >= this.shot.dur || (this.shot.dead && this.shot.dead())) this.cut();
+      const sh = this.shot, u = clamp(this.t / sh.dur, 0, 1), ea = easeIO(u);
+      let p, l;
+      if (sh.track) { const tr = sh.track(u, ea, Math.min(0.1, dt)); p = tr.p; l = tr.l; }
+      else { p = sh.from.p.clone().lerp(sh.to.p, ea); l = sh.from.l.clone().lerp(sh.to.l, ea); }
+      // 手持ちの微振動（三脚でも呼吸と床でこの程度は動く）。振幅は被写体距離に比例
+      const T = this.time, dist = p.distanceTo(l), amp = clamp(dist * 0.0016, 0.05, 0.7);
+      p.x += amp * (Math.sin(T * 0.62 + this.ph[0]) + 0.6 * Math.sin(T * 1.31 + this.ph[3]));
+      p.y += amp * 0.8 * (Math.sin(T * 0.53 + this.ph[1]) + 0.5 * Math.sin(T * 1.13 + this.ph[4]));
+      p.z += amp * 0.5 * Math.sin(T * 0.47 + this.ph[2]);
+      l.x += amp * 0.35 * Math.sin(T * 0.41 + this.ph[5]);
+      this.safe(p);
+      const fov = sh.fov2 != null ? sh.fov + (sh.fov2 - sh.fov) * ea : sh.fov;
+      if (Math.abs(cam.fov - fov) > 1e-3) { cam.fov = fov; cam.updateProjectionMatrix(); }
+      cam.position.copy(p); cam.lookAt(l);
+      // カットの立ち上がり（暗転からの復帰）
+      if (this.fade > 0) { this.fade = Math.max(0, this.fade - dt / (this.fadeT || 0.3)); if (this.onFade) this.onFade(this.fade * 0.92); }
+      return p;
+    }
+  }
+
+  AQ.Cine = Cine;
+})(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
 /* aqua_ui.js — 計器盤（真値／試薬／電子の三層）・操作・機材・生体・微生物・グラフ・台帳・ログ・シナリオ、メインループ */
@@ -4482,20 +5210,24 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       this.buildHeader(); this.buildTabs(); this.initTanks();
       const q = new URLSearchParams(location.search).get('s'); if (q && SCENARIOS.find(x => x.id === q)) this.start(SCENARIOS.find(x => x.id === q));
       this.renderer = new AQ.Renderer($('#gl'), this.sim, this.agents); this.renderer.shrimpAgents = this.shrimpAgents; this.renderer.onTap = (x, y) => this.tapGlass(x, y);
+      this.renderer.onFood = (x, y, d) => this.onFoodInput(x, y, d);
+      this.renderer.foodField = this.food;
+      window.addEventListener('keydown', e => { if (e.key === 'Escape' && this.foodArmed && !this.gallery) this.foodArm(false); });
       this.buildViewfoot(); this.buildHud();
       window.addEventListener('resize', () => this.renderer.resize()); this.renderer.resize();
       this.last = performance.now(); this.lastUI = 0; requestAnimationFrame(t => this.frame(t));
     }
     // ---- 複数水槽: tanks[cur] が選択中。sim/agents/history はその水槽のもの
     get tank() { return this.tanks[this.cur]; }
-    get sim() { return this.tank ? this.tank.sim : null; } get agents() { return this.tank ? this.tank.agents : null; } get shrimpAgents() { return this.tank ? this.tank.shrimpAgents : null; } get history() { return this.tank ? this.tank.history : []; } get scn() { return this.tank ? this.tank.scn : null; }
+    get sim() { return this.tank ? this.tank.sim : null; } get agents() { return this.tank ? this.tank.agents : null; } get shrimpAgents() { return this.tank ? this.tank.shrimpAgents : null; } get food() { return this.tank ? this.tank.food : null; } get history() { return this.tank ? this.tank.history : []; } get scn() { return this.tank ? this.tank.scn : null; }
     makeTank(scn, cfgOverride, name, active) {
       const cfg = JSON.parse(JSON.stringify(cfgOverride || scn.cfg));
       const sim = new AQ.Sim(cfg, 1 + Math.floor(Math.random() * 1e6)); scn.setup(sim);
       const agents = new AQ.Agents(sim); sim._fishAgents = agents;
       const shrimpAgents = AQ.ShrimpAgents ? new AQ.ShrimpAgents(sim) : null;
       const feed0 = sim.feed.bind(sim); sim.feed = (g, t) => { const r = feed0(g, t); agents.notifyFeed(); return r; };
-      const T = { name, scn, sim, agents, shrimpAgents, history: [], lastSample: -1e9, active, lastLog: null }; this.sample(T); return T;
+      const food = AQ.FoodField ? new AQ.FoodField(sim, agents, shrimpAgents) : null;
+      const T = { name, scn, sim, agents, shrimpAgents, food, history: [], lastSample: -1e9, active, lastLog: null }; this.sample(T); return T;
     }
     initTanks() { this.tanks = DEFAULT_TANKS.map(d => this.makeTank(SCENARIOS.find(x => x.id === d.scn), null, d.name, d.active)); this.cur = 2; this.buildTankBar(); this.rebuildTabs(); }
     start(scn, cfgOverride) {
@@ -4503,7 +5235,7 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       this.attachRenderer(); this.rebuildTabs(); this.buildTankBar(); this.toast(`${T.name}: ${scn.name}`);
     }
     select(i) { if (i === this.cur) return; this.cur = i; this.attachRenderer(); this.rebuildTabs(); this.buildTankBar(); this.updateUI(true); this.toast(`水槽を切替: ${this.tank.name}`); }
-    attachRenderer() { if (this.hud && this.hudMarine !== !!this.sim.marine) this.buildHud(); const r = this.renderer; if (!r) return; r.sim = this.sim; r.agents = this.agents; r.shrimpAgents = this.shrimpAgents; for (const [, m] of r.fishMeshes) r.scene.remove(m); r.fishMeshes.clear(); r.follow = null; r.buildTank(); r.orbit.theta = 0.35; r.orbit.phi = 1.25; }
+    attachRenderer() { if (this.hud && this.hudMarine !== !!this.sim.marine) this.buildHud(); const r = this.renderer; if (!r) return; this.foodArm(false); r.sim = this.sim; r.agents = this.agents; r.shrimpAgents = this.shrimpAgents; r.foodField = this.food; for (const [, m] of r.fishMeshes) r.scene.remove(m); r.fishMeshes.clear(); r.follow = null; r.buildTank(); r.orbit.theta = 0.35; r.orbit.phi = 1.25; }
     buildTankBar() {
       const bar = $('#tanks'); if (!bar) return; bar.innerHTML = '';
       this.tanks.forEach((T, i) => { const n = T.sim.fish.filter(f => f.alive).length; bar.append(h('button', { class: i === this.cur ? 'on' : '', onclick: () => this.select(i) }, T.name, h('small', {}, `${T.active ? '稼働中' : '停止中'}・生体 ${n}`))); });
@@ -4512,21 +5244,154 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
     frame(now) {
       const dtR = Math.min(0.1, (now - this.last) / 1000); this.last = now;
       const active = this.tanks.filter(T => T.active);
-      if (!this.paused && this.speed > 0 && active.length) {
-        this.acc += dtR * this.speed; const dt = 60; let n = 0; const maxSteps = Math.max(60, Math.floor(600 / active.length)); const interval = this.speed <= 600 ? 600 : (this.speed <= 21600 ? 3600 : 6 * HOUR);
+      // 粒の餌は実時間でしか意味がないので、撒いている間・粒が残っている間は倍率を ×1 として扱う
+      // （this.speed 自体は変えない。ボタンの選択は元のまま残す）
+      this.foodRT = !this.gallery && (this.foodArmed || (this.food && this.food.active));
+      const spd = this.foodRT ? Math.min(this.speed, 1) : this.speed;
+      if (!this.paused && spd > 0 && active.length) {
+        this.acc += dtR * spd; const dt = 60; let n = 0; const maxSteps = Math.max(60, Math.floor(600 / active.length)); const interval = spd <= 600 ? 600 : (spd <= 21600 ? 3600 : 6 * HOUR);
         while (this.acc >= dt && n < maxSteps) { for (const T of active) { T.sim.step(dt); if (T.sim.t - T.lastSample >= interval) this.sample(T); } this.acc -= dt; n++; }
         if (n >= maxSteps) this.acc = 0;
       }
       // 魚の速さ: 時間倍率に「なんとなく」連動（speed^0.55, 上限 150 倍）。実時間モードは常に 1 倍
-      const fishScale = this.paused ? 0.15 : (this.fishLink === false ? 1 : (this.speed <= 1 ? Math.max(0.15, this.speed) : Math.min(150, Math.pow(this.speed, 0.55))));
-      this.agents.update(dtR * (this.tank.active ? fishScale : 0.15), dtR);
-      if (this.shrimpAgents) this.shrimpAgents.update(dtR * (this.tank.active ? fishScale : 0.15), dtR);
+      const fishScale = (this.gallery || this.foodRT) ? 1 : (this.paused ? 0.15 : (this.fishLink === false ? 1 : (this.speed <= 1 ? Math.max(0.15, this.speed) : Math.min(150, Math.pow(this.speed, 0.55)))));
+      const actScale = (this.tank.active || this.gallery || this.foodRT) ? fishScale : 0.15;
+      this.agents.update(dtR * actScale, dtR);
+      if (this.shrimpAgents) this.shrimpAgents.update(dtR * actScale, dtR);
+      if (this.food) { this.food.update(dtR * actScale); this.renderer.foodField = this.food; }
       this.renderer.render(dtR);
       if (now - this.lastUI > 250) { this.lastUI = now; this.updateUI(); }
       requestAnimationFrame(t => this.frame(t));
     }
+    // ---- 手で撒く給餌（全モード共通）
+    //  2 段階にしてある: [餌をあげる] で構える → 水面をタップ/ドラッグして撒く。
+    //  1 タップで餌が出ないので、カメラを回す・ガラスを叩くときの誤爆が起きない。
+    //  構えている間と粒が残っている間は倍率を ×1 として扱う（frame() の foodRT）。
+    foodArm(on) {
+      const r = this.renderer; if (!r) return;
+      if (on && !this.food) return;
+      this.foodArmed = !!on; r.foodMode = !!on; this.foodDown = false;
+      if (this.feedBtn) this.feedBtn.classList.toggle('on', !!on);
+      if (this.galFeedBtn) this.galFeedBtn.classList.toggle('on', !!on);
+      if (r.cine) r.cine.hold = !!on;               // ギャラリー中はカメラを止めて狙わせる
+      if (r.foodRender) r.foodRender.setMarker(null);
+      clearTimeout(this.foodT);
+      const bar = this.foodBar || (this.foodBar = h('div', { id: 'feedhint' }));
+      if (!bar.parentNode) $('#view').append(bar);
+      $('#app').classList.toggle('feeding', !!on);
+      if (on) {
+        this.foodSess = 0;
+        bar.classList.remove('over');
+        bar.textContent = '水面をタップ、なぞって撒く（実時間で進みます）';
+        bar.classList.add('show');
+        this.foodT = setTimeout(() => this.foodArm(false), 15000);   // 放置したら自動で解除
+        if (!this.gallery) this.toast('餌: 水面をタップして撒いてください');
+      } else { bar.classList.remove('show'); }
+    }
+    // 画面座標 → 餌を落とす水面の点。水槽の外をさしていたら null
+    foodPoint(cx, cy) {
+      const r = this.renderer, el = $('#gl'), rc = el.getBoundingClientRect(); const b = this.agents.bounds();
+      const nd = new THREE.Vector2(((cx - rc.left) / rc.width) * 2 - 1, -((cy - rc.top) / rc.height) * 2 + 1);
+      const ray = new THREE.Raycaster(); ray.setFromCamera(nd, r.camera);
+      const m = 0.8, inFoot = p => p.x > b.x0 + m && p.x < b.x1 - m && p.z > b.z0 + m && p.z < b.z1 - m;
+      // (1) 水面が見えているなら、そこを素直に使う
+      const pl = new THREE.Plane(new THREE.Vector3(0, 1, 0), -b.y1), pt = new THREE.Vector3();
+      if (ray.ray.intersectPlane(pl, pt) && inFoot(pt)) { pt.y = b.y1; return pt; }
+      // (2) 水面が画角の外（水中を横から見ているギャラリーのショットなど）のときは、
+      //     視線が水の中を通る区間の中ほどを取り、その真上の水面に落とす。
+      //     実際に撒くときも「あのあたり」を狙って水面に落とすので、これで感覚は合う
+      const o = ray.ray.origin, d = ray.ray.direction; let t0 = 0, t1 = 1e9;
+      const slab = (lo, hi, oo, dd) => {
+        if (Math.abs(dd) < 1e-6) { if (oo < lo || oo > hi) { t1 = -1; } return; }
+        let a0 = (lo - oo) / dd, a1 = (hi - oo) / dd; if (a0 > a1) { const t = a0; a0 = a1; a1 = t; }
+        t0 = Math.max(t0, a0); t1 = Math.min(t1, a1);
+      };
+      slab(b.x0 + m, b.x1 - m, o.x, d.x); slab(b.y0, b.y1, o.y, d.y); slab(b.z0 + m, b.z1 - m, o.z, d.z);
+      if (t1 <= t0) return null;
+      const tm = (t0 + Math.min(t1, t0 + 40)) / 2;         // 手前寄りの点（奥まで見通しても手前に撒く感覚に合わせる）
+      const q = new THREE.Vector3(o.x + d.x * tm, b.y1, o.z + d.z * tm);
+      return inFoot(q) ? q : null;
+    }
+    onFoodInput(cx, cy, dragging) {
+      const r = this.renderer, p = this.foodPoint(cx, cy);
+      if (r.foodRender) r.foodRender.setMarker(p);
+      if (!p) return;
+      const now = performance.now();
+      if (!dragging || now - (this.foodLastT || 0) > 170) { this.foodLastT = now; this.foodDrop(p.x, p.z); }
+    }
+    foodDrop(x, z) {
+      const s = this.sim, f = this.food; if (!f) return;
+      const type = this.feedType || 'pellet';
+      // ひとつまみ = 目安給餌量の 6%。魚がいない水槽でも撒けるように下限を置く
+      const pinch = Math.max(0.004, s.suggestedFeed(type) * 0.06);
+      f.drop(x, z, pinch, type);
+      this.foodSess = (this.foodSess || 0) + pinch;
+      clearTimeout(this.foodT); this.foodT = setTimeout(() => this.foodArm(false), 15000);
+      if (this.foodBar) {
+        const sug = s.suggestedFeed(type), once = sug * 0.5;
+        // 与えすぎは止めない（残餌がどう効くかを見るのがこの水槽の主題なので）。ただし表示で知らせる
+        const over = this.foodSess > once * 2;
+        this.foodBar.classList.toggle('over', over);
+        this.foodBar.textContent = over
+          ? `撒いた量 ${this.foodSess.toFixed(2)} g — 1 回の目安 ${once.toFixed(2)} g を超えています`
+          : `撒いた量 ${this.foodSess.toFixed(2)} g（1 回の目安 ${once.toFixed(2)} g）`;
+      }
+    }
+    // ---- ギャラリーモード（計器なしの全画面。カメラは AQ.Cine が自動で回す）
+    galInit() {
+      if (this.galEl) return; const el = this.galEl = $('#gallery');
+      this.galFade = $('#galfade'); this.galCap = $('#galcap');
+      const ui = $('#galui'); ui.innerHTML = '';
+      this.galFeedBtn = h('button', { onclick: () => { this.foodArm(!this.foodArmed); this.galPoke(); } }, '餌をあげる');
+      ui.append(this.galFeedBtn, h('button', { onclick: () => { this.renderer.cine.next(); this.galPoke(); } }, '次のカット'),
+        h('button', { onclick: () => this.exitGallery() }, '終了'));
+      this.galUI = ui;
+      const poke = () => { if (this.gallery) this.galPoke(); };
+      $('#view').addEventListener('mousemove', poke); $('#view').addEventListener('touchstart', poke, { passive: true });
+      window.addEventListener('keydown', ev => {
+        if (!this.gallery) return;
+        if (ev.key === 'Escape') { this.exitGallery(); }
+        else if (ev.key === ' ' || ev.key === 'ArrowRight') { ev.preventDefault(); this.renderer.cine.next(); this.galPoke(); }
+      });
+      document.addEventListener('fullscreenchange', () => { if (this.gallery && this.galFS && !document.fullscreenElement) this.exitGallery(); });
+    }
+    galPoke() { if (!this.galUI) return; this.galUI.classList.add('show'); clearTimeout(this.galT); this.galT = setTimeout(() => this.galUI.classList.remove('show'), 2800); }
+    enterGallery() {
+      if (this.gallery) return; this.galInit();
+      const r = this.renderer;
+      this.galSave = { speed: this.speed, paused: this.paused, overlay: r.overlay, skeleton: r.skeleton, flow: r.flowMode, follow: r.follow, fov: r.camera.fov };
+      this.gallery = true;
+      // 見えているものを「実際に眺める」状態に寄せる: 偽色・骨格・水流粒子を落とし、時間を実時間へ
+      this.speed = 1; this.paused = false; this.updateSpeedBtns();
+      r.overlay = 'none'; r.skeleton = false; r.flowMode = 'off'; r.follow = null;
+      if (!r.cine) { r.cine = new AQ.Cine(r); r.cine.onFade = a => { if (this.galFade) this.galFade.style.opacity = a; }; }
+      $('#app').classList.add('gallery'); r.resize(); r.cine.start();
+      // タイトルを数秒だけ出して消す（数値は一切出さない）
+      const dark = !this.sim.lightIsOn();
+      this.galCap.textContent = this.tank.name + (dark ? '　（消灯中）' : '');
+      this.galCap.classList.add('show'); clearTimeout(this.galCapT);
+      this.galCapT = setTimeout(() => this.galCap.classList.remove('show'), dark ? 6000 : 4200);
+      this.galPoke();
+      this.galFS = false;
+      const de = document.documentElement;
+      if (de.requestFullscreen) { const p = de.requestFullscreen(); this.galFS = true; if (p && p.catch) p.catch(() => { this.galFS = false; }); }
+    }
+    exitGallery() {
+      if (!this.gallery) return; const r = this.renderer, s = this.galSave || {};
+      this.gallery = false; this.foodArm(false); r.cine && r.cine.stop();
+      $('#app').classList.remove('gallery');
+      if (this.galFade) this.galFade.style.opacity = 0;
+      if (this.galCap) this.galCap.classList.remove('show');
+      if (this.galUI) this.galUI.classList.remove('show');
+      this.speed = s.speed != null ? s.speed : 60; this.paused = !!s.paused; this.updateSpeedBtns();
+      r.overlay = s.overlay || 'none'; r.skeleton = !!s.skeleton; r.flowMode = s.flow || 'off'; r.follow = s.follow || null;
+      r.camera.fov = s.fov || 38; r.camera.updateProjectionMatrix();
+      this.galFS = false;
+      if (document.fullscreenElement && document.exitFullscreen) { const p = document.exitFullscreen(); if (p && p.catch) p.catch(() => {}); }
+      r.resize();
+    }
     toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(this.toastT); this.toastT = setTimeout(() => t.classList.remove('show'), 2600); }
-    tapGlass(x, y) { const b = this.agents.bounds(); const r = $('#gl').getBoundingClientRect(); const fx = (x - r.left) / r.width; this.agents.startle(b.x0 + (b.x1 - b.x0) * fx, b.z1); if (this.shrimpAgents) this.shrimpAgents.startle(b.x0 + (b.x1 - b.x0) * fx, b.z1); this.toast('コンコン！（魚とエビが驚く）'); }
+    tapGlass(x, y) { if (this.gallery) { this.galPoke(); return; } const b = this.agents.bounds(); const r = $('#gl').getBoundingClientRect(); const fx = (x - r.left) / r.width; this.agents.startle(b.x0 + (b.x1 - b.x0) * fx, b.z1); if (this.shrimpAgents) this.shrimpAgents.startle(b.x0 + (b.x1 - b.x0) * fx, b.z1); this.toast('コンコン！（魚とエビが驚く）'); }
     // ---- ヘッダ
     buildHeader() {
       const sp = $('#speed'); const speeds = [[0, '⏸'], [1, '×1'], [60, '×60'], [600, '×600'], [3600, '1h/s'], [21600, '6h/s'], [86400, '1日/s'], [604800, '1週/s']];
@@ -4538,7 +5403,9 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       const link = h('select', { onchange: e => { this.fishLink = e.target.value === 'link'; } }, h('option', { value: 'link' }, '魚の速さ: 倍率に連動'), h('option', { value: 'real' }, '魚の速さ: 実時間'));
       const flowSel = h('select', { onchange: e => { this.renderer.flowMode = e.target.value; } }, ...[['off', '水流: なし'], ['on', '水流: 軌跡粒子'], ['dense', '水流: 軌跡粒子（多め）']].map(([v, l]) => h('option', { value: v }, l)));
       const skelSel = h('select', { onchange: e => { this.renderer.skeleton = e.target.value === 'xray'; } }, h('option', { value: 'normal' }, '生体: 通常'), h('option', { value: 'xray' }, '生体: 骨格（X 線）＋重心'));
-      vf.append(sel, flowSel, skelSel, link, h('button', { onclick: () => { const o = this.renderer.orbit; o.theta = 0.35; o.phi = 1.25; this.renderer.follow = null; this.renderer.buildTank(); } }, 'カメラ初期化'), h('button', { onclick: () => { this.renderer.follow = this.renderer.follow === 'shoal' ? null : 'shoal'; if (this.renderer.follow) this.renderer.orbit.radius = Math.max(50, (this.sim.fish[0] ? this.sim.fish[0].L : 10) * 6); } }, '群れを追う'), h('button', { onclick: () => this.tapGlass(innerWidth / 2, 0) }, 'ガラスをコンコン'));
+      vf.append(sel, flowSel, skelSel, link, h('button', { onclick: () => { const o = this.renderer.orbit; o.theta = 0.35; o.phi = 1.25; this.renderer.follow = null; this.renderer.buildTank(); } }, 'カメラ初期化'), h('button', { onclick: () => { this.renderer.follow = this.renderer.follow === 'shoal' ? null : 'shoal'; if (this.renderer.follow) this.renderer.orbit.radius = Math.max(50, (this.sim.fish[0] ? this.sim.fish[0].L : 10) * 6); } }, '群れを追う'), h('button', { onclick: () => this.tapGlass(innerWidth / 2, 0) }, 'ガラスをコンコン'), h('button', { onclick: () => this.enterGallery() }, '▶ ギャラリー（全画面）'));
+      this.feedBtn = h('button', { class: 'feedbtn', onclick: () => this.foodArm(!this.foodArmed) }, '餌をあげる');
+      vf.append(this.feedBtn);
     }
     buildHud() { const hud = $('#hud'); hud.innerHTML = ''; this.hud = {}; const defs = this.sim && this.sim.marine ? GAUGE_DEFS_MARINE : GAUGE_DEFS; for (const k of ['T', 'pH', 'NH3', 'NO2', 'NO3i', 'DO']) { const c = h('canvas'); hud.append(c); this.hud[k] = new Gauge(c, defs[k]); } this.hudMarine = !!(this.sim && this.sim.marine); }
     // ---- タブ
@@ -4659,9 +5526,11 @@ canvas.chart{width:100%;height:110px;background:var(--panel2);border-radius:6px;
       sec.append(h('h3', {}, 'シナリオ（この水槽に適用・現在の水槽は置き換え）'));
       sec.append(h('div', { class: 'scen' }, ...SCENARIOS.map(sc => h('button', { class: sc === this.scn ? 'on' : '', onclick: () => this.start(sc) }, sc.name, h('small', {}, sc.desc)))));
       sec.append(h('h3', {}, '給餌'));
-      const feedType = h('select', {}, ...Object.entries(DB.FEEDS).map(([k, v]) => h('option', { value: k }, v.name)));
+      const feedType = h('select', { onchange: e => { this.feedType = e.target.value; } }, ...Object.entries(DB.FEEDS).map(([k, v]) => h('option', { value: k, selected: (this.feedType || 'pellet') === k }, v.name)));
+      if (!this.feedType) this.feedType = 'pellet';
       const doFeed = mult => { const g = s.suggestedFeed(feedType.value) * mult; if (g <= 0) { this.toast('給餌対象の魚がいません'); return; } const r = s.feed(g, feedType.value); this.toast(`給餌 ${g.toFixed(2)} g → 摂食 ${r.eaten.toFixed(2)} g / 残餌 ${r.uneaten.toFixed(2)} g`); };
       sec.append(h('div', { class: 'row' }, feedType, h('button', { onclick: () => doFeed(0.5) }, '適量'), h('button', { onclick: () => doFeed(1) }, '多め(×2)'), h('button', { onclick: () => doFeed(3) }, '過剰(×6)')));
+      sec.append(h('div', { class: 'row' }, h('button', { onclick: () => this.foodArm(!this.foodArmed) }, '手で撒く（水面をタップ）'), h('span', { class: 'note' }, '上の3つは「与えた量をその場で配る」抽象モデルで、倍率が高くても使えます。手で撒くほうは粒が実際に沈み、魚が1粒ずつ見つけて食べます（撒いている間は実時間）。')));
       sec.append(h('div', { class: 'row' }, h('label', {}, h('input', { type: 'checkbox', checked: cfg.autoFeed.on, onchange: e => { cfg.autoFeed.on = e.target.checked; } }), ' 自動給餌 9時/18時'), h('label', {}, '量'), h('select', { onchange: e => { cfg.autoFeed.level = +e.target.value; } }, ...[[0.5, '控えめ'], [1, '適量'], [1.5, '多め'], [3, '過剰']].map(([v, l]) => h('option', { value: v, selected: cfg.autoFeed.level === v }, l))), h('select', { onchange: e => { cfg.autoFeed.type = e.target.value; } }, ...Object.entries(DB.FEEDS).map(([k, v]) => h('option', { value: k, selected: cfg.autoFeed.type === k }, v.name)))));
       sec.append(h('h3', {}, '換水'));
       const wcFrac = h('input', { type: 'range', min: 10, max: 90, step: 5, value: 33 }); const wcLbl = h('span', { class: 'mono' }, '33%'); wcFrac.oninput = () => wcLbl.textContent = wcFrac.value + '%';
