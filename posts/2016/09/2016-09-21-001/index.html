@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>Perlで集合を扱う · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="Perlで集合を扱う方法について説明。集合の対称差についても。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2016/09/2016-09-21-001/"><meta property="og:title" content="Perlで集合を扱う"><meta property="og:description" content="Perlで集合を扱う方法について説明。集合の対称差についても。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2016/09/2016-09-21-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>Perlで集合を扱う</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-04-01T13:25:54+09:00">2020-04-01T13:25:54+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/perl/">Perl</a><a class="tag" href="/tags/entry-528e5174c2d4/">集合</a><a class="tag" href="/tags/entry-872c1fa141b5/">数学</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="perlで集合を扱う">Perlで集合を扱う</h1>
+<p>Perlで集合を扱うなら，CPANモジュールのSet::Objectが良さそう．ちなみに「集合を扱う」というのは，和集合，共通部分，差集合，対称差，真部分集合の判定ぐらいの感覚で．</p>
+<p>車輪の再発明的なものはdankogaiさんのブログに解説付きで既にあった．</p>
+<p><a href="http://blog.livedoor.jp/dankogai/archives/51441112.html">perl - 配列の∪と∩</a></p>
+<p><a href="http://blog.livedoor.jp/dankogai/archives/51442760.html">perl - にも集合オブジェクトと演算を</a></p>
+<p>割りと簡単に作れるので，CPANモジュールインストールどころかpackageを作るまでも無いだろうということで，
+Gistにサブルーチンのセットをメモ代わりに書いてみた．</p>
+<p><a href="https://gist.github.com/adokoy001/7890136538e3c979e339d0f1b890eab3">https://gist.github.com/adokoy001/7890136538e3c979e339d0f1b890eab3</a></p>
+<p>「ハッシュのkeyを取るだけでいいじゃん」っていう箇所があるので後々修正しようかな・・・．</p>
+<p>地味に和集合,共通部分,対称差については3つ以上の集合にも対応しておいた（絶妙にそういう機能が必要になることもあるので）</p>
+<p>対称差については，「その要素を含む集合の数が奇数であれば，対称差の集合に入る」ようになっているので
+直感的に「おや？」と思うかもしれないが，3入力以上のXORと同じ振る舞いだと考えれば違和感は無くなるかも．</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2016/09/2016-09-19-001/">← 睡眠中に見る夢</a><a rel="next" href="/posts/2016/09/2016-09-26-001/">最近の出来事 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/09/2026-09-06-002/">子守りをしながら10人月を10時間で片付けて、余った手で分布の「真ん中」を求めていた</a></li><li><a href="/posts/2026/09/2026-09-06-001/">6月からミレニアム懸賞問題に挑戦していた</a></li><li><a href="/posts/2026/09/2026-09-05-001/">「母原理」を別のAIに監査してもらった — 第二不完全性定理から意味論へ</a></li><li><a href="/posts/2026/09/2026-09-03-002/">「証明できない」ということを証明する — Löbの定理をLeanで100行</a></li><li><a href="/posts/2026/08/2026-08-20-007/">システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

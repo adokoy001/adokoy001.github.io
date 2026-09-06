@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>TinyLM Lab v2 — MoE対応・可変スケール ブラウザ言語モデル実験室</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.22.0/tf.min.js"></script>
+<style>
+:root{
+  --paper:#F2F5F9;
+  --ink:#14213D;
+  --ink-soft:rgba(20,33,61,.62);
+  --line:rgba(20,33,61,.14);
+  --grid-minor:rgba(43,75,224,.055);
+  --grid-major:rgba(43,75,224,.12);
+  --accent:#2B4BE0;
+  --accent-deep:#1E36A8;
+  --plot:#E24E1B;
+  --ok:#0E7A4D;
+  --bad:#C22F2F;
+  --card:#FFFFFF;
+  --mono:"SF Mono","Roboto Mono","Cascadia Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  color:var(--ink);
+  background:
+    repeating-linear-gradient(0deg,var(--grid-major) 0 1px,transparent 1px 48px),
+    repeating-linear-gradient(90deg,var(--grid-major) 0 1px,transparent 1px 48px),
+    repeating-linear-gradient(0deg,var(--grid-minor) 0 1px,transparent 1px 8px),
+    repeating-linear-gradient(90deg,var(--grid-minor) 0 1px,transparent 1px 8px),
+    var(--paper);
+  min-height:100vh;
+  padding-bottom:64px;
+}
+header{
+  position:sticky;top:0;z-index:10;
+  background:rgba(242,245,249,.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+  padding:10px 16px;
+}
+.head-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+h1{font-size:1.05rem;letter-spacing:.04em;font-weight:700}
+h1 small{font-weight:400;color:var(--ink-soft);font-size:.72rem;letter-spacing:.08em;margin-left:6px}
+#odo{font-family:var(--mono);font-size:.74rem;color:var(--accent-deep);white-space:nowrap;text-align:right;line-height:1.5}
+#odo b{color:var(--plot)}
+main{max-width:680px;margin:0 auto;padding:16px 12px}
+section{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:16px 14px;
+  margin-bottom:16px;
+  box-shadow:0 1px 2px rgba(20,33,61,.05);
+}
+.eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.22em;color:var(--accent);margin-bottom:2px}
+section h2{font-size:.98rem;margin-bottom:10px}
+textarea,input[type=text]{
+  width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;
+  font-size:16px;background:#FBFCFE;color:var(--ink);font-family:inherit;
+}
+textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:1px}
+#corpus{height:140px;font-size:.85rem;line-height:1.6}
+#corpus[readonly]{background:#EEF1F7;color:var(--ink-soft)}
+.stat-row{
+  display:flex;flex-wrap:wrap;gap:8px 18px;
+  font-family:var(--mono);font-size:.74rem;color:var(--ink-soft);margin-top:8px;
+}
+.stat-row b{color:var(--ink);font-weight:600}
+.knob{margin:12px 0}
+.knob label{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px}
+.knob label output{font-family:var(--mono);color:var(--accent-deep)}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.knob-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+button{
+  border:1px solid var(--accent);border-radius:8px;padding:11px 16px;
+  font-size:.9rem;font-weight:600;background:var(--card);color:var(--accent-deep);cursor:pointer;
+}
+button.primary{background:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:active:not(:disabled){transform:translateY(1px)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn-row button{flex:1;min-width:120px}
+/* スケール5段 */
+.scale-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:4px 0 8px}
+.scale-btn{
+  border:1px solid var(--line);border-radius:8px;background:#FBFCFE;
+  padding:8px 4px;cursor:pointer;text-align:center;font-family:inherit;
+}
+.scale-btn .sname{font-size:.78rem;font-weight:700;color:var(--ink)}
+.scale-btn .sparams{font-family:var(--mono);font-size:.62rem;color:var(--accent-deep);margin-top:2px}
+.scale-btn .sdev{font-size:.58rem;color:var(--ink-soft);margin-top:2px;line-height:1.35}
+.scale-btn.sel{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:-1px;background:#fff}
+#chart{
+  width:100%;height:180px;display:block;
+  border:1px solid var(--line);border-radius:8px;
+  background:
+    repeating-linear-gradient(0deg,var(--grid-minor) 0 1px,transparent 1px 9px),
+    repeating-linear-gradient(90deg,var(--grid-minor) 0 1px,transparent 1px 9px),
+    #FBFCFE;
+  margin-top:12px;
+}
+#metrics{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-family:var(--mono);font-size:.76rem}
+#metrics span b{color:var(--plot)}
+/* エキスパート稼働率パネル(このページの見せ場) */
+#moePanel{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px;background:#FBFCFE}
+#moePanel .mp-title{font-family:var(--mono);font-size:.66rem;letter-spacing:.18em;color:var(--accent);margin-bottom:8px}
+.ebar{display:flex;align-items:center;gap:8px;margin:4px 0}
+.ebar .elab{font-family:var(--mono);font-size:.68rem;width:34px;color:var(--ink-soft)}
+.ebar .etrack{flex:1;height:12px;background:rgba(20,33,61,.07);border-radius:6px;overflow:hidden}
+.ebar .efill{height:100%;width:0%;background:var(--accent);border-radius:6px;transition:width .3s}
+.ebar .epct{font-family:var(--mono);font-size:.68rem;width:44px;text-align:right;color:var(--ink)}
+#status{margin-top:10px;font-size:.78rem;font-family:var(--mono);color:var(--ink-soft);min-height:1.2em;word-break:break-all}
+#status.err{color:var(--bad)}
+#status.ok{color:var(--ok)}
+#genOut{
+  margin-top:10px;padding:12px;background:#FBFCFE;
+  border:1px dashed var(--accent);border-radius:8px;
+  font-size:.88rem;line-height:1.8;white-space:pre-wrap;word-break:break-all;
+  min-height:3em;color:var(--ink);
+}
+.hint{font-size:.74rem;color:var(--ink-soft);margin-top:8px;line-height:1.6}
+.warn{font-size:.74rem;color:var(--bad);margin-top:8px;line-height:1.6}
+.wake{display:flex;align-items:center;gap:8px;font-size:.8rem;margin-top:12px;color:var(--ink-soft)}
+input[type=file]{display:none}
+@media (max-width:480px){.scale-row{grid-template-columns:repeat(5,1fr)}.scale-btn .sdev{display:none}}
+@media (prefers-reduced-motion: no-preference){
+  button.primary.running{animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 5px rgba(43,75,224,.18)}}
+}
+@media (prefers-reduced-motion: reduce){.ebar .efill{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="head-top">
+    <h1>TinyLM Lab<small>v2 · MoE / RoPE / SwiGLU</small></h1>
+    <div id="odo">計 — params<br>有効 <b>—</b> params</div>
+  </div>
+</header>
+<main>
+
+<section>
+  <div class="eyebrow">01 · CORPUS</div>
+  <h2>学習テキスト</h2>
+  <textarea id="corpus" spellcheck="false"></textarea>
+  <div class="btn-row">
+    <button id="btnFile">テキストファイルを読み込む (.txt)</button>
+    <button id="btnClearCorpus">クリア</button>
+  </div>
+  <input type="file" id="corpusFile" accept=".txt,.md,text/plain" multiple>
+  <label class="wake"><input type="checkbox" id="wsNorm" checked> 空白を正規化して学習 (\r除去・3連続以上の改行を2つに圧縮)</label>
+  <div class="stat-row">
+    <span>文字数 <b id="stCharCount">0</b></span>
+    <span>語彙(異なり文字) <b id="stVocab">0</b></span>
+  </div>
+  <p class="hint">文字レベルで学習します。連続する空行が多いテキストは、生成時にも改行が多く再現されます。気になる場合は正規化を有効にしてください。複数ファイルを選ぶと連結されます。20万字を超えると欄内はプレビュー表示になりますが、全文が学習に使われます。目安: ナノ〜マイクロは数万〜数十万字、スモール以上は数百万字以上を推奨。</p>
+</section>
+
+<section>
+  <div class="eyebrow">02 · SCALE</div>
+  <h2>規模プリセット</h2>
+  <div class="scale-row" id="scaleRow"></div>
+  <div id="scaleNote" class="hint"></div>
+  <div class="knob-grid">
+    <div class="knob"><label>次元 d_model <output id="oD">64</output></label>
+      <input type="range" id="kD" min="0" max="7" step="1" value="1"></div>
+    <div class="knob"><label>層数 <output id="oL">2</output></label>
+      <input type="range" id="kL" min="1" max="12" step="1" value="2"></div>
+    <div class="knob"><label>ヘッド数 <output id="oH">2</output></label>
+      <input type="range" id="kH" min="0" max="4" step="1" value="1"></div>
+    <div class="knob"><label>文脈長 <output id="oT">64</output></label>
+      <input type="range" id="kT" min="0" max="4" step="1" value="1"></div>
+    <div class="knob"><label>エキスパート数 <output id="oE">2</output></label>
+      <input type="range" id="kE" min="0" max="3" step="1" value="1"></div>
+    <div class="knob"><label>top-k <output id="oK">1</output></label>
+      <input type="range" id="kK" min="1" max="2" step="1" value="1"></div>
+    <div class="knob"><label>バッチ <output id="oB">16</output></label>
+      <input type="range" id="kB" min="0" max="3" step="1" value="2"></div>
+    <div class="knob"><label>学習率 <output id="oLR">3e-3</output></label>
+      <input type="range" id="kLR" min="0" max="4" step="1" value="3"></div>
+  </div>
+  <div class="stat-row">
+    <span>総パラメタ <b id="stParams">—</b></span>
+    <span>有効パラメタ/トークン <b id="stActive">—</b></span>
+    <span>推定学習メモリ <b id="stMem">—</b></span>
+  </div>
+  <div class="btn-row">
+    <button id="btnInit" class="primary">この構成でモデルを初期化</button>
+  </div>
+  <p class="hint">エキスパート数1でMoE無効(通常の密なFFN)。MoEでは各トークンがtop-k個の専門家だけを使うため、総パラメタが増えても1トークンあたりの計算規模(有効パラメタ)は抑えられます。ただしこの実装は教育用に全専門家を密に計算してマスクするため、速度面の節約はありません。</p>
+  <p id="bigWarn" class="warn" style="display:none"></p>
+</section>
+
+<section>
+  <div class="eyebrow">03 · TRAIN</div>
+  <h2>学習</h2>
+  <div class="knob"><label>今回のステップ数 <output id="oSteps">1000</output></label>
+    <input type="range" id="kSteps" min="200" max="20000" step="200" value="1000"></div>
+  <div class="btn-row">
+    <button id="btnTrain" class="primary" disabled>学習開始</button>
+    <button id="btnStop" disabled>停止</button>
+  </div>
+  <canvas id="chart" width="640" height="180"></canvas>
+  <div id="metrics">
+    <span>step <b id="mStep">0</b></span>
+    <span>loss <b id="mLoss">—</b></span>
+    <span>aux <b id="mAux">—</b></span>
+    <span>tok/s <b id="mTps">—</b></span>
+    <span>backend <b id="mBackend">—</b></span>
+  </div>
+  <div id="moePanel" style="display:none">
+    <div class="mp-title">EXPERT LOAD · 全層平均の割当率(理想は均等 / auxは1.0が均等分散)</div>
+    <div id="ebars"></div>
+  </div>
+  <label class="wake"><input type="checkbox" id="fastMode"> 高速モード (CPU読み出しを10ステップに1回へ間引き、GPUパイプラインを維持)</label>
+  <p class="hint">高速モードではtop-kマスクもGPU上で構築します。数学は通常モードと同一で、loss曲線と稼働率の表示が粗くなるのと、ルーター確率が完全に同値になった場合の同点処理だけが異なります。MoE使用時のスモール以上の規模で効果が大きくなります。</p>
+  <label class="wake"><input type="checkbox" id="wakeLock"> 学習中は画面をスリープさせない</label>
+  <div id="status">tf.js を読み込み中…</div>
+</section>
+
+<section>
+  <div class="eyebrow">04 · SAMPLE</div>
+  <h2>文章生成</h2>
+  <input type="text" id="prompt" placeholder="書き出し(空でも可)">
+  <div class="knob-grid">
+    <div class="knob"><label>生成文字数 <output id="oGen">200</output></label>
+      <input type="range" id="kGen" min="50" max="600" step="50" value="200"></div>
+    <div class="knob"><label>温度 <output id="oTemp">0.8</output></label>
+      <input type="range" id="kTemp" min="3" max="15" step="1" value="8"></div>
+    <div class="knob"><label>top-p <output id="oTopP">0.95</output></label>
+      <input type="range" id="kTopP" min="50" max="100" step="5" value="95"></div>
+  </div>
+  <p class="hint">top-pは確率上位の候補だけからサンプルする設定です(1.00で無効)。改行や記号など低確率トークンの暴発を抑えます。</p>
+  <div class="btn-row"><button id="btnGen" class="primary" disabled>生成する</button></div>
+  <div id="genOut">まだモデルがありません。初期化して学習するか、保存済みモデルを読み込んでください。</div>
+</section>
+
+<section>
+  <div class="eyebrow">05 · I/O</div>
+  <h2>モデルの保存と読み込み</h2>
+  <div class="btn-row">
+    <button id="btnSave" disabled>モデルをダウンロード (.json)</button>
+    <button id="btnLoad">モデルを読み込む</button>
+  </div>
+  <input type="file" id="fileIn" accept=".json,application/json">
+  <p class="hint">重み・語彙表・構成をまとめた JSON を端末に保存します(形式: tinylm-lab-v2)。読み込めば続きから学習できます。すべての処理はこの端末内で完結し、通信は行いません。目安として2,000万パラメタを超えるとファイルが数百MBになり、ブラウザによっては保存に失敗します。</p>
+</section>
+
+</main>
+<script>
+"use strict";
+/* ============ 定数 ============ */
+const D_OPTS=[32,64,128,192,256,384,512,768],
+      HEAD_OPTS=[1,2,4,8,12],
+      CTX_OPTS=[32,64,128,256,512],
+      E_OPTS=[1,2,4,8],
+      BATCH_OPTS=[4,8,16,32],
+      LR_OPTS=[3e-4,6e-4,1e-3,3e-3,6e-3],
+      LR_LABEL=["3e-4","6e-4","1e-3","3e-3","6e-3"];
+
+/* 規模プリセット: knobインデックスの組 {d,L,H,T,E,K,B,LR} */
+const SCALES=[
+ {name:"ナノ",    dev:"スマホ\n〜10分",      d:1,L:2, H:1,T:1,E:1,K:1,B:2,LR:3,
+  note:"スマホのWebGLで10分前後。まず動きを見るための規模。コーパスは数万字で十分。"},
+ {name:"マイクロ",dev:"スマホ1h\nPC 15分",   d:2,L:4, H:2,T:2,E:2,K:2,B:2,LR:3,
+  note:"スマホで1時間弱、PCなら15分程度。文体の再現が目に見えて良くなる規模。数十万字推奨。"},
+ {name:"スモール",dev:"PC GPU\n数時間",      d:4,L:6, H:3,T:3,E:2,K:2,B:2,LR:2,
+  note:"ゲーミングPC級のGPUで数時間。WebGPU対応ブラウザ推奨。数百万字のコーパスが欲しい規模。"},
+ {name:"ミディアム",dev:"dGPU\n一晩〜",      d:6,L:8, H:3,T:3,E:2,K:2,B:1,LR:1,
+  note:"単体GPUで一晩〜数日。ブラウザ学習の実用上限に近く、タブのメモリ限界に注意。"},
+ {name:"ラージ",  dev:"サーバ級\n数日〜",     d:7,L:12,H:4,T:4,E:3,K:2,B:1,LR:0,
+  note:"サーバ級GPUで数日〜のクラス。ブラウザでの学習は動作保証外の実験領域。保存ファイルも巨大になります。"},
+];
+
+/* ============ 状態 ============ */
+let dataIds=null, corpusStore="", corpusIsPreview=false;
+let running=false, lossHist=[], utilEMA=null;
+let wakeLockObj=null, opt=null;
+
+const $=id=>document.getElementById(id);
+const statusEl=$("status");
+function setStatus(msg,cls){statusEl.textContent=msg;statusEl.className=cls||"";}
+function fmtNum(n){return n>=1e9?(n/1e9).toFixed(2)+"B":n>=1e6?(n/1e6).toFixed(2)+"M":n>=1e3?(n/1e3).toFixed(1)+"k":""+n;}
+
+/* ============ 初期テキスト(自由に書き換えてOKなオリジナル文) ============ */
+const SAMPLE=(()=>{const p=[
+"むかしむかし、海のそばの小さな村に、風の音を集める少女がいました。",
+"少女は毎朝、浜辺に立って貝殻を耳にあて、波の運んでくる音を一つずつ瓶に詰めました。",
+"晴れた日の音は青く、雨の日の音は銀色に光りました。",
+"村の人々は不思議に思いましたが、少女はにこにこ笑うだけでした。",
+"ある冬の夜、村を大きな嵐が襲いました。",
+"船は帰れず、灯台の火も消え、村は真っ暗になりました。",
+"少女は集めた瓶を全部かかえて、崖の上へのぼりました。",
+"瓶のふたを開けると、夏の風の音、祭りの太鼓の音、子どもたちの笑い声があふれ出しました。",
+"音は光になって夜空にのぼり、沖の船を村まで導きました。",
+"それから村では、良い音を見つけると瓶に詰めて、灯台のたもとに置くようになりました。",
+];let s="";for(let i=0;i<6;i++)s+=p.join("")+"\n";return s;})();
+
+/* ===CORE=== モデル数学(DOM非依存) */
+const AUX_COEF=0.01;
+let FAST=false;
+function setFastMode(v){FAST=!!v;}
+let C=null;              // {vocab,d,layers,heads,ctx,experts,topk}
+let V=null;              // 変数ツリー
+let varList=[];
+let vocabChars=[], charToId=new Map();
+let step=0;
+let maskCache={}, ropeCache={};
+
+function hidOf(d){return Math.ceil(d*8/3/16)*16;}
+function paramCounts(cfg){
+  const d=cfg.d,h=hidOf(d),E=cfg.experts,K=Math.min(cfg.topk,E);
+  const expert=3*d*h;
+  const perLayer=2*d + 3*d*d + d*d + (E>1?d*E:0) + E*expert;
+  const total=cfg.vocab*d + cfg.layers*perLayer + d;
+  const active=total - (E>1?(E-K)*expert*cfg.layers:0);
+  return {total,active};
+}
+function disposeModel(){
+  varList.forEach(v=>v.dispose()); varList=[]; V=null;
+  Object.values(maskCache).forEach(m=>m.dispose()); maskCache={};
+  Object.values(ropeCache).forEach(r=>{r.cos.dispose();r.sin.dispose();}); ropeCache={};
+}
+function buildModel(cfg){
+  disposeModel(); C=cfg;
+  const r=(sh,std)=>tf.variable(tf.randomNormal(sh,0,std??0.02));
+  const o=sh=>tf.variable(tf.ones(sh));
+  const d=cfg.d,h=hidOf(d);
+  V={wte:r([cfg.vocab,d]),blocks:[],rmsf:o([d])};
+  for(let l=0;l<cfg.layers;l++){
+    const blk={
+      rms1:o([d]),
+      qkvw:r([d,3*d]),
+      projw:r([d,d],0.02/Math.sqrt(2*cfg.layers)),
+      rms2:o([d]),
+      router:cfg.experts>1?r([d,cfg.experts]):null,
+      experts:[],
+    };
+    for(let e=0;e<cfg.experts;e++)blk.experts.push({
+      w1:r([d,h]),w3:r([d,h]),w2:r([h,d],0.02/Math.sqrt(2*cfg.layers)),
+    });
+    V.blocks.push(blk);
+  }
+  varList=[];
+  for(const nv of namedVars())varList.push(nv[1]);
+  step=0;
+}
+function* namedVars(){
+  yield["wte",V.wte];
+  for(let i=0;i<V.blocks.length;i++){
+    const p=V.blocks[i],pre="b"+i+".";
+    yield[pre+"rms1",p.rms1];
+    yield[pre+"qkvw",p.qkvw];
+    yield[pre+"projw",p.projw];
+    yield[pre+"rms2",p.rms2];
+    if(p.router)yield[pre+"router",p.router];
+    for(let j=0;j<p.experts.length;j++){
+      const e=p.experts[j];
+      yield[pre+"e"+j+".w1",e.w1];
+      yield[pre+"e"+j+".w3",e.w3];
+      yield[pre+"e"+j+".w2",e.w2];
+    }
+  }
+  yield["rmsf",V.rmsf];
+}
+function getMask(T){
+  if(!maskCache[T])
+    maskCache[T]=tf.keep(tf.linalg.bandPart(tf.ones([T,T]),-1,0).reshape([1,1,T,T]));
+  return maskCache[T];
+}
+function getRope(T,hd){
+  const key=T+"_"+hd;
+  if(!ropeCache[key]){
+    const half=hd/2;
+    const cos=new Float32Array(T*half),sin=new Float32Array(T*half);
+    for(let t=0;t<T;t++)for(let i=0;i<half;i++){
+      const th=t/Math.pow(10000,2*i/hd);
+      cos[t*half+i]=Math.cos(th);sin[t*half+i]=Math.sin(th);
+    }
+    ropeCache[key]={
+      cos:tf.keep(tf.tensor(cos,[1,1,T,half])),
+      sin:tf.keep(tf.tensor(sin,[1,1,T,half])),
+    };
+  }
+  return ropeCache[key];
+}
+function applyRope(t,cos,sin){ // t:[B,H,T,hd]
+  const hd=t.shape[3],half=hd/2;
+  const t1=t.slice([0,0,0,0],[-1,-1,-1,half]);
+  const t2=t.slice([0,0,0,half],[-1,-1,-1,half]);
+  return tf.concat([t1.mul(cos).sub(t2.mul(sin)),t1.mul(sin).add(t2.mul(cos))],3);
+}
+function rmsNorm(x,g){
+  return x.div(x.square().mean(-1,true).add(1e-6).sqrt()).mul(g);
+}
+function silu(x){return x.mul(tf.sigmoid(x));}
+function swiglu(h,e){ // h:[N,d]
+  return tf.matMul(silu(tf.matMul(h,e.w1)).mul(tf.matMul(h,e.w3)),e.w2);
+}
+function moeFFN(h,p,collect){ // h:[N,d]
+  const N=h.shape[0],E=C.experts,K=Math.min(C.topk,E);
+  const probs=tf.softmax(tf.matMul(h,p.router)); // [N,E]
+  // top-kマスク: 勾配経路をprobs側だけに限定して作る
+  let mask;
+  if(FAST){
+    // 高速モード: GPU上でK番目の値を閾値にマスク化(customGradで勾配停止)。
+    // 確率が完全同値の同点時のみK個超を選び得るが、gates正規化で吸収される
+    mask=tf.customGrad((pr,save)=>{
+      const kth=tf.topk(pr,K).values.slice([0,K-1],[-1,1]);
+      return {value:tf.greaterEqual(pr,kth).cast("float32"),
+              gradFunc:dy=>[tf.zerosLike(dy)]};
+    })(probs);
+  }else{
+    // 通常モード: インデックスをCPUへ読み出し定数マスクを構築(同点も厳密にK個)
+    const {indices}=tf.topk(probs,K);
+    const idxData=indices.dataSync();
+    const mb=new Float32Array(N*E);
+    for(let n=0;n<N;n++)for(let kk=0;kk<K;kk++)mb[n*E+idxData[n*K+kk]]=1;
+    mask=tf.tensor2d(mb,[N,E]);
+  }
+  let gates=probs.mul(mask);
+  gates=gates.div(gates.sum(-1,true).add(1e-9));
+  let out=null;
+  for(let j=0;j<E;j++){
+    const w=swiglu(h,p.experts[j]).mul(gates.slice([0,j],[N,1]));
+    out=out?out.add(w):w;
+  }
+  if(collect){
+    const f=mask.mean(0);            // 割当率 [E] (勾配はprobs側に流れない)
+    const P=probs.mean(0);           // 平均ルータ確率(勾配あり)
+    collect.aux.push(f.mul(P).sum().mul(E/K)); // Switch式負荷分散損失(K正規化: 均等分散で1.0)
+    if(collect.util)collect.util.push(tf.keep(f.clone()));
+  }
+  return out;
+}
+function forward(idx,collect){
+  const [B,T]=idx.shape,d=C.d,H=C.heads,hd=d/H;
+  const {cos,sin}=getRope(T,hd);
+  let x=tf.gather(V.wte,idx); // [B,T,d]
+  for(const p of V.blocks){
+    let h=rmsNorm(x,p.rms1);
+    const qkv=tf.matMul(h.reshape([B*T,d]),p.qkvw);
+    let sp=tf.split(qkv,3,1);
+    const rs=t=>t.reshape([B,T,H,hd]).transpose([0,2,1,3]);
+    const q=applyRope(rs(sp[0]),cos,sin),k=applyRope(rs(sp[1]),cos,sin),v=rs(sp[2]);
+    let att=tf.matMul(q,k,false,true).div(Math.sqrt(hd));
+    const mask=getMask(T);
+    att=tf.softmax(att.mul(mask).add(tf.scalar(1).sub(mask).mul(-1e9)));
+    const y=tf.matMul(att,v).transpose([0,2,1,3]).reshape([B*T,d]);
+    x=x.add(tf.matMul(y,p.projw).reshape([B,T,d]));
+    h=rmsNorm(x,p.rms2).reshape([B*T,d]);
+    const f=p.router?moeFFN(h,p,collect):swiglu(h,p.experts[0]);
+    x=x.add(f.reshape([B,T,d]));
+  }
+  x=rmsNorm(x,V.rmsf);
+  return tf.matMul(x.reshape([B*T,d]),V.wte,false,true).reshape([B,T,C.vocab]);
+}
+function tokenize(text){
+  const chars=Array.from(text);
+  if(!vocabChars.length){
+    vocabChars=[...new Set(chars)].sort();
+    charToId=new Map(vocabChars.map((c,i)=>[c,i]));
+  }
+  dataIds=new Int32Array(chars.length);
+  for(let i=0;i<chars.length;i++)dataIds[i]=charToId.get(chars[i])??0;
+}
+function makeBatch(B,T){
+  const xs=new Int32Array(B*T),ys=new Int32Array(B*T);
+  const N=dataIds.length-T-1;
+  for(let b=0;b<B;b++){
+    const i=(Math.random()*N)|0;
+    for(let t=0;t<T;t++){xs[b*T+t]=dataIds[i+t];ys[b*T+t]=dataIds[i+t+1];}
+  }
+  return [tf.tensor2d(xs,[B,T],"int32"),tf.tensor1d(ys,"int32")];
+}
+function lossClosure(xb,yb,collect){
+  return ()=>{
+    const [B,T]=xb.shape;
+    const logits=forward(xb,collect).reshape([B*T,C.vocab]);
+    let loss=tf.losses.softmaxCrossEntropy(tf.oneHot(yb,C.vocab),logits);
+    if(collect&&collect.aux.length){
+      let aux=collect.aux[0];
+      for(let i=1;i<collect.aux.length;i++)aux=aux.add(collect.aux[i]);
+      const auxMean=aux.div(collect.aux.length);
+      if(collect.util)collect.auxVal=tf.keep(auxMean.clone());
+      loss=loss.add(auxMean.mul(AUX_COEF));
+    }
+    return loss;
+  };
+}
+function sampleRow(row,temp,topP){ // row:Float32Array(logits) 破壊的に使う。NaN検知で-1
+  const n=row.length;let mx=-Infinity;
+  for(let i=0;i<n;i++){row[i]/=temp;if(row[i]>mx)mx=row[i];}
+  if(!Number.isFinite(mx))return -1;
+  let sum=0;const pb=new Float64Array(n);
+  for(let i=0;i<n;i++){pb[i]=Math.exp(row[i]-mx);sum+=pb[i];}
+  if(!(sum>0)||!Number.isFinite(sum))return -1;
+  for(let i=0;i<n;i++)pb[i]/=sum;
+  const idx=Array.from({length:n},(_,i)=>i).sort((x,y)=>pb[y]-pb[x]);
+  let cum=0,cut=n;
+  for(let r=0;r<n;r++){cum+=pb[idx[r]];if(cum>=topP){cut=r+1;break;}}
+  let z=0;for(let r=0;r<cut;r++)z+=pb[idx[r]];
+  let u=Math.random()*z;
+  for(let r=0;r<cut;r++){u-=pb[idx[r]];if(u<=0)return idx[r];}
+  return idx[cut-1];
+}
+function normalizeWS(t){
+  return t.replace(/\r/g,"").replace(/[ \t]{2,}/g," ").replace(/\n{3,}/g,"\n\n");
+}
+function f32ToB64(f32){
+  const u8=new Uint8Array(f32.buffer,f32.byteOffset,f32.byteLength);
+  let s="";for(let i=0;i<u8.length;i+=0x8000)
+    s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));
+  return btoa(s);
+}
+function b64ToF32(s){
+  const bin=atob(s),u8=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  return new Float32Array(u8.buffer);
+}
+function serializeModel(){
+  const weights={};
+  for(const nv of namedVars())
+    weights[nv[0]]={shape:nv[1].shape,data:f32ToB64(nv[1].dataSync())};
+  return {format:"tinylm-lab-v2",config:C,step,vocab:vocabChars,weights};
+}
+function deserializeModel(j){
+  if(j.format!=="tinylm-lab-v2")
+    throw new Error(j.format==="tinylm-lab-v1"?"v1形式です。v2(RoPE/MoE)とは互換がありません":"形式が違います");
+  vocabChars=j.vocab;
+  charToId=new Map(vocabChars.map((c,i)=>[c,i]));
+  buildModel(j.config);
+  for(const nv of namedVars()){
+    const w=j.weights[nv[0]];
+    const t=tf.tensor(b64ToF32(w.data),w.shape);
+    nv[1].assign(t);t.dispose();
+  }
+  step=j.step||0;
+}
+/* ===END CORE=== */
+
+/* ============ UI: コーパス ============ */
+const PREVIEW_LIMIT=200000;
+function getCorpus(){return corpusIsPreview?corpusStore:$("corpus").value;}
+function corpusForModel(){const t=getCorpus();return $("wsNorm").checked?normalizeWS(t):t;}
+function setCorpus(text){
+  corpusStore=text;
+  if(Array.from(text).length>PREVIEW_LIMIT){
+    corpusIsPreview=true;
+    $("corpus").value=text.slice(0,100000)+"\n\n…(プレビュー: 全"+Array.from(text).length.toLocaleString()+"文字を保持中。編集する場合はクリアしてください)";
+    $("corpus").readOnly=true;
+  }else{
+    corpusIsPreview=false;
+    $("corpus").value=text;
+    $("corpus").readOnly=false;
+  }
+  refreshKnobs();
+}
+$("btnFile").onclick=()=>$("corpusFile").click();
+$("corpusFile").onchange=async e=>{
+  const files=[...e.target.files];
+  if(!files.length)return;
+  try{
+    const texts=await Promise.all(files.map(f=>f.text()));
+    setCorpus(texts.join("\n"));
+    setStatus(files.length+"ファイル読み込み完了","ok");
+  }catch(err){setStatus("ファイル読み込み失敗: "+err.message,"err");}
+  e.target.value="";
+};
+$("btnClearCorpus").onclick=()=>{setCorpus("");};
+$("corpus").addEventListener("input",()=>{if(!corpusIsPreview){corpusStore=$("corpus").value;refreshKnobs();}});
+
+/* ============ UI: スライダーとプリセット ============ */
+const kD=$("kD"),kL=$("kL"),kH=$("kH"),kT=$("kT"),kE=$("kE"),kK=$("kK"),kB=$("kB"),kLR=$("kLR"),
+      kSteps=$("kSteps"),kGen=$("kGen"),kTemp=$("kTemp"),kTopP=$("kTopP");
+let selScale=-1;
+function curCfg(){
+  let d=D_OPTS[+kD.value],hi=+kH.value;
+  while(hi>0&&(d%HEAD_OPTS[hi]!==0||((d/HEAD_OPTS[hi])%2)!==0))hi--;
+  kH.value=hi;
+  const E=E_OPTS[+kE.value];
+  return {d,layers:+kL.value,heads:HEAD_OPTS[hi],ctx:CTX_OPTS[+kT.value],
+          experts:E,topk:Math.min(+kK.value,E)};
+}
+function refreshKnobs(){
+  const cfg=curCfg();
+  $("oD").textContent=cfg.d;$("oL").textContent=cfg.layers;
+  $("oH").textContent=cfg.heads;$("oT").textContent=cfg.ctx;
+  $("oE").textContent=cfg.experts;$("oK").textContent=cfg.topk;
+  $("oB").textContent=BATCH_OPTS[+kB.value];$("oLR").textContent=LR_LABEL[+kLR.value];
+  $("oSteps").textContent=kSteps.value;$("oGen").textContent=kGen.value;
+  $("oTemp").textContent=(+kTemp.value/10).toFixed(1);
+  $("oTopP").textContent=(+kTopP.value/100).toFixed(2);
+  const text=getCorpus();
+  const uniq=new Set(Array.from(text)).size;
+  $("stCharCount").textContent=Array.from(text).length.toLocaleString();
+  $("stVocab").textContent=uniq;
+  if(uniq){
+    const pc=paramCounts({...cfg,vocab:uniq});
+    $("stParams").textContent=fmtNum(pc.total);
+    $("stActive").textContent=fmtNum(pc.active);
+    $("stMem").textContent="≈"+fmtNum(pc.total*16)+"B";
+    const warn=$("bigWarn");
+    if(pc.total>3e7){
+      warn.style.display="";
+      warn.textContent="この規模("+fmtNum(pc.total)+" params)はブラウザ学習の実用範囲を超える可能性があります。WebGPU対応ブラウザと十分なGPUメモリが必要で、タブが落ちることがあります。";
+    }else warn.style.display="none";
+  }else{$("stParams").textContent="—";$("stActive").textContent="—";$("stMem").textContent="—";}
+  document.querySelectorAll(".scale-btn").forEach((b,i)=>b.classList.toggle("sel",i===selScale));
+  $("scaleNote").textContent=selScale>=0?SCALES[selScale].note:"プリセットを選ぶか、下のスライダーで自由に構成できます。";
+}
+function buildScaleRow(){
+  const row=$("scaleRow");
+  SCALES.forEach((s,i)=>{
+    const b=document.createElement("button");
+    b.type="button";b.className="scale-btn";
+    b.innerHTML='<div class="sname">'+s.name+'</div><div class="sparams" id="sp'+i+'">—</div><div class="sdev">'+s.dev.replace("\n","<br>")+'</div>';
+    b.onclick=()=>{
+      selScale=i;
+      kD.value=s.d;kL.value=s.L;kH.value=s.H;kT.value=s.T;
+      kE.value=s.E;kK.value=s.K;kB.value=s.B;kLR.value=s.LR;
+      refreshKnobs();
+    };
+    row.appendChild(b);
+  });
+}
+function refreshScaleParams(){
+  const uniq=Math.max(new Set(Array.from(getCorpus())).size,100);
+  SCALES.forEach((s,i)=>{
+    const cfg={d:D_OPTS[s.d],layers:s.L,heads:HEAD_OPTS[s.H],ctx:CTX_OPTS[s.T],
+               experts:E_OPTS[s.E],topk:s.K,vocab:uniq};
+    $("sp"+i).textContent=fmtNum(paramCounts(cfg).total);
+  });
+}
+[kD,kL,kH,kT,kE,kK,kB,kLR,kSteps,kGen,kTemp,kTopP].forEach(el=>el.addEventListener("input",()=>{
+  if([kD,kL,kH,kT,kE,kK].includes(el))selScale=-1;
+  refreshKnobs();
+}));
+
+/* ============ 学習 ============ */
+function updateOdo(){
+  if(!C){$("odo").innerHTML="計 — params<br>有効 <b>—</b> params";return;}
+  const pc=paramCounts(C);
+  $("odo").innerHTML="計 "+fmtNum(pc.total)+" params<br>有効 <b>"+fmtNum(pc.active)+"</b> params";
+}
+function buildEbars(){
+  const panel=$("moePanel"),wrap=$("ebars");
+  wrap.innerHTML="";
+  if(!C||C.experts<2){panel.style.display="none";return;}
+  panel.style.display="";
+  for(let e=0;e<C.experts;e++){
+    const div=document.createElement("div");
+    div.className="ebar";
+    div.innerHTML='<span class="elab">E'+e+'</span><div class="etrack"><div class="efill" id="ef'+e+'"></div></div><span class="epct" id="ep'+e+'">—</span>';
+    wrap.appendChild(div);
+  }
+  utilEMA=null;
+}
+function showUtil(util){ // util: Float32Array[E] 割当率(topkなので合計はk)
+  if(!C||C.experts<2)return;
+  const K=Math.min(C.topk,C.experts);
+  if(!utilEMA)utilEMA=Float32Array.from(util);
+  else for(let i=0;i<util.length;i++)utilEMA[i]=utilEMA[i]*0.9+util[i]*0.1;
+  for(let e=0;e<C.experts;e++){
+    const share=utilEMA[e]/K*100;
+    const f=$("ef"+e),p=$("ep"+e);
+    if(f){f.style.width=Math.min(share,100)+"%";p.textContent=share.toFixed(1)+"%";}
+  }
+}
+async function train(){
+  const B=BATCH_OPTS[+kB.value],T=C.ctx,total=+kSteps.value;
+  const fast=$("fastMode").checked;
+  setFastMode(fast);
+  const SYNC=fast?10:1;      // CPUへ読み出す間隔(ステップ)
+  const UIEVERY=fast?1:5;    // 読み出し何回ごとにUI更新するか
+  if(!opt)opt=tf.train.adam(LR_OPTS[+kLR.value]);
+  running=true;
+  $("btnTrain").disabled=true;$("btnTrain").classList.add("running");
+  $("btnStop").disabled=false;$("btnInit").disabled=true;
+  if($("wakeLock").checked)try{wakeLockObj=await navigator.wakeLock.request("screen");}catch(e){}
+  let done=0,t0=performance.now(),tokWindow=0,samples=0;
+  setStatus("学習中… (このタブを閉じないでください)"+(fast?" [高速モード]":""),"ok");
+  while(running&&done<total){
+    const [xb,yb]=makeBatch(B,T);
+    const sampled=(done%SYNC===SYNC-1)||done===total-1;
+    const collect={aux:[],util:sampled?[]:null,auxVal:null};
+    const lt=opt.minimize(lossClosure(xb,yb,collect),true,varList);
+    step++;done++;tokWindow+=B*T;
+    if(sampled){
+      const lv=(await lt.data())[0];
+      let auxv=null;
+      if(collect.auxVal){auxv=(await collect.auxVal.data())[0];collect.auxVal.dispose();}
+      if(collect.util&&collect.util.length){
+        const E=C.experts,acc=new Float32Array(E);
+        for(const u of collect.util){
+          const a=u.dataSync();
+          for(let i=0;i<E;i++)acc[i]+=a[i];
+          u.dispose();
+        }
+        for(let i=0;i<E;i++)acc[i]/=collect.util.length;
+        showUtil(acc);
+      }
+      const ema=lossHist.length?lossHist[lossHist.length-1][1]*0.92+lv*0.08:lv;
+      lossHist.push([step,ema]);
+      samples++;
+      if(samples%UIEVERY===0||done===total){
+        const dt=(performance.now()-t0)/1000;
+        $("mStep").textContent=step;
+        $("mLoss").textContent=lv.toFixed(3);
+        $("mAux").textContent=auxv!==null?auxv.toFixed(3):"—";
+        $("mTps").textContent=dt>0?Math.round(tokWindow/dt).toLocaleString():"—";
+        t0=performance.now();tokWindow=0;
+        drawChart();
+        await tf.nextFrame();
+      }
+      if(!Number.isFinite(lv)){
+        lt.dispose();xb.dispose();yb.dispose();
+        setStatus("loss が発散しました。学習率を下げて再初期化してください","err");break;}
+    }
+    lt.dispose();xb.dispose();yb.dispose();
+  }
+  running=false;
+  $("btnTrain").disabled=false;$("btnTrain").classList.remove("running");
+  $("btnStop").disabled=true;$("btnInit").disabled=false;
+  if(wakeLockObj){wakeLockObj.release().catch(()=>{});wakeLockObj=null;}
+  if(Number.isFinite(lossHist.at(-1)?.[1]??0))
+    setStatus("step "+step+" で停止。もう一度「学習開始」で続きから学習できます","ok");
+}
+function drawChart(){
+  const cv=$("chart"),ctx=cv.getContext("2d");
+  const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  if(lossHist.length<2)return;
+  const ys=lossHist.map(p=>p[1]);
+  const yMax=Math.max(...ys),yMin=Math.min(...ys),pad=12;
+  const sx=i=>pad+(W-2*pad)*i/(lossHist.length-1);
+  const sy=v=>pad+(H-2*pad)*(1-(v-yMin)/Math.max(yMax-yMin,1e-6));
+  ctx.strokeStyle="#E24E1B";ctx.lineWidth=2;ctx.lineJoin="round";
+  ctx.beginPath();
+  lossHist.forEach((p,i)=>{i?ctx.lineTo(sx(i),sy(p[1])):ctx.moveTo(sx(i),sy(p[1]));});
+  ctx.stroke();
+  ctx.fillStyle="rgba(20,33,61,.6)";ctx.font="11px monospace";
+  ctx.fillText(yMax.toFixed(2),4,14);
+  ctx.fillText(yMin.toFixed(2),4,H-4);
+}
+
+/* ============ 生成 ============ */
+async function generate(){
+  $("btnGen").disabled=true;
+  setFastMode($("fastMode").checked);
+  const out=$("genOut");
+  const temp=Math.max(+kTemp.value/10,0.1),n=+kGen.value;
+  let ids=Array.from($("prompt").value).map(c=>charToId.get(c)).filter(v=>v!==undefined);
+  if(!ids.length)ids=[dataIds&&dataIds.length?dataIds[0]:0];
+  out.textContent=ids.map(i=>vocabChars[i]).join("");
+  const topP=+kTopP.value/100;
+  for(let i=0;i<n;i++){
+    const ctxIds=ids.slice(-C.ctx);
+    const lt=tf.tidy(()=>{
+      const x=tf.tensor2d([ctxIds],[1,ctxIds.length],"int32");
+      return tf.keep(forward(x,null)
+        .slice([0,ctxIds.length-1,0],[1,1,C.vocab]).reshape([C.vocab]));
+    });
+    const row=new Float32Array(await lt.data());
+    lt.dispose();
+    const id=sampleRow(row,temp,topP);
+    if(id<0){
+      setStatus("重みが数値破綻(NaN)しています。学習が発散した可能性があります。学習率を下げて再初期化するか、保存済みモデルを読み込んでください","err");
+      break;
+    }
+    ids.push(id);
+    out.textContent+=vocabChars[id]??"";
+    if(i%8===0)await tf.nextFrame();
+  }
+  $("btnGen").disabled=false;
+}
+
+/* ============ 保存・読み込み ============ */
+function saveModel(){
+  try{
+    const j=serializeModel();
+    const blob=new Blob([JSON.stringify(j)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="tinylm-v2-"+fmtNum(paramCounts(C).total)+"-step"+step+".json";
+    a.click();URL.revokeObjectURL(a.href);
+    setStatus("モデルをダウンロードしました","ok");
+  }catch(e){setStatus("保存失敗(規模が大きすぎる可能性): "+e.message,"err");}
+}
+function loadModel(file){
+  const rd=new FileReader();
+  rd.onload=()=>{try{
+    deserializeModel(JSON.parse(rd.result));
+    const ct=corpusForModel();
+    if(ct)tokenize(ct);else dataIds=new Int32Array(0);
+    afterModelReady();
+    setStatus("読み込み完了: "+fmtNum(paramCounts(C).total)+" params / step "+step,"ok");
+  }catch(e){setStatus("読み込み失敗: "+e.message,"err");}};
+  rd.readAsText(file);
+}
+function afterModelReady(){
+  $("btnTrain").disabled=false;$("btnGen").disabled=false;$("btnSave").disabled=false;
+  $("genOut").textContent="準備完了。学習するか、そのまま生成を試せます(未学習ならデタラメが出ます)。";
+  lossHist=[];drawChart();
+  buildEbars();updateOdo();
+  if(opt){opt.dispose();opt=null;}
+}
+
+/* ============ イベント ============ */
+$("btnInit").onclick=()=>{
+  const text=corpusForModel();
+  const cfg=curCfg();
+  if(Array.from(text).length<cfg.ctx+10){
+    setStatus("テキストが短すぎます(文脈長+10文字以上必要)","err");return;}
+  vocabChars=[];charToId=new Map();
+  tokenize(text);
+  buildModel({...cfg,vocab:vocabChars.length});
+  afterModelReady();
+  setStatus("初期化完了: 語彙 "+vocabChars.length+" 文字 / "+fmtNum(paramCounts(C).total)+" params (有効 "+fmtNum(paramCounts(C).active)+")","ok");
+};
+$("btnTrain").onclick=()=>{
+  if(!dataIds||dataIds.length<C.ctx+2){
+    const text=corpusForModel();
+    if(Array.from(text).length<C.ctx+10){setStatus("学習テキストがありません","err");return;}
+    tokenize(text);
+  }
+  train().catch(e=>{running=false;setStatus("エラー: "+e.message,"err");});
+};
+$("btnStop").onclick=()=>{running=false;};
+$("btnGen").onclick=()=>generate().catch(e=>setStatus("生成エラー: "+e.message,"err"));
+$("btnSave").onclick=saveModel;
+$("btnLoad").onclick=()=>$("fileIn").click();
+$("fileIn").onchange=e=>{if(e.target.files[0])loadModel(e.target.files[0]);e.target.value="";};
+
+/* ============ 起動 ============ */
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    const s=document.createElement("script");
+    s.src=src;s.onload=res;s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+(async()=>{
+  setCorpus(SAMPLE);
+  buildScaleRow();
+  refreshKnobs();
+  let backend="cpu";
+  // WebGPU → WebGL → CPU の順に試す
+  if(navigator.gpu){
+    try{
+      await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgpu@4.22.0/dist/tf-backend-webgpu.min.js");
+      await tf.setBackend("webgpu");await tf.ready();backend="webgpu";
+    }catch(e){backend=null;}
+  }
+  if(backend!=="webgpu"){
+    try{await tf.setBackend("webgl");await tf.ready();backend="webgl";}
+    catch(e){await tf.setBackend("cpu");await tf.ready();backend="cpu";}
+  }
+  $("mBackend").textContent=tf.getBackend();
+  refreshScaleParams();
+  $("corpus").addEventListener("input",refreshScaleParams);
+  setStatus("準備OK (backend: "+tf.getBackend()+")。規模を選んでモデルを初期化してください","ok");
+})();
+</script>
+</body>
+</html>

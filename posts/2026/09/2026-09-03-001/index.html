@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="ピアノ・ギター・ベース・ドラム・バイオリンの単体ラボを1つのワークレットに同居させ、サンプル精度で同時に鳴らして曲が組めるようにした。同居のさせ方、発音タイミング、負荷に応じた自動音質調整、引っかかったことの記録。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-03-001/"><meta property="og:title" content="楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む"><meta property="og:description" content="ピアノ・ギター・ベース・ドラム・バイオリンの単体ラボを1つのワークレットに同居させ、サンプル精度で同時に鳴らして曲が組めるようにした。同居のさせ方、発音タイミング、負荷に応じた自動音質調整、引っかかったことの記録。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-03-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-09-03T15:00:00+09:00">2026-09-03T15:00:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-dbad2090ff4a/">音響</a><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a><a class="tag" href="/tags/javascript/">JavaScript</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="楽器ラボ-統合版-5つの物理モデル楽器を1枚にまとめて曲を組む">楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む</h1>
+<p>→ <a href="/works/instrument-lab/">楽器ラボ 統合版</a></p>
+<p>5 つのラボ（piano-lab / guitar-lab / bass-lab / drums-lab / violin-lab）を 1 枚にまとめ、同時に鳴らして曲が組めるところまで。既定の曲はバラード。</p>
+<hr>
+<h2 id="1-どうやって同居させたか">1. どうやって同居させたか</h2>
+<p>各ラボの <code>*_dsp.js</code> は<strong>そのまま</strong>置いておき、ビルド時に 2 か所だけ読み替えて 1 つのワークレットに並べています。</p>
+<pre><code>extends AudioWorkletProcessor      →  extends InstBase
+registerProcessor(&#39;piano-processor&#39;, PianoProcessor)  →  INST_CLASS.piano = PianoProcessor</code></pre>
+<p><code>InstBase</code> は <code>port.postMessage</code> をハブに横流しするだけのクラス。<strong>単体ラボのコードは 1 行も分岐していません</strong>。5 楽器のモデル・DSP を通しても名前の衝突はゼロでした（<code>PN_</code> <code>GT_</code> <code>BS_</code> <code>DRUM_</code> <code>VN_</code> の接頭辞で分けてあったのが効いた）。</p>
+<p><code>HubProcessor</code> は各楽器を 128 サンプルのスクラッチに描かせ、トラックごとのゲイン・定パワーパン・リバーブ送りを掛けて足し、マスターでバスコンプとリミッタを通します。</p>
+<h3 id="発音のタイミング-ここが肝">発音のタイミング（ここが肝）</h3>
+<p>予約イベントはハブが 1 か所で持ち、<strong>予約時刻でブロックを割ってから</strong>各楽器に配ります。</p>
+<pre><code class="language-js">while (pos &lt; N) {
+  while (q.length &amp;&amp; q[0].at &lt;= frame + pos) deliver(q.shift());
+  let end = N;
+  if (q.length) { const nxt = q[0].at - frame; if (nxt &gt; pos &amp;&amp; nxt &lt; end) end = nxt; }
+  renderSeg(L, R, pos, end - pos);      // 楽器を部分ブロックで進める
+  pos = end;
+}</code></pre>
+<p>こうすると、自前のキューを持たない piano / guitar もドラムと同じ精度で鳴ります。テストで確認していること:</p>
+<ul>
+<li>予約を 37 サンプルずらすと、<strong>ドラムもベースもピアノも発音位置がちょうど 37 サンプル動く</strong>（ブロック境界にまとめていたら 0 か 128 になる）</li>
+<li>ドラムとギターの立ち上がりのずれは <strong>0.35 ms</strong></li>
+</ul>
+<p>なお<strong>ピアノだけは 85 サンプル（1.8ms）遅れて音が出ます</strong>。これはバグではなくハンマーが弦に届くまでの時間で、実機と同じです。</p>
+<h3 id="鳴っていない楽器は計算しない">鳴っていない楽器は計算しない</h3>
+<p>出力が 0.4 秒無音のままなら、その楽器の <code>process()</code> を呼ぶのをやめます。メッセージが来たら復帰。ドラムだけ叩いているときは残り 4 楽器が完全に休みます。</p>
+<h3 id="負荷に応じた自動の音質調整">負荷に応じた自動の音質調整</h3>
+<p>5 楽器同時はやはり重いので、ハブが負荷を見て段を落とします（ドラム単体ラボと同じ仕組みを全体に広げたもの）。</p>
+<table>
+<thead>
+<tr><th>段</th><th>シンバルのモード密度 K</th><th>ピアノの最大同時発音</th><th>シンバル総モード数</th><th>ドラムの実時間比</th></tr>
+</thead>
+<tbody>
+<tr><td>最高</td><td>7</td><td>24 声</td><td>498</td><td>3.4×</td></tr>
+<tr><td>高</td><td>5</td><td>18 声</td><td>365</td><td>5.3×</td></tr>
+<tr><td>中</td><td>3.5</td><td>12 声</td><td>263</td><td>7.1×</td></tr>
+<tr><td>軽量</td><td>2.5</td><td>8 声</td><td>191</td><td>8.9×</td></tr>
+</tbody>
+</table>
+<p>判定の規則（2026-09-03 に直したもの。経緯は 6 章「20 秒くらいで重くなる」）:</p>
+<ul>
+<li><strong>下げる</strong>: 負荷 52% 超またはピーク 76% 超が 0.4 秒続いたら即 1 段。以後 1.2 秒だけ様子見</li>
+<li><strong>戻す</strong>: 再生停止中に負荷 20% 未満が 5 秒続いたら 1 段。<strong>起動時の段（端末ごとの基準）より上には決して戻さない</strong></li>
+<li>再生中は戻さない。「自動」を手で入れ直したときは、そのとき選んでいる段が基準になる</li>
+<li>互換モード（ScriptProcessor）で起動したときは基準を「中」以下にし、3D も切る（音声が主スレッドで動くため）</li>
+</ul>
+<p>マスター欄で切ることもできます。</p>
+<h3 id="cpu-node-実測-リアルタイム比-大きいほど余裕">CPU（Node 実測・リアルタイム比。大きいほど余裕）</h3>
+<table>
+<thead>
+<tr><th></th><th></th></tr>
+</thead>
+<tbody>
+<tr><td>ドラムのみ</td><td>3.8×</td></tr>
+<tr><td>ドラム＋ベース</td><td>3.1×</td></tr>
+<tr><td>ピアノ和音のみ</td><td>8.8×</td></tr>
+<tr><td><strong>5 楽器</strong></td><td><strong>2.1×</strong></td></tr>
+</tbody>
+</table>
+<hr>
+<h2 id="2-3d-webgl-コンテキストは-1-つだけ">2. 3D — WebGL コンテキストは 1 つだけ</h2>
+<p>5 つのシーンクラスに <code>opts</code> を足して、<strong>レンダラと環境マップを共有</strong>できるようにしました（単体ラボは従来どおり自前で作ります）。</p>
+<ul>
+<li><strong>単体表示</strong>: 選んだ楽器を画面いっぱいに</li>
+<li><strong>バンド全体</strong>: 同じキャンバスを <code>setScissorTest</code> でタイルに区切り、5 つのシーン × 5 つのカメラを 1 つのコンテキストで描く</li>
+</ul>
+<p>楽器のシーンは<strong>初めて表示するときに作ります</strong>（起動を軽くするため）。バンド表示では、鳴っていない楽器は形状の更新（弦の波形など）を飛ばして描画だけします。視点操作は指の乗っているタイルのカメラに効きます。</p>
+<h2 id="3-シーケンサー">3. シーケンサー</h2>
+<p>音程 × ステップの格子。ドラムはキットの行、旋律楽器は<strong>調の音だけ</strong>が行に並びます（半音・長調・短調・ドリアン・ペンタ・ブルース）。</p>
+<p><strong>連続したマスは 1 つの長い音</strong>として鳴ります。打ち直さずに伸ばすので、バイオリンやピアノで自然なフレーズになります。</p>
+<p>曲は「1 小節あたりのステップ数（12/16/24/32）× 小節数」。格子は 1 小節ずつ表示し、◀▶ で小節を送るか「追従」で再生位置を追いかけます。</p>
+<h3 id="プリセット曲-すべて実測">プリセット曲（すべて実測）</h3>
+<table>
+<thead>
+<tr><th></th><th>小節</th><th>テンポ</th><th>長さ</th><th>ピーク</th><th>RMS</th><th>クレスト</th><th>DSP 負荷</th></tr>
+</thead>
+<tbody>
+<tr><td>ロック</td><td>24</td><td>104</td><td>0:55</td><td>0.78</td><td>0.057</td><td>13.7</td><td>23%</td></tr>
+<tr><td>バラード</td><td>20</td><td>70</td><td>1:09</td><td>0.76</td><td>0.054</td><td>14.1</td><td>16%</td></tr>
+<tr><td>ファンク</td><td>24</td><td>108</td><td>0:53</td><td>0.75</td><td>0.063</td><td>11.9</td><td>21%</td></tr>
+<tr><td>ワルツ</td><td>24</td><td>160</td><td>0:54</td><td>0.71</td><td>0.058</td><td>12.4</td><td>14%</td></tr>
+<tr><td>5楽器そろい踏み</td><td>24</td><td>96</td><td>1:00</td><td>0.77</td><td>0.096</td><td>8.0</td><td>13%</td></tr>
+</tbody>
+</table>
+<p>曲は音符を直接並べるのではなく、<strong>コード進行とドラムパターンから組み立てる小さな DSL</strong>で書いています（<code>Ctx()</code> の <code>d()</code> = ドラムを <code>&#39;x...x...&#39;</code> の文字列で、<code>c()</code> = 和音、<code>mel()</code> = 旋律）。60 秒の曲でもソースは 20 行前後で済み、進行を変えれば全体が付いてきます。</p>
+<p>序奏 → A → B → 終わり の区分けを入れてあり、楽器が順に足されていきます（ロックならバイオリンは 12 小節目から）。</p>
+<p><strong>音域から外れた音はオクターブで畳みます</strong>。最初は切り詰めていたのですが、ロックの C（MIDI 24）がベースの下限 E1 に丸められて「C のはずが E」になり、和声が壊れていました。</p>
+<h2 id="4-ミキサーと音のバランス">4. ミキサーと音のバランス</h2>
+<p>各楽器の<strong>内部リバーブは切って</strong>、ハブの共有ルームに送っています。同じ部屋で鳴っているように聞こえるのはそのためで、リバーブが 10 個ぶん動かずに済むという実利もあります。</p>
+<p>既定のバランス（2 小節のバンド演奏で測った各楽器の RMS）:</p>
+<table>
+<thead>
+<tr><th></th><th>ゲイン</th><th>パン</th><th>残響送り</th><th>実測 RMS</th></tr>
+</thead>
+<tbody>
+<tr><td>ピアノ</td><td>0.46</td><td>−0.18</td><td>0.28</td><td>−31.7 dB</td></tr>
+<tr><td>ギター</td><td>0.42</td><td>+0.26</td><td>0.22</td><td>−32.4 dB</td></tr>
+<tr><td>ベース</td><td>1.05</td><td>0.00</td><td>0.10</td><td>−30.5 dB</td></tr>
+<tr><td>ドラム</td><td>0.67</td><td>+0.05</td><td>0.16</td><td>−32.8 dB</td></tr>
+<tr><td>バイオリン</td><td>0.28</td><td>−0.30</td><td>0.34</td><td>−31.0 dB</td></tr>
+</tbody>
+</table>
+<p>5 本が 2.3 dB の幅に収まり、全体でピーク 0.66・RMS 0.083・クレスト 7.9。</p>
+<h2 id="5-演奏面とつまみ">5. 演奏面とつまみ</h2>
+<p>タブで楽器を切り替えると、演奏面（鍵盤／指板／パッド／バイオリンの指板）と 3D と詳細つまみが一緒に切り替わります。つまみは各ラボと同じ物理量が全部（ピアノ 10・ギター 12・ベース 11・ドラム 4・バイオリン 8）。ギターとベースはエフェクターのトグルも。</p>
+<p>MIDI ノート → 各楽器のメッセージへの変換は <code>hub_params.js</code> が吸収しています（ピアノは 1〜127、ギター・ベースは 0〜1 の振幅、ドラムは GM 準拠のノート番号、バイオリンは弓圧と弓速）。</p>
+<hr>
+<h2 id="6-引っかかったこと">6. 引っかかったこと</h2>
+<h3 id="ベロシティの流儀が楽器ごとに違う">ベロシティの流儀が楽器ごとに違う</h3>
+<p>ピアノの <code>noteOn(vel)</code> は <strong>MIDI の 1〜127</strong>、ギター・ベースの <code>amp</code> は <strong>0〜1</strong>、ドラムの <code>vel</code> も 0〜1、バイオリンは<strong>ニュートン単位の弓圧</strong>。最初 <code>vel:0.8</code> をピアノに渡して「音が 40 dB 小さい」と悩みました。統合するときは、こういう単位の違いを 1 か所（<code>hub_params.js</code>）に閉じ込めるのが正解でした。</p>
+<h3 id="起動直後に-52-dbfs-の小さなクリックが出る">起動直後に −52 dBFS の小さなクリックが出る</h3>
+<p>ギターの <code>Drive</code>（非対称の真空管モデル）が入力ゼロでも DC を出し、DC ブロッカーが 15 サンプルかけて落とすため。単体では気になりませんが、統合版でミュートのテストをすると「ミュートしたのに 2.6e-3 出ている」と見えます。実害はないのでそのままにし、テストのほうを直しました。</p>
+<h3 id="重かったのは音ではなく描画コールだった">重かったのは音ではなく描画コールだった</h3>
+<p>「重い」と報告を受けて計り直したところ、<strong>DSP は 30% 前後で余裕があり、詰まっていたのは主スレッド</strong>でした。犯人は描画コールの数で、<strong>ピアノのシーンだけで 1 フレーム 365 コール</strong>（ハンマー 88 個＋ダンパー 88 個＋鍵盤 88 組）。バンド表示ではこれが 5 面ぶん走ります。</p>
+<p>入れた対策と実測（ヘッドレス・モバイル幅）:</p>
+<table>
+<thead>
+<tr><th></th><th>fps</th></tr>
+</thead>
+<tbody>
+<tr><td>対策前</td><td>17</td></tr>
+<tr><td>3D 通常（30fps 上限・バンドは 1 フレーム 2 面ずつ）</td><td>23〜37</td></tr>
+<tr><td>3D 軽量（15fps・1 面ずつ・ピアノのアクションを隠す）</td><td>31〜46</td></tr>
+<tr><td>3D オフ</td><td>60</td></tr>
+</tbody>
+</table>
+<ul>
+<li><strong>3D の描画に上限 fps を設ける</strong>。楽器のアニメーションは 30fps で十分で、rAF ごとに描く必要はない</li>
+<li><strong>バンド表示は順ぐりに 2 面ずつ</strong>。<code>autoClear</code> を切ってあるので、描き直さない面は前の絵がそのまま残る</li>
+<li><strong><code>setDetail()</code></strong> を各シーンに用意し、軽量時はピアノのアクションを隠す（365 → <strong>117 コール</strong>、21fps → 46fps）</li>
+<li><strong>スマホでは最初から 1 段落として起動する</strong>。「重くなってから下げる」だと、下がるまでの数秒が必ず途切れる</li>
+<li>fps が 20 を切ったら 3D を自動で 1 段落とす（手で選んだあとは触らない）</li>
+</ul>
+<p><strong>教訓</strong>: 3D が重いときは、まず<strong>三角形の数ではなく描画コールの数</strong>を見ること。ピアノは 8,671 三角形しかないのに 365 コールで、ドラム（29,154 三角形・86 コール）よりずっと重かった。</p>
+<h3 id="つまみを動かすと音が止まっていた-オーディオスレッドを塞ぐメッセージ">つまみを動かすと音が止まっていた（オーディオスレッドを塞ぐメッセージ）</h3>
+<p>「DSP がかなり落ちてた（音が途切れた）」という報告を受けて、<strong>UI から飛ぶメッセージ 1 つ 1 つが何 ms オーディオスレッドを止めるか</strong>を測ったところ:</p>
+<table>
+<thead>
+<tr><th>メッセージ</th><th>前</th><th>後</th></tr>
+</thead>
+<tbody>
+<tr><td>ドラム全体のチューニング（7個）</td><td><strong>68.8 ms</strong></td><td>0.06 ms</td></tr>
+<tr><td>ドラム 1 個のチューニング</td><td>16.1 ms</td><td>—</td></tr>
+<tr><td>音質の段を変える</td><td>1.76 ms</td><td>0.01 ms</td></tr>
+<tr><td>ギター cfg（rebuild）</td><td>0.94 ms</td><td>0.77 ms（＋指を離してから送る）</td></tr>
+</tbody>
+</table>
+<p><strong>レンダー量子は 128 サンプル＝2.67 ms</strong> しかありません。69 ms 掛かる処理を 1 回走らせれば 26 ブロック分まるごと落ち、スライダーは 1 秒に何十回も <code>input</code> を投げるので、<strong>触っているあいだ音が止まりっぱなし</strong>になります。</p>
+<p>原因は「モード表の作り直し」でした。太鼓のチューニングは <code>dr.build()</code> でベッセル零点からモードを組み直し、音質の段の変更は <code>cymbalModes()</code>（内部で数千回ループ）でシンバルを組み直していました。どちらも初期化のつもりで書いた関数が、演奏中の経路に入っていたわけです（バイオリンの <code>designDispersion</code> とまったく同じ間違い）。</p>
+<p>直したのは 3 か所:</p>
+<ol>
+<li><strong>チューニングは係数を掛け直すだけにする</strong>。膜のモード周波数は張力の平方根に比例して<strong>全部が同じ比で動く</strong>ので、零点を求め直す必要はない。<code>ModalArray.setPitch(r, fs)</code> は減衰（a2）をそのままに a1 だけ書き換える O(モード数)。実測で +7 半音が 254.5Hz（理論 254.7）と 0.1% 以内。</li>
+<li><strong>音質の段は「上から何本まで回すか」を変えるだけにする</strong>。モード列は周波数順なので、上限を下げる＝高域を捨てる。<code>ModalArray.setLimit(frac)</code> は 1 行。鳴っている最中に切ると段差が出るので、静かなときか次の打撃で反映する。</li>
+<li><strong>作り直しを伴うつまみは指を離してから送る</strong>（160ms のデバウンス）。</li>
+</ol>
+<p><strong>教訓（再）</strong>: 「設計関数」を演奏経路に入れない。今回はさらに一歩進めて、<strong>UI から送れるメッセージ全部の所要時間を測るテスト</strong>を入れました（<code>どのメッセージも 1ms 未満</code>）。この種のバグは音を聞かないと気づけないので、数値で縛るのが唯一の防御です。</p>
+<h3 id="演奏が進むとフリーズ気味-解像度の自動調整が逆に働いていた">「演奏が進むとフリーズ気味」— 解像度の自動調整が逆に働いていた</h3>
+<p>まず音の側を疑って 70 秒の曲をオフラインで通し、5 秒ごとのブロックあたり計算時間を並べましたが<strong>ずっと平坦（20〜23%）</strong>。ピアノの声数も予約の数も溜まっていない。となると主スレッドです。</p>
+<p>ブラウザで 60 秒回して長いタスク（50ms 超）を数えると、3D「軽量」で <strong>8 秒に 34〜39 回、合計 2 秒ぶん</strong>主スレッドが止まっていました。原因は自分で入れた仕組みの組み合わせ:</p>
+<ol>
+<li>3D を間引くようにした（15fps 上限）</li>
+<li>解像度の自動調整は <strong>rAF の間隔</strong> で「速いか遅いか」を判断していた</li>
+<li>間引くと rAF の間隔は短く見える → 「速い」と誤解 → 解像度を上げ続ける → 実際に描く 1 回が 50ms 超の長いタスクになる</li>
+</ol>
+<p>さらに直すときにもう一段ありました。<code>performance.now()</code> で <code>renderer.render()</code> を挟んで測っても <strong>1〜2ms しか出ない</strong>。GL 命令は即座に返り、GPU 側の時間は次のフレームの確定に乗るからです。JS の中からは 3D の重さが見えない。</p>
+<p><strong>解</strong>: 「3D を描いた直後のフレーム間隔」と「描かなかったフレーム間隔」の差を 3D 1 回の実コストとして使う（<code>observe(dt)</code> → <code>adapt()</code>）。コストが 14ms を超えたら解像度を下げ、最低（0.4）まで下げても 24ms 超なら<strong>描く回数そのものを減らす</strong>（5fps まで）。軽ければ戻す。</p>
+<table>
+<thead>
+<tr><th>3D</th><th>前</th><th>後</th></tr>
+</thead>
+<tbody>
+<tr><td>軽量</td><td>33fps・長いタスク 98 回/8秒</td><td><strong>55〜60fps・0〜2 回</strong></td></tr>
+<tr><td>通常（ピアノ 365 コール）</td><td>23fps・25 回</td><td>50〜56fps・4〜8 回（描画は 5fps・解像度 0.4 に自動で落ち着く）</td></tr>
+</tbody>
+</table>
+<p>本物の GPU がある端末ではコストがずっと小さく測れるので、もっと高い回数・解像度に落ち着くはずです。</p>
+<p>あわせて、<strong>タブが裏に回ったあとの復帰</strong>も直しました。タイマーが 1 秒に 1 回に絞られ、戻った瞬間に溜まったぶんが一気に「今」へ流し込まれて音の壁になるので、0.6 秒以上遅れていたらそのぶんは捨てて現在位置から続けます。</p>
+<h3 id="シンバルの減衰しきったモードを外す">シンバルの減衰しきったモードを外す</h3>
+<p><code>ModalArray</code> に「活きているモード数」を持たせ、末尾から縮められるようにしました（シンバルのモード列は周波数順で、高い方ほど早く消える）。連打しているときは効きませんが、尾を引いている間は効きます。打撃のたびに <code>wake()</code> で全部戻します。</p>
+<h3 id="ヘッドレス環境の測定は当てにならない-再">ヘッドレス環境の測定は当てにならない（再）</h3>
+<p>バイオリンのピチカートと同じ問題で、ドラムのパッドを叩くテストが「鳴っていない」と誤判定しました。この環境は主スレッドが遅く、<code>setTimeout</code> のループが 1 秒近くかかるため、速く減衰する音の立ち上がりを取り逃がします。<strong>ワークレット側のピークホールド（<code>outPk</code>）を state で受けて測る</strong>のが正解。</p>
+<h3 id="20-秒くらいで重くなり-途切れ途切れになっていく-自動調整が段を上げていた">「20 秒くらいで重くなり、途切れ途切れになっていく」— 自動調整が段を上げていた</h3>
+<p>ローカルで長く弾いてもらったときの報告。オフラインでもブラウザでも 150 秒回して<strong>溜まるものは何もなかった</strong>（DSP 負荷は横ばい、ヒープ・DOM・予約数も一定）ので、端末の熱を疑いかけましたが、GPT-5.6 に見てもらった版が正しく指摘していました。自動の音質調整そのものが原因です。</p>
+<ol>
+<li>スマホは起動時に段「高」から始める</li>
+<li>段を変えると <strong>80 回 × 0.2 秒 = 16 秒</strong>、何も判定しない</li>
+<li>16 秒後、負荷が 30% 未満なら <strong>1 段上げる</strong> → 「最高」へ</li>
+<li>「最高」はその端末には重い。しかし上げた直後の 16 秒はまた判定しない → <strong>途切れっぱなし</strong></li>
+<li>ようやく下がる → 16 秒後にまた上がる、の繰り返し</li>
+</ol>
+<p>つまり「20 秒くらいで」は 16 秒のヒステリシスそのもので、「だんだん悪くなる」は上がった段で熱を持つぶんでした。ヘッドレスの実測でも 15 秒の時点で <code>q1 → q0</code> に上がっていたのに、負荷が上がっても十分低かったので見過ごしていました。</p>
+<p>直したこと（GPT-5.6 版の考えを取り込み、こちらのソースとテストに合わせて入れ直した）:</p>
+<ul>
+<li><strong>危険側は速く、安全側は遅く</strong>。下げるのは 0.4 秒連続で熱ければ即、戻すのは停止中に 5 秒安定してから</li>
+<li><strong>起動時の段より上には戻さない</strong>（<code>baseline</code>）。端末に合った段で起動しているのだから、そこが上限</li>
+<li><strong>再生中は戻さない</strong>（<code>transport</code> メッセージで再生状態をワークレットが知る）</li>
+<li>ワークレット側の GC を減らす: 表示していない楽器は状態レポートを<strong>組み立てもしない</strong>（<code>reportEnabled</code>。以前はハブで捨てていたが、1024 点の波形を 20Hz で切り出す配列生成は残っていた）。サブブロックごとの <code>subarray</code> もやめ、<code>HUB_RENDER_N</code> で長さを渡して同じ配列を使い回す</li>
+<li><strong>互換モードのバッファ不足</strong>を修正。ScriptProcessor は 2048 サンプル単位で来るのに楽器のスクラッチが 256 しかなく、そこでは NaN が出ていた（= 無音）。最大側で確保</li>
+<li>音声負荷が 58% を超えたら 3D を先に 1 段落とす（同じ CPU を取り合うので）。3D の自動復帰も起動時の段まで</li>
+</ul>
+<p>再発防止のテスト（<code>test_hub.mjs</code>）: 再生中は負荷 10% が 60 秒続いても段を上げない／停止中でも基準より上へ戻さない／重くなったら 0.4 秒で下がる／2048 サンプル単位でも NaN にならず 128 単位と同じ音量。</p>
+<p><strong>教訓</strong>: 「安全側へ戻す」条件を「危険側へ進む」条件と同じ速さにしてはいけない。しかも「戻す」の上限は、その端末で実際に問題なく動いた段を超えてはいけない。</p>
+<h3 id="診断用の負荷ログ">診断用の負荷ログ</h3>
+<p>「重いとき（負荷ログ）」欄に、1 秒ごとの DSP 負荷（ピーク付き）・楽器ごとの内訳・fps・<strong>cpu 比</strong>（同じ計算を毎回走らせた所要時間を、これまでの最短で割ったもの）を記録し、コピーできるようにしました。cpu 比だけが上がっていくなら端末のクロック低下、dsp% だけならコード側、と切り分けられます。</p>
+<h2 id="7-音に集中モード">7. 音に集中モード</h2>
+<p>ヘッダの「♪ 音に集中」で、<strong>音声スレッド以外をほぼ何もしない状態</strong>にします。</p>
+<ul>
+<li>3D・計器・演奏面・格子・タブのメーターの描画を止める（通常画面は <code>display:none</code>）</li>
+<li>ワークレットから主スレッドへの状態報告を 20Hz → 4Hz に（<code>rate</code> メッセージ）。楽器ごとの状態報告は止める（<code>watch: &#39;&#39;</code>）</li>
+<li>画面は曲名・経過時間・小節・5 楽器のレベル・DSP 負荷だけを 1 秒に 4 回更新</li>
+<li>再生／停止と曲の切り替えはそこからできる。「画面を戻す」で元の状態（3D の段も）に復帰</li>
+</ul>
+<p>主スレッドの長いタスク（50ms 超）は通常画面で 8 秒に 2 回 → <strong>集中モードで 0</strong>。スマホでは主スレッドが空いたぶん CPU と熱の余裕が音声スレッドに回り、音質の自動調整が「最高」まで上がりやすくなります。</p>
+<h2 id="8-動作の軽さ-ui">8. 動作の軽さ（UI）</h2>
+<p><strong>3D の切り替えは 3D 画面のすぐ上（カメラ切替の並びの左端）</strong>に置いてあります。タップするたびに 通常 → 軽量 → オフ と回り、いまどれなのかがボタン自体に出ます。オフのときは画面に案内が出て、その場所を演奏面と格子にゆずります。</p>
+<p>左レール先頭の「動作の軽さ」でも同じ操作ができます。</p>
+<ul>
+<li><strong>3D</strong>: 通常（30fps）／軽量（15fps・1 面ずつ・低詳細）／<strong>オフ</strong>（音はそのまま鳴る）</li>
+<li><strong>音質</strong>: 最高／高／中／軽量（シンバルのモード密度とピアノの声数）＋自動調整のオン・オフ</li>
+</ul>
+<p>スマホや 4 コア以下の端末は、起動時に 3D 軽量・音質「高」から始まります。</p>
+<h2 id="9-入れていないもの">9. 入れていないもの</h2>
+<p>セクション構成の編集（プリセット曲は序奏/A/B/終を持つが UI からは組めない）、トラックごとのテンポ変化、外部への書き出し（WAV/MIDI）、和音の自動生成、ミキサーのセンド EQ。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/09/2026-09-01-001/">← 声道を物理で鳴らす — ブラウザで動く調音音声合成をつくる</a><a rel="next" href="/posts/2026/09/2026-09-03-002/">「証明できない」ということを証明する — Löbの定理をLeanで100行 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/09/2026-09-01-001/">声道を物理で鳴らす — ブラウザで動く調音音声合成をつくる</a></li><li><a href="/posts/2026/08/2026-08-29-001/">水槽と熱帯魚の生態系シミュレーター「アクアラボ」を作った</a></li><li><a href="/posts/2022/09/2022-09-13-001/">JavaScriptに慣れておきたい</a></li><li><a href="/posts/2026/08/2026-08-26-001/">直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った</a></li><li><a href="/posts/2026/08/2026-08-25-001/">エンジンサウンドラボを公開しました</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

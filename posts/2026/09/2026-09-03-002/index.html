@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>「証明できない」ということを証明する — Löbの定理をLeanで100行 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="「自分の正しさは自分では保証できない」という話を、どこまで機械に証明させられるか。Lean 4で約100行、公理依存なし。定理・前提・政策の境界線と、第2不完全性定理の親戚たちを図とスイッチで辿る読み物。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-03-002/"><meta property="og:title" content="「証明できない」ということを証明する — Löbの定理をLeanで100行"><meta property="og:description" content="「自分の正しさは自分では保証できない」という話を、どこまで機械に証明させられるか。Lean 4で約100行、公理依存なし。定理・前提・政策の境界線と、第2不完全性定理の親戚たちを図とスイッチで辿る読み物。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-03-002/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>「証明できない」ということを証明する — Löbの定理をLeanで100行</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-09-03T21:00:00+09:00">2026-09-03T21:00:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-872c1fa141b5/">数学</a><a class="tag" href="/tags/entry-30f9a0e7b1d3/">検証</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="証明できない-ということを証明する-löbの定理をleanで100行">「証明できない」ということを証明する — Löbの定理をLeanで100行</h1>
+<p>ちょっとした数学の読み物をスタンドアロンで公開した。</p>
+<p>→ <a href="/works/loeb-lean/">「証明できない」ということを証明する</a></p>
+<h2 id="きっかけ">きっかけ</h2>
+<p>6月にClaudeと雑談していて、「全宇宙を掌握した推論機械は、掌握し終えたことを自分で証明できるのか」という話になった。たぶん無理。閉じた系は自分の完全性を自分では確かめられないので、検証は外側に錨を下ろして続けるしかない。</p>
+<p>当時のClaudeはこれを「母定理」と呼び始めたんだけど、後で検証してみたら硬い部分は全部既知の定理（Löb・ゲーデル・Tarski・Lawvere）の言い換えで、柔らかい部分は価値判断だった。なので「母原理」に格下げ。</p>
+<p>じゃあ定理の層だけLeanで書いてみるか、というのがこの読み物。</p>
+<h2 id="中身">中身</h2>
+<ul>
+<li>□（可証性述語）に課す4つの約束、D1〜D3と対角化を構造体のフィールドとして置いて、その上でLöb・第2不完全性・「検証器の健全性は自己認証できない」・Tarskiを証明。Lean 4.22.0、Mathlibなし、約100行、<code>#print axioms</code> は公理依存なし</li>
+<li>Löbの証明を11段、ボタンで一段ずつ歩ける</li>
+<li>約束をON/OFFするスイッチ。D3を外すとWillardの自己検証体系、対角化を外すとPresburger算術になって、どの定理が消えるかが見える</li>
+<li>対角線論法の家系図と、親戚の定理12件の一覧</li>
+<li>定義・公理から定理への依存グラフ</li>
+</ul>
+<h2 id="正直なところ">正直なところ</h2>
+<p>この100行は数学的には何も新しくない。抽象可証性論理でのLöbの証明は教科書の演習問題で、Quaife（1988）、Paulson/Bailitis（Isabelle）、Foundation（Lean 4）といった先行の機械検証がすでにある。自分の100行と先人の数千行の差は、D1〜D3と対角化を「仮定する」か「証明する」かの差でしかない。</p>
+<p>ただ面白かったのはそこで、「自分の正しさは自分では保証できない」というエンジニアの実用知識と、70年前に証明済みの定理との間に、硬さの違う4つの層があるのがコードの形で見えた。機械に検証させられるのはいちばん上の層だけ。6月の大きな言葉が3か月かけて小さな定理に縮んでいった記録ということで、置いておく。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/09/2026-09-03-001/">← 楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む</a><a rel="next" href="/posts/2026/09/2026-09-05-001/">「母原理」を別のAIに監査してもらった — 第二不完全性定理から意味論へ →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/09/2026-09-05-001/">「母原理」を別のAIに監査してもらった — 第二不完全性定理から意味論へ</a></li><li><a href="/posts/2026/09/2026-09-06-002/">子守りをしながら10人月を10時間で片付けて、余った手で分布の「真ん中」を求めていた</a></li><li><a href="/posts/2026/09/2026-09-06-001/">6月からミレニアム懸賞問題に挑戦していた</a></li><li><a href="/posts/2026/08/2026-08-20-007/">システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</a></li><li><a href="/posts/2026/08/2026-08-20-006/">システム設計のための数学 横断層: 検証を実行する手段</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

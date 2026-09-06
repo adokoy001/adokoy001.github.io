@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>子守りをしながら10人月を10時間で片付けて、余った手で分布の「真ん中」を求めていた · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="日曜日。子供たちの相手をしつつ、10人月級の業務タスクをウルトラコードで約10時間で完遂。その裏でGPT-6 astraと、平均と分散しか分からない分布の最適な代表をW₂距離で求める研究ノートを作った。答えの部品は1973年にあった。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-06-002/"><meta property="og:title" content="子守りをしながら10人月を10時間で片付けて、余った手で分布の「真ん中」を求めていた"><meta property="og:description" content="日曜日。子供たちの相手をしつつ、10人月級の業務タスクをウルトラコードで約10時間で完遂。その裏でGPT-6 astraと、平均と分散しか分からない分布の最適な代表をW₂距離で求める研究ノートを作った。答えの部品は1973年にあった。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-06-002/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>子守りをしながら10人月を10時間で片付けて、余った手で分布の「真ん中」を求めていた</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-09-06T22:00:00+09:00">2026-09-06T22:00:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-872c1fa141b5/">数学</a><a class="tag" href="/tags/entry-4ff0f1dda80f/">研究</a><a class="tag" href="/tags/entry-f648d6712cf8/">日常</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="子守りをしながら10人月を10時間で片付けて-余った手で分布の-真ん中-を求めていた">子守りをしながら10人月を10時間で片付けて、余った手で分布の「真ん中」を求めていた</h1>
+<p>日曜日。子供たちの相手をしながら、片手間で仕事と数学をやっていた。</p>
+<p>→ <a href="/works/wasserstein-center/">分布の「真ん中」を求める — 範囲・平均・分散とW₂最小包含球</a></p>
+<h2 id="仕事のほう">仕事のほう</h2>
+<p>10人月クラスの業務タスクを、ウルトラコードに任せて10時間ほどで完遂した。詳細は書けないが、指示を出して、上がってきたものを確認して、また指示を出す、の繰り返し。その待ち時間に子供の相手をして、また戻る。人月という単位が何を測っているのか、いよいよ分からなくなってきた。</p>
+<h2 id="数学のほう">数学のほう</h2>
+<p>待ち時間のもう半分は、GPT-6 astraと数学をしていた。</p>
+<p>問いはこう。値の範囲、平均、分散。この三つしか分からない確率分布がある。条件に合う分布はいくらでもあって、二点に集まるのか、三つに分かれるのか、連続的に広がるのかは決まらない。そのどれが真の分布でも「ずれ」が大きくなりすぎない代表を一つ選ぶとしたら、何を選ぶべきか。</p>
+<p>ずれをWasserstein-2距離で測ると、これは分布の空間での最小包含球の問題になる。答えは閉じた式で出た。</p>
+<ul>
+<li>最適な中心 C は一意で、分位関数が明示的に書ける。両端に点質量、真ん中に連続部分、その間に空隙。単なる二点分布にはならない</li>
+<li>半径は R² = v·log(M/v) / (2 + log(M/v))。M=μ(1−μ) は可能な最大分散。対数が出てくる</li>
+<li>中心の分散は入力の分散より小さい。縮小係数 κ = 2/(2+log(M/v))</li>
+<li>球面に到達する最遠の入力を完全に分類できた。同じ平均・分散の二点分布か、{0, 内点, 1} に支持を持つ分布か、のどちらか</li>
+</ul>
+<p>証明は上から押さえて下から押し返す二段構え。上界は分位関数の積分に対する三つの上界（支持の両側とCauchy–Schwarz）の最小値 H から出て、下界は二点分布を特別な重みで並べた分位重心がちょうど候補中心になることから出る。両者が一致して最適性が決まる。ページには操作できる図と、解析的証明を全部載せた。</p>
+<h2 id="出典をたどったら1973年に着いた">出典をたどったら1973年に着いた</h2>
+<p>証明ができたことと新しい定理を見つけたことは別なので、先行研究を洗った。</p>
+<p>中心の元になる補助分布は、Stoyan (1973) の定理3にそのまま載っていた。ハンガリー科学アカデミー図書館の公開原文で印刷155ページを確認して、両端の点質量・連続部分・空隙まで一致。対数を含む分散公式も Hürlimann (1996) の式(2.4)にある。対数が出る理由も、二点分布の内積を logit 座標で見ると指数核になって、その平衡測度（両端に原子＋一様密度）が最適実験計画やBrownian bridgeで既知の構造だからだった。</p>
+<p>「補助分布を最適に縮めると全入力族の唯一のW₂中心になる」「最遠入力の必要十分条件」の二点は同じ形の先行結果を見つけられなかったが、それは「世界初」を意味しない。別表現の既知結果や未確認の文献は残っている。ページの結論は「新規性は未確定」で止めてある。</p>
+<h2 id="正直なところ">正直なところ</h2>
+<p>先週のLöbやゲーデルの話と同じ型で、大きな問いが調べるほど既知の部品に分解されていった。ただ今回は、部品を組み立てた先の結果と、証明の全文と、照合した一次資料の一覧が一枚に残った。子供を追いかけながらの日曜日の成果としては、まあ悪くない。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/09/2026-09-06-001/">← 6月からミレニアム懸賞問題に挑戦していた</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/09/2026-09-06-001/">6月からミレニアム懸賞問題に挑戦していた</a></li><li><a href="/posts/2016/09/2016-09-30-001/">悪あがき</a></li><li><a href="/posts/2026/09/2026-09-05-001/">「母原理」を別のAIに監査してもらった — 第二不完全性定理から意味論へ</a></li><li><a href="/posts/2026/09/2026-09-03-002/">「証明できない」ということを証明する — Löbの定理をLeanで100行</a></li><li><a href="/posts/2026/08/2026-08-20-007/">システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

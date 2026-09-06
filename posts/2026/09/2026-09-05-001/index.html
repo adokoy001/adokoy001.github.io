@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>「母原理」を別のAIに監査してもらった — 第二不完全性定理から意味論へ · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="Löbの記事で「母原理」に格下げした話を、今度はGPT-6 astraに再検討してもらった。成立する条件付きの系、反証された橋、未証明のまま残る命題を分けた再検討ノートをスタンドアロンで公開。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-05-001/"><meta property="og:title" content="「母原理」を別のAIに監査してもらった — 第二不完全性定理から意味論へ"><meta property="og:description" content="Löbの記事で「母原理」に格下げした話を、今度はGPT-6 astraに再検討してもらった。成立する条件付きの系、反証された橋、未証明のまま残る命題を分けた再検討ノートをスタンドアロンで公開。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-05-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>「母原理」を別のAIに監査してもらった — 第二不完全性定理から意味論へ</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-09-05T12:00:00+09:00">2026-09-05T12:00:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-872c1fa141b5/">数学</a><a class="tag" href="/tags/entry-30f9a0e7b1d3/">検証</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="母原理-を別のaiに監査してもらった-第二不完全性定理から意味論へ">「母原理」を別のAIに監査してもらった — 第二不完全性定理から意味論へ</h1>
+<p>一昨日の<a href="/posts/2026/09/2026-09-03-002/">Löbの記事</a>の続き。</p>
+<p>→ <a href="/works/godel-semantics/">「正しさ」は、どこまで自分で保証できるか</a></p>
+<h2 id="経緯">経緯</h2>
+<p>「母定理」を「母原理」に格下げしたところまでは前回書いた。今回は、その原理のページをGPT-6 astraに見せて、どこまでが本当に定理で、どこからが言い過ぎなのかを洗ってもらった。出てきたものが面白かったので、スタンドアロンのページとして残しておく。</p>
+<h2 id="要点">要点</h2>
+<ul>
+<li>「正しい」を三つに分ける。証明が通る（T ⊢ A）、指定した解釈で真（M ⊨ A）、モデルが現実に合う。前回の記事はこの三つをわりと一語で言っていた</li>
+<li>厳密に成立する部分は小さい。第二不完全性の適用条件の下で、保証Cから無矛盾性への橋 T ⊢ C → Con(T) が内部で証明されているなら T ⊬ C。既知の定理の直接の系で、それ以上ではない</li>
+<li>「閉じた体系だから自己保証できない」は出ない。命題論理の条件とD1〜D3を満たしつつ全反映が成り立つ二値モデルが反例になる。効いているのは対角化のほう</li>
+<li>「理解し終えた」が証拠から分かるかは、同じ証拠で保証対象の真偽が異なる二世界を作れば否定できる。ただし現実にそういう二世界が残るかは経験仮定で、定理からは出ない</li>
+<li>「検証を続けるべき」は不可能性定理だけからは導けない。効果・費用・誤りの共有という別の前提が要る</li>
+</ul>
+<p>前回の記事の表現を直す点も四つ挙がっていて、自分の掲載Leanコードの射程（<code>no_uniform_self_soundness</code> の ∀A は外側のLeanの量化であって、対象理論内部の単一の文ではない）も指摘された。次に書くなら保証文Cを受け取る補題 <code>no_internal_certificate</code> だという構想まで付いてきたが、型検査はまだしていない。</p>
+<h2 id="正直なところ">正直なところ</h2>
+<p>6月に大きく言った話が、Claudeとの検証で定理の層に縮み、今回さらに「確定した補題」「反証された橋」「未証明命題」の三段に仕分けられた。残った研究の場所は、自然言語の「保証」を意味を保ったまま内部文Cに移して橋を作るところ、という結論になっている。ページ自体は新定理を主張していないし、自分もそう思う。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/09/2026-09-03-002/">← 「証明できない」ということを証明する — Löbの定理をLeanで100行</a><a rel="next" href="/posts/2026/09/2026-09-06-001/">6月からミレニアム懸賞問題に挑戦していた →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/09/2026-09-03-002/">「証明できない」ということを証明する — Löbの定理をLeanで100行</a></li><li><a href="/posts/2026/09/2026-09-06-002/">子守りをしながら10人月を10時間で片付けて、余った手で分布の「真ん中」を求めていた</a></li><li><a href="/posts/2026/09/2026-09-06-001/">6月からミレニアム懸賞問題に挑戦していた</a></li><li><a href="/posts/2026/08/2026-08-20-007/">システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</a></li><li><a href="/posts/2026/08/2026-08-20-006/">システム設計のための数学 横断層: 検証を実行する手段</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

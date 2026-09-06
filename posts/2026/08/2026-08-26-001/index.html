@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="1.6L直列3気筒の直噴ターボと、2.6Lの4ローターNA。同じ車体に載せ替えて、音も熱も駆動系もブレーキも一本の因果で繋がっているシミュレーターです。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-26-001/"><meta property="og:title" content="直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った"><meta property="og:description" content="1.6L直列3気筒の直噴ターボと、2.6Lの4ローターNA。同じ車体に載せ替えて、音も熱も駆動系もブレーキも一本の因果で繋がっているシミュレーターです。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-26-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-08-26T11:30:00+09:00">2026-08-26T11:30:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-437a172d7b13/">開発</a><a class="tag" href="/tags/javascript/">JavaScript</a><a class="tag" href="/tags/entry-fd2460833058/">ゲーム</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った">直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った</h1>
+<p>エンジン単体のラボから始めて、気づいたら車一台ぶんになっていました。</p>
+<p>→ <a href="/works/i3-sound-lab/">直3ターボ / 4ローター ラボ</a></p>
+<p>音が出ます。ヘッドホン推奨。スマホでも動きます。</p>
+<h2 id="工夫したところ">工夫したところ</h2>
+<ul>
+<li><strong>エンジンを2種類載せ替えられる。</strong> 1.6L直3直噴ターボ（324Nm/285PS、REV7,000）と、2.6L 4ローターNA（585Nm/708PS、REV11,500）。直3は720°で3回燃焼して基本次数1.5、ロータリーはシャフト1回転で4回燃焼して基本次数4。同じ回転数でも2.7倍の高さで鳴ります</li>
+<li><strong>音は全部リアルタイム合成。</strong> 排気パルスをランナー長ぶん遅らせて集合部で干渉させる作りなので、エキマニやスクロールを変えると音が変わります。ノック（燃焼室共鳴5.9kHz）、直噴インジェクタのカチカチ、外部ウェイストゲートのスクリーマーまで別々に鳴っています</li>
+<li><strong>セルモーターを機構の周波数から組んだ。</strong> 「キュキュキュ」の正体は連続音ではなく圧縮1回ごとの短いチャープでした。リングギヤ噛み合いは歯数120×クランク回転、整流子は減速比12×25セグメント。バッテリー電圧も電流で垂れます</li>
+<li><strong>熱を実単位で解いている。</strong> 燃料投入エネルギーをkWで出して、冷却水・オイル・排気に配分。オイルクーラーを外すと油温が157℃まで上がって保護に入ります。流路も3Dで見えて、サーモスタットが閉じている間はバイパス側だけが流れます</li>
+<li><strong>吸排気の流れが実流速。</strong> 6,000rpm全開で吸気47m/s、排気253m/s。排気だけ桁違いに速いのはEGT890℃で密度が吸気の1/8になるからで、これは計算から自然に出てきます</li>
+<li><strong>駆動系はクラッチのスティック・スリップから。</strong> 6速MT＋ファイナル、ギヤ比は個別に調整可能（3Dのギヤ径も比率どおりに作り直されます）。常時噛合なので、ニュートラルでクラッチを繋ぐと「ギヤは回っているのに軸は止まっている」のが見えます</li>
+<li><strong>後輪駆動と4WD、2wayのLSD。</strong> スプリットμ（右輪だけ氷）で丁寧に発進すると、オープンデフは空転して前に出ないのにLSDだと出られる、というのがちゃんと再現されます</li>
+<li><strong>ブレーキは四輪独立で熱計算。</strong> ディスク温度→パッドμ→制動力、ディスク温度→キャリパー→フルード温度→沸騰。峠の下りを想定すると、純正パッド＋古いDOT3では2分でベイパーロックしてペダルが逃げます。ブレーキダクトや樹脂ピストンで対策できます</li>
+<li><strong>シャシダイで測れる。</strong> 慣性ダイナモなので、低いギヤで測ると掃引が速くて駆動系慣性に食われ、測定値が下がります。実機で「何速で測ったか」が問題になるあの現象です</li>
+</ul>
+<p>作りながら「回転体の向きの正負」を5回間違えました。ファン、タービン、コンプレッサ、ギヤ、リングギヤ。最後は目視をやめて、全部品の回転中心が自分のバウンディングボックスの中にあるかを自動判定するテストを書きました。</p>
+<h2 id="追記-2026-08-27-車一台ぶんだったものが-コースを走るようになった">追記（2026-08-27）：車一台ぶんだったものが、コースを走るようになった</h2>
+<p>エンジン単体から始めて車一台になったところで止めるつもりが、走らせたくなってしまいました。</p>
+<h3 id="サスペンションを本当に組んだ">サスペンションを本当に組んだ</h3>
+<p>前後ともダブルウィッシュボーンです。形を似せたのではなく、拘束を毎フレーム解いています。</p>
+<ol>
+<li>下アームが車体側の軸まわりに回る</li>
+<li><strong>上下ボールジョイント間の距離が一定</strong>という拘束から、上アームの角度を二分法で解く</li>
+<li><strong>タイロッド長が一定</strong>という拘束から、キングピン軸まわりの回転角＝実舵角が決まる</li>
+</ol>
+<p>なので諸元は決め打ちではなく幾何から出てきた結果です。キングピン軸傾角12.2°、キャスター6.5°、トレール19mm、スクラブ半径8mm、ロールセンター前84mm／後119mm、キャンバーゲイン−0.25°/10mm、バンプステア0.06°/10mm。静的キャンバーは上アーム長、静的トーはタイロッド長を逆算して合わせているので、アライメントをいじると特性曲線ごと変わります。</p>
+<p>ステアリングはラック&amp;ピニオン。ピニオンは実寸（ピッチ半径8.75mm・7枚歯）でラックの歯と噛み、ハンドル→中間シャフト→ユニバーサルジョイント2つ→ピニオンまで軸が繋がっています。<strong>アッカーマンは「ステアリングアームの延長が後車軸中心を通る」という構成から創発</strong>していて、フルロックで内輪41.8°／外輪37.1°と内輪が多く切れます。</p>
+<p>コイルオーバーは、ばねレートから線径を逆算しました。k = Gd⁴/(8D³n) を解くので、75N/mmなら素線φ11.2mm、160N/mmならφ13.5mm。座巻きは上下1巻ずつ密着させてあり、縮むときは有効巻きのピッチだけが詰まります。車高調整はロアシートがねじを上がっていき、装着ばね長＝プリロードは変わりません。実物と同じ挙動です。</p>
+<h3 id="4輪のタイヤで曲がるようになった">4輪のタイヤで曲がるようになった</h3>
+<p>「曲率から横Gを与える」というインチキをやめて、平面3自由度＋4輪タイヤモデルにしました。各輪でスリップ角を出し、輪荷重とμで摩擦円を張って、前後力に使った残りが横力の上限。コーナリング係数は荷重感応で頭打ちにしてあるので、<strong>荷重移動の大きい軸ほどグリップを失います</strong>。</p>
+<p>おかげでスタビライザーの前後バランスが効きます。同じ舵角・同じ速度で、前スタビを固めると0.56G、後を固めると0.95G。前を固めればアンダー、後を固めればオーバー。教科書どおりの挙動が、決め打ちではなく荷重とタイヤから出てきました。ロールもピッチも、ばね上3自由度の常微分方程式を解いた結果です。1G制動の前後荷重移動は理論値 m·g·h/wb と完全に一致しました。</p>
+<h3 id="コースを2つ作った">コースを2つ作った</h3>
+<p>ひとつは八の字の立体交差。2kmのストレート2本が中央で交差して、片方が桁高8.2mの橋で跨ぎます。左ループと右ループを1回ずつ通るので、1周の舵角の積分がゼロになる本物の八の字です。</p>
+<p>もうひとつは20.8kmのロングコース。アイフェルの森にある20km級のコースへのオマージュですが、路線は完全に自作です（実在コースの測量データは使っていません）。全長20.80km、高低差299m、R250m以下のコーナー72、最小半径47m、最長直線2,184m、最急勾配11.9%。谷を跨ぐ高架と、山を抜ける424mのトンネルがあります。晴天の昼で、路肩の外には森が1,300本ぶん生えています。1周およそ10分半。</p>
+<h3 id="自動運転が状況を見て走り方を変える">自動運転が状況を見て走り方を変える</h3>
+<p>ドライバーは「横ずれ→目標ヘディング→目標ヨーレート→舵角」の多段制御にしました。肝は<strong>目標ヨーレートをタイヤが出せる横Gで頭打ちにする</strong>ことで、出せないGを要求していたのが、最初にスピンしまくった原因でした。</p>
+<p>その上で、攻め方を4段階で自動に切り替えます。きれいに走れていれば本気（114%）、コースアウトや姿勢の乱れで慎重（80%）、ベイパーロックやスピンで温存（62%）。上げるのはゆっくり、下げるのは速い、という人間らしい非対称にしてあります。長い下りでブレーキを使い切ってフルードが沸くと、<strong>自分で判断してペースを落として走り続けます</strong>。ブレーキが弱っているぶん、手前から長く見るようにもなります。</p>
+<h3 id="直した恥ずかしいやつ">直した恥ずかしいやつ</h3>
+<ul>
+<li><strong>ラック棒がタイロッドより長かった。</strong> タイロッドの根元125mmぶんがラック棒の中に埋まっていて、「タイロッドが無い」と言われて気づきました</li>
+<li><strong>ピニオンの軸がラックと平行だった。</strong> 噛みようがない</li>
+<li><strong>ピニオンをラックの上に置いていた。</strong> ハンドルを左に回すとラックが右へ動く車になっていました</li>
+<li><strong>見出しの罫線を45°倒していた。</strong> アコーディオンの矢印を <code>.eyebrow::after</code> に足したら、そこは元から罫線に使われていて、カード幅いっぱいの謎の斜線が生えました</li>
+<li><strong>橋脚を下の道路のど真ん中に立てていた。</strong> 交差点の真上にも1本置く作りだったので、柱が路面を貫通していました</li>
+<li><strong>レーシングパッドが常時「ブレーキフェード」警告。</strong> 冷間でμが低いだけなのを熱ダレと判定していました</li>
+</ul>
+<p>最後のは、しきい値で世界を切ろうとすると必ずどこかで嘘になる、という良い例でした。温度のしきい値をやめて「μ-温度特性が上り勾配か下り勾配か」で言い分けるようにしたら、パッドを替えても判定温度が自動で追随するようになりました。</p>
+<p>カメラも中心固定をやめて、右ドラッグ（スマホは2本指）で平行移動できます。サスの動きを見たいときは、寄って覗き込めます。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/08/2026-08-25-001/">← エンジンサウンドラボを公開しました</a><a rel="next" href="/posts/2026/08/2026-08-28-001/">AIへ宛てた「意味論的ワクチン」を一枚書いた →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/08/2026-08-25-001/">エンジンサウンドラボを公開しました</a></li><li><a href="/posts/2026/08/2026-08-24-001/">ブラウザ言語モデルでCoTを検証する — 評価汚染の指摘により結論を三度修正した記録</a></li><li><a href="/posts/2026/08/2026-08-22-002/">TinyLM LabからTensorFlow.jsを卒業した——手書き逆伝播とWebGPU、そして日本語対話コーパスの公開</a></li><li><a href="/posts/2026/08/2026-08-22-001/">ブラウザで学習するMoE言語モデルを作った</a></li><li><a href="/posts/2026/08/2026-08-16-001/">AIに作らせたゲームを2本、サイトに公開した</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

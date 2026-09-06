@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>ブラウザ言語モデルでCoTを検証する — 評価汚染の指摘により結論を三度修正した記録 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="TinyLM Lab ZeroにCoT実験機能を追加し、思考あり/直答の正答率を比較した。当初の98%対3%は評価汚染を含む数値であり、train/test分離と長期学習の再実験により結論を三度修正した。その全経過を報告する。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-24-001/"><meta property="og:title" content="ブラウザ言語モデルでCoTを検証する — 評価汚染の指摘により結論を三度修正した記録"><meta property="og:description" content="TinyLM Lab ZeroにCoT実験機能を追加し、思考あり/直答の正答率を比較した。当初の98%対3%は評価汚染を含む数値であり、train/test分離と長期学習の再実験により結論を三度修正した。その全経過を報告する。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-24-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>ブラウザ言語モデルでCoTを検証する — 評価汚染の指摘により結論を三度修正した記録</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-08-24T12:00:00+09:00">2026-08-24T12:00:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/ai/">AI</a><a class="tag" href="/tags/javascript/">JavaScript</a><a class="tag" href="/tags/entry-437a172d7b13/">開発</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="ブラウザ言語モデルでcotを検証する-評価汚染の指摘により結論を三度修正した記録">ブラウザ言語モデルでCoTを検証する — 評価汚染の指摘により結論を三度修正した記録</h1>
+<h2 id="概要">概要</h2>
+<p>自作のブラウザ完結型言語モデル学習環境 TinyLM Lab Zero に、Chain-of-Thought（CoT）の効果を測定する実験機能を追加した。実装は Claude、独立レビューは GPT-5.6 が担当した。従来は GPT-5.6 が実装し Claude が検証する分担だったため、今回は役割を入れ替えた形になる。</p>
+<p>結果を先に述べる。当初報告された「思考あり 98% 対 直答 3%」という数値は、評価問題の 42% が学習データに含まれる汚染された測定であり、撤回した。train/test を完全分離した再実験では、2桁加算・約10万パラメタの条件において、スクラッチパッド形式の学習は汎化の開始を早めるが、最終到達点では直答学習と同水準かそれ以下だった（未見200問で 85.5% 対 90.5%）。さらに、バッチ順序の違いだけで同一条件の未見正答率が 39% と 96% に分かれるという強い確率感度を確認した。</p>
+<h2 id="追加した機能">追加した機能</h2>
+<p>対象は依存ゼロの単一HTMLファイルである。数値計算エンジン（CORE / GPUCORE）は今回の全工程で一切変更していない。</p>
+<ul>
+<li><strong>思考コーパス合成</strong>。<code>[利用者]47+85は[助手][思考]7+5=12→2繰1 4+8+1=13→3繰1 →1 答132[答]132です</code> という筆算スクラッチパッド形式と、<code>[利用者]47+85は[助手]132です</code> という直答形式を、同一seedから同一問題列で生成する。</li>
+<li><strong>思考スパンの状態機械</strong>。生成中に <code>[思考]</code> で思考モード、<code>[答]</code> で回答モードへ遷移する。思考部分はチャット画面で折りたたみ表示になり、KVキャッシュには全文が計上される。思考が既定の文字数予算を超えた場合は <code>[答]</code> をKVへ強制注入して回答へ誘導する（budget forcing）。</li>
+<li><strong>Best-of-N</strong>。KVキャッシュのスナップショットと復元により、同一文脈からN本の候補を生成し、応答先頭の数字列（なければ応答全文）の一致数による多数決と平均logprobで勝者を選択する。</li>
+<li><strong>正答率測定</strong>。CPU KVとgreedyデコードで採点する。測定問題は学習から除外されたtest集合から取る（後述）。</li>
+<li><strong>UI再構成</strong>。学習・文章生成・チャット・思考実験・保存の5ページ制とし、ハンバーガーメニュー、URLハッシュルーティング、固定ステータスバーを実装した。</li>
+</ul>
+<h2 id="独立レビューによる修正">独立レビューによる修正</h2>
+<p>GPT-5.6 のレビューは2件の実質的な問題を指摘した。いずれも検証の結果、事実だった。</p>
+<p><strong>1. 例外処理のバグ（P0）。</strong> チャット生成関数の catch 節に、リファクタ前のコードが参照していたローカル変数 <code>boundary</code> への参照が残っていた。例外発生時にこの参照が <code>ReferenceError</code> を起こし、元の例外を上書きする。Claude 自身の146項目のテストは catch 経路を一度も通過しておらず、このバグを検出できなかった。例外注入により再現を確認した上で修正し、例外3経路（原因保持・途中経過の保全・UI状態の復旧）のテストを追加した。</p>
+<p><strong>2. 評価汚染。</strong> 学習コーパス（seed 101、5000問）と評価問題（seed 20260823、100問）の間に完全一致の重複が42問あるという指摘。独立に検算した結果、正確に42問だった。学習コーパスのユニーク問題数は 8100 通り中 3727 であり、一様サンプリング同士なら当然生じる重複である。設計時にこれを見落とした。</p>
+<p>対応として、全問題ペアを列挙し seed 付きシャッフルの先頭200問を test 集合として学習から除外する分離機構を実装した。生成時に重複数を検算して表示する。UI には問題列・モデル初期化・評価の3つの seed 入力を追加し、同一 seed であれば思考あり/直答が同一の問題列・同一の初期重みになることをテストで保証した。</p>
+<h2 id="実験条件">実験条件</h2>
+<ul>
+<li>課題: 2桁+2桁の加算（全8100ペア、test 200ペアを除外）</li>
+<li>モデル: d=64 / 2層 / 4ヘッド / ctx=64 / dense、約10.2万パラメタ</li>
+<li>学習: 5000問、バッチ8、lr 3e-3、4400 step</li>
+<li>評価: greedy、チェックポイントは未見50問、最終は未見200問全数</li>
+<li>思考あり/直答は同一問題列・同一初期化・同一ハイパーパラメタ</li>
+</ul>
+<h2 id="結果">結果</h2>
+<p>未見test問題に対する正答率の推移。</p>
+<table>
+<thead>
+<tr><th>step</th><th>思考あり</th><th>直答</th></tr>
+</thead>
+<tbody>
+<tr><td>1100</td><td>44%</td><td>8%</td></tr>
+<tr><td>2200</td><td>96%</td><td>18%</td></tr>
+<tr><td>3300</td><td>98%</td><td>66%</td></tr>
+<tr><td>4400（200問）</td><td>85.5%</td><td>90.5%</td></tr>
+</tbody>
+</table>
+<p>要点は三つある。</p>
+<p>第一に、思考ありは学習の立ち上がりが明確に速い。step 1100 時点で 44% 対 8%、step 2200 で 96% 対 18% であり、序盤の優位は大きい。</p>
+<p>第二に、直答も遅れて汎化に到達する。step 3300 から急伸し、最終的には思考ありを上回った。この規模・この課題では、スクラッチパッドは汎化を可能にする唯一の手段ではなく、汎化の開始を早める要因と解釈するのが正確である。</p>
+<p>第三に、測定は強い確率感度を持つ。別の実行（チェックポイント時のRNG再シード位置が異なり、バッチ順序のみが変わる）では、同じ step 2200 の未見正答率が 39% だった。同一条件で 39% と 96% が分かれる以上、単発測定の数値には±10ポイント以上の不確かさを見込む必要がある。レビューが要求していた複数seedでの平均と分散の記録は、この結果によって必須事項であることが裏付けられた。本記事の数値も各条件1本の測定であり、この限界の内にある。</p>
+<p>補足として、失敗モードの観察を記す。容量の小さい構成（d=48/2ヘッド）では思考あり・直答とも10%前後で並び、思考ありの誤答は「一桁の計算と繰り上がりは正しいが、問題文からの桁の読み取りを誤る」形に集中した。ヘッド数を4に増やすとこの誤りは解消した。d=64 の長期学習では、繰り上がり付き一桁加算の誤り（8+9+1=17 など）と、思考内で正答を導きながら最終回答への転記を誤る例（答180 と書いた直後に 188です と回答）が残った。</p>
+<h2 id="制約">制約</h2>
+<ul>
+<li>全条件が単発測定である。複数seedによる平均と分散の測定は未実施。</li>
+<li>ヘッド数の統制実験（d=64でH=2とH=4の比較）、スクラッチパッドの内容を意図的に壊した対照群との三群比較は未実施。これらを行うまで、序盤の優位がスクラッチパッドの内容に起因するのか、回答前の追加トークンによる計算量増加に起因するのかは分離できない。</li>
+<li>課題は2桁加算のみ。3桁は文脈長の制約から未実験。</li>
+</ul>
+<h2 id="再現手順">再現手順</h2>
+<p>実験環境は <a href="https://nikki.yokoda.okinawa/works/tinylm-lab-zero/">/works/tinylm-lab-zero/</a> で公開している。seed 既定値は本実験と同一（問題列101・初期化42・評価20260823）である。思考実験ページでコーパスを生成し、d=64/2層/4ヘッド/ctx=64 で初期化して2000〜4500 step 学習し、正答率を測定すれば同条件になる。直答・4400 step 学習済みのモデルファイル（未見200問で90.5%）は同ディレクトリの <a href="https://nikki.yokoda.okinawa/works/tinylm-lab-zero/tinylm-model-direct-90.5pct.json">tinylm-model-direct-90.5pct.json</a> として公開する。保存と読み込みページからロードすれば、学習を待たずに挙動を確認できる。</p>
+<h2 id="まとめ">まとめ</h2>
+<p>汚染のある測定は 98% 対 3% という明確な差を示し、分離後の単発測定は 39% 対 29% を示し、長期学習の再実験は 85.5% 対 90.5% を示した。三つの数値はいずれも同じ実装から得られたものであり、評価設計と測定回数が結論を決定していた。実装と検証を分離した相互監査は今回も機能し、特に実装者自身のテストが例外経路とデータ汚染を検出できなかった点で、独立レビューの必要性が具体的に示された。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/08/2026-08-22-002/">← TinyLM LabからTensorFlow.jsを卒業した——手書き逆伝播とWebGPU、そして日本語対話コーパスの公開</a><a rel="next" href="/posts/2026/08/2026-08-25-001/">エンジンサウンドラボを公開しました →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/08/2026-08-22-002/">TinyLM LabからTensorFlow.jsを卒業した——手書き逆伝播とWebGPU、そして日本語対話コーパスの公開</a></li><li><a href="/posts/2026/08/2026-08-22-001/">ブラウザで学習するMoE言語モデルを作った</a></li><li><a href="/posts/2026/08/2026-08-26-001/">直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った</a></li><li><a href="/posts/2026/08/2026-08-25-001/">エンジンサウンドラボを公開しました</a></li><li><a href="/posts/2026/09/2026-09-03-001/">楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>
