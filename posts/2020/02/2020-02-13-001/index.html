@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>PayPalのAPI · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="仕事でPayPalのSDKを使ってAPIを組み込んだこととか"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2020/02/2020-02-13-001/"><meta property="og:title" content="PayPalのAPI"><meta property="og:description" content="仕事でPayPalのSDKを使ってAPIを組み込んだこととか"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2020/02/2020-02-13-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>PayPalのAPI</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-02-13T10:14:30+09:00">2020-02-13T10:14:30+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a><a class="tag" href="/tags/paypal/">PayPal</a><a class="tag" href="/tags/php/">PHP</a><a class="tag" href="/tags/api/">API</a><a class="tag" href="/tags/sdk/">SDK</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="paypalのapi">PayPalのAPI</h1>
+<p>仕事でPayPalのSDKを使ってAPIをPHP製プロダクトに組み込んでみた。</p>
+<p>ドキュメントが英語のものしか用意されていないのでかなり苦労した。
+というか、ドキュメントの通りに作っても微妙にJSのコードが狂っていたりするのでかなりの罠。</p>
+<h2 id="clientサイドプログラム">Clientサイドプログラム</h2>
+<p>Client, Server, PayPalプラットフォームの処理フローは公式が作成している図の通りだが、
+最低限必要なものを実装するコードを以下に示しておく。
+ネットで日本語の情報を調べたところ古いAPIの使い方しか出てこないので、現行API（2020/02/13現在）の日本語情報としては有用かと思われる。</p>
+<pre><code>        &lt;script
+            src=&quot;https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID_HERE&amp;currency=JPY&amp;debug=true&quot;&gt;
+        &lt;/script&gt;
+        &lt;div id=&quot;paypal-button-container&quot;&gt;&lt;/div&gt;
+        &lt;script&gt;
+            paypal.Buttons({
+
+                createOrder: function () {
+                    // fetchのpathは実装するサーバサイドプログラムを指定
+                    return fetch(&#39;/your/server_side/api/path.php&#39;, {
+                        method: &#39;post&#39;,
+                        headers: {
+                            &#39;content-type&#39;: &#39;application/json&#39;
+                        }
+                    }).then(function (res) {
+                        return res.json();
+                    }).then(function (data) {
+                        // ここ要注意。現時点では必要なorderIDはreturnされた結果を data.id とすることで取得できる。
+                        // ここでreturnされるべきはAPIドキュメントでいうところのOrderID
+                        return data.id;
+                    });
+                },
+
+                onApprove: function (data) {
+                    // こちらも実装予定のサーバサイドプログラムのpathを指定
+                    return fetch(&#39;/your/server_side/capture/api.php&#39;, {
+                        method: &#39;post&#39;,
+                        headers: {
+                            &#39;content-type&#39;: &#39;application/json&#39;
+                        },
+                        // bodyの内容はidだけで良いが、受け取ったデータをそのまま流してもちゃんと動作する。
+                        body: JSON.stringify(data)
+                    }).then(function (res) {
+                        return res.json();
+                    }).then(function (details) {
+                        // 決済に成功した後にどうするかを記述。
+                        // ここではalertで内容を出力しているだけだが、実稼働時はページ遷移などの処理を入れることになると思います。
+                        alert(JSON.stringify(details));
+                    });
+                }
+            }).render(&#39;#paypal-button-container&#39;);
+        &lt;/script&gt;</code></pre>
+<p>scriptをsrcでロードするときにcurrency=JPYというパラメタを与えてあげると日本円が扱えるようになる仕様。
+これもわかりにくい。</p>
+<h2 id="サーバサイドの実装">サーバサイドの実装</h2>
+<p>先ほどの <code>/your/server_side/api/path.php</code> と、
+<code>/your/server_side/capture/api.php</code> の具体的なPHP実装を例示します。</p>
+<p>composerでpaypalのsdkをインストールしたという前提です。</p>
+<pre><code>use PayPalCheckoutSdk\Core\PayPalHttpClient;
+use PayPalCheckoutSdk\Core\SandboxEnvironment;
+use PayPalCheckoutSdk\Orders\OrdersGetRequest;
+
+class MyApp_Util_PayPal {
+
+    /**
+     * Set up and return PayPal PHP SDK environment with PayPal access credentials.
+     * This sample uses SandboxEnvironment. In production, use LiveEnvironment.
+     */
+    public static function environment() {
+        $credential = self::get_credential();
+        $clientId = $credential[&#39;client_id&#39;];
+        $clientSecret = $credential[&#39;secret&#39;];
+        return new \PayPalCheckoutSdk\Core\SandboxEnvironment($clientId, $clientSecret);
+    }
+
+    public static function get_credential() {
+        // 実際にはDBに接続して復号して値を入れたりすることになる場合が多いでしょう。
+        $data = [
+            &#39;client_id&#39; =&gt; &#39;YOUR_CLIENT_ID&#39;,
+            &#39;secret&#39; =&gt; &#39;YOUR_SECRET&#39;,
+        ];
+        return $data;
+    }
+
+    public static function client() {
+        // sandbox環境です。プロダクションにするときはuse側とともにliveへ書き換えましょう。
+        return new \PayPalCheckoutSdk\Core\PayPalHttpClient(self::environment());
+    }
+
+    public static function get_order($transaction_id = null) {
+        // Order作成処理: 以下の例示のような形で料金と明細を作成していく。
+        $data = Something_Loader::something_load($transaction_id);
+        $parchase_units = [];
+        foreach ($general as $key =&gt; $item) {
+            $tmp_data = [
+                &#39;reference_id&#39; =&gt; $transaction_id,
+                &#39;description&#39; =&gt; &#39;something description&#39;,
+                &#39;type&#39; =&gt; &#39;SERVICE&#39;,
+                &#39;category&#39; =&gt; &#39;LODGING_AND_ACCOMMODATIONS&#39;,
+                &#39;amount&#39; =&gt; [
+                    &#39;currency_code&#39; =&gt; &#39;JPY&#39;,
+                    &#39;value&#39; =&gt; round($item[&#39;total_price&#39;]),
+                ],
+                &#39;breakdown&#39; =&gt; [
+                    &#39;item_total&#39; =&gt; [
+                        &#39;currency_code&#39; =&gt; &#39;JPY&#39;,
+                        &#39;value&#39; =&gt; round($item[&#39;total_price&#39;]),
+                    ],
+                    &#39;tax_total&#39; =&gt; [
+                        &#39;currency_code&#39; =&gt; &#39;JPY&#39;,
+                        &#39;value&#39; =&gt; round($item[&#39;total_consumption_tax&#39;]),
+                    ],
+                ],
+            ];
+            $parchase_units[$key] = $tmp_data;
+        }
+        $request = new PayPalCheckoutSdk\Orders\OrdersCreateRequest();
+        $request-&gt;prefer(&#39;return=representation&#39;);
+        $request-&gt;body = [
+            &#39;intent&#39; =&gt; &#39;CAPTURE&#39;,
+            &#39;application_context&#39; =&gt; [
+                &#39;return_url&#39; =&gt; &#39;https://yoursite.example.com/example_return&#39;,
+                &#39;cancel_url&#39; =&gt; &#39;https://yoursite.example.com/example_cancel&#39;,
+            ],
+            &#39;purchase_units&#39; =&gt; $parchase_units
+        ];
+        $client = self::client();
+        $response = $client-&gt;execute($request);
+        // この例ではレスポンスをそのまま返しています。
+        return $response;
+    }
+
+    public static function capture_order($order_id) {
+        // onApproveで決済の結果を検証してその後の処理を記述する。
+        $request = new PayPalCheckoutSdk\Orders\OrdersCaptureRequest($order_id);
+        $client = self::client();
+        $response = $client-&gt;execute($request);
+        // 以下、検証結果を読み込んで何らかの処理を記述する。
+        $status_code = $response-&gt;statusCode;
+        $result = $response-&gt;result;
+        $id = $result-&gt;id;
+        Something_Process::something_process($status_code,$result,$id);
+        return $response;
+    }
+
+}
+</code></pre>
+<p>てな感じです。</p>
+<p>これを書いている時点では新しいAPIに関する日本語のドキュメントが無いっぽいので、
+何らかの参考になれば幸いです。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2020/02/2020-02-07-001/">← 再帰呼び出し</a><a rel="next" href="/posts/2020/02/2020-02-18-001/">新型のコロナウイルス話題だな →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2020/06/2020-06-02-001/">PerlとPHPの違い</a></li><li><a href="/posts/2020/05/2020-05-26-002/">Laravelも並行して学習中</a></li><li><a href="/posts/2019/11/2019-11-29-002/">PHPのarrayから再帰的にkeyとvalueを全て取り出す</a></li><li><a href="/posts/2019/12/2019-12-12-001/">ウェブサイトのセキュリティ：入力バリデーション、正規表現</a></li><li><a href="/posts/2019/10/2019-10-04-001/">PerlとPHP</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

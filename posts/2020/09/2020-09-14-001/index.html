@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>圧倒的に正しいSQLインジェクション対策 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="ちょっと衝撃的なQiita記事があったので"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2020/09/2020-09-14-001/"><meta property="og:title" content="圧倒的に正しいSQLインジェクション対策"><meta property="og:description" content="ちょっと衝撃的なQiita記事があったので"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2020/09/2020-09-14-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>圧倒的に正しいSQLインジェクション対策</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-09-14T09:59:26+09:00">2020-09-14T09:59:26+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a><a class="tag" href="/tags/sql/">SQL</a><a class="tag" href="/tags/entry-f5480661a48d/">セキュリティ</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="圧倒的に正しいsqlインジェクション対策">圧倒的に正しいSQLインジェクション対策</h1>
+<p>まず結論から先に述べると、「プリペアードステートメントを必ず使え」です。</p>
+<h2 id="詳細">詳細</h2>
+<p>SQLインジェクションを防ぐ唯一の手段は「プリペアードステートメントを必ず使う」です。</p>
+<p>「文字列結合でSQLを組み立てる時は、決してユーザーからの直接入力を組み込んではいけない」という大前提を守って下さい。</p>
+<h2 id="sqlの組み立て">SQLの組み立て</h2>
+<p>SQLの生成は極力文字列結合で行わず、ORMやクエリビルダを利用するようにしてください。</p>
+<p>どうしても文字列結合で生成する必要がある場合、「SQL文にユーザーからの自由入力値が組み込まれない」ように作って下さい。</p>
+<h2 id="注意">注意</h2>
+<p>世の中には（PHP等）偽物のプリペアードステートメントがあるので、本物のプリペアードステートメントを使ってください。</p>
+<h2 id="まとめ">まとめ</h2>
+<p>偽物ではない本物のプリペアードステートメントを使ってSQLを実行する前にコンパイルし、</p>
+<p>ユーザーからの入力などは必ずバインド値に設定してから実行するようにしてください。</p>
+<p>プロダクト全体で必ずプリペアードステートメントを使うようにしてください。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2020/09/2020-09-08-001/">← GEX ラクフィル 所感</a><a rel="next" href="/posts/2020/09/2020-09-15-001/">ミンサガ9周目 稼ぎ作業突入 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2020/09/2020-09-17-001/">perlでパスワードハッシュ</a></li><li><a href="/posts/2019/12/2019-12-12-001/">ウェブサイトのセキュリティ：入力バリデーション、正規表現</a></li><li><a href="/posts/2020/01/2020-01-21-001/">FuelPHPでCSRF対策</a></li><li><a href="/posts/2020/01/2020-01-16-001/">暗号化関連のメモ</a></li><li><a href="/posts/2026/09/2026-09-03-001/">楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

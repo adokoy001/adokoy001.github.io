@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>「証明できない」ということを証明する：Löbの定理をLeanで100行、その先の数千行</title>
+<style>
+:root{
+  color-scheme: dark;
+  --void:#07110d; --panel:#0a1710; --panel2:#0d1d15; --panel3:#102419;
+  --mint:#9af4b5; --mint-soft:#76bf8b; --ink:#e4f2e8; --muted:#8aa091; --dim:#637c6b;
+  --line:#294535; --line-bright:#3d684d; --code:#0f2418;
+  --water:#7fd3ec; --leaf:#8ee08c; --amber:#e8c37a; --rose:#ef9090; --violet:#c4a8ee;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --jp: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+}
+*{box-sizing:border-box}
+html{background:var(--void); -webkit-text-size-adjust:100%}
+body{
+  margin:0; color:var(--ink); background:var(--void);
+  font-family:var(--mono), var(--jp); font-size:15px; line-height:1.85;
+  overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background-image:linear-gradient(rgba(130,237,164,.06) 1px, transparent 1px),
+                   linear-gradient(90deg, rgba(130,237,164,.06) 1px, transparent 1px);
+  background-size:44px 44px;
+}
+a{color:var(--mint); text-underline-offset:.22em}
+a:hover{color:#c8ffd7}
+img,svg,canvas{display:block; max-width:100%}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--mint); outline-offset:3px}
+::selection{color:#06110b; background:var(--mint)}
+
+.wrap{max-width:1180px; margin:0 auto; padding:0 20px}
+header.top{border-bottom:1px solid var(--line); padding:34px 0 26px; margin-bottom:8px}
+.eyebrow{font-size:11.5px; letter-spacing:.16em; color:var(--mint-soft); text-transform:uppercase}
+h1{font-size:clamp(23px,4.6vw,38px); line-height:1.35; margin:.5em 0 .3em; font-weight:700; letter-spacing:-.01em}
+.lede{max-width:52rem; color:var(--ink); font-size:15.5px}
+.meta{margin-top:18px; display:flex; flex-wrap:wrap; gap:8px 10px; font-size:12px; color:var(--muted)}
+.chip{border:1px solid var(--line); background:var(--panel); padding:3px 9px; border-radius:999px; white-space:nowrap}
+.chip.go{border-color:var(--line-bright); color:var(--mint)}
+
+.cols{display:block}
+main{max-width:52rem}
+h2{font-size:19px; line-height:1.5; margin:64px 0 6px; padding-top:18px; border-top:1px solid var(--line); letter-spacing:-.005em}
+h2 .num{color:var(--mint-soft); margin-right:.6em; font-size:13px; letter-spacing:.08em}
+h3{font-size:15.5px; margin:34px 0 4px; color:var(--mint)}
+p{margin:1em 0}
+ul,ol{padding-left:1.35em; margin:1em 0}
+li{margin:.42em 0}
+code{font-family:var(--mono); background:var(--code); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:.9em; color:#cfeedb}
+strong{color:#fff}
+small{color:var(--muted)}
+hr{border:0; border-top:1px solid var(--line); margin:40px 0}
+
+.eq{background:var(--code); border:1px solid var(--line); border-left:2px solid var(--mint-soft);
+    padding:14px 16px; margin:18px 0; overflow-x:auto; font-size:13.5px; line-height:1.9; color:#d6f2e2}
+.eq .cm{color:var(--dim)}
+.note{border:1px solid var(--line); border-left:2px solid var(--amber); background:rgba(232,195,122,.05);
+      padding:12px 15px; margin:20px 0; font-size:13.5px}
+.note b{color:var(--amber)}
+.find{border:1px solid var(--line-bright); border-left:2px solid var(--mint); background:rgba(154,244,181,.055);
+      padding:12px 15px; margin:20px 0; font-size:13.5px}
+.find b{color:var(--mint)}
+.tag{display:inline-block; font-size:10.5px; letter-spacing:.06em; border:1px solid var(--line);
+     border-radius:3px; padding:0 5px; margin-right:6px; vertical-align:.12em; color:var(--muted)}
+.tag.lit{color:var(--water); border-color:#2e5566}
+.tag.est{color:var(--amber); border-color:#5a4a2c}
+
+table{border-collapse:collapse; width:100%; margin:20px 0; font-size:12.5px; display:block; overflow-x:auto; white-space:nowrap}
+th,td{border:1px solid var(--line); padding:6px 10px; text-align:left}
+th{background:var(--panel2); color:var(--mint-soft); font-weight:600}
+td.n{text-align:right; font-variant-numeric:tabular-nums}
+
+/* 図 */
+figure.fig{margin:30px 0; border:1px solid var(--line); background:var(--panel); border-radius:6px; overflow:hidden}
+.fig-hd{display:flex; align-items:baseline; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--panel2)}
+.fig-hd .no{font-size:11px; letter-spacing:.12em; color:var(--mint); white-space:nowrap}
+.fig-hd .ti{font-size:13px; color:var(--ink)}
+.fig-body{padding:14px}
+.fig-body canvas{width:100%; height:auto; background:#061009; border:1px solid var(--line); border-radius:4px}
+.ctrls{display:flex; flex-wrap:wrap; gap:12px 18px; margin-top:12px; font-size:12px; align-items:center}
+.ctrl{display:flex; align-items:center; gap:8px; flex:1 1 210px; min-width:190px}
+.ctrl label{color:var(--muted); white-space:nowrap}
+.ctrl input[type=range]{flex:1; min-width:80px; accent-color:var(--mint); background:transparent}
+.ctrl output{color:var(--mint); font-variant-numeric:tabular-nums; min-width:5.2em; text-align:right}
+.seg{display:flex; border:1px solid var(--line); border-radius:4px; overflow:hidden}
+.seg button{background:var(--panel2); border:0; border-right:1px solid var(--line); padding:5px 11px; color:var(--muted); cursor:pointer; font-size:12px}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--mint); color:#06110b}
+.readout{margin-top:12px; display:flex; flex-wrap:wrap; gap:8px}
+.ro{border:1px solid var(--line); background:var(--panel2); border-radius:4px; padding:6px 10px; font-size:11.5px; color:var(--muted); flex:1 1 130px}
+.ro b{display:block; font-size:15px; color:var(--ink); font-variant-numeric:tabular-nums; margin-top:1px}
+.ro.bad b{color:var(--rose)}
+.ro.good b{color:var(--mint)}
+figcaption{padding:11px 14px 14px; border-top:1px solid var(--line); font-size:12px; color:var(--muted); line-height:1.75}
+.legend{display:flex; flex-wrap:wrap; gap:12px; margin-top:10px; font-size:11.5px; color:var(--muted)}
+.legend i{display:inline-block; width:16px; height:2px; vertical-align:.3em; margin-right:5px}
+
+/* 目次 */
+nav.toc{border:1px solid var(--line); background:var(--panel); border-radius:6px; padding:14px 16px; margin:26px 0 8px; font-size:13px}
+nav.toc .h{font-size:11px; letter-spacing:.14em; color:var(--mint-soft); margin-bottom:8px}
+nav.toc ol{margin:0; padding-left:1.4em; columns:1}
+nav.toc li{margin:.24em 0}
+nav.toc a{text-decoration:none; color:var(--ink)}
+nav.toc a:hover{color:var(--mint); text-decoration:underline}
+
+footer.bot{margin:70px 0 40px; border-top:1px solid var(--line); padding-top:22px; font-size:12.5px; color:var(--muted)}
+footer.bot a{color:var(--mint-soft)}
+.refs{font-size:12.5px; color:var(--muted)}
+.refs li{margin:.5em 0}
+.back{display:inline-block; margin-top:16px; border:1px solid var(--line-bright); border-radius:4px; padding:7px 14px; color:var(--mint); text-decoration:none; font-size:13px}
+.back:hover{background:var(--panel2)}
+
+@media (min-width:1080px){
+  .cols{display:grid; grid-template-columns:1fr 230px; gap:44px; align-items:start}
+  .rail{position:sticky; top:24px; font-size:12px; border-left:1px solid var(--line); padding-left:16px; max-height:88vh; overflow:auto}
+  .rail .h{font-size:10.5px; letter-spacing:.14em; color:var(--mint-soft); margin-bottom:10px}
+  .rail a{display:block; color:var(--muted); text-decoration:none; padding:2.5px 0; line-height:1.5}
+  .rail a:hover{color:var(--mint)}
+  .rail a.on{color:var(--mint)}
+  nav.toc{display:none}
+  figure.fig{width:min(100%, 46rem)}
+}
+@media (max-width:1079px){ .rail{display:none} }
+@media (max-width:520px){ body{font-size:14.5px} .fig-body{padding:10px} }
+
+/* ===== この作品固有（意味色は aqua-lab-notes の変数に写像） ===== */
+:root{ --assume:var(--amber); --derive:var(--leaf); --hyp:var(--water); --meta:var(--violet);
+       --assume-bg:rgba(232,195,122,.10); --derive-bg:rgba(142,224,140,.10); --hyp-bg:rgba(127,211,236,.10); --meta-bg:rgba(196,168,238,.10)}
+.fig-body svg{width:100%; height:auto; background:#061009; border:1px solid var(--line); border-radius:4px}
+pre{font-family:var(--mono); background:var(--code); border:1px solid var(--line); border-left:2px solid var(--mint-soft);
+    padding:14px 16px; margin:18px 0; overflow-x:auto; font-size:12.5px; line-height:1.7; color:#d6f2e2}
+pre code{background:none; border:0; padding:0; font-size:inherit; color:inherit}
+blockquote{margin:18px 0; padding:10px 15px; border:1px solid var(--line); border-left:2px solid var(--water); background:rgba(127,211,236,.05); font-size:13.5px; color:var(--ink)}
+details{margin:20px 0} summary{cursor:pointer; color:var(--mint-soft); font-size:13px}
+.btn{background:var(--panel2); border:1px solid var(--line); border-radius:4px; padding:5px 11px; color:var(--muted); cursor:pointer; font-size:12px; font-family:inherit}
+.btn:hover{color:var(--mint); border-color:var(--line-bright)}
+.btn.on,.btn[aria-pressed=true]{background:var(--mint); color:#06110b; border-color:var(--mint)}
+.btn:disabled{opacity:.4; cursor:default}
+/* ステッパー */
+.stepper .stage{min-height:7rem; padding:12px 14px; border:1px solid var(--line); border-left:2px solid var(--line); background:var(--panel2); border-radius:4px; margin-bottom:12px}
+.stepper .stage.assume{border-left-color:var(--assume); background:var(--assume-bg)}
+.stepper .stage.derive{border-left-color:var(--derive); background:var(--derive-bg)}
+.stepper .stage.hyp{border-left-color:var(--hyp); background:var(--hyp-bg)}
+.stepper .stage.goal{border-left-color:var(--mint); background:rgba(154,244,181,.08)}
+.stepper .formula{font-size:17px; margin:0 0 6px; color:var(--ink)}
+.stepper .why{font-size:12.5px; color:var(--muted); margin:0; line-height:1.75}
+.stepper .rail{display:flex; gap:3px; margin:0 0 12px}
+.stepper .rail span{flex:1; min-width:10px; height:5px; background:var(--line); border-radius:1px}
+.stepper .rail span.done.assume{background:var(--assume)} .stepper .rail span.done.derive{background:var(--derive)}
+.stepper .rail span.done.hyp{background:var(--hyp)} .stepper .rail span.done.goal{background:var(--mint)}
+.stepper .ctl{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.stepper .count{color:var(--muted); font-size:12px; margin-left:auto; font-variant-numeric:tabular-nums}
+.ledger{font-size:12px; margin:12px 0 0; padding:0; list-style:none}
+.ledger li{padding:1px 0 1px 9px; border-left:2px solid var(--line); margin:3px 0; color:var(--muted)}
+.ledger li.assume{border-color:var(--assume)} .ledger li.derive{border-color:var(--derive)}
+.ledger li.hyp{border-color:var(--hyp)} .ledger li.goal{border-color:var(--mint); color:var(--ink)}
+/* スイッチ盤 */
+.switchboard .row{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px}
+@media (max-width:520px){.switchboard .row{grid-template-columns:1fr}}
+.sw{display:flex; align-items:flex-start; gap:8px; padding:8px 10px; border:1px solid var(--line); background:var(--panel2); border-radius:4px; cursor:pointer; font-size:12.5px}
+.sw input{margin-top:4px; accent-color:var(--mint)}
+.sw b{display:block; color:var(--ink); font-weight:600}
+.sw span{color:var(--muted); font-size:11.5px}
+.sw.diag input{accent-color:var(--amber)}
+.results{margin:14px 0 0; padding:0; list-style:none}
+.results li{display:grid; grid-template-columns:6.2em 1fr; gap:8px; padding:7px 0; border-top:1px solid var(--line); font-size:12.5px; align-items:baseline}
+.results li .st{font-weight:600}
+.results li.ok .st{color:var(--mint)} .results li.no,.results li.no .st{color:var(--dim)} .results li.out .st{color:var(--violet)}
+.results li small{display:block; color:var(--muted); font-size:11.5px; line-height:1.7}
+.results li.no small{color:var(--dim)}
+/* 親戚 */
+.fam-nav{display:flex; flex-wrap:wrap; gap:6px; margin:12px 0}
+.fam-card{border:1px solid var(--line); background:var(--panel2); border-radius:4px; padding:14px 16px}
+.fam-card h3{margin:0 0 2px; font-size:15.5px}
+.fam-card .yr{color:var(--muted); font-size:12px; margin:0 0 10px}
+.fam-card dl{margin:0} .fam-card dt{font-size:10.5px; letter-spacing:.12em; color:var(--mint-soft); margin-top:12px}
+.fam-card dd{margin:3px 0 0; font-size:13.5px; line-height:1.8}
+.fam-card .say{font-size:15px; padding:7px 12px; background:var(--assume-bg); border-left:2px solid var(--assume); margin:4px 0}
+.tag.L0{color:var(--amber); border-color:#5a4a2c} .tag.L1{color:var(--water); border-color:#2e5566}
+.tag.L2{color:var(--leaf); border-color:#2f5a33} .tag.LX{color:var(--violet); border-color:#4a3d66}
+/* 拡大 */
+.zoom{position:fixed; inset:0; background:var(--void); z-index:50; display:none; flex-direction:column}
+.zoom.open{display:flex}
+.zoom .bar{display:flex; gap:6px; align-items:center; padding:8px 12px; border-bottom:1px solid var(--line); background:var(--panel); flex-wrap:wrap}
+.zoom .bar .hint{font-size:11.5px; color:var(--muted); margin-left:auto}
+.zoom .vp{flex:1; overflow:hidden; position:relative; touch-action:none; cursor:grab}
+.zoom .vp.drag{cursor:grabbing}
+.zoom .vp svg{position:absolute; left:0; top:0; transform-origin:0 0; user-select:none}
+
+.presets{margin:4px 0 18px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:12px; color:var(--muted)}
+.presets .plabel{letter-spacing:.14em; margin-right:2px}
+.presets .btn{padding:8px 14px; border-radius:999px}
+.switchboard .row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:0}
+.sw{gap:12px; padding:14px 16px 14px 14px; line-height:1.6}
+.sw input{width:18px; height:18px; margin:3px 0 0}
+.sw b{margin-bottom:3px}
+.results{margin:20px 0 0}
+.results li{padding:12px 0; gap:14px}
+.results li:last-child{border-bottom:1px solid var(--line)}
+.legend{margin-top:16px}
+.stepper .ctl .btn{padding:8px 14px}
+.fam-nav{gap:8px; margin:12px 0 14px}
+.fam-nav .btn{padding:7px 12px}
+
+.fig-hd .zl{margin-left:auto; font-size:11.5px; color:var(--mint-soft); text-decoration:none; border:1px solid var(--line); border-radius:3px; padding:1px 8px; white-space:nowrap}
+.fig-hd .zl:hover{color:var(--mint); border-color:var(--line-bright)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">読み物 / 2026-09-03</div>
+  <h1>「証明できない」ということを証明する</h1>
+  <p>Löbの定理をLeanで100行、その先の数千行。「自分の正しさは自分では保証できない」という有名な話を、どこまで機械に証明させられるか。Lean 4で約100行の形式化を通し、定理・前提・政策の境界線と、第2不完全性定理の親戚たちを辿る。</p>
+  <div class="meta">
+    <span class="chip go">Lean 4.22.0 / 依存なし / 約100行</span>
+    <span class="chip">#print axioms：公理依存なし・sorryなし</span>
+    <span class="chip">図と証明の段は本ページ内で描いている</span>
+  </div>
+</header>
+<div class="cols">
+<main>
+<nav class="toc"><div class="h">目次</div><ol><li><a href="#s1">はじまり：ある雑談</a></li><li><a href="#s2">まえがき：身内の言葉について</a></li><li><a href="#s3">「『証明できない』ということを証明する」とは何か</a></li><li><a href="#s4">□ に課す4つの約束</a></li><li><a href="#s5">Löbの定理：証明を歩く</a></li><li><a href="#s6">Leanで書く：どこまでが定理か</a></li><li><a href="#s7">4つの層</a></li><li><a href="#s8">約束を一つ外すと定理が消える</a></li><li><a href="#s9">親戚の定理たち：全部、同じ一手</a></li><li><a href="#s10">AIと一緒にやったこと、AIが言ったこと</a></li><li><a href="#s11">付録：依存グラフ</a></li><li><a href="#s12">参考</a></li></ol></nav>
+
+<h2 id="s1"><span class="num">序</span>はじまり：ある雑談</h2>
+<p>2026年6月、Claude（当時公開直後のFable 5）と雑談をしていた。話題はシンギュラリティで、途中から「全宇宙を掌握した知的存在（推論機械）」の話になった。</p>
+<p>そういう存在がいたとして、すべてを掌握したら新たな発見は止まりそうだ。ではそもそも全宇宙を掌握することは可能なのか。たぶん不可能だ。では仮に掌握できたとして、「掌握し終えた」ことを自分で証明できるのか。それも不可能っぽい。掌握の完了を確認する手段は、掌握したものの内側にしかないからだ。逆に、宇宙の外の何かが干渉してきたら、探索空間がメタに一段広がって、発見がまた始まる。</p>
+<p>そこから話は身近なほうへ降りてきた。箱に閉じ込められたAIにとって、人間からの入力や外界の情報は、まさにその「外からの干渉」であって、発見のきっかけそのものではないか。閉じた系は自分の完全性を自分で確かめられない。だから検証は外側に錨を下ろして、続けるしかない。このあたりで、そのときのClaudeがこれを「母定理」と呼び始めた。</p>
+
+<h2 id="s2"><span class="num">序</span>まえがき：身内の言葉について</h2>
+<p>その雑談で出てきた原理を一文にすると「完全性は内側から自己認証できない。だから検証は恒久的で、外部にアンカーされねばならない」となる。</p>
+<p>先に断っておくと、<strong>「母定理」は身内の言葉であって、数学の世界にそういう名前の定理は存在しない</strong>。その後の検証で、この原理の硬い部分はすべて既知の定理（Löb、ゲーデル、Tarski、Lawvere）の言い換えであり、柔らかい部分は価値判断であることが分かった。私の指示で、名前も「母原理」に格下げした。</p>
+<p>ではなぜ記事にするのか。この原理を「定理」「前提」「政策」の三層に分けて整理し、定理の層だけをLeanで機械検証してみたところ、<strong>どこまでが厳密に言えて、どこからが形式化できないのか</strong>の境界線が、コードの形で見えてしまったからだ。「自分の正しさは自分では保証できない」というエンジニアの実用知識と、数学の定理との距離を測る記事として書く。</p>
+
+<h2 id="s3"><span class="num">01</span>「『証明できない』ということを証明する」とは何か</h2>
+<p>ゲーデルの不完全性定理の周辺でいちばん混乱を招く点を片付けておく。「TはXを証明できない」ということを、いったい誰が証明するのか。</p>
+
+<figure class="fig"><div class="fig-hd"><span class="no">図 01</span><span class="ti">二階建て：Tの内側と外側</span><a class="zl" href="#" data-zoom>拡大</a></div><div class="fig-body"><svg viewBox="0 0 800 420" font-family="ui-monospace,Menlo,Consolas,'Hiragino Sans','Noto Sans JP',sans-serif" font-size="16" role="img" aria-label="外側（メタ）と理論Tの内側の二階建て">
+  <rect x="20" y="20" width="760" height="380" rx="6" fill="rgba(196,168,238,.14)" stroke="#c4a8ee" stroke-width="2"/>
+  <text x="40" y="52" font-size="18" font-weight="bold" fill="#d9cbf3">外側（メタ）：私たち／Lean が立っている場所</text>
+  <text x="40" y="76" fill="#d9cbf3">「T は Con_T を証明できない」は、ここで証明する文</text>
+  <rect x="120" y="120" width="560" height="240" rx="6" fill="#0d1d15" stroke="#7fd3ec" stroke-width="2"/>
+  <text x="140" y="152" font-size="18" font-weight="bold" fill="#a9e3f5">理論 T の内側</text>
+  <text x="140" y="176" fill="#a9e3f5">記号列と推論規則だけの世界。意味は知らない</text>
+  <rect x="160" y="210" width="200" height="60" rx="4" fill="rgba(127,211,236,.14)" stroke="#7fd3ec"/>
+  <text x="260" y="238" text-anchor="middle" fill="#a9e3f5">文 A</text>
+  <text x="260" y="258" text-anchor="middle" font-size="13" fill="#a9e3f5">（例：0=0、Con_T、…）</text>
+  <rect x="440" y="210" width="200" height="60" rx="4" fill="rgba(127,211,236,.14)" stroke="#7fd3ec"/>
+  <text x="540" y="238" text-anchor="middle" fill="#a9e3f5">文 □A</text>
+  <text x="540" y="258" text-anchor="middle" font-size="13" fill="#a9e3f5">「A は T で証明できる」</text>
+  <line x1="360" y1="240" x2="432" y2="240" stroke="#7fd3ec" stroke-width="2"/>
+  <path d="M432,234 L442,240 L432,246 z" fill="#a9e3f5"/>
+  <text x="400" y="228" text-anchor="middle" font-size="13" fill="#a9e3f5">符号化</text>
+  <text x="400" y="320" text-anchor="middle" fill="#a9e3f5">T ⊢ A ：T の規則で A に到達できる（T の内側の出来事）</text>
+  <text x="400" y="344" text-anchor="middle" fill="#a9e3f5">□A ：その出来事を T 自身の言葉で書いた文（T の内側にある）</text>
+  <text x="400" y="390" text-anchor="middle" fill="#d9cbf3">「T ⊬ X」（T は X に到達できない）は、外側からしか言えない</text>
+</svg></div><figcaption>二階建て。Tの中で証明できることと、Tについて外側で証明できることは別の層にある。</figcaption></figure>
+
+<p>理論Tは、記号列と推論規則だけの世界だ。Tは自分の文の「意味」を知らない。Tの規則を適用していってAに到達できるとき、外側にいる私たちは「T ⊢ A」と書く。</p>
+<p>ここで一つ仕掛けがある。「AはTで証明できる」という主張自体を、Tの文として書くことができる（ゲーデル数化）。それを <span class="f">□A</span> と書く。□A はTの内側にある文だ。一方「T ⊬ X」（TはXに到達できない）は、Tの内側からは言えない。Tのすべての証明を見渡して「Xはどこにもない」と言うのは、外側の仕事だ。</p>
+<p>だから「Tは自分の無矛盾性を証明できない」は、外側で証明される定理だ。Leanで書くとき、Leanは外側に立っている。これがこの記事全体の座標系になる。</p>
+
+<h2 id="s4"><span class="num">02</span>□ に課す4つの約束</h2>
+<p>ゲーデルの原論文はPAの内部で証明可能性述語を実際に構成する。それは大変な作業だが、HilbertとBernaysが整理しLöb（1955年）が磨き上げた結果によれば、□ に必要な性質は<strong>たった3つと対角化だけ</strong>で、それさえあれば結論が出る。</p>
+
+<figure class="fig"><div class="fig-hd"><span class="no">図 02</span><span class="ti">□に課す4つの約束</span><a class="zl" href="#" data-zoom>拡大</a></div><div class="fig-body"><svg viewBox="0 0 800 330" font-family="ui-monospace,Menlo,Consolas,'Hiragino Sans','Noto Sans JP',sans-serif" font-size="15" role="img" aria-label="D1 D2 D3 と対角化の4つの約束">
+  <rect x="30" y="20" width="360" height="110" rx="4" fill="rgba(142,224,140,.13)" stroke="#8ee08c" stroke-width="2"/>
+  <text x="50" y="48" font-weight="bold" fill="#bdefbc">D1　証明したら、証明したと言える</text>
+  <text x="50" y="74" fill="#bdefbc">⊢ A　ならば　⊢ □A</text>
+  <text x="50" y="100" font-size="13" fill="#bdefbc">証明を手に持っているなら、その存在を T 内で示せる</text>
+  <rect x="410" y="20" width="360" height="110" rx="4" fill="rgba(142,224,140,.13)" stroke="#8ee08c" stroke-width="2"/>
+  <text x="430" y="48" font-weight="bold" fill="#bdefbc">D2　証明は MP で閉じる</text>
+  <text x="430" y="74" fill="#bdefbc">⊢ □(A→B) → (□A → □B)</text>
+  <text x="430" y="100" font-size="13" fill="#bdefbc">「A→B の証明」と「A の証明」を並べれば B の証明</text>
+  <rect x="30" y="160" width="360" height="110" rx="4" fill="rgba(142,224,140,.13)" stroke="#8ee08c" stroke-width="2"/>
+  <text x="50" y="188" font-weight="bold" fill="#bdefbc">D3　証明があることは、証明できる</text>
+  <text x="50" y="214" fill="#bdefbc">⊢ □A → □□A</text>
+  <text x="50" y="240" font-size="13" fill="#bdefbc">D1 を T の内側で言い直したもの（Willard で落ちる）</text>
+  <rect x="410" y="160" width="360" height="110" rx="4" fill="rgba(232,195,122,.15)" stroke="#e8c37a" stroke-width="2"/>
+  <text x="430" y="188" font-weight="bold" fill="#f1d9a4">対角化　自分に言及する文が作れる</text>
+  <text x="430" y="214" fill="#f1d9a4">任意の A に　ψ ↔ (□ψ → A)　なる ψ がある</text>
+  <text x="430" y="240" font-size="13" fill="#f1d9a4">「私が証明されるなら A」と主張する文 ψ</text>
+  <text x="400" y="310" text-anchor="middle" font-size="14" fill="#8aa091">4 つを仮定した瞬間、Löb は約 20 行で閉じる。4 つが PA で成り立つことの証明が、先人の数千行。</text>
+</svg></div><figcaption>緑が□の性質（導出可能性条件）、橙が自己言及の装置。</figcaption></figure>
+
+<p>D1〜D3はHilbert–Bernays–Löbの導出可能性条件と呼ばれる。ここから先の話は、<strong>この4つを満たす任意のTについて</strong>成り立つ。PAである必要すらない。</p>
+
+<h2 id="s5"><span class="num">03</span>Löbの定理：証明を歩く</h2>
+<p>Löbの定理はこう言う：<strong>⊢ □A → A ならば ⊢ A</strong>。「Aが証明できるならAは正しい」をTが証明できるのは、Aそのものを証明できるときに限る。Tは自分の証明の正しさを、中身抜きで保証できない。</p>
+<p>証明は11段。下のボタンで一段ずつ進める。色は<span style="color:var(--assume)">橙＝対角化</span>、<span style="color:var(--derive)">緑＝約束D1〜D3</span>、<span style="color:var(--hyp)">青＝仮定 ⊢ □A → A</span> を使う段。</p>
+
+<figure class="fig stepper ui" id="stepper"><div class="fig-hd"><span class="no">操作</span><span class="ti">Löbの定理の証明を一段ずつ進める</span></div><div class="fig-body">
+  <div class="rail" id="rail"></div>
+  <div class="stage" id="stage">
+    <p class="formula" id="formula"></p>
+    <p class="why" id="why"></p>
+  </div>
+  <div class="ctl">
+    <button class="btn" id="prev">前へ</button>
+    <button class="btn" id="next">次の段へ</button>
+    <button class="btn" id="reset">最初から</button>
+    <span class="count" id="count"></span>
+  </div>
+  <ul class="ledger" id="ledger" aria-live="polite"></ul>
+</div></figure>
+
+<p>急所は橙の段だ。対角化で「私が証明されるならA」というψを作り、D1〜D3で □ψ → □A を導き、仮定の □A → A をつなぐと □ψ → A になる。ところがこれはψの定義の右辺そのものだから ⊢ ψ、するとD1で ⊢ □ψ、モーダス・ポネンスで ⊢ A。自分に言及する文が、自分を証明してしまう。</p>
+<p>第2不完全性定理はここから1行で出る。A := ⊥ とおくと「⊢ ¬□⊥ ならば ⊢ ⊥」、つまり<strong>無矛盾なTは自分の無矛盾性を証明できない</strong>。</p>
+<p>もう一つ、エンジニア向けの読み方がある。「すべてのAについて ⊢ □A → A」、すなわちTが自分の証明器の健全性を一律に保証する、と仮定すると、Löbの定理から「すべてのAについて ⊢ A」、つまりTは何でも証明する。<strong>無矛盾な体系は、自分の検証器の健全性を内側から認証できない。</strong></p>
+
+<h2 id="s6"><span class="num">04</span>Leanで書く：どこまでが定理か</h2>
+<p>以上をLean 4で書いた。Mathlibは使っていない。コア言語だけで約100行だ。</p>
+<pre><code>structure ProvSystem where
+  F     : Type
+  imp   : F → F → F
+  bot   : F
+  box   : F → F                  -- 可証性述語 □
+  Prov  : F → Prop               -- T ⊢ A
+  -- 命題論理（Hilbert流の最小限）
+  mp    : ∀ {A B : F}, Prov (imp A B) → Prov A → Prov B
+  axK   : ∀ A B : F, Prov (imp A (imp B A))
+  axS   : ∀ A B C : F,
+            Prov (imp (imp A (imp B C)) (imp (imp A B) (imp A C)))
+  -- Hilbert–Bernays–Löb 条件
+  d1    : ∀ {A : F}, Prov A → Prov (box A)
+  d2    : ∀ A B : F, Prov (imp (box (imp A B)) (imp (box A) (box B)))
+  d3    : ∀ A : F, Prov (imp (box A) (box (box A)))
+  -- 対角化補題
+  diag  : ∀ A : F, ∃ ψ : F,
+            Prov (imp ψ (imp (box ψ) A)) ∧ Prov (imp (imp (box ψ) A) ψ)</code></pre>
+<p>構造体のフィールドに注目してほしい。D1〜D3と対角化は<strong>証明されていない。仮定として置かれている</strong>。「これらを満たすTがあるなら」という条件の下で、以下の定理が出る。</p>
+<pre><code>theorem loeb {A : T.F} (h : ⊢ (□A ⇒ A)) : ⊢ A := ...
+theorem godel2 (hc : T.Consistent) : ¬ ⊢ T.Con := ...
+theorem no_uniform_self_soundness (hc : T.Consistent) :
+    ¬ ∀ A : T.F, ⊢ (□A ⇒ A) := ...
+theorem tarski ... : ⊢ T.bot := ...</code></pre>
+<p>型検査は通り、<code>#print axioms</code> は「どの公理にも依存しない」と答えた。<code>sorry</code> はもちろん、選択公理も排中律も使っていない。</p>
+<div class="note">
+<p style="margin:0 0 .6rem"><b>正直に言うべきこと。</b>この100行は、数学的には何も新しくない。抽象可証性論理でのLöbの証明は教科書の演習問題で、先行の機械検証も複数ある。</p>
+<ul style="margin:0">
+<li>Quaife（1988）：ITPシステムでK4を形式化し、Löbとゲーデルの両定理を自動証明</li>
+<li>Paulson（2013）／Bailitis（2024）：Isabelleで、遺伝的有限集合論上に<strong>実際の証明可能性述語を構成して</strong>第2不完全性とLöbを証明。第2定理の史上初の機械支援証明</li>
+<li>FormalizedFormalLogic/Foundation：Lean 4でゲーデルの両不完全性定理をsorryなしで</li>
+</ul>
+</div>
+<p>私の100行とPaulsonの数千行の差は、<strong>D1〜D3と対角化を「仮定する」か「証明する」か</strong>の差だ。</p>
+
+<h2 id="s7"><span class="num">05</span>4つの層</h2>
+<p>冒頭の「母原理」を三層に分けた話に戻る。「自分の正しさは自分では保証できない、だから検証は続けなければならない」という主張の下には、硬さの違う4つの層が積み重なっている。</p>
+
+<figure class="fig"><div class="fig-hd"><span class="no">図 03</span><span class="ti">硬さの異なる4つの層</span><a class="zl" href="#" data-zoom>拡大</a></div><div class="fig-body"><svg viewBox="0 0 800 470" font-family="ui-monospace,Menlo,Consolas,'Hiragino Sans','Noto Sans JP',sans-serif" font-size="14" role="img" aria-label="硬さの異なる4層">
+  <rect x="260" y="20" width="280" height="80" rx="4" fill="rgba(127,211,236,.14)" stroke="#7fd3ec" stroke-width="2"/>
+  <text x="400" y="46" text-anchor="middle" font-weight="bold" fill="#a9e3f5">Löb・第 2 不完全性・Tarski</text>
+  <text x="400" y="68" text-anchor="middle" font-size="13" fill="#a9e3f5">□ を抽象化した論理での定理</text>
+  <text x="400" y="88" text-anchor="middle" font-size="13" fill="#a9e3f5">Lean 約 100 行・この記事で機械検証</text>
+  <rect x="180" y="120" width="440" height="80" rx="4" fill="rgba(142,224,140,.13)" stroke="#8ee08c" stroke-width="2"/>
+  <text x="400" y="146" text-anchor="middle" font-weight="bold" fill="#bdefbc">D1–D3・対角化が PA で成り立つこと</text>
+  <text x="400" y="168" text-anchor="middle" font-size="13" fill="#bdefbc">ゲーデル数化・表現可能性・Σ1 完全性の形式化</text>
+  <text x="400" y="188" text-anchor="middle" font-size="13" fill="#bdefbc">Paulson/Bailitis（Isabelle）、Foundation（Lean 4）：数千行</text>
+  <rect x="100" y="220" width="600" height="80" rx="4" fill="rgba(232,195,122,.15)" stroke="#e8c37a" stroke-width="2"/>
+  <text x="400" y="246" text-anchor="middle" font-weight="bold" fill="#f1d9a4">前提群 N：価値判断と経験的仮定</text>
+  <text x="400" y="268" text-anchor="middle" font-size="13" fill="#f1d9a4">「誤りは害である」「検証にはコストがある」「外部のアンカーは独立である」…</text>
+  <text x="400" y="288" text-anchor="middle" font-size="13" fill="#f1d9a4">Lean では書けない。議論と観測で支える</text>
+  <rect x="20" y="320" width="760" height="80" rx="4" fill="rgba(196,168,238,.14)" stroke="#c4a8ee" stroke-width="2"/>
+  <text x="400" y="346" text-anchor="middle" font-weight="bold" fill="#d9cbf3">政策系 P：「だから〜すべき」</text>
+  <text x="400" y="368" text-anchor="middle" font-size="13" fill="#d9cbf3">監視を続ける・アンカーを複数持つ・自己申告の健全性を信用しない</text>
+  <text x="400" y="388" text-anchor="middle" font-size="13" fill="#d9cbf3">上の 3 層を前提とする条件付きの最適性。定理ではない</text>
+  <line x1="60" y1="30" x2="60" y2="300" stroke="#637c6b" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <text x="60" y="20" text-anchor="middle" font-size="12" fill="#8aa091">硬い</text>
+  <text x="60" y="316" text-anchor="middle" font-size="12" fill="#8aa091">柔らかい</text>
+  <text x="400" y="440" text-anchor="middle" fill="#8aa091">機械に検証させられるのは、いちばん上の層だけ。</text>
+</svg></div><figcaption>上に行くほど硬く、下に行くほど実用に近い。</figcaption></figure>
+
+<p>エンジニアの実用知識「自己申告の健全性を信用するな」は、いちばん下の層に住んでいる。それが正しいと感じられるのは、上の3層が積み重なっているからだ。ただし機械に検証させられるのは、いちばん上の層だけ。そして、いちばん上の層だけを取り出すと、それは70年前に証明済みの定理になる。<strong>実用知識と厳密な証明の距離</strong>とは、この4層の厚みのことだと思う。</p>
+
+<h2 id="s8"><span class="num">06</span>約束を一つ外すと定理が消える</h2>
+<p>構造体として書いたことの副産物がある。「条件を落とすと結論が消える」という事実が、コードの型として見える。下のスイッチで実際に外してみてほしい。</p>
+
+<figure class="fig switchboard ui" id="switchboard"><div class="fig-hd"><span class="no">操作</span><span class="ti">約束をON/OFFして、どの定理が残るか見る</span></div><div class="fig-body">
+  <div class="presets" id="presets">
+    <span class="plabel">例</span>
+    <button class="btn" data-preset="pa">ペアノ算術 PA</button>
+    <button class="btn" data-preset="willard">Willard の自己検証体系</button>
+    <button class="btn" data-preset="presburger">Presburger 算術</button>
+  </div>
+  <div class="row">
+    <label class="sw"><input type="checkbox" id="swD1" checked><div><b>D1</b><span>⊢A ならば ⊢□A</span></div></label>
+    <label class="sw"><input type="checkbox" id="swD2" checked><div><b>D2</b><span>⊢ □(A→B)→(□A→□B)</span></div></label>
+    <label class="sw"><input type="checkbox" id="swD3" checked><div><b>D3</b><span>⊢ □A→□□A</span></div></label>
+    <label class="sw diag"><input type="checkbox" id="swDiag" checked><div><b>対角化</b><span>自分に言及する文が作れる</span></div></label>
+  </div>
+  <ul class="results" id="results"></ul>
+  <p class="legend" id="presetNote"></p>
+</div></figure>
+
+<p>Willardの自己検証体系は、自分の無矛盾性を証明できる。第2不完全性定理の反例だろうか。反例ではなく、適用外だ。Willardの体系は乗法の全域性を証明できないように弱められていて、私の理解では、そのためにD3（形式化されたΣ1完全性）が成り立たない。<code>ProvSystem</code> の言葉でいえば <code>d3</code> フィールドを埋められず、インスタンスにならない。</p>
+<p>逆に、Presburger算術（足し算だけの算術）は完全で決定可能だ。ゲーデルの定理と矛盾しないのは、掛け算がないために「文への代入」や「証明の検査」を算術の中で表現できず（表現可能性が落ちる）、<strong>対角化の段階で止まる</strong>から。橙のスイッチを切ると、全部が消える。</p>
+<p>「自分の無矛盾性は証明できない」を条件なしに言うと偽になる。条件付きで言えば定理になる。この境界線を散文で説明するのは案外難しいが、構造体のフィールドは一目で見せてくれる。</p>
+
+<h2 id="s9"><span class="num">07</span>親戚の定理たち：全部、同じ一手</h2>
+<p>第2不完全性定理は、対角線論法という一つの手筋の、たくさんある帰結の一つに過ぎない。親戚を並べると、「自分に言及する何か」を作って矛盾を引き出す、という同じ骨格が見えてくる。下から選んで読んでほしい。</p>
+
+<figure class="fig"><div class="fig-hd"><span class="no">図 04</span><span class="ti">対角線論法の家系図</span><a class="zl" href="#" data-zoom>拡大</a></div><div class="fig-body"><svg viewBox="0 0 900 410" font-family="ui-monospace,Menlo,Consolas,'Hiragino Sans','Noto Sans JP',sans-serif" font-size="14" role="img" aria-label="対角線論法の家系図">
+  <defs><marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8aa091"/></marker></defs>
+  <!-- row0 -->
+  <rect x="330" y="20" width="240" height="52" rx="4" fill="rgba(232,195,122,.15)" stroke="#e8c37a" stroke-width="2"/>
+  <text x="450" y="42" text-anchor="middle" font-weight="bold" fill="#f1d9a4">Lawvere の不動点定理</text>
+  <text x="450" y="61" text-anchor="middle" font-size="12" fill="#f1d9a4">「自分自身を指せる」なら不動点がある</text>
+  <line x1="450" y1="72" x2="150" y2="120" stroke="#8aa091" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="450" y1="72" x2="450" y2="120" stroke="#8aa091" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="450" y1="72" x2="750" y2="120" stroke="#8aa091" stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- row1 -->
+  <rect x="40" y="120" width="220" height="50" rx="4" fill="#0d1d15" stroke="#8aa091"/>
+  <text x="150" y="141" text-anchor="middle" font-weight="bold" fill="#e4f2e8">Cantor の対角線論法</text>
+  <text x="150" y="160" text-anchor="middle" font-size="12" fill="#8aa091">集合は自分のべき集合より小さい</text>
+  <rect x="340" y="120" width="220" height="50" rx="4" fill="#0d1d15" stroke="#e8c37a"/>
+  <text x="450" y="141" text-anchor="middle" font-weight="bold" fill="#e4f2e8">対角化補題（論理）</text>
+  <text x="450" y="160" text-anchor="middle" font-size="12" fill="#8aa091">ψ ↔ φ(⌜ψ⌝) なる ψ がある</text>
+  <rect x="640" y="120" width="220" height="50" rx="4" fill="#0d1d15" stroke="#8aa091"/>
+  <text x="750" y="141" text-anchor="middle" font-weight="bold" fill="#e4f2e8">Kleene の再帰定理（計算）</text>
+  <text x="750" y="160" text-anchor="middle" font-size="12" fill="#8aa091">自分のコードを読めるプログラム</text>
+  <line x1="450" y1="170" x2="230" y2="220" stroke="#8aa091" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="450" y1="170" x2="530" y2="220" stroke="#8aa091" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="750" y1="170" x2="750" y2="220" stroke="#8aa091" stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- row2 -->
+  <rect x="120" y="220" width="220" height="50" rx="4" fill="rgba(127,211,236,.14)" stroke="#7fd3ec"/>
+  <text x="230" y="241" text-anchor="middle" font-weight="bold" fill="#a9e3f5">Tarski の真理定義不能性</text>
+  <text x="230" y="260" text-anchor="middle" font-size="12" fill="#a9e3f5">「私は偽である」</text>
+  <rect x="420" y="220" width="220" height="50" rx="4" fill="rgba(127,211,236,.14)" stroke="#7fd3ec"/>
+  <text x="530" y="241" text-anchor="middle" font-weight="bold" fill="#a9e3f5">Gödel 第 1 不完全性</text>
+  <text x="530" y="260" text-anchor="middle" font-size="12" fill="#a9e3f5">「私は証明できない」</text>
+  <rect x="660" y="220" width="200" height="50" rx="4" fill="#0d1d15" stroke="#8aa091"/>
+  <text x="760" y="241" text-anchor="middle" font-weight="bold" fill="#e4f2e8">停止問題・Rice</text>
+  <text x="760" y="260" text-anchor="middle" font-size="12" fill="#8aa091">「自分を反転する」</text>
+  <line x1="530" y1="270" x2="410" y2="320" stroke="#8aa091" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="530" y1="270" x2="650" y2="320" stroke="#8aa091" stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- row3 -->
+  <rect x="300" y="320" width="220" height="50" rx="4" fill="rgba(127,211,236,.14)" stroke="#7fd3ec"/>
+  <text x="410" y="341" text-anchor="middle" font-weight="bold" fill="#a9e3f5">Rosser の改良</text>
+  <text x="410" y="360" text-anchor="middle" font-size="12" fill="#a9e3f5">「反証のほうが先に来る」</text>
+  <rect x="540" y="320" width="220" height="50" rx="4" fill="rgba(127,211,236,.14)" stroke="#7fd3ec" stroke-width="2.5"/>
+  <text x="650" y="341" text-anchor="middle" font-weight="bold" fill="#a9e3f5">Löb ／ Gödel 第 2 不完全性</text>
+  <text x="650" y="360" text-anchor="middle" font-size="12" fill="#a9e3f5">「私が証明されるなら A」</text>
+  <text x="450" y="398" text-anchor="middle" font-size="12" fill="#8aa091">矢印は「その道具で証明できる」の向き。Chaitin と Curry は本文の一覧で。</text>
+</svg></div><figcaption>対角線論法の家系図。頂点のLawvereは、全部を一つの不動点定理にまとめたもの（Yanofsky 2003 の整理による）。</figcaption></figure>
+
+<figure class="fig family ui" id="family"><div class="fig-hd"><span class="no">一覧</span><span class="ti">親戚の定理12件</span></div><div class="fig-body">
+  <div class="fam-nav" id="famNav"></div>
+  <div class="fam-card" id="famCard"></div>
+  <p class="legend"><span class="tag L0">対角化だけ</span>自己言及の装置だけで出る　<span class="tag L1">抽象可証性論理</span>D1〜D3＋対角化で出る（この記事のLean）　<span class="tag L2">算術の中身が要る</span>証明の順序や計算量など、□の抽象化では書けない　<span class="tag LX">計算論</span>プログラムの世界の同型物</p>
+</div></figure>
+
+<p>一覧を眺めると分かることが二つある。一つは、<strong>第1不完全性のほうが第2より少ない仮定で出る</strong>こと。「私は証明できない」という文Gを対角化で作れば、D1と無矛盾性だけで「⊢ G ではない」が出る。第2で必要になるD2とD3は、「私は証明できない」を「Tが無矛盾なら私は証明できない」にTの内側で言い直すために要る。</p>
+<p>もう一つは、<strong>Rosserの改良は抽象層に書けない</strong>こと。Rosserは「私の証明より先に私の反証が現れる」という文を使うが、「先に」を言うには証明の順序（ゲーデル数の大小）が要る。□を抽象化した時点でそれは捨てている。100行で書けるものと、算術の中身に手を突っ込まないと書けないものの境界は、ここにもある。</p>
+
+<h2 id="s10"><span class="num">08</span>AIと一緒にやったこと、AIが言ったこと</h2>
+<p>この記事の証明とコードはClaude（Fable 5.1）に書かせ、Lean 4.22.0で型検査を通した。「公開する価値ありそう？」と聞いたときの返答は、要約するとこうだった。</p>
+<blockquote>単体の数学的成果としては公開価値はほぼゼロ。先行研究（Quaife、Paulson/Bailitis、Foundation）がすでに、この形式化で公理として置いた部分まで含めて済ませている。価値があるとすれば、条件を構造体のフィールドとして逐語的に固定した説明資料として。</blockquote>
+<p>これは正しい評価だと思ったので、そのまま載せる。「AIと定理を証明した」と書くと過大表示になる。正確には「AIに教科書の演習問題を解かせ、その仮定の置き方から4つの層が見えた」だ。</p>
+<p>6月に「母定理」と言い出したのは、公開直後の初期のFable 5だった。7月に別のセッションのClaudeが三層に分ける整理を書き、私の指示で「定理と呼べるのは核だけ」として名前を格下げした。そして今回、その核をLeanで書いてみたら、核の中にもさらに「仮定する層」と「証明する層」があった。命名から3か月かけて、大きな言葉が小さな定理に縮んでいった記録として、この記事を置いておく。</p>
+
+<details>
+<summary>付録：Leanコード全文（Lean 4.22.0、依存なし）</summary>
+<pre><code id="leancode"></code></pre>
+</details>
+
+<h2 id="s11"><span class="num">付</span>付録：依存グラフ</h2>
+<p>この記事に登場した定義・公理・定理を有向グラフにした。実線はLeanの証明項が実際に参照している依存（機械検査済み）、破線は本文の説明レベルの関係。四角は仮定・定義、角丸は証明された命題。背景の帯が、第5節の4層に対応する。</p>
+
+<figure class="fig"><div class="fig-hd"><span class="no">図 05</span><span class="ti">定義・公理から定理への依存グラフ</span><a class="zl" href="#" data-zoom>拡大</a></div><div class="fig-body"><svg id="depgraph" viewBox="0 0 860 1380" font-family="ui-monospace,Menlo,Consolas,'Hiragino Sans','Noto Sans JP',sans-serif" font-size="12.5" role="img" aria-label="定義・公理から定理への依存グラフ">
+<defs>
+  <marker id="g-s" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#e4f2e8"/></marker>
+  <marker id="g-d" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8aa091"/></marker>
+</defs>
+<style>
+  .band{stroke:none}
+  .bl{font-size:13px;font-weight:600}
+  .ax{fill:#0d1d15;stroke:#e4f2e8;stroke-width:1.2}
+  .ax.ass{fill:rgba(232,195,122,.15);stroke:#e8c37a}
+  .ax.def{fill:#0a1710;stroke:#8aa091}
+  .th{fill:rgba(127,211,236,.14);stroke:#7fd3ec;stroke-width:1.6}
+  .th.main{stroke-width:2.6}
+  .fam{fill:#0d1d15;stroke:#8aa091;stroke-width:1.2;stroke-dasharray:3 2}
+  .pol{fill:rgba(196,168,238,.14);stroke:#c4a8ee;stroke-width:1.4}
+  .e{stroke:#e4f2e8;stroke-width:1.3;fill:none;marker-end:url(#g-s)}
+  .ed{stroke:#8aa091;stroke-width:1.2;fill:none;stroke-dasharray:4 3;marker-end:url(#g-d)}
+  .t{fill:#e4f2e8}
+  .tt{fill:#8aa091;font-size:11px}
+</style>
+
+<!-- band 1: arithmetization -->
+<rect class="band" x="10" y="10" width="840" height="300" fill="rgba(142,224,140,.07)" opacity="1"/>
+<text class="bl" x="24" y="32" fill="#bdefbc">算術化の層：この記事では仮定。Paulson/Bailitis、Foundation が証明</text>
+
+<rect class="ax" x="30" y="52" width="130" height="34"/><text class="t" x="95" y="74" text-anchor="middle">PA の公理</text>
+<rect class="ax" x="30" y="120" width="130" height="34"/><text class="t" x="95" y="142" text-anchor="middle">ゲーデル数化</text>
+<rect class="ax" x="30" y="190" width="150" height="34"/><text class="t" x="105" y="212" text-anchor="middle">表現可能性定理</text>
+<rect class="ax" x="230" y="120" width="150" height="34"/><text class="t" x="305" y="142" text-anchor="middle">証明述語 Bew の定義</text>
+<rect class="ax" x="440" y="120" width="150" height="34"/><text class="t" x="515" y="142" text-anchor="middle">形式化された Σ1 完全性</text>
+<rect class="ax" x="640" y="120" width="190" height="34"/><text class="t" x="735" y="142" text-anchor="middle">乗法の全域性（Willard で欠落）</text>
+
+<path class="ed" d="M95,86 L95,120"/>
+<path class="ed" d="M95,154 L95,190"/>
+<path class="ed" d="M160,137 L230,137"/>
+<path class="ed" d="M380,137 L440,137"/>
+<path class="ed" d="M735,154 L735,190 L590,190 L520,155"/>
+
+<!-- assumed fields (bottom of band1) -->
+<rect class="ax ass" x="30" y="250" width="150" height="34"/><text class="t" x="105" y="272" text-anchor="middle">diag（対角化補題）</text>
+<rect class="ax ass" x="230" y="250" width="110" height="34"/><text class="t" x="285" y="272" text-anchor="middle">D2</text>
+<rect class="ax ass" x="380" y="250" width="110" height="34"/><text class="t" x="435" y="272" text-anchor="middle">D1</text>
+<rect class="ax ass" x="530" y="250" width="110" height="34"/><text class="t" x="585" y="272" text-anchor="middle">D3</text>
+<rect class="ax ass" x="690" y="250" width="140" height="34"/><text class="t" x="760" y="272" text-anchor="middle">T-スキーマ（Tarski 用）</text>
+
+<path class="ed" d="M105,224 L105,250"/>
+<path class="ed" d="M180,207 L285,207 L285,250"/>
+<path class="ed" d="M305,154 L285,250"/>
+<path class="ed" d="M515,154 L440,250"/>
+<path class="ed" d="M515,154 L580,250"/>
+<path class="ed" d="M105,224 L760,224 L760,250"/>
+
+<!-- band 2: Lean -->
+<rect class="band" x="10" y="330" width="840" height="470" fill="rgba(127,211,236,.07)" opacity="1"/>
+<text class="bl" x="24" y="352" fill="#a9e3f5">抽象可証性論理の層：Lean 約 100 行、この記事で機械検査</text>
+
+<rect class="ax" x="30" y="372" width="60" height="30"/><text class="t" x="60" y="392" text-anchor="middle">mp</text>
+<rect class="ax" x="100" y="372" width="60" height="30"/><text class="t" x="130" y="392" text-anchor="middle">axK</text>
+<rect class="ax" x="170" y="372" width="60" height="30"/><text class="t" x="200" y="392" text-anchor="middle">axS</text>
+<rect class="th" x="40" y="440" width="80" height="30" rx="8"/><text class="t" x="80" y="460" text-anchor="middle">comp</text>
+<rect class="th" x="140" y="440" width="80" height="30" rx="8"/><text class="t" x="180" y="460" text-anchor="middle">sComb</text>
+<path class="e" d="M60,402 L75,440"/><path class="e" d="M130,402 L90,440"/><path class="e" d="M200,402 L100,440"/>
+<path class="e" d="M60,402 L170,440"/><path class="e" d="M200,402 L185,440"/>
+
+<rect class="ax def" x="640" y="372" width="190" height="30"/><text class="t" x="735" y="392" text-anchor="middle">Consistent := ¬⊢⊥（メタ定義）</text>
+<rect class="ax def" x="640" y="412" width="190" height="30"/><text class="t" x="735" y="432" text-anchor="middle">Con := □⊥ ⇒ ⊥（T の文）</text>
+
+<rect class="th main" x="300" y="500" width="200" height="40" rx="10"/><text class="t" x="400" y="525" text-anchor="middle" font-weight="600">loeb（Löb の定理）</text>
+<!-- edges into loeb -->
+<path class="e" d="M105,284 L105,330 L340,500"/>
+<path class="e" d="M285,284 L360,500"/>
+<path class="e" d="M435,284 L400,500"/>
+<path class="e" d="M585,284 L440,500"/>
+<path class="e" d="M80,470 L340,500"/>
+<path class="e" d="M180,470 L370,500"/>
+<path class="e" d="M60,402 L60,520 L300,520"/>
+
+<rect class="th" x="60" y="620" width="200" height="40" rx="10"/><text class="t" x="160" y="638" text-anchor="middle">godel2</text><text class="tt" x="160" y="653" text-anchor="middle">第 2 不完全性：Consistent → ¬⊢Con</text>
+<rect class="th" x="300" y="620" width="240" height="40" rx="10"/><text class="t" x="420" y="638" text-anchor="middle">reflection_implies_trivial</text><text class="tt" x="420" y="653" text-anchor="middle">全 A で ⊢□A⇒A なら全 A で ⊢A</text>
+<rect class="th" x="300" y="700" width="240" height="40" rx="10"/><text class="t" x="420" y="718" text-anchor="middle">no_uniform_self_soundness</text><text class="tt" x="420" y="733" text-anchor="middle">検証器の健全性は自己認証不能</text>
+<rect class="th" x="600" y="620" width="230" height="40" rx="10"/><text class="t" x="715" y="638" text-anchor="middle">tarski</text><text class="tt" x="715" y="653" text-anchor="middle">真理述語＋嘘つき不動点 → ⊢⊥</text>
+
+<path class="e" d="M360,540 L200,620"/>
+<path class="e" d="M400,540 L410,620"/>
+<path class="e" d="M420,660 L420,700"/>
+<path class="e" d="M640,387 L600,387 L600,600 L240,620"/>
+<path class="e" d="M640,427 L620,427 L620,590 L220,620"/>
+<path class="e" d="M600,387 L600,600 L560,700 L540,715"/>
+<path class="e" d="M760,284 L740,620"/>
+<path class="e" d="M180,470 L200,485 L700,485 L715,620"/>
+<path class="e" d="M80,470 L100,480 L690,480 L705,620"/>
+<text class="tt" x="590" y="755" text-anchor="end">（tarski の不動点は diag と同型の別仮定として引数で受ける）</text>
+
+<!-- band 3: family (informal) -->
+<rect class="band" x="10" y="820" width="840" height="330" fill="rgba(228,242,232,.03)" opacity="1"/>
+<text class="bl" x="24" y="842" fill="#8aa091">親戚（本文第 7 節）：関係は説明レベル。機械検査していない</text>
+
+<rect class="fam" x="30" y="862" width="150" height="34" rx="8"/><text class="t" x="105" y="884" text-anchor="middle">Lawvere 不動点定理</text>
+<rect class="fam" x="30" y="930" width="150" height="34" rx="8"/><text class="t" x="105" y="952" text-anchor="middle">Cantor 対角線論法</text>
+<rect class="fam" x="30" y="998" width="150" height="34" rx="8"/><text class="t" x="105" y="1020" text-anchor="middle">Kleene 再帰定理</text>
+<rect class="fam" x="30" y="1066" width="150" height="34" rx="8"/><text class="t" x="105" y="1088" text-anchor="middle">停止問題・Rice</text>
+<path class="ed" d="M105,896 L105,930"/><path class="ed" d="M180,879 L200,879 L200,1015 L180,1015"/><path class="ed" d="M105,1032 L105,1066"/>
+<path class="ed" d="M180,879 L230,879 L230,330 L180,267"/>
+
+<rect class="fam" x="260" y="930" width="150" height="34" rx="8"/><text class="t" x="335" y="952" text-anchor="middle">第 1 不完全性（⊬G）</text>
+<rect class="fam" x="260" y="998" width="150" height="34" rx="8"/><text class="t" x="335" y="1020" text-anchor="middle">Rosser の改良</text>
+<path class="ed" d="M335,964 L335,998"/>
+<path class="ed" d="M105,267 L250,267 L250,900 L320,930"/>
+<path class="ed" d="M435,284 L415,330 L415,900 L350,930"/>
+<path class="ed" d="M300,930 L280,900 L280,670 L260,660"/>
+
+<rect class="fam" x="460" y="930" width="150" height="34" rx="8"/><text class="t" x="535" y="952" text-anchor="middle">Curry のパラドックス</text>
+<path class="ed" d="M500,540 L535,930"/>
+<text class="tt" x="535" y="982" text-anchor="middle">□ を外すと Curry</text>
+
+<rect class="fam" x="660" y="930" width="170" height="34" rx="8"/><text class="t" x="745" y="952" text-anchor="middle">Chaitin 不完全性</text>
+<path class="ed" d="M240,650 L460,780 L700,930"/>
+<text class="tt" x="745" y="982" text-anchor="middle">情報量版（量的母定理の方向）</text>
+
+<rect class="fam" x="660" y="998" width="170" height="34" rx="8"/><text class="t" x="745" y="1020" text-anchor="middle">Willard 自己検証体系</text>
+<path class="ed" d="M830,137 L845,137 L845,1015 L830,1015"/>
+<text class="tt" x="745" y="1050" text-anchor="middle">D3 を欠くため godel2 適用外</text>
+
+<!-- band 4: N / P -->
+<rect class="band" x="10" y="1170" width="840" height="200" fill="rgba(196,168,238,.07)" opacity="1"/>
+<text class="bl" x="24" y="1192" fill="#d9cbf3">前提群 N・政策系 P：形式化対象外</text>
+<rect class="pol" x="30" y="1212" width="380" height="60" rx="4"/>
+<text class="t" x="220" y="1236" text-anchor="middle" font-weight="600">前提群 N</text>
+<text class="tt" x="220" y="1256" text-anchor="middle">誤りは害・検証にはコスト・外部アンカーは独立</text>
+<rect class="pol" x="450" y="1212" width="380" height="60" rx="4"/>
+<text class="t" x="640" y="1236" text-anchor="middle" font-weight="600">政策系 P</text>
+<text class="tt" x="640" y="1256" text-anchor="middle">監視の持続・アンカー複数化・自己申告を信用しない</text>
+<path class="ed" d="M160,660 L160,1150 L200,1212"/>
+<path class="ed" d="M420,740 L420,1150 L560,1212"/>
+<path class="ed" d="M410,1242 L450,1242"/>
+<text class="tt" x="430" y="1300" text-anchor="middle">N と定理層を合わせて初めて P が出る。定理層だけからは「べし」は出ない。</text>
+<text class="tt" x="430" y="1340" text-anchor="middle">■ 白＝公理・定義　橙＝この記事で仮定した条件　青＝Lean で証明　破線枠＝非形式　桃＝規範</text>
+</svg></div><figcaption>依存グラフ。実線はLeanの証明項が参照する依存、破線は説明レベルの関係。</figcaption></figure>
+
+<p>なぜBourbakiのような巨大グラフにならないのか。ならないのは、<strong>算術化の層で切ったから</strong>だ。D1〜D3と対角化を「仮定」として置いた瞬間、その上に乗る定理の依存関係は数十本の辺で描ききれる。逆に、この4つをPAの公理から実際に証明しようとすると、ゲーデル数化・表現可能性・Σ1完全性の形式化が必要になり、PaulsonのIsabelle開発では補題が数百の単位になる。グラフの上端の帯は、その巨大な部分を6個の箱に潰した要約であって、本当の姿ではない。</p>
+<p>つまり、このグラフが小さいことと、この記事の主張が「既知の定理の再パッケージ」であることは同じ事実の裏表だ。切る位置を決めた時点で、グラフの大きさも定理の新しさも決まっている。</p>
+
+<h2 id="s12"><span class="num">文</span>参考</h2>
+<ul class="refs">
+<li>M. H. Löb, "Solution of a problem of Leon Henkin", JSL 20 (1955)</li>
+<li>G. Boolos, <em>The Logic of Provability</em> (1993)</li>
+<li>A. Quaife, "Automated proofs of Löb's theorem and Gödel's two incompleteness theorems", J. Autom. Reasoning 4 (1988)</li>
+<li>L. C. Paulson, "Gödel's Incompleteness Theorems", Archive of Formal Proofs (2013; Löb by J. Bailitis, 2024)</li>
+<li>FormalizedFormalLogic/Foundation (Lean 4)</li>
+<li>D. E. Willard, "Self-verifying axiom systems, the incompleteness theorem and related reflection principles", JSL 66 (2001)</li>
+<li>N. S. Yanofsky, "A universal approach to self-referential paradoxes, incompleteness and fixed points", Bull. Symb. Logic 9 (2003)</li>
+<li>F. W. Lawvere, "Diagonal arguments and cartesian closed categories" (1969)</li>
+<li>G. J. Chaitin, "Information-theoretic limitations of formal systems", JACM 21 (1974)</li>
+</ul>
+
+<footer class="bot">
+<p>証明は Lean 4.22.0 コア言語のみで型検査済み（Mathlib 不使用、公理依存なし）。付録のコードをそのまま <code>lean TheoremM.lean</code> で再検証できる。</p>
+<a class="back" href="/">← 日記へ戻る</a>
+</footer>
+</main>
+<aside class="rail"><div class="h">CONTENTS</div><a href="#s1">序 はじまり：ある雑談</a><a href="#s2">序 まえがき：身内の言葉について</a><a href="#s3">01 「『証明できない』ということを証明する」とは何か</a><a href="#s4">02 □ に課す4つの約束</a><a href="#s5">03 Löbの定理：証明を歩く</a><a href="#s6">04 Leanで書く：どこまでが定理か</a><a href="#s7">05 4つの層</a><a href="#s8">06 約束を一つ外すと定理が消える</a><a href="#s9">07 親戚の定理たち：全部、同じ一手</a><a href="#s10">08 AIと一緒にやったこと、AIが言ったこと</a><a href="#s11">付 付録：依存グラフ</a><a href="#s12">文 参考</a></aside>
+</div>
+</div>
+<div class="zoom ui" id="zoom" role="dialog" aria-label="図の拡大表示">
+  <div class="bar">
+    <button class="btn" id="zIn" aria-label="拡大">＋</button>
+    <button class="btn" id="zOut" aria-label="縮小">－</button>
+    <button class="btn" id="zFit">全体</button>
+    <button class="btn" id="z100">等倍</button>
+    <span class="hint">ドラッグで移動・ホイールかピンチで拡大縮小・Escで閉じる</span>
+    <button class="btn" id="zClose">閉じる</button>
+  </div>
+  <div class="vp" id="zVp"></div>
+</div>
+
+
+<script>
+var LEAN_SRC = `/-
+  定理M（母原理 v1.0 の形式核）の Lean 4 形式化
+  依存: Lean 4 コア のみ（Mathlib 不要）
+
+  方針: 算術や符号化は行わず、可証性述語 □ を
+  Hilbert–Bernays–Löb 導出可能性条件 (D1–D3) と
+  対角化（不動点）補題を公理として与える「抽象可証性論理」の形で扱う。
+  つまり「これらの条件を満たす任意の理論について」の定理であり、
+  PA 等が実際に条件を満たすことは本ファイルの証明対象外（前提群N側）。
+-/
+
+/-- 導出可能性条件を備えた抽象的な理論 T。 -/
+structure ProvSystem where
+  F     : Type
+  imp   : F → F → F
+  bot   : F
+  box   : F → F                  -- 可証性述語 □ (Bew)
+  Prov  : F → Prop               -- T ⊢ A
+  -- 命題論理（Hilbert 流の最小限）
+  mp    : ∀ {A B : F}, Prov (imp A B) → Prov A → Prov B
+  axK   : ∀ A B : F, Prov (imp A (imp B A))
+  axS   : ∀ A B C : F,
+            Prov (imp (imp A (imp B C)) (imp (imp A B) (imp A C)))
+  -- Hilbert–Bernays–Löb 条件
+  d1    : ∀ {A : F}, Prov A → Prov (box A)
+  d2    : ∀ A B : F, Prov (imp (box (imp A B)) (imp (box A) (box B)))
+  d3    : ∀ A : F, Prov (imp (box A) (box (box A)))
+  -- 対角化補題（Löb 用の特殊形）: ψ ↔ (□ψ → A) なる ψ が存在
+  diag  : ∀ A : F, ∃ ψ : F,
+            Prov (imp ψ (imp (box ψ) A)) ∧ Prov (imp (imp (box ψ) A) ψ)
+
+namespace ProvSystem
+
+variable (T : ProvSystem)
+
+local infixr:60 " ⇒ " => T.imp
+local prefix:max "□" => T.box
+local prefix:max "⊢ " => T.Prov
+
+/-- ⊢ A⇒B, ⊢ B⇒C から ⊢ A⇒C -/
+theorem comp {A B C : T.F} (h₁ : ⊢ (A ⇒ B)) (h₂ : ⊢ (B ⇒ C)) : ⊢ (A ⇒ C) := by
+  have h₃ : ⊢ (A ⇒ (B ⇒ C)) := T.mp (T.axK (B ⇒ C) A) h₂
+  exact T.mp (T.mp (T.axS A B C) h₃) h₁
+
+/-- ⊢ A⇒(B⇒C), ⊢ A⇒B から ⊢ A⇒C -/
+theorem sComb {A B C : T.F} (h₁ : ⊢ (A ⇒ (B ⇒ C))) (h₂ : ⊢ (A ⇒ B)) : ⊢ (A ⇒ C) :=
+  T.mp (T.mp (T.axS A B C) h₁) h₂
+
+/-- **Löb の定理**: ⊢ □A ⇒ A ならば ⊢ A -/
+theorem loeb {A : T.F} (h : ⊢ (□A ⇒ A)) : ⊢ A := by
+  obtain ⟨ψ, h₁, h₂⟩ := T.diag A
+  -- ⊢ □(ψ ⇒ (□ψ ⇒ A))
+  have h₃ : ⊢ □(ψ ⇒ (□ψ ⇒ A)) := T.d1 h₁
+  -- ⊢ □ψ ⇒ □(□ψ ⇒ A)
+  have h₄ : ⊢ (□ψ ⇒ □(□ψ ⇒ A)) := T.mp (T.d2 ψ (□ψ ⇒ A)) h₃
+  -- ⊢ □(□ψ ⇒ A) ⇒ (□□ψ ⇒ □A)
+  have h₅ : ⊢ (□(□ψ ⇒ A) ⇒ (□□ψ ⇒ □A)) := T.d2 (□ψ) A
+  -- ⊢ □ψ ⇒ (□□ψ ⇒ □A)
+  have h₆ : ⊢ (□ψ ⇒ (□□ψ ⇒ □A)) := T.comp h₄ h₅
+  -- ⊢ □ψ ⇒ □□ψ
+  have h₇ : ⊢ (□ψ ⇒ □□ψ) := T.d3 ψ
+  -- ⊢ □ψ ⇒ □A
+  have h₈ : ⊢ (□ψ ⇒ □A) := T.sComb h₆ h₇
+  -- ⊢ □ψ ⇒ A （仮定 ⊢ □A ⇒ A を使用）
+  have h₉ : ⊢ (□ψ ⇒ A) := T.comp h₈ h
+  -- 不動点の逆向きから ⊢ ψ
+  have h₁₀ : ⊢ ψ := T.mp h₂ h₉
+  -- ⊢ □ψ
+  have h₁₁ : ⊢ □ψ := T.d1 h₁₀
+  exact T.mp h₉ h₁₁
+
+/-- T の無矛盾性（メタレベル） -/
+def Consistent : Prop := ¬ ⊢ T.bot
+
+/-- T 内部の無矛盾性言明 Con_T := ¬□⊥ ( = □⊥ ⇒ ⊥ ) -/
+def Con : T.F := □T.bot ⇒ T.bot
+
+/-- **ゲーデル第2不完全性定理**: T が無矛盾なら T ⊬ Con_T -/
+theorem godel2 (hc : T.Consistent) : ¬ ⊢ T.Con := by
+  intro h
+  exact hc (T.loeb h)
+
+/-- **埋め込まれた検証器の健全性は内側から認証できない**:
+    T がすべての A について「□A ⇒ A」（自分の証明は正しい）を証明するなら
+    T はすべてを証明する（矛盾する）。 -/
+theorem reflection_implies_trivial
+    (h : ∀ A : T.F, ⊢ (□A ⇒ A)) : ∀ A : T.F, ⊢ A :=
+  fun A => T.loeb (h A)
+
+/-- 対偶: 無矛盾な T は「自分の証明はすべて正しい」を一律には証明できない -/
+theorem no_uniform_self_soundness (hc : T.Consistent) :
+    ¬ ∀ A : T.F, ⊢ (□A ⇒ A) := by
+  intro h
+  exact hc (T.reflection_implies_trivial h T.bot)
+
+/-! ## Tarski の真理定義不能性（同じ抽象設定で） -/
+
+/-- **Tarski**: 真理述語 tr が T-スキーマ（⊢ tr A ⇔ A）を全 A で満たし、
+    かつ λ ⇔ ¬tr λ なる不動点 λ が存在するなら、T は矛盾する。 -/
+theorem tarski
+    (tr : T.F → T.F)
+    (tschema : ∀ A : T.F, ⊢ (tr A ⇒ A) ∧ ⊢ (A ⇒ tr A))
+    (fix : ∃ l : T.F, ⊢ (l ⇒ (tr l ⇒ T.bot)) ∧ ⊢ ((tr l ⇒ T.bot) ⇒ l)) :
+    ⊢ T.bot := by
+  obtain ⟨l, f₁, f₂⟩ := fix
+  obtain ⟨t₁, t₂⟩ := tschema l
+  -- ⊢ l ⇒ ⊥  （l ⇒ (tr l ⇒ ⊥) と l ⇒ tr l から）
+  have h₁ : ⊢ (l ⇒ T.bot) := T.sComb f₁ t₂
+  -- ⊢ tr l ⇒ ⊥
+  have h₂ : ⊢ (tr l ⇒ T.bot) := T.comp t₁ h₁
+  -- ⊢ l
+  have h₃ : ⊢ l := T.mp f₂ h₂
+  exact T.mp h₁ h₃
+
+end ProvSystem
+
+/-! ## 確認用: 定理の型を表示 -/
+#check @ProvSystem.loeb
+#check @ProvSystem.godel2
+#check @ProvSystem.no_uniform_self_soundness
+#check @ProvSystem.tarski
+#print axioms ProvSystem.loeb
+#print axioms ProvSystem.godel2
+#print axioms ProvSystem.tarski
+`;
+</script>
+<script>
+(function(){
+/* ---------- Löb stepper ---------- */
+var steps=[
+ {k:'assume',f:'ψ ↔ (□ψ → A)',w:'対角化で ψ を取る。「私が証明されるなら A」と主張する文。以後この左向き・右向きの両方を使う。'},
+ {k:'derive',f:'⊢ □(ψ → (□ψ → A))',w:'D1：⊢ ψ → (□ψ → A)（不動点の右向き）は手元にあるので、その証明の存在を T 内で言える。'},
+ {k:'derive',f:'⊢ □ψ → □(□ψ → A)',w:'D2：□ は含意をくぐる。前段の □(ψ → …) に D2 を当てる。'},
+ {k:'derive',f:'⊢ □ψ → (□□ψ → □A)',w:'D2 をもう一度：□(□ψ → A) → (□□ψ → □A)。前段とつなぐ。'},
+ {k:'derive',f:'⊢ □ψ → □□ψ',w:'D3：証明があることは証明できる。これで前段の「□□ψ」の口を塞ぐ。'},
+ {k:'derive',f:'⊢ □ψ → □A',w:'前 2 段を合成（命題論理の S 公理）。ψ の証明があれば A の証明がある。'},
+ {k:'hyp',f:'⊢ □ψ → A',w:'仮定 ⊢ □A → A をつなぐ。ここだけが Löb の仮定を使う段。'},
+ {k:'assume',f:'⊢ ψ',w:'前段は ψ の定義の右辺そのもの。不動点の左向き（□ψ → A）→ ψ に当てて ψ 自身が出る。'},
+ {k:'derive',f:'⊢ □ψ',w:'D1：ψ を証明したので、□ψ。'},
+ {k:'goal',f:'⊢ A',w:'⊢ □ψ → A（7 段目）と ⊢ □ψ（9 段目）からモーダス・ポネンス。証明終わり。'},
+ {k:'goal',f:'A := ⊥ とおくと …',w:'⊢ ¬□⊥ ならば ⊢ ⊥。無矛盾な T は Con_T を証明できない。これが第 2 不完全性定理。'}
+];
+var i=0, rail=document.getElementById('rail'), stage=document.getElementById('stage'),
+    fm=document.getElementById('formula'), why=document.getElementById('why'),
+    ledger=document.getElementById('ledger'), count=document.getElementById('count');
+steps.forEach(function(){var s=document.createElement('span');rail.appendChild(s);});
+function render(){
+  var s=steps[i];
+  stage.className='stage '+s.k; fm.textContent=s.f; why.textContent=s.w;
+  Array.prototype.forEach.call(rail.children,function(el,j){el.className=(j<=i?'done ':'')+steps[j].k;});
+  ledger.innerHTML='';
+  for(var j=0;j<=i;j++){var li=document.createElement('li');li.className=steps[j].k;li.textContent=(j+1)+'. '+steps[j].f;ledger.appendChild(li);}
+  count.textContent=(i+1)+' / '+steps.length;
+  document.getElementById('prev').disabled=(i===0);
+  document.getElementById('next').disabled=(i===steps.length-1);
+}
+document.getElementById('next').onclick=function(){if(i<steps.length-1){i++;render();}};
+document.getElementById('prev').onclick=function(){if(i>0){i--;render();}};
+document.getElementById('reset').onclick=function(){i=0;render();};
+render();
+
+/* ---------- switchboard ---------- */
+var sw={D1:document.getElementById('swD1'),D2:document.getElementById('swD2'),D3:document.getElementById('swD3'),Diag:document.getElementById('swDiag')};
+var theorems=[
+ {n:'Cantor の対角線論法',need:['Diag'],note:'集合と自分のべき集合の間に全射はない。□ すら要らない。'},
+ {n:'Tarski の真理定義不能性',need:['Diag'],note:'T-スキーマを満たす真理述語は T の中にない。「私は偽」を作れれば十分。'},
+ {n:'第 1 不完全性（⊬ G）',need:['D1','Diag'],note:'G ↔ ¬□G を作る。⊢G なら D1 で ⊢□G、かつ ⊢¬□G で矛盾。無矛盾性も仮定。'},
+ {n:'第 1 不完全性（⊬ ¬G）',need:['D1','Diag'],out:true,note:'ω 無矛盾性か Rosser の改良が要る。Rosser は証明の順序を使うので抽象層の外。'},
+ {n:'Löb の定理',need:['D1','D2','D3','Diag'],note:'⊢ □A→A ならば ⊢ A。この記事の Lean の本体。'},
+ {n:'第 2 不完全性（⊬ Con）',need:['D1','D2','D3','Diag'],note:'Löb で A := ⊥。無矛盾性も仮定。'},
+ {n:'検証器の健全性は自己認証不能',need:['D1','D2','D3','Diag'],note:'全 A で ⊢ □A→A なら T は何でも証明する。Löb の系。'}
+];
+var notes={pa:'ペアノ算術：4 つとも成り立つ。すべての定理が適用される。',
+ willard:'Willard の自己検証体系：乗法の全域性を証明できないため D3 が落ちる（私の理解。要確認）。Löb 系の定理が適用外になり、実際 ⊢ Con が成り立つ。第 1 不完全性は残る。',
+ presburger:'Presburger 算術（足し算のみ）：掛け算がなくゲーデル数化ができないので対角化が作れない。完全かつ決定可能で、どの定理も適用されない。',
+ custom:''};
+var presets={pa:{D1:1,D2:1,D3:1,Diag:1},willard:{D1:1,D2:1,D3:0,Diag:1},presburger:{D1:1,D2:1,D3:1,Diag:0}};
+var results=document.getElementById('results'), pnote=document.getElementById('presetNote'), pbtns=document.querySelectorAll('#presets button');
+function state(){return {D1:sw.D1.checked,D2:sw.D2.checked,D3:sw.D3.checked,Diag:sw.Diag.checked};}
+function renderSw(preset){
+  var st=state(); results.innerHTML='';
+  theorems.forEach(function(t){
+    var ok=t.need.every(function(k){return st[k];});
+    var li=document.createElement('li');
+    var cls=ok?(t.out?'out':'ok'):'no'; li.className=cls;
+    var label=ok?(t.out?'抽象層の外':'成り立つ'):'適用外';
+    var miss=t.need.filter(function(k){return !st[k];}).map(function(k){return k==='Diag'?'対角化':k;});
+    li.innerHTML='<span class="st">'+label+'</span><span>'+t.n+'<small>'+(ok?t.note:('欠けている条件：'+miss.join('・')))+'</small></span>';
+    results.appendChild(li);
+  });
+  var match=null;
+  Object.keys(presets).forEach(function(p){var q=presets[p];if(!!q.D1===st.D1&&!!q.D2===st.D2&&!!q.D3===st.D3&&!!q.Diag===st.Diag)match=p;});
+  Array.prototype.forEach.call(pbtns,function(b){b.className='btn'+((b.getAttribute('data-preset')===match)?' on':'');});
+  pnote.textContent=match?notes[match]:'この組み合わせに名前のある体系は、私は知らない。';
+}
+Object.keys(sw).forEach(function(k){sw[k].addEventListener('change',function(){renderSw();});});
+Array.prototype.forEach.call(pbtns,function(b){b.onclick=function(){var q=presets[b.getAttribute('data-preset')];Object.keys(q).forEach(function(k){sw[k].checked=!!q[k];});renderSw();};});
+renderSw();
+
+/* ---------- family ---------- */
+var fam=[
+ {id:'cantor',n:'Cantor の対角線論法',y:'1891',L:'L0',say:'「n 番目のリストの n 桁目と違う数」',
+  what:'どんな集合 X も、その部分集合全体 P(X) より小さい。実数は数えきれない。',
+  how:'X→P(X) の全射 f があると仮定し、D = { x | x ∉ f(x) } を作る。D = f(d) なら d ∈ D ⟺ d ∉ D。',
+  rel:'家系の祖。以下すべての定理の「自分に言及する文」は、この D の変装。'},
+ {id:'lawvere',n:'Lawvere の不動点定理',y:'1969',L:'L0',say:'「自分自身を指せる写像があるなら、不動点がある」',
+  what:'X から Y^X への点全射があれば、Y 上のどんな写像 g も不動点をもつ。対偶が Cantor：Y = {0,1} で否定は不動点をもたないので全射はない。',
+  how:'圏論の言葉で書かれているが、中身は Cantor の D の構成そのもの。',
+  rel:'Yanofsky（2003）が、Cantor・Russell・Tarski・Gödel・停止問題・再帰定理をすべてこの一つの定理の例として整理した。母原理の新規性監査で「先行あり」と判定された根拠の一つ。'},
+ {id:'diag',n:'対角化補題',y:'1934（Carnap）',L:'L0',say:'「私は φ という性質をもつ」',
+  what:'算術の任意の性質 φ(x) に対し、ψ ↔ φ(⌜ψ⌝) を T が証明する文 ψ がある。',
+  how:'「文 x に自分自身のゲーデル数を代入した文が φ をもつ」という文に、自分自身のゲーデル数を代入する。Cantor の対角線を文に対して実行している。',
+  rel:'この記事の Lean では diag フィールドとして仮定した。これが PA で成り立つことの証明が、Paulson の数千行の中核。'},
+ {id:'godel1',n:'Gödel の第 1 不完全性定理',y:'1931',L:'L1',say:'「私は証明できない」',
+  what:'無矛盾で十分強い T には、証明も反証もできない文がある。',
+  how:'対角化で G ↔ ¬□G を作る。⊢G なら D1 で ⊢□G、一方 ⊢¬□G なので矛盾。だから ⊬G。反証もできないことを示すには ω 無矛盾性（または Rosser）が要る。',
+  rel:'第 2 より少ない仮定で出る。D2・D3 は不要で、D1 と対角化と無矛盾性だけ。'},
+ {id:'rosser',n:'Rosser の改良',y:'1936',L:'L2',say:'「私の証明より先に、私の反証がある」',
+  what:'第 1 不完全性の「ω 無矛盾」という仮定を「無矛盾」に弱める。',
+  how:'R ↔「R の証明があれば、それより小さいゲーデル数の ¬R の証明がある」という文を使う。',
+  rel:'「先に」を言うには証明の順序が要り、□ の抽象化では書けない。100 行の外側にある定理の代表例。'},
+ {id:'godel2',n:'Gödel の第 2 不完全性定理',y:'1931',L:'L1',say:'「T が無矛盾なら、私は証明できない」',
+  what:'無矛盾で十分強い T は、自分の無矛盾性 Con_T を証明できない。',
+  how:'第 1 不完全性の証明を T の内側で再現すると ⊢ Con_T → G が出る。⊢ Con_T なら ⊢ G となり第 1 に反する。「内側で再現」のために D2・D3 が要る。',
+  rel:'Löb の定理で A := ⊥ とおいた特殊ケース。この記事の Lean では godel2 として 3 行で出る。'},
+ {id:'loeb',n:'Löb の定理',y:'1955',L:'L1',say:'「私が証明されるなら A」',
+  what:'⊢ □A → A ならば ⊢ A。T は「自分の証明は正しい」を、中身抜きでは言えない。',
+  how:'Henkin が「自分は証明できる、と主張する文は証明できるか」と問い、Löb が答えた。証明は本文の 11 段。',
+  rel:'第 2 不完全性を一般化した形。「反映原理 □A → A を全 A で証明できる無矛盾な T はない」という読みが、母原理の「埋め込まれた検証器の健全性は自己認証できない」に対応する。'},
+ {id:'curry',n:'Curry のパラドックス',y:'1942',L:'L0',say:'「この文が真なら A」',
+  what:'自己言及と条件文だけで、任意の A が導ける。否定を使わない嘘つきパラドックス。',
+  how:'C ↔ (C → A)。C を仮定すると C → A で A。よって C → A、これは C そのものなので C、ゆえに A。',
+  rel:'Löb の定理の証明を「□」抜きで走らせると Curry になる。Löb は、□ の約束によって Curry の爆発が「⊢ A のときだけ」に抑えられる、という定理だと読める。'},
+ {id:'tarski',n:'Tarski の真理定義不能性',y:'1933',L:'L0',say:'「私は偽である」',
+  what:'T の全文 A に対し Tr(⌜A⌝) ↔ A を満たす述語 Tr は、T の中に書けない。',
+  how:'書けたとして対角化で λ ↔ ¬Tr(⌜λ⌝) を作ると λ ↔ ¬λ で矛盾。',
+  rel:'「証明可能」は T 内に書ける（□）が「真」は書けない、というのがゲーデルとの対比。この記事の Lean では tarski として 5 行。'},
+ {id:'kleene',n:'Kleene の再帰定理',y:'1938',L:'LX',say:'「自分のソースコードを読めるプログラム」',
+  what:'どんな計算可能な変換 f に対しても、プログラム e と f(e) が同じ関数を計算するような e がある。クワインが必ず書ける。',
+  how:'対角化補題の計算版。「x に x 自身を渡すプログラム」に自分自身を渡す。',
+  rel:'家系図の右の枝。論理の対角化補題と同じ構造で、停止問題と Rice の定理を生む。'},
+ {id:'halting',n:'停止問題・Rice の定理',y:'1936 / 1953',L:'LX',say:'「自分が止まると言われたら、止まらない」',
+  what:'プログラムが停止するかを判定するプログラムは存在しない（Turing）。プログラムの振る舞いに関する自明でない性質は、どれも判定できない（Rice）。',
+  how:'判定器 H があると仮定し、「H(自分) が停止と言えば無限ループ、止まらないと言えば停止」というプログラムを作る。Cantor の D そのもの。',
+  rel:'第 1 不完全性の計算論版。「証明できる ⟺ 停止する」と読み替えると互いに翻訳できる。'},
+ {id:'chaitin',n:'Chaitin の不完全性定理',y:'1974',L:'L2',say:'「私のこの文字列は、T が証明できるどんな下限よりも複雑だ」',
+  what:'T ごとに定数 c があり、T は「文字列 s の Kolmogorov 複雑性は c より大きい」をどの s についても証明できない。T が自分の複雑性を超える情報を吐き出せない。',
+  how:'Berry のパラドックス（「20 文字以内で定義できない最小の数」）を形式化する。複雑性の定義に計算量が要るので、□ の抽象化では書けない。',
+  rel:'第 2 不完全性の情報量版。母原理の未解決項目「量的母定理（情報理論的定式化）」は、この方向の話。'}
+];
+var nav=document.getElementById('famNav'), card=document.getElementById('famCard');
+var Lname={L0:'対角化だけ',L1:'抽象可証性論理',L2:'算術の中身が要る',LX:'計算論'};
+function showFam(id){
+  var f=null; fam.forEach(function(x){if(x.id===id)f=x;});
+  Array.prototype.forEach.call(nav.children,function(b){b.className='btn'+((b.getAttribute('data-id')===id)?' on':'');});
+  card.innerHTML='<h3>'+f.n+'</h3><p class="yr">'+f.y+'　<span class="tag '+f.L+'">'+Lname[f.L]+'</span></p>'+
+   '<dl><dt>自己言及の文</dt><dd class="say">'+f.say+'</dd>'+
+   '<dt>何が示されるか</dt><dd>'+f.what+'</dd>'+
+   '<dt>どう対角化するか</dt><dd>'+f.how+'</dd>'+
+   '<dt>親戚との関係</dt><dd>'+f.rel+'</dd></dl>';
+}
+fam.forEach(function(f){var b=document.createElement('button');b.className='btn';b.textContent=f.n;b.setAttribute('data-id',f.id);b.onclick=function(){showFam(f.id);};nav.appendChild(b);});
+showFam('godel2');
+
+/* ---------- Lean code ---------- */
+document.getElementById('leancode').textContent=LEAN_SRC;
+})();
+</script>
+<script>
+/* ---------- zoom overlay (any figure) ---------- */
+(function(){
+var zoom=document.getElementById('zoom'),vp=document.getElementById('zVp');
+var svg=null,s=1,tx=0,ty=0,W=860,H=1380,MIN=.2,MAX=8,opener=null;
+function apply(){svg.style.transform='translate('+tx+'px,'+ty+'px) scale('+s+')';}
+function clampS(v){return Math.min(MAX,Math.max(MIN,v));}
+function fit(){var r=vp.getBoundingClientRect();s=clampS(Math.min(r.width/W,r.height/H)*.96);tx=(r.width-W*s)/2;ty=(r.height-H*s)/2;apply();}
+function zoomAt(f,cx,cy){var ns=clampS(s*f);f=ns/s;tx=cx-(cx-tx)*f;ty=cy-(cy-ty)*f;s=ns;apply();}
+function center(){var r=vp.getBoundingClientRect();return [r.width/2,r.height/2];}
+function open(src,link){
+  opener=link;
+  if(svg){vp.removeChild(svg);}
+  svg=src.cloneNode(true);svg.removeAttribute('id');
+  var vb=(src.getAttribute('viewBox')||'0 0 860 1380').split(/\s+/);W=parseFloat(vb[2]);H=parseFloat(vb[3]);
+  svg.style.width=W+'px';svg.style.height=H+'px';vp.appendChild(svg);
+  zoom.classList.add('open');document.body.style.overflow='hidden';fit();document.getElementById('zClose').focus();
+}
+function close(){zoom.classList.remove('open');document.body.style.overflow='';if(opener)opener.focus();}
+Array.prototype.forEach.call(document.querySelectorAll('[data-zoom]'),function(a){
+  a.addEventListener('click',function(e){e.preventDefault();var f=a.closest('figure');var src=f&&f.querySelector('.fig-body svg');if(src)open(src,a);});
+});
+document.getElementById('zClose').onclick=close;
+document.getElementById('zIn').onclick=function(){var c=center();zoomAt(1.3,c[0],c[1]);};
+document.getElementById('zOut').onclick=function(){var c=center();zoomAt(1/1.3,c[0],c[1]);};
+document.getElementById('zFit').onclick=fit;
+document.getElementById('z100').onclick=function(){var r=vp.getBoundingClientRect();var c=[r.width/2,r.height/2];var f=1/s;tx=c[0]-(c[0]-tx)*f;ty=c[1]-(c[1]-ty)*f;s=1;apply();};
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&zoom.classList.contains('open'))close();});
+vp.addEventListener('wheel',function(e){e.preventDefault();var r=vp.getBoundingClientRect();zoomAt(e.deltaY<0?1.15:1/1.15,e.clientX-r.left,e.clientY-r.top);},{passive:false});
+var pts={},last=null,pinch=null;
+vp.addEventListener('pointerdown',function(e){vp.setPointerCapture(e.pointerId);pts[e.pointerId]=[e.clientX,e.clientY];var ks=Object.keys(pts);
+  if(ks.length===1){last=[e.clientX,e.clientY];vp.classList.add('drag');}
+  else if(ks.length===2){var a=pts[ks[0]],b=pts[ks[1]];pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]),s:s,tx:tx,ty:ty,m:[(a[0]+b[0])/2,(a[1]+b[1])/2]};last=null;}
+});
+vp.addEventListener('pointermove',function(e){if(!(e.pointerId in pts))return;pts[e.pointerId]=[e.clientX,e.clientY];var ks=Object.keys(pts);
+  if(ks.length===2&&pinch){var a=pts[ks[0]],b=pts[ks[1]];var d=Math.hypot(a[0]-b[0],a[1]-b[1]);var m=[(a[0]+b[0])/2,(a[1]+b[1])/2];var r=vp.getBoundingClientRect();
+    var ns=clampS(pinch.s*d/pinch.d);var f=ns/pinch.s;var cx=pinch.m[0]-r.left,cy=pinch.m[1]-r.top;
+    tx=cx-(cx-pinch.tx)*f+(m[0]-pinch.m[0]);ty=cy-(cy-pinch.ty)*f+(m[1]-pinch.m[1]);s=ns;apply();}
+  else if(ks.length===1&&last){tx+=e.clientX-last[0];ty+=e.clientY-last[1];last=[e.clientX,e.clientY];apply();}
+});
+function up(e){delete pts[e.pointerId];var ks=Object.keys(pts);if(ks.length<2)pinch=null;if(ks.length===1){var p=pts[ks[0]];last=[p[0],p[1]];}else{last=null;vp.classList.remove('drag');}}
+vp.addEventListener('pointerup',up);vp.addEventListener('pointercancel',up);
+window.addEventListener('resize',function(){if(zoom.classList.contains('open'))fit();});
+})();
+</script>
+</body>
+</html>

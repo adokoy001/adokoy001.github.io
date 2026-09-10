@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>今どきのウェブアプリと開発環境 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="今どきのウェブアプリの構成とか、プログラミング環境について。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2023/11/2023-11-14-001/"><meta property="og:title" content="今どきのウェブアプリと開発環境"><meta property="og:description" content="今どきのウェブアプリの構成とか、プログラミング環境について。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2023/11/2023-11-14-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>今どきのウェブアプリと開発環境</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2023-11-14T15:41:57+09:00">2023-11-14T15:41:57+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a><a class="tag" href="/tags/entry-088462f65b7e/">システム</a><a class="tag" href="/tags/it/">IT</a><a class="tag" href="/tags/entry-09f4a7907bdd/">ウェブアプリ</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="今どきのウェブアプリと開発環境">今どきのウェブアプリと開発環境</h1>
+<p>今どきのウェブアプリ開発から遠ざかり過ぎたのでちょっと勉強中。</p>
+<p>新しいシステムの設計を進めているんだけど、一旦この記事で今どきのやり方をまとめてみる。</p>
+<h2 id="開発環境周辺">開発環境周辺</h2>
+<p>現代ではCopilot必須かも。まあ、ChatGPTを叩きまくるのもいいけど、お金があるならCopilotをやらない理由は無いね。</p>
+<p>IDEはVSCode一択かな。GitHub Copilotと連携すれば最強。
+IntellijのgitのUIがかなり使いやすいんだけど、やっぱりVSCodeで全部やったほうが良さそう。</p>
+<p>ソースコード管理はGitLabを使っている。まあ、GitHubエンタープライズか自前GitLabであれば問題無いかな。
+GitLab CIとか使えば自動テストで品質を保証できるけど、まあローカルで自動テストを走らせるだけでもOK。
+このあたりは開発チームの規模感に依る。</p>
+<h2 id="設計ドキュメント関連">設計ドキュメント関連</h2>
+<p>markdown形式一択かなと思う。UMLはmermaidとかplantとかで記述。</p>
+<ul>
+<li>gitのプロジェクトに設計ドキュメントを入れてしまった方が良さそう。</li>
+<li>OpenAPIとかだとジェネレーターに渡すyamlも設計ドキュメントの一部とみなして管理すれば良さそう。</li>
+<li>プロジェクト概要からユースケース図、ER図、システム運用マニュアルまである程度全てmarkdownで作っておくと吉。</li>
+</ul>
+<h2 id="db周り">DB周り</h2>
+<p>ORマッパー前提で&quot;ID required&quot;上等の設計がベストかも。</p>
+<ul>
+<li>CRUDメインの簡単なアプリならMySQL系が良いかも。ORMのサポートも充実しているしフィールドの順番も変えられるしね。</li>
+<li>かなり重たい集計処理の多いシステムならPostgreSQLかな。Nested Loopの改良版ではHash Joinに太刀打ちできないはず。</li>
+<li>必ずプライマリキーとして人工キー（いわゆるサロゲートキー）を1つだけ定義しておくこと。</li>
+<li>外部キー制約は必ずつけること。</li>
+<li>集計系とか一部のパフォーマンス重視のDB操作はクエリビルダーや生SQLも使うと良い。</li>
+</ul>
+<h2 id="バックエンド">バックエンド</h2>
+<p>いわゆる軽量な言語の中ではPythonが流行っている。個人的にはPHPでも良いと思っているけどね。</p>
+<ul>
+<li>Python3は使えるようになっておいた方が良い。軽量言語でプロジェクトを立ち上げるのならPythonが無難か。</li>
+<li>PHPも第二の選択肢としてイケていると思う。</li>
+<li>API Gateway + Lambda の構成は、それぞれのサービスの制限事項を完全に理解した上で使うこと。</li>
+<li>JWTの認証機構はとりあえずリフレッシュトークン使っとけといったところ。</li>
+</ul>
+<h2 id="フロントエンド">フロントエンド</h2>
+<p>React, Vue, Angularの3大フレームワークをおさえておけば十分かな。
+実際にはNext.js,Nuxt.js,Angularの3択になるかと思う。</p>
+<ul>
+<li>サーバーサイドレンダリングが必要なプロジェクトかどうかをまず考えること。話はそれからだ。</li>
+<li>デザインシステムは独自のものを作らない方が良さげ。やりたくなる気持ちはわかるが・・・。</li>
+<li>3大フレームワーク、TS、JWT、サーバーサイドレンダリング、WebSocketあたりを使いこなせれば一人前。</li>
+</ul>
+<h2 id="本番環境周り">本番環境周り</h2>
+<p>今どきVMは微妙だけど、SaaSとかPaaSの弱点は把握しておいた方が良い。時間制限とかエフェメラルポートぐらいはね。</p>
+<ul>
+<li>BtoBならアクセス集中などの予測不可能な動きはあまりない。VMとかコンテナでも十分だったりする。</li>
+<li>BtoC（BtoBtoC）はアクセスがスパイクすることがあるので、Lambda等のサービスも視野に入れること。</li>
+<li>RDBはやっぱりマネージドが無難。ただ、サポート切れになったら強制アップグレードでダウンタイムが出たりするからそのあたりの準備と覚悟は必要。</li>
+<li>セキュリティ対策はAWS等のクラウド事業者が提供するWAF等を利用するしか無いと思った方が良い。</li>
+</ul>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2023/11/2023-11-02-001/">← マイベストプラクティス</a><a rel="next" href="/posts/2023/11/2023-11-15-001/">近況 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2022/07/2022-07-25-001/">最近使っているIDE</a></li><li><a href="/posts/2022/07/2022-07-04-001/">IntelliJ IDEAを使い始めた</a></li><li><a href="/posts/2026/09/2026-09-03-001/">楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む</a></li><li><a href="/posts/2026/09/2026-09-01-001/">声道を物理で鳴らす — ブラウザで動く調音音声合成をつくる</a></li><li><a href="/posts/2026/08/2026-08-29-001/">水槽と熱帯魚の生態系シミュレーター「アクアラボ」を作った</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

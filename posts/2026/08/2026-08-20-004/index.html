@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>システム設計のための数学 第三層: 合成の数学 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="部品は正しいのに全体が壊れる問題に効く理論群。rely-guarantee推論、振る舞い部分型（後方互換性の数学）、セッション型、CRDTとCALM定理、圏論的データマイグレーション。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-004/"><meta property="og:title" content="システム設計のための数学 第三層: 合成の数学"><meta property="og:description" content="部品は正しいのに全体が壊れる問題に効く理論群。rely-guarantee推論、振る舞い部分型（後方互換性の数学）、セッション型、CRDTとCALM定理、圏論的データマイグレーション。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-004/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>システム設計のための数学 第三層: 合成の数学</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-08-20T23:47:00+09:00">2026-08-20T23:47:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-872c1fa141b5/">数学</a><a class="tag" href="/tags/entry-088462f65b7e/">システム</a><a class="tag" href="/tags/entry-437a172d7b13/">開発</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="第三層-合成の数学">第三層: 合成の数学</h1>
+<p><a href="/posts/2026/08/2026-08-20-001/">連載序論はこちら</a>。大規模システムの本当の困難は「部品は正しいのに全体が壊れる」こと。部品の正しさから全体の正しさを導く（あるいは導けない条件を特定する）ための理論群。</p>
+<h2 id="3-1-rely-guarantee-assume-guarantee-推論-実績有">3.1 Rely-Guarantee / Assume-Guarantee 推論 [実績有]</h2>
+<p><strong>概念</strong>: 各部品を「環境への仮定（rely/assume）」と「自分の保証（guarantee）」の対で仕様化し、Aの保証がBの仮定を満たし、Bの保証がAの仮定を満たす、と噛み合わせて全体を導く。並行合成の証明を部品単位に分解する基本枠組み。相互依存が循環するため素朴には健全でなく、帰納的な破り方（誰が最初に仮定を破るか）を排除する形の循環推論規則が必要になる——ここが理論的な芯。</p>
+<p><strong>代表的成果</strong>: Jones (1983) のrely-guarantee、McMillanの合成的モデル検査。分離論理との統合（RGSep、そしてIrisへ）が2000年代以降の主流。</p>
+<p><strong>実務実績</strong>: ハードウェア検証のassume-guaranteeは実務標準。ソフトウェアでは明示的な形式適用は少ないが、「このAPIはこの前提でこの挙動を保証する」という契約文化はこの推論の非形式版として遍在する。</p>
+<p><strong>刷新での適用</strong>: 新旧並走期の相互接続はまさに循環依存（新系は旧系の同期を仮定し、旧系は新系の書き戻しを仮定する）。どちらの仮定が先に破れるとどう連鎖するかをrely-guaranteeの枠で書き出すと、並走期の障害モードが構造的に列挙できる。</p>
+<h2 id="3-2-振る舞い部分型-liskov-wing-実務厚-原則として">3.2 振る舞い部分型（Liskov–Wing）[実務厚（原則として）]</h2>
+<p><strong>概念</strong>: 「SがTの部分型であるとは、Tを期待するあらゆる文脈でSを代入してもプログラムの性質が保たれること」。操作単位では、事前条件は弱める方向のみ・事後条件と不変条件は強める方向のみ許される。<strong>後方互換性の数学はこれ</strong>——新バージョンのAPIが旧バージョンの振る舞い部分型なら、既存クライアントは壊れない。</p>
+<p><strong>代表的成果</strong>: Liskov–Wing (1994)。契約による設計（Eiffel）が言語機構化した。</p>
+<p><strong>実務実績</strong>: 原則としてはオブジェクト指向設計の常識（SOLIDのL）。形式検査は稀だが、Protobuf/Avroのスキーマ互換性検査、consumer-driven contract testing（Pact）は、この部分型関係の限定版を機械検査している実例。</p>
+<p><strong>刷新での適用</strong>: 「新システムは旧システムの振る舞い部分型でなければならない」が互換性要件の正確な定式化。外部接続先を壊さない条件を、接続仕様ごとに事前条件・事後条件の強弱として点検できる。</p>
+<h2 id="3-3-セッション型-理論先行">3.3 セッション型 [理論先行]</h2>
+<p><strong>概念</strong>: 通信プロトコル（メッセージの順序・分岐・繰り返し）を型として与え、型検査でプロトコル違反・（一定条件下で）デッドロック不在を静的保証する。二者間からマルチパーティ（Honda–Yoshida–Carbone 2008）へ拡張され、大域プロトコルから各参加者の局所型を射影する構図が美しい。</p>
+<p><strong>実務実績</strong>: Scribble、各言語への埋め込み実装はあるが産業採用はごく薄い。ただしRustの型状態パターンなど、退化形は実務に浸透しつつある。</p>
+<p><strong>刷新での適用</strong>: 新旧系間・外部接続の電文プロトコルの仕様化。フル適用よりも「大域プロトコルを一枚書いて局所視点に射影する」という記述規律としての価値が当面は大きい。</p>
+<h2 id="3-4-順序理論と分散データ-半束-crdt-calm-実務厚">3.4 順序理論と分散データ: 半束・CRDT・CALM [実務厚]</h2>
+<p><strong>概念</strong>: 合流性を代数構造で買う路線。state-based CRDT（CvRDT）は状態を結び半束（可換・結合的・冪等なjoinを持つ順序集合）とし、任意の順序・重複で受信してもjoinすれば同じ最小上界に収束する。operation-based CRDTは並行操作の可換性と因果配送という別の条件で同じ収束を得る。CALM定理（consistency as logical monotonicity）は「単調な計算は調整（合意プロトコル）なしで一貫した結果を得られ、逆も成り立つ」ことを示し、「どこに合意が本当に必要か」を論理的性質に還元した。</p>
+<p><strong>代表的成果</strong>: ShapiroらのCRDT (2011)、Hellerstein–AlvaroのCALM (2010/2020)。</p>
+<p><strong>実務実績</strong>: Riak・Redis Enterprise・Azure Cosmos DBがCRDTを製品搭載。協調編集はCRDT/OT系技術の実戦場（ただしFigmaは自社解説で「true CRDTではない」CRDT-inspiredな中央集権型独自方式と明言しており、純粋な採用例とは区別する）。追記専用台帳・イベントソーシングは「単調化して調整を消す」というCALM的設計の実務的表現。</p>
+<p><strong>刷新での適用</strong>: 勘定元帳そのものは非単調（残高チェック付き引落としは合意が必要）だが、取引履歴の追記・照合系・レポーティングは単調に設計でき、並走期の新旧照合を「両系のイベント集合のjoin」として調整レスに組める。合意が必要な箇所をCALMで最小化するのは、並走アーキテクチャの設計原理として直接使える。</p>
+<h2 id="3-5-圏論的合成-関手的データマイグレーション-理論先行">3.5 圏論的合成: 関手的データマイグレーション [理論先行]</h2>
+<p><strong>概念</strong>: スキーマを圏、データベース状態をそこからの集合値関手とみなすと、スキーマ間の関手Fから、データ移行の三つ組 Δ<em>F（Fに沿った前合成＝引き戻し）とその左右随伴 Σ</em>F・Π_F（それぞれFに沿った左・右Kan拡張。直感的には余極限で潰し、極限で合わせる）が自動的に導出される（Spivak）。移行の合成・制約保存が随伴の一般論から従う。より広くは、モノイダル圏とストリング図によるプロセス合成の記述（Fong–Spivakの応用圏論）も同じ層に属する。</p>
+<p><strong>実務実績</strong>: CQL（Categorical Query Language）という実装はあるが、産業採用はほぼない。理論の綺麗さに対して普及していないこと自体を較正データとして記録しておく——おそらく「スキーマを圏として書き直すコスト」が「随伴が保証してくれる利益」を上回る現場が大半。</p>
+<p><strong>刷新での適用</strong>: フル採用は非現実的。実務価値は、移行写像を「潰す（Σ）・写す（Δ）・補完する（Π）」の三種に分類して漏れを点検する語彙としての利用。多対一のスキーマ統合では、どの属性がΣ的に潰され情報を失うかの台帳を作るだけでも事故を減らせる。</p>
+<hr>
+<p><strong>連載: システム設計と大規模刷新のための数学</strong></p>
+<ol>
+<li><a href="/posts/2026/08/2026-08-20-001/">序論 — 地図の全体像</a></li>
+<li><a href="/posts/2026/08/2026-08-20-002/">第一層: 仕様を書くための数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-003/">第二層: 仕様と実装の関係の数学</a></li>
+<li>第三層: 合成の数学（この記事）</li>
+<li><a href="/posts/2026/08/2026-08-20-005/">第四層: 不可能性と限界の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-006/">横断層: 検証を実行する手段の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-007/">総括: 実績濃淡マップと大規模刷新への適用</a></li>
+</ol>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/08/2026-08-20-003/">← システム設計のための数学 第二層: 仕様と実装の関係</a><a rel="next" href="/posts/2026/08/2026-08-20-005/">システム設計のための数学 第四層: 不可能性と限界 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/08/2026-08-20-007/">システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</a></li><li><a href="/posts/2026/08/2026-08-20-006/">システム設計のための数学 横断層: 検証を実行する手段</a></li><li><a href="/posts/2026/08/2026-08-20-005/">システム設計のための数学 第四層: 不可能性と限界</a></li><li><a href="/posts/2026/08/2026-08-20-003/">システム設計のための数学 第二層: 仕様と実装の関係</a></li><li><a href="/posts/2026/08/2026-08-20-002/">システム設計のための数学 第一層: 仕様を書くための数学</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>
