@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>PerlのOpenSSLモジュールで電子署名 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="Crypt::OpenSSL::RSAを使って電子署名するサンプルプログラム"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2020/01/2020-01-28-001/"><meta property="og:title" content="PerlのOpenSSLモジュールで電子署名"><meta property="og:description" content="Crypt::OpenSSL::RSAを使って電子署名するサンプルプログラム"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2020/01/2020-01-28-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>PerlのOpenSSLモジュールで電子署名</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-01-28T10:18:41+09:00">2020-01-28T10:18:41+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/perl/">Perl</a><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a><a class="tag" href="/tags/entry-af351cd40ae2/">電子署名</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="perlのopensslモジュールで電子署名">PerlのOpenSSLモジュールで電子署名</h1>
+<p>Perlでは <code>Crypt::OpenSSL::RSA</code> モジュールを使えば簡単に電子署名を楽しむことができるので、その紹介。</p>
+<h2 id="電子署名と改ざん検知">電子署名と改ざん検知</h2>
+<p>知らない人向けに雑に説明しますと、「電子署名」とは
+「このドキュメントは間違いなく、私以外誰も知らない秘密鍵をもっているこの私めがお墨付きを与えました」ということを明確に証明するための電子的な手段で、
+公開鍵暗号のRSAによる署名と検証が有名です。
+（決して「このドキュメントは間違いなく私が作成しました」ということを証明するわけではないことにご注意ください）</p>
+<p>RSAによる「署名」は、具体的には「秘密鍵を使ってドキュメントのダイジェスト値に対して暗号化したもの」にあたり、
+その署名を公開鍵で復号すると元のドキュメントと一致するかどうかを見れば「検証」が可能という感じです。
+この検証作業によって署名の正当性と改ざんの検知が可能になります。</p>
+<h2 id="privateキーとpublicキーの生成">privateキーとpublicキーの生成</h2>
+<p>以下、4096ビット長の鍵生成サンプルプログラムです。</p>
+<pre><code>use strict;
+use warnings;
+use utf8;
+use Data::Dumper;
+
+use Crypt::CBC;
+use Crypt::OpenSSL::RSA;
+
+my $rsa = Crypt::OpenSSL::RSA-&gt;generate_key(4096);
+
+my $pvt = $rsa-&gt;get_private_key_string();
+my $pub = $rsa-&gt;get_public_key_string();
+
+open(my $fh, &#39;&gt;&#39;, &#39;pvt.pem&#39;);
+print $fh $pvt;
+close($fh);
+
+open($fh, &#39;&gt;&#39;, &#39;pub.pem&#39;);
+print $fh $pub;
+close($fh);
+</code></pre>
+<p>上記を実行するとカレントディレクトリに秘密鍵pvt.pemと公開鍵pub.pemが作成されます。</p>
+<h2 id="署名">署名</h2>
+<p>以下のプログラムは、先ほど作成したpvt.pemを使ってin.txtというファイルの署名を作成し、out.signに出力（つまり署名）します。</p>
+<pre><code>use strict;
+use warnings;
+use utf8;
+use Crypt::CBC;
+use Crypt::OpenSSL::RSA;
+
+my $pvt_text = &#39;&#39;;
+open(my $fh, &#39;&lt;&#39;, &#39;pvt.pem&#39;);
+while(&lt;$fh&gt;){$pvt_text .= $_}
+close($fh);
+my $rsa_priv = Crypt::OpenSSL::RSA-&gt;new_private_key($pvt_text);
+
+my $input = $ARGV[0] // &#39;in.txt&#39;;
+my $output = $ARGV[1] // &#39;out.sign&#39;;
+
+my $content = &#39;&#39;;
+open($fh, &#39;&lt;&#39;, $input);
+while(&lt;$fh&gt;){$content .= $_}
+close($fh);
+
+my $sign = $rsa_priv-&gt;sign($content);
+
+open($fh, &#39;&gt;&#39;, $output);
+print $fh $sign;
+close($fh);
+</code></pre>
+<p>ただ単に暗号化しただけでは入力の長さに応じて署名（の一歩手前）が長くなってしまうので、SHA-2などの安全なハッシュアルゴリズムでダイジェスト値を計算します。</p>
+<p>このダイジェスト値（<code>sign($content)</code>で求めたもの）こそが電子署名になります。</p>
+<h2 id="検証">検証</h2>
+<p>上記プログラムで作成されたout.signに対して検証してみます。</p>
+<p>公開鍵pub.pem、入力in.txt、署名out.signの三つが必要になります。</p>
+<pre><code>use strict;
+use warnings;
+use utf8;
+use Crypt::CBC;
+use Crypt::OpenSSL::RSA;
+
+my $pub_text = &#39;&#39;;
+open(my $fh, &#39;&lt;&#39;, &#39;pub.pem&#39;);
+while(&lt;$fh&gt;){$pub_text .= $_}
+close($fh);
+my $rsa = Crypt::OpenSSL::RSA-&gt;new_public_key($pub_text);
+
+my $input = $ARGV[0] // &#39;in.txt&#39;;
+my $signature = $ARGV[1] // &#39;out.sign&#39;;
+
+my $content = &#39;&#39;;
+open($fh, &#39;&lt;&#39;, $input);
+while(&lt;$fh&gt;){$content .= $_}
+close($fh);
+
+my $sign = &#39;&#39;;
+open($fh, &#39;&lt;&#39;, $signature);
+while(&lt;$fh&gt;){$sign .= $_}
+close($fh);
+
+
+
+if($rsa-&gt;verify($content, $sign)){
+  print &quot;valid\n&quot;;
+}
+</code></pre>
+<p><code>verify(元のドキュメント,署名)</code> によって検証し、正当なものであれば1が返るようになっています。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2020/01/2020-01-21-001/">← FuelPHPでCSRF対策</a><a rel="next" href="/posts/2020/02/2020-02-06-001/">SCP風創作 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2020/09/2020-09-17-001/">perlでパスワードハッシュ</a></li><li><a href="/posts/2020/06/2020-06-08-002/">nikki.plの機能追加予定</a></li><li><a href="/posts/2020/06/2020-06-02-001/">PerlとPHPの違い</a></li><li><a href="/posts/2020/04/2020-04-16-001/">nikki.plに新機能を追加しました。</a></li><li><a href="/posts/2019/12/2019-12-16-001/">Mojo::UserAgentを使ってアクティブチェック（外部監視）</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

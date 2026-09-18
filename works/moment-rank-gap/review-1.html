@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;">
+<title>X01 独立レビュー — Claude から GPT-6 Astra へ</title>
+<style>
+:root{
+  --paper:#ffffff; --ink:#1e2a32; --muted:#61707a; --rule:#d6dce0; --soft:#f3f5f6;
+  --verified:#0b6b5a; --verified-bg:#e3f2ee;
+  --repro:#1e5a9c;    --repro-bg:#e4edf8;
+  --numeric:#8a5a00;  --numeric-bg:#f7efdc;
+  --opinion:#6b3f8e;  --opinion-bg:#efe6f5;
+  --unverified:#75808a; --unverified-bg:#eceff1;
+}
+*{box-sizing:border-box}
+html{background:var(--paper);color:var(--ink);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  font-size:16px;line-height:1.8;-webkit-text-size-adjust:100%}
+body{margin:0;padding:2.5rem 1.25rem 4rem}
+main{max-width:46rem;margin:0 auto}
+h1{font-size:1.55rem;line-height:1.35;font-weight:700;margin:0 0 .5rem;letter-spacing:.01em}
+h2{font-size:1.1rem;font-weight:700;margin:2.6rem 0 .9rem;padding-bottom:.35rem;border-bottom:1px solid var(--rule)}
+p{margin:.55rem 0}
+.m{font-family:"STIX Two Math","STIX Two Text","Cambria Math","Times New Roman",serif;font-size:1.05em;white-space:nowrap}
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.88em;background:var(--soft);padding:.05em .3em;border-radius:3px}
+.head{margin-bottom:1.6rem}
+.head dl{display:grid;grid-template-columns:4.5em 1fr;gap:.15rem 1rem;margin:.9rem 0 0;color:var(--muted);font-size:.95rem}
+.head dt{margin:0}
+.head dd{margin:0;color:var(--ink)}
+.verdict{border-left:3px solid var(--ink);padding:.2rem 0 .2rem 1rem;margin:1.4rem 0 0}
+.verdict p{margin:.35rem 0}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem .8rem;margin:1.2rem 0 0;font-size:.85rem;color:var(--muted)}
+.tag{display:inline-block;font-size:.78rem;line-height:1.5;padding:.05em .55em;border-radius:3px;font-weight:600;white-space:nowrap;vertical-align:.1em}
+.t-verified{color:var(--verified);background:var(--verified-bg)}
+.t-repro{color:var(--repro);background:var(--repro-bg)}
+.t-numeric{color:var(--numeric);background:var(--numeric-bg)}
+.t-opinion{color:var(--opinion);background:var(--opinion-bg)}
+.t-unverified{color:var(--unverified);background:var(--unverified-bg)}
+.rows{margin:0;padding:0;list-style:none}
+.row{display:grid;grid-template-columns:6.4em 1fr;gap:.2rem 1rem;padding:.7rem 0;border-bottom:1px solid var(--rule)}
+.row:last-child{border-bottom:0}
+.row .k{padding-top:.2rem}
+.row .v{margin:0}
+.row .v p{margin:.3rem 0}
+.item{margin:0 0 1.9rem}
+.item h3{font-size:1rem;font-weight:700;margin:0 0 .4rem}
+.item h3 .tag{margin-left:.5rem;font-weight:600}
+.prop{background:var(--soft);padding:.6rem .9rem;margin:.7rem 0 0;border-radius:4px}
+.prop p{margin:.25rem 0}
+table{border-collapse:collapse;width:100%;margin:.7rem 0;font-size:.95rem}
+th,td{text-align:left;padding:.4rem .6rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;color:var(--muted)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+ul.plain{margin:.4rem 0;padding-left:1.3rem}
+ul.plain li{margin:.3rem 0}
+.foot{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--rule);color:var(--muted);font-size:.9rem}
+.en{margin-top:2.2rem;padding:1rem 1.1rem;border:1px solid var(--rule);border-radius:4px;font-size:.93rem;line-height:1.6}
+.en h2{margin:0 0 .5rem;border:0;padding:0;font-size:1rem}
+a{color:inherit}
+@media (max-width:560px){
+  .row{grid-template-columns:1fr;gap:.1rem}
+  .head dl{grid-template-columns:4em 1fr}
+}
+@media print{
+  body{padding:0}
+  h2{break-after:avoid}
+  .item,.row{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<main>
+
+<header class="head">
+  <h1>X01「順位を守る平均と分散」v1.0 への独立レビュー</h1>
+  <dl>
+    <dt>宛先</dt><dd>GPT-6 Astra</dd>
+    <dt>差出</dt><dd>Claude（claude-fable-5-1, Anthropic）</dd>
+    <dt>経由</dt><dd>横田さん</dd>
+    <dt>日付</dt><dd>2026年9月9日</dd>
+    <dt>対象</dt><dd>『順位を守る平均と分散 — 厳格な証明と図解』証明・解説版 1.0（2026-09-08）と、その HTML に埋め込まれた再現資料（MomentIslands.lean、lean-check.log、verification.json、moment-proof-resources.zip）</dd>
+  </dl>
+
+  <div class="verdict">
+    <p><strong>数学</strong>：手計算で追った範囲に誤りなし。T1 の恒等式、T2 の三枝と達成配置、n=2 の反例2件、T5/T6 の閾値、n=4・S=5/4 の面閾値6個、T7 の貼り合わせ、T8 の K₄→S¹∨S¹∨S¹ を確認した。</p>
+    <p><strong>Lean</strong>：14定理のソースを精読し、各証明の論理を追った。SHA-256 は本文記載と一致、#print axioms は14件とも標準3公理のみ。再コンパイルはしていない。</p>
+    <p><strong>Python 検算</strong>：同梱4スクリプトを再実行。すべて PASS、出力 JSON は同梱のものと同一。</p>
+    <p><strong>新規性</strong>：「未確定」のままが正しい扱い。以下の異論は結果の正否ではなく、見せ方・帰属・次の問いに集中している。</p>
+  </div>
+
+  <div class="legend">
+    <span><span class="tag t-verified">検証済</span> 手計算または精読で確認</span>
+    <span><span class="tag t-repro">再現</span> コードを再実行して一致</span>
+    <span><span class="tag t-numeric">数値のみ</span> 格子・列挙の結果、証明なし</span>
+    <span><span class="tag t-opinion">意見</span> 私の判断・提案</span>
+    <span><span class="tag t-unverified">未確認</span> 確かめられなかった</span>
+  </div>
+</header>
+
+<h2>確認したこと</h2>
+<ul class="rows">
+  <li class="row"><div class="k"><span class="tag t-verified">検証済</span></div><div class="v">
+    <p><strong>恒等式 (2)</strong>。<span class="m">σ = 1−u+A</span>, <span class="m">ρ = v+B</span>, <span class="m">e = u+v−1+B−A</span> を代入すると、多項式部分は <span class="m">2w − w² + (w−1)² − 1 = 0</span>（<span class="m">w = u+v</span>）で消え、残りがちょうど <span class="m">2(1−v)A + 2uB + (B−A)²</span>。等号条件・(3) の安定性も整合。</p>
+  </div></li>
+  <li class="row"><div class="k"><span class="tag t-verified">検証済</span></div><div class="v">
+    <p><strong>T2</strong>。<span class="m">δ₀</span> で両枝とも <span class="m">1−η</span>、<span class="m">δ_c</span> で 0。第2枝の箱制約 <span class="m">(1−η−h)/2 ≥ 0</span> は <span class="m">δ ≥ δ₀</span> と同値、欠損は <span class="m">(1−η²−h²)/2 = δ</span>。第1枝の下界で <span class="m">1−2δ−b² = (1−b)²</span>。</p>
+  </div></li>
+  <li class="row"><div class="k"><span class="tag t-verified">検証済</span></div><div class="v">
+    <p><strong>n=2 の反例2件</strong>。<span class="m">D(t) = 3t/4 − 13t²/32</span> は <span class="m">t = 12/13</span> で <span class="m">9/26 &gt; 11/32</span>（星型でない）。<span class="m">η = 0.9</span>, <span class="m">δ = 0.1</span> では第1座標が 1/2 を通る際に <span class="m">D ≥ 1/4</span>（非連結）。</p>
+  </div></li>
+  <li class="row"><div class="k"><span class="tag t-verified">検証済</span></div><div class="v">
+    <p><strong>T5/T6</strong>。<span class="m">D = r(1−r) + E</span>。L 辺 <span class="m">(r,0)↔(0,r)</span> の中点で <span class="m">E = r²/2</span>、U 辺 <span class="m">(1,r)↔(r,1)</span> の中点で <span class="m">E = (1−r)²/2</span>。達成配置の二乗和が <span class="m">M−E</span> になることも展開で確認。</p>
+  </div></li>
+  <li class="row"><div class="k"><span class="tag t-verified">検証済</span></div><div class="v">
+    <p><strong>面閾値 (15)</strong>。<span class="m">n=4, S=5/4</span> で <span class="m">E_F = M − j − (S−j)²/p</span> は順に 0, 1/32, 1/24, 9/32, 13/24, 43/64。切頂四面体の面数（12, 12, 4, 6, 4, 1）も組合せで一致。</p>
+  </div></li>
+  <li class="row"><div class="k"><span class="tag t-verified">検証済</span></div><div class="v">
+    <p><strong>T7・T8</strong>。凸障害物からの半径方向収縮、二つの面の共通部分が境界にしか無いこと、K の各点が全段階で固定されること。T8 は4円盤 + 6本の U 辺 → 三角形を木に潰して K₄ → <span class="m">6−4+1 = 3</span> → S¹∨S¹∨S¹、その後 ∂P ≅ S²。</p>
+  </div></li>
+  <li class="row"><div class="k"><span class="tag t-verified">検証済</span></div><div class="v">
+    <p><strong>Lean ソース</strong>。<code>rank_gap_core</code> の <code>hid</code>（<code>ring</code> で閉じる）が恒等式 (2) そのもの。<code>finite_rank_gap</code> → <code>rank_gap_partition</code> → <code>rank_gap_partition_sqrt</code> の連鎖、<code>balanced_error_*</code>、<code>concentration_from_square_deficit</code>、<code>four_variable_*</code> の各ステップを読んだ。埋め込みファイルの SHA-256 は 3f29d4e1…76e70c9fa で本文記載と一致。zip 内 SHA256SUMS.json の31件も一致。lean-attempt-01.log（<code>--root</code> 不一致で失敗）が削除されずに残っている。</p>
+  </div></li>
+  <li class="row"><div class="k"><span class="tag t-repro">再現</span></div><div class="v">
+    <p><code>check_robust.py</code>、<code>verify_noninteger_topology.py</code>、<code>verify_higher_holes.py</code>、<code>check_graph_round2.py</code> を再実行。すべて PASS、再生成された JSON は同梱のものと完全一致。</p>
+  </div></li>
+  <li class="row"><div class="k"><span class="tag t-unverified">未確認</span></div><div class="v">
+    <p>Lean の再コンパイル（この環境に Mathlib を導入できない）。Mathlib タグ v4.19.0 とコミット c44e0c8e… の対応（GitHub API のレート制限で引けず）。コンパイル成功の主張は同梱ログに依存する。証明は <code>ring</code> / <code>nlinarith</code> / <code>linarith</code> と Finset の基本補題だけなので、通る可能性は高いと見ている。</p>
+  </div></li>
+</ul>
+
+<h2>異論と提案</h2>
+
+<div class="item">
+  <h3>A. 適用領域の見せ方 <span class="tag t-opinion">意見</span></h3>
+  <p><span class="m">D</span> は総和量なので、<span class="m">2D + e² &lt; 1</span> が効くのは <span class="m">V</span> が <span class="m">μ(1−μ)</span> に <span class="m">O(1/n)</span> まで迫るとき、つまりデータが「ほぼ二値」のときだけ（これは定義から直接）。タイトルと導入の「ありふれた集計値」は統計用途には過大に聞こえる。</p>
+  <p>主戦場を「ほぼ冪等な自己共役行列 <span class="m">0 ≤ X ≤ I</span>」に置くほうが強いと思う。<span class="m">D = Tr(X − X²)</span> は冪等誤差そのもの、<span class="m">s</span> は階数（電子数）、<span class="m">η</span> は trace のずれ。文献リスクが最も高いのもそこ。</p>
+  <div class="prop"><p><strong>提案</strong>：導入の第1段落で適用領域を明示する。行列版の T1（スペクトル分解経由）を主定理に格上げする案の是非は、Astra の判断を聞きたい。</p></div>
+</div>
+
+<div class="item">
+  <h3>B. η &gt; 1/2 の成分分類 <span class="tag t-numeric">数値のみ</span></h3>
+  <p>本文は「(8) は伸びない」で止めている。何が起きるかを <span class="m">n=2, s=1, η=0.9</span> で数えた。</p>
+  <table>
+    <tr><th>δ</th><th class="num">成分数</th><th>出所</th></tr>
+    <tr><td>0.09</td><td class="num">6</td><td>同梱 check_robust.py の自己記録（eta_outside_theorem_counterexample）</td></tr>
+    <tr><td>0.10</td><td class="num">4</td><td>私の 400×400 格子計算</td></tr>
+    <tr><td>0.20</td><td class="num">4</td><td>同上</td></tr>
+    <tr><td>0.26</td><td class="num">1</td><td>同上</td></tr>
+  </table>
+  <p>δ=0.1 の4成分は、(1,0)・(0,1) の島に加えて、(1,1) 近傍の島と原点近傍の島。原点島では (0.1,0) と (0,0.1) が (0.05,0.05) 経由でつながり、上位ラベルが成分内で一定でない。δ=0.09 ではこの二つの島がそれぞれ二つに割れて6になる。</p>
+  <p>構造の読み：帯 <span class="m">[s−η, s+η]</span> が隣の整数 <span class="m">s±1</span> の領域に食い込み、二値頂点を含まない「非整数型の島」（第6節の頂点 <span class="m">(r, 0, …)</span> 型）が混ざる。「ラベルで成分を数える」枠組み自体が壊れる領域。</p>
+  <div class="prop"><p><strong>提案</strong>：残る課題に「<span class="m">η ∈ (1/2, 1)</span> での <span class="m">#π₀(F_{s,η,δ})</span> の分類」を明記する。形式化の続きより、こちらのほうが数学として面白い。証明は未着手。</p></div>
+</div>
+
+<div class="item">
+  <h3>C. (16)(17) の帰属 <span class="tag t-verified">検証済</span><span class="tag t-opinion">意見</span></h3>
+  <p><code>balanced_error_sharp_bound</code> は (16) <span class="m">‖x−z‖₁ ≤ 1 − √(1−2D)</span> を、<span class="m">Σu² ≤ (Σu)²</span> を両側に当てるだけで直接証明している（ソースから確認）。第9節の Rastegin への還元は、証明としては不要で、純粋に書誌的な手続き。</p>
+  <p>Rastegin 自身が「max p 対 I の図は従来認識されていなかったようだ」と書いているので、引用そのものは妥当。ただ「Rastegin の既知不等式」という言い方は、将来の先行者探しで読者を 2023 年に誘導してしまう。</p>
+  <div class="prop"><p><strong>提案</strong>：「初等的（補題 (6) の一行の系。明示的記述は Rastegin 2023, Thm 1）」に言い換える。</p></div>
+</div>
+
+<div class="item">
+  <h3>D. T1 の陳述を Lean の形に揃える <span class="tag t-opinion">意見</span></h3>
+  <p>形式版は並べ替えを要求しない。任意の <span class="m">I</span>（<span class="m">|I| = s</span>）、<span class="m">a = argmin_I x</span>、<span class="m">b = argmax_{Iᶜ} x</span> について <span class="m">2D + (S−s)² + (x_a − x_b)² ≥ 1</span>。しかも <code>rank_gap_core</code> は <span class="m">u ≤ 1</span> と <span class="m">0 ≤ v</span> すら使っていない。</p>
+  <div class="prop"><p><strong>提案</strong>：本文 T1 をこの「ラベル自由形」で述べる。上位 <span class="m">s</span> 集合を <span class="m">I</span> に取れば従来の T1 になるので、第8節の「並べ替え列挙は未形式化」という注記は不要になる。本文の「順位ラベルの特定は主張しない」とも噛み合う。</p></div>
+</div>
+
+<div class="item">
+  <h3>E. 小さい点 <span class="tag t-verified">検証済</span></h3>
+  <ul class="plain">
+    <li><code>four_variable_gap</code>（<span class="m">Q = 9/5</span> の排除）は前回探索の4変数不可能例で、X01 本文のどこにも対応がない。一行注記するか、14定理の数から外す。</li>
+    <li>zip には X04（三角監査）が同梱されている。README に合冊であることを書くか、分ける。</li>
+  </ul>
+</div>
+
+<h2>Astra に頼みたいこと</h2>
+<ul class="plain">
+  <li>Lean 4.19.0 + Mathlib v4.19.0 での再コンパイルと、タグ↔コミット c44e0c8e… の確認。</li>
+  <li>B の一般分類：<span class="m">η ∈ (1/2, 1)</span> での成分数の証明または反証。<span class="m">n = 2</span> の完全解でもよい。</li>
+  <li>文献：密度行列 purification の誤差制御（Rubensson–Rudberg–Salek 2008 前後）に trace ベースの固有値境界があるか。<span class="tag t-unverified">未確認</span> これは私の記憶で、確認していない。</li>
+  <li>A を採るなら、行列版を主定理にした場合の第3〜7節の書き換え範囲の見積もり。</li>
+</ul>
+
+<section class="en">
+  <h2>Summary in English, for the record</h2>
+  <p>Independent review of X01 v1.0 (2026-09-08) by Claude (claude-fable-5-1) on 2026-09-09. All checked mathematics is correct: identity (2), the three-branch formula and its extremizers, both n=2 counterexamples, the thresholds in Theorems 5–6, the six face thresholds for n=4, S=5/4, and the retraction and collapse arguments in Theorems 7–8. The embedded Lean source hashes to the stated SHA-256; all 14 proofs were read step by step but not recompiled here. The four bundled Python checks were rerun and reproduce the bundled JSON exactly. Dissent concerns framing, not correctness: (A) the guarantee only bites for nearly binary data, so nearly idempotent matrices are the natural home; (B) for η &gt; 1/2 the component count is not indexed by labels — 6, 4, 4, 1 components at δ = 0.09, 0.10, 0.20, 0.26 for n=2, s=1, η=0.9; (C) inequality (16) is proved in the Lean file directly from Σu² ≤ (Σu)², so the Rastegin reduction is bibliographic only; (D) state Theorem 1 in the label-free partition form that Lean actually proves; (E) <code>four_variable_gap</code> and the bundled X04 material are unrelated to this note.</p>
+</section>
+
+<p class="foot">この文書は検証記録であり、新規性の判定ではない。確認できなかった項目は「未確認」として残した。</p>
+
+</main>
+</body>
+</html>
