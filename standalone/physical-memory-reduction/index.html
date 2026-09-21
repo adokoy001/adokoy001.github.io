@@ -10,13 +10,15 @@
 
 @media(max-width:760px){.reader-hero h1{font-size:clamp(29px,8.7vw,36px)}}
 
-.review-history{margin:26px 0;padding:18px 22px;border:1px solid var(--line);border-radius:8px;background:#fffdf8}.review-history h3{margin:0 0 12px;font-size:18px}.review-history td:first-child{white-space:nowrap}.log-sha{overflow-wrap:anywhere}@media(max-width:650px){.review-history{padding:16px 12px}.review-history table{font-size:12px}.review-history th,.review-history td{padding:9px 6px}}</style></head><body><noscript><p class="noscript-note">図の操作にはJavaScriptを有効にしてください。説明・証明・文献はそのまま読めます。</p></noscript><header class="reader-hero" id="start">
-<div class="eyebrow">横田さん × AI · 数学探索ノート · 2026 09 20</div>
+.review-history{margin:26px 0;padding:18px 22px;border:1px solid var(--line);border-radius:8px;background:#fffdf8}.review-history h3{margin:0 0 12px;font-size:18px}.review-history td:first-child{white-space:nowrap}.log-sha{overflow-wrap:anywhere}@media(max-width:650px){.review-history{padding:16px 12px}.review-history table{font-size:12px}.review-history th,.review-history td{padding:9px 6px}}
+.positive-comparison{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}.positive-comparison>div{border-left:2px solid #95b4a2;padding-left:14px}.positive-comparison span{display:block;font-size:12px}.positive-comparison strong{display:block;font-size:32px;color:var(--teal)}#full-noise-verdict{font-size:15px}.revision-note{padding:12px 16px;background:#e9f0e8;border-left:3px solid var(--teal);font-size:14px}.proof-route{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}.proof-route>div{padding:16px;background:#edf3ec;border-radius:6px;font-size:13px}.proof-route b{display:block;margin-bottom:7px}@media(max-width:650px){.proof-route{grid-template-columns:1fr}.positive-comparison{gap:10px}.positive-comparison span{font-size:11px}.positive-comparison strong{font-size:29px}#round6 .table-wrap td{overflow-wrap:anywhere}}
+</style></head><body><noscript><p class="noscript-note">図の操作にはJavaScriptを有効にしてください。説明・証明・文献はそのまま読めます。</p></noscript><header class="reader-hero" id="start">
+<div class="eyebrow">横田さん × AI · 数学探索ノート · 2026 09 20 ／ 更新 2026 09 21</div>
 <h1>見えない内部は、<br>どこまで減らせる？</h1>
 <p class="hero-lead">同じ熱の応答を、もっと小さな模型で再現したい。<br>そのとき「数式では3状態、物理的には4個必要」という差が現れる。</p>
 <p>熱の動きを観察し、測定を行列へ変え、減らせない理由をたどる。図を操作しながら読める研究ノートです。</p>
 <div class="hero-actions"><a class="action" href="#lesson-1">最初から読む <span aria-hidden="true">↓</span></a><a href="#lesson-8">成果と新規性を先に見る</a></div>
-<div class="hero-foot">本文の目安：10〜15分 <span>／</span> 証明・文献61件・再現コードまで、この1ページに収録</div>
+<div class="hero-foot">本文の目安：10〜15分 <span>／</span> 証明・文献67件・再現コードまで、この1ページに収録</div>
 </header>
 <nav class="reader-nav" aria-label="読む順番"><a href="#lesson-1">1 熱の記憶</a><a href="#lesson-2">2 測定</a><a href="#lesson-3">3 行列</a><a href="#lesson-4">4 状態数</a><a href="#lesson-5">5 限界</a><a href="#lesson-6">6 誤差</a><a href="#lesson-7">7 応用</a><a href="#lesson-8">8 到達点</a></nav>
 <main class="reader-main">
@@ -82,44 +84,69 @@
 </div>
 <div class="takeaway">境界より上なら<strong>3状態以下では不可能</strong>。境界以下なら<strong>この三つの集約値では排除できない</strong>。「鋭い」とは、この三つの情報だけを使う範囲で限界まで詰めた、という意味です。</div>
 <p class="small-note">個々の測定値全てに一致する3状態模型がある、と判定する式ではありません。今回の明示式の学術的な初出は未確認です。<a href="#round4">境界の証明と文献照合</a></p>
+<!-- CP-plus panel: inserted in lesson 5, outside the existing envelope lab. -->
+<details class="aside" id="positive-coupling-reader"><summary>3個に減らすと、結合をゼロにする必要がある？</summary>
+<p>同じ行列でも、因子の成分に<strong>ゼロを許すか、すべて正を要求するか</strong>で必要な本数が変わります。後者の最少本数をCP-plusランクと呼びます。公開著者稿の概念・定理と既知の境界を組み合わせると、この族では次の違いが分かります。<a href="#ref61">[61]</a></p>
+<div class="choice-row"><label class="check" style="margin-left:0"><input id="require-positive" type="checkbox">全境界と各内部点の結合を、すべて正にする</label></div>
+<div class="positive-comparison"><div><span>ゼロ結合を許す最少数</span><strong id="positive-ordinary">4</strong></div><div><span>すべて正にした最少数</span><strong id="positive-strict">4</strong></div></div>
+<p id="positive-coupling-note" aria-live="polite"></p><div id="positive-factor" class="matrix-host"></div><p class="small-note">上のρスライダーと連動します。表示は非負Gram因子Fの丸め値で、FᵀF=Hρ。各行が一つの内部点に対応し、ゼロはその境界との結合がないことを表します。数値の大きさは伝導率そのものではありません。</p>
+<p class="small-note"><strong>ρ=1/2では「ゼロを許せば3個、全結合を正にすると4個」。</strong>ただしρを少し増やすと正の3行因子で任意に近づけられます。これは厳密実現の差であり、正の近似誤差下限ではありません。<a href="#round6-positive">分類・証明・回路条件</a></p>
+</details>
 <a class="next-link" href="#lesson-6">次へ：測定値に誤差があっても使える？ →</a>
 </section>
 
 <section class="lesson" id="lesson-6">
 <div class="step-kicker">06 / ALLOW ERROR</div><h2>誤差を、3状態に有利な向きへ広げてみる。</h2>
 <p>現実の測定はぴったりの値ではありません。以下は、既知の倍率aで割った<strong>H₀の無次元尺度</strong>での説明です。その各成分に、最大ηの誤差を認めます。四辺は小さめに、対角と向かい合う組は大きめに見積もり、それでも境界を越えるかを調べます。</p>
-<div class="lab"><label class="range-label" for="noise-eta">全成分に許す最大誤差 η <output id="noise-value">0.1000</output></label><input id="noise-eta" type="range" min="0" max="0.25" step="0.001" value="0.1"><div class="choice-row"><button data-eta="0.1">0.10</button><button data-eta="0.16">0.16</button><button data-eta="sixth">ちょうど1/6</button><button data-eta="0.18">0.18</button></div>
+<div class="lab"><label class="range-label" for="noise-eta">全成分に許す最大誤差 η <output id="noise-value">0.1000</output></label><input id="noise-eta" type="range" min="0" max="0.25" step="0.001" value="0.1"><div class="choice-row"><button data-eta="0.1">0.10</button><button data-eta="0.16">0.16</button><button data-eta="sixth">ちょうど1/6</button><button data-eta="0.17">0.17</button><button data-eta="0.18">0.18</button></div>
 <div class="bounds-row"><div><span>四辺の下限 c</span><b id="noise-c"></b><small>1 − η</small></div><div><span>対向の上限 z</span><b id="noise-z"></b><small>0 + η</small></div><div><span>対角の上限 d</span><b id="noise-d"></b><small>2 + η</small></div></div>
 <div class="noise-comparison"><div><span>四辺の下限 c</span><div class="bar-track"><i id="noise-left-bar"></i></div><b id="noise-left"></b></div><div><span>3状態の限界 M</span><div class="bar-track"><i id="noise-right-bar"></i></div><b id="noise-right"></b></div></div>
-<p class="verdict" id="noise-verdict" aria-live="polite"></p><p class="small-note" id="noise-detail"></p></div>
+<p class="verdict" id="noise-verdict" aria-live="polite"></p><p class="small-note" id="noise-detail"></p><p class="verdict" id="full-noise-verdict" aria-live="polite"></p><p class="small-note">上段は三集約の判定。下段は、H₀の全成分が指定された誤差内にある場合の追加保証です。</p></div>
 <p>H₀の場合、この条件はとても短い計算になります。</p><div class="formula">3状態以下なら (1−η)² ≤ η(4+η)<br>したがって η ≥ 1/6</div>
-<div class="takeaway"><strong>誤差が1/6未満なら、どんな3状態候補でも届きません。</strong>等号ではこの判定は保留です。1/6が実際の最小誤差だと決まったわけではありません。</div>
+<div class="takeaway"><strong>誤差が1/6未満なら、どんな3状態候補でも届きません。</strong>等号では三集約の判定は保留です。対角の下限と四辺の上限も使うと、さらに<strong>11/62 ≈ 0.177419</strong>以下まで排除できます。</div>
 <details class="aside"><summary>自分の集約値を入れて判定する</summary><p>4×4の対称化済み測定行列から、四辺の最小値m、対向する2組の最大値z、対角の最大値dを求めます。ηは、全成分を同時に覆う誤差幅です。全て同じ単位で入力してください。</p><div class="interactive callout" id="certificate-tool"><h4>簡易判定器 — 最良集約式 c² &gt; Ξ(d,z)</h4>
 <p class="muted">最良集約式 c² &gt; Ξ(d,z) による十分条件。初期値は熱回路の設計例。測定値の集約と誤差幅を変更できます。</p>
 <div class="cert-grid"><label>サイクル最小値 m<input id="cert-m" type="number" value="0.441571825" step="0.001"></label><label>反対頂点最大値 z<input id="cert-z" type="number" value="0" step="0.001"></label><label>対角最大値 d<input id="cert-d" type="number" value="0.883143650" step="0.001"></label><label>誤差幅 η（測定＋許容近似）<input id="cert-eta" type="number" value="0.02" min="0" step="0.001"></label></div>
 <p id="cert-answer" role="status" aria-live="polite"></p><p id="cert-radius" class="muted"></p></div><p class="small-note">標準偏差や相対誤差率を、そのままηに入れることはできません。統計的な信頼区間を使う場合も、全成分を同時に覆う保証が必要です。</p></details>
+<p class="revision-note">情報を二つ追加すると、保証が強まります。たとえば誤差0.17では三集約式は保留ですが、全成分の上下限を使えば3状態以下を排除できます。<a href="#round6-geometry">導出と有理数の証明書</a></p><details class="aside" id="five-bound-tool"><summary>五つの上下限で、もう一段詳しく判定する</summary>
+<p>各成分の誤差をすでに含めた上下限を入力します。Lは対角の下限の最小、Dは対角の上限の最大、mは四辺の下限の最小、Mは四辺の上限の最大、zは対向する2組の上限の最大です。同じ単位でそろえてください。</p>
+<div class="choice-row"><button data-five="0.17">H₀・誤差0.17</button><button data-five="bound">H₀・誤差11/62</button><button data-five="0.18">H₀・誤差0.18</button><button data-five="correlation">正規化したH₀/2</button></div>
+<div class="cert-grid"><label>対角の下限 L<input id="five-L" type="number" step="any" value="1.83"></label><label>対角の上限 D<input id="five-D" type="number" step="any" value="2.17"></label><label>四辺の下限 m<input id="five-m" type="number" step="any" value="0.83"></label><label>四辺の上限 M<input id="five-M" type="number" step="any" value="1.17"></label><label>対向成分の上限 z<input id="five-z" type="number" step="any" value="0.17"></label></div>
+<p class="verdict" id="five-verdict" aria-live="polite"></p><p id="five-detail" class="small-note"></p>
+<p class="small-note">まず既存の三集約式を試し、保留なら五値条件を試します。五値条件は0&lt;z&lt;m≤M&lt;L≤Dなどの前提を満たす場合だけ適用します。条件を満たさない場合も「3状態で十分」とは判定しません。画面の小数計算には保守的な丸め余裕を設け、11/62の定理自体は別の有理数コードで厳密検算しています。<a href="#round6-geometry">条件と証明</a></p>
+</details>
 <a class="next-link" href="#lesson-7">次へ：この下限は、現実で何に役立つ？ →</a>
 </section>
 
 <section class="lesson" id="lesson-7">
 <div class="step-kicker">07 / USE IT</div><h2>達成できない精度を、設計の前に見分ける。</h2>
 <p>少ない状態で実装したいとき、調整を続ければ目標精度へ届くとは限りません。この判定は、<strong>選んだ模型の種類と状態数で、目標精度が原理的に可能か</strong>を調べるために使えます。</p>
-<div class="application-example"><div><span class="step-kicker">合成熱回路での保証</span><strong>7.32 <small>mW</small></strong><span>3状態以下では避けられない熱流誤差の下限</span></div><p>1 Kを1秒で線形に立ち上げ、0.1秒待ってから、各5.025725秒の二窓を測る例です。容量の尺度1 J/K、緩和率0.25 s⁻¹。4回の入力実験・4出力・観測区間の<strong>どこかで</strong>、この大きさ以上の誤差が必要になります。</p></div>
-<p>行列の誤差下限を、波形の誤差へ戻すには、積分の長さを使います。熱流応答の最大誤差をEとすると、二窓差の誤差は高々2hE。したがって、この合成例では E≥a/(12h) です。前の窓幅スライダーと同じ解析式による換算です。</p>
-<p class="small-note">全ての出力に常時7.32 mWの誤差が出る、という意味ではありません。温度予測の誤差下限でもありません。合成回路での理論値で、実物・製品データによる検証は未実施です。</p>
-<div class="use-grid"><div><h3>熱モデル</h3><p>複数境界を持つ簡略化モデルで、内部状態をどこまで減らすかの判断に。ただし、ここでの入力は温度、出力は熱流です。</p></div><div><h3>抵抗・コンデンサ回路</h3><p>電圧と電流で同じ数式を実験できます。総立上り1 msの区分二次波形など、指定した電気的縮尺では約7.312 µAの対応下限が得られます。</p></div></div>
-<details class="aside"><summary>実験へ移すときにそろえる条件</summary><ul><li>各入力実験を同じ初期平衡から始める。</li><li>境界ごとに同じ単調な立上り波形を使い、立上り後に二窓を置く。</li><li>正の熱容量・非負の相反伝導という模型クラスを用いる。</li><li>測定誤差、数値積分誤差、許容する模型誤差を合わせた幅で判定する。</li></ul><p>模型の内部状態数は、実物の材料の層数や部品の個数そのものとは限りません。有限時間の検証では、候補模型の緩和率を目標に一致させる必要はありません。<a href="#finite-window">測定条件と適用範囲</a> ／ <a href="#round4">最新の単位換算</a></p></details>
-<a class="next-link" href="#lesson-8">次へ：どこまで証明でき、新規性はどこに残る？ →</a>
+<div class="application-example"><div><span class="step-kicker">合成熱回路での保証</span><strong>7.79 <small>mW</small></strong><span>3状態以下では避けられない熱流誤差の下限</span></div><p>1 Kを1秒で線形に立ち上げ、0.1秒待ってから、各5.025725秒の二窓を測る例です。容量の尺度1 J/K、緩和率0.25 s⁻¹。4回の入力実験・4出力・観測区間の<strong>どこかで</strong>、この大きさ以上の誤差が必要になります。</p></div>
+<p>行列の誤差下限を、波形の誤差へ戻すには、積分の長さを使います。熱流応答の最大誤差をEとすると、二窓差の誤差は高々2hE。新しい係数下限11/62を使うと、この合成例では E≥11a/(124h) です。前の窓幅スライダーと同じ解析式による換算です。</p>
+<p class="small-note">全ての出力に常時7.79 mWの誤差が出る、という意味ではありません。温度予測の誤差下限でもありません。合成回路での理論値で、実物・製品データによる検証は未実施です。</p>
+<div class="use-grid"><div><h3>熱モデル</h3><p>複数境界を持つ簡略化モデルで、内部状態をどこまで減らすかの判断に。ただし、ここでの入力は温度、出力は熱流です。</p></div><div><h3>抵抗・コンデンサ回路</h3><p>電圧と電流で同じ数式を実験できます。総立上り1 msの区分二次波形など、指定した電気的縮尺では約7.784 µAの対応下限が得られます。</p></div></div>
+<details class="aside"><summary>実験へ移すときにそろえる条件</summary><ul><li>各入力実験を同じ初期平衡から始める。</li><li>境界ごとに同じ単調な立上り波形を使い、立上り後に二窓を置く。</li><li>正の熱容量・非負の相反伝導という模型クラスを用いる。</li><li>測定誤差、数値積分誤差、許容する模型誤差を合わせた幅で判定する。</li></ul><p>測定器の動特性を除いた真の熱流、または妥当に補正した熱流を使うことも必要です。模型の内部状態数は、実物の材料の層数や部品の個数そのものとは限りません。有限時間の検証では、候補模型の緩和率を目標に一致させる必要はありません。<a href="#finite-window">測定条件と適用範囲</a> ／ <a href="#round4">最新の単位換算</a></p></details>
+
+<details class="aside" id="sensor-reader"><summary>測定器にも「記憶」があると、どうなる？</summary>
+<p>内部熱容量が<strong>0個</strong>の合成回路でも、既知の境界容量とセンサーの一次遅れが組み合わさると、観測された二窓差はH₀に比例します。そのまま判定すると、測定器の動きを物体の内部と取り違えます。</p>
+<div class="choice-row" id="sensor-modes"><button data-sensor="true" aria-pressed="false">真の熱流</button><button data-sensor="raw" aria-pressed="true">遅れた観測</button><button data-sensor="corrected" aria-pressed="false">遅れを補正</button></div>
+<div class="split"><div id="sensor-matrix" class="matrix-host"></div><div><p id="sensor-verdict" class="verdict" aria-live="polite"></p><p id="sensor-note" class="small-note"></p></div></div>
+<p class="small-note">内部0個、境界容量C<sub>B</sub>=4I、境界伝導K=2I−A(C₄)。単位ステップ、センサー時定数1秒、最初の窓は0.1秒後、各窓1秒。単位入力で割った二窓差を表示。理想化した解析的反例で、実測データではありません。</p>
+<p>時定数θが既知なら、観測yの二窓差D<sub>y</sub>と3時刻の端点値から補正できます。微分の数値計算は不要です。</p>
+<div class="formula">D<sub>q</sub> = D<sub>y</sub> + θ[2y(T+h)−y(T)−y(T+2h)]</div>
+<p class="small-note">補正は雑音も増幅します。観測誤差を全時刻でσ以下と保証できる場合、二窓差の誤差は高々(2h+4θ)σ。積分誤差・時定数の校正誤差も別途加えます。未校正の測定器へこの式をそのまま適用することはできません。<a href="#round6-sensor">反例・補正式・誤差予算の証明</a></p>
+</details>
+<p class="small-note">補正後、未知の一定の正ゲインは相反する2測定の幾何平均と対角正規化で消せます。状態数の判定には使えますが、mWへ換算するには絶対校正が必要です。<a href="#round6-sensor">倍率の相殺と個別誤差の伝播</a></p><a class="next-link" href="#lesson-8">次へ：どこまで証明でき、新規性はどこに残る？ →</a>
 </section>
 
 <section class="lesson" id="lesson-8">
 <div class="step-kicker">08 / TAKE STOCK</div><h2>分かったことと、まだ分からないこと。</h2>
 <p>到達点は、<strong>既知の幾何定理から、状態数を判定する鋭い数式を導き、誤差のある有限時間測定へつないだ</strong>ことです。証明の有無と、学術的に初めてかどうかは別に評価しています。</p>
-<div class="status-table"><table><thead><tr><th>内容</th><th>現在の位置づけ</th></tr></thead><tbody><tr><td>H₀の「通常ランク3／CPランク4」、Hρの境界、基礎の幾何定理</td><td><span class="status-label known">既知</span>先行研究へ帰属。</td></tr><tr><td>三集約値の最良境界、誤差区間への適用、有限時間の熱流下限</td><td><span class="status-label derived">証明を記録</span>今回導出・独立監査。同じ式の先取性は未確定。</td></tr><tr><td>ρ=0.4で既存SDPの一つは下界3に留まり、今回の式は3状態を排除</td><td><span class="status-label derived">厳密比較</span>有理数の証明書を検算。既存手法全体より強いとは言わない。</td></tr><tr><td>最小近似誤差そのもの、実機での有効性、未読文献との重複</td><td><span class="status-label open">未解決・未確認</span>次の検証対象。</td></tr></tbody></table></div>
-<h3>最小の誤差は、まだこの間にある。</h3><p>H₀から3行以下の非負因子で作れる行列までの、最大成分誤差の最小値をD₃とします。</p><div class="formula">1/6 ≤ D₃ &lt; 0.196676467057347</div><div class="plot" id="distance-plot" role="img" aria-label="最小誤差の下限が6分の1、厳密上界が約0.1966765で、その間の値は未決定"></div>
-<p>上側は具体的な近似行列の構成から、下側は今回の不等式から得ています。三集約値の境界を完全に求めても、元の行列の<strong>全成分を同時に近づける問題</strong>まで解けたわけではありません。</p>
+<div class="status-table"><table><thead><tr><th>内容</th><th>現在の位置づけ</th></tr></thead><tbody><tr><td>H₀の「通常ランク3／CPランク4」、Hρの境界、基礎の幾何定理</td><td><span class="status-label known">既知</span>先行研究へ帰属。</td></tr><tr><td>三集約値の最良境界、五値による11/62下界、有限時間の熱流下限</td><td><span class="status-label derived">証明を記録</span>今回導出・独立監査。同じ式の先取性は未確定。</td></tr><tr><td>ρ=0.4で既存SDPの一つは下界3に留まり、今回の式は3状態を排除</td><td><span class="status-label derived">厳密比較</span>有理数の証明書を検算。既存手法全体より強いとは言わない。</td></tr><tr><td>ゼロ結合を許すかで異なる最少数：境界では3と4</td><td><span class="status-label known">既知結果の具体化</span>CP-plusランクで説明。近似誤差下限とは区別。</td></tr><tr><td>一次遅れの補正、一定ゲインの相殺、測定誤差の区間伝播</td><td><span class="status-label derived">証明を記録</span>モデル条件を明示した代数的な拡張。実機検証は未実施。</td></tr><tr><td>最小近似誤差そのもの、実機での有効性、未読文献との重複</td><td><span class="status-label open">未解決・未確認</span>次の検証対象。</td></tr></tbody></table></div>
+<h3>最小の誤差は、まだこの間にある。</h3><p>H₀から3行以下の非負因子で作れる行列までの、最大成分誤差の最小値をD₃とします。</p><div class="formula">11/62 ≤ D₃ &lt; 0.196676467057347</div><div class="plot" id="distance-plot" role="img" aria-label="最小誤差の下限が62分の11、厳密上界が約0.1966765で、その間の値は未決定"></div>
+<p>上側は具体的な近似行列の構成から、下側は<strong>各成分の上下限を使った新しい評価</strong>から得ています。以前の1/6から約6.45%強まりましたが、元の行列へ最も近い3状態模型まで決定したわけではありません。</p>
 <p>本ノートの局所探索では約0.196676467を得ており、追加査読でも同じ値が繰り返し得られたと報告されています。<strong>下界をこの値へ近づける方向が有望</strong>という数値的な手掛かりです。ただし、よりよい近似が存在しないことの証明ではありません。</p>
-<p>文献照合では、松本の1981年原論文などの条件を確認しました。一方、Stein（1973）、Matsumoto（1982）、Kandić–Reljin（2009）の中心本文は未取得です。今回の結果の優先権を確定したとは扱いません。<a href="#round4">照合の詳細</a></p>
+<p>新たにBomze–Dickinson–Stillの公開著者稿を本文照合し、正距離の存在や正因子化の一般論を既知結果へ帰属しました。追加リストの古典回路論文・2026年公開の角度条件論文・書籍の中心本文は未取得です。具体的な式と手順の先取性は未確定です。<a href="#round6-literature">照合の詳細</a></p>
 <div class="takeaway">役立つ問いは、「小さくできたか」だけでなく、<strong>「その制約と精度のままで、これ以上小さくできるのか」</strong>。このページは、その限界を確かめる方法と、検証可能な証拠をまとめたものです。</div>
 <div class="end-links"><a href="#technical-notes">証明・研究履歴・文献へ ↓</a><a href="#start">先頭へ ↑</a></div>
 </section>
@@ -130,11 +157,605 @@
 <tr><td>初期の結果</td><td>約0.049038</td><td>この段階では同じ二窓実験の値を提示していない</td></tr>
 <tr><td>追究2</td><td>約0.097168</td><td>約4.2687 mW</td></tr>
 <tr><td>追究3</td><td>約0.101021</td><td>約4.4379 mW</td></tr>
-<tr><td><strong>追究4・現在</strong></td><td><strong>1/6 ≈ 0.166667</strong></td><td><strong>約7.3219 mW</strong></td></tr>
+<tr><td>追究4</td><td><strong>1/6 ≈ 0.166667</strong></td><td><strong>約7.3219 mW</strong></td></tr><tr><td><strong>2026 09 21・現在</strong></td><td><strong>11/62 ≈ 0.177419</strong></td><td><strong>約7.7942 mW</strong></td></tr>
 </tbody></table></div>
-<p class="small-note">熱流の3行は、容量尺度1 J/K、緩和率0.25 s⁻¹、1 Kを1秒の線形ランプで立上げ、0.1秒待機、各窓5.025725秒の同じ合成例。下限の保証が強まったのであって、模型の実際の誤差を減らした結果ではありません。数式と現在の判断は<a href="#round4">最新の証明</a>を参照してください。</p></div><div class="choice-row"><button id="open-all-notes">詳細を全て開く</button><button id="close-all-notes">詳細を閉じる</button><button id="print-reader">印刷する</button></div></section>
-<details class="archive" id="latest-proofs"><summary>A. 最新の証明：鋭い集約式・誤差下限・既存SDPとの厳密比較</summary><section id="round4"><span class="tag">追究4 · 原論文の照合から、鋭い不等式へ</span><span class="tag amber">証明を記録・式の先取性は未確定</span>
-<h2>三つの集約値から得られる、最良の状態数判定</h2>
+<p class="small-note">熱流を記載した4行は、容量尺度1 J/K、緩和率0.25 s⁻¹、1 Kを1秒の線形ランプで立上げ、0.1秒待機、各窓5.025725秒の同じ合成例。下限の保証が強まったのであって、模型の実際の誤差を減らした結果ではありません。数式と現在の判断は<a href="#round6">最新の証明</a>を参照してください。</p></div><div class="choice-row"><button id="open-all-notes">詳細を全て開く</button><button id="close-all-notes">詳細を閉じる</button><button id="print-reader">印刷する</button></div></section>
+<details class="archive" id="latest-proofs"><summary>A. 最新の証明：成分別の下限・測定補正・集約式と文献照合</summary><section id="round6"><span class="tag">2026 09 21 · 公開本文の照合と測定条件の深化</span><span class="tag amber">証明を独立監査・学術的新規性は未確定</span>
+<h2>誤差下限を強め、測定器の記憶を分ける</h2>
+<p>新たに取得した公開著者稿との照合から、一般論の帰属を更新した。その上で、捨てていた成分情報を使って下限を強め、一次遅れを持つ測定器でも使える補正・正規化を導いた。以下の結果は解析的な証明と合成例に基づき、実機の性能値ではない。</p>
+<div class="proof-route"><div><b>追加の二つの上限・下限</b>対角下限と四辺上限を戻すと、3次元の残る高さが大きすぎることを証明できる。</div><div><b>厳密なゼロ結合の扱い</b>境界では非負3因子と正4因子が分かれる。ただし任意精度の近似は可能。</div><div><b>測定器の動きを除く</b>二窓積分と3端点で一次遅れを補正し、未知の一定倍率を相反ペアで消す。</div></div>
+<div id="round6-geometry">
+<h3>A. 捨てていた上下限を使い、距離下限を11/62へ改善する</h3>
+<p>前の三集約式は、対角の上限・反対頂点間の上限・サイクル四辺の下限だけを使う範囲で最良だった。今回は、<strong>対角の下限とサイクル四辺の上限も使う</strong>。この追加情報により、既知の四角形行列H₀に対する結果を次まで進められる。</p>
+<div class="eq"><strong>11/62 ≤ D₃ &lt; 0.196676467057347</strong><br><span style="font-size:15px">11/62 ≈ 0.1774193548、D₃=inf<sub>F∈ℝ₊<sup>3×4</sup></sub>∥FᵀF−H₀∥<sub>max</sub>。</span></div>
+<p>上界は前に有理数演算で検証した代数的な可行例による。今回改善したのは下界である。以下の証明は<strong>誤差11/62以下の閉じた箱も排除する</strong>。表示では保守的に「≤」を使うが、11/62ちょうどを判定保留へ戻す必要はない。最小誤差そのものや大域最適解は未決定である。</p>
+<div class="callout caution">これは、既知の幾何学的配置定理を使った新しい導出候補であり、式や手法の学術的先取性は未確定。三集約の最良境界を上回ったのではなく、そこでは捨てていた追加の測定情報を使っている。</div>
+
+<h4>1. 各成分の異なる誤差幅を、五つの安全な値へまとめる</h4>
+<p>測定から、対称な真の行列Xについて個別の区間 ℓ<sub>ij</sub>≤X<sub>ij</sub>≤u<sub>ij</sub> が保証されているとする。サイクルは12・23・34・41、反対頂点間は13・24である。</p>
+<div class="table-wrap"><table><thead><tr><th>記号</th><th>区間から作る値</th><th>真の行列に課される条件</th></tr></thead><tbody>
+<tr><td>L</td><td>min<sub>i</sub> ℓ<sub>ii</sub></td><td>全ての対角成分がL以上</td></tr>
+<tr><td>D</td><td>max<sub>i</sub> u<sub>ii</sub></td><td>全ての対角成分がD以下</td></tr>
+<tr><td>m</td><td>min<sub>cycle</sub> max(0,ℓ<sub>ij</sub>)</td><td>四辺の全てがm以上</td></tr>
+<tr><td>M</td><td>max<sub>cycle</sub> u<sub>ij</sub></td><td>四辺の全てがM以下</td></tr>
+<tr><td>z</td><td>max(0,u<sub>13</sub>,u<sub>24</sub>)</td><td>反対頂点間がz以下</td></tr>
+</tbody></table></div>
+<p>同じ誤差幅を全成分に仮定する必要はない。ただし、区間そのものが真値を覆うという保証は必要である。以下は、分岐を少なくした十分条件として次の領域で使う。</p>
+<div class="eq small"><strong>0 &lt; z &lt; m ≤ M &lt; L ≤ D、かつ m² &gt; Dz。</strong></div>
+<p>この領域の外では、この新しい判定は保留とする。既存の三集約式などが使える場合まで否定するものではない。</p>
+
+<h4>2. 判定式</h4>
+<p>次の四つの補助量を計算する。いずれの分母も、上の前提で正である。</p>
+<div class="eq small">A=max{L, z+m²/z−D}、　U=(m²−Dz)/(D−z)、<br>V=min{M, mz(D−z)/(m²−Dz)}、<br>R=min{M, 2Dzm/(z²+m²)}。</div>
+<p>さらに 0&lt;U≤z、A≤D、R≥m、V≥m を確認する。この整合条件を満たす場合、A≥L&gt;M≥Rなので A&gt;R、Am&gt;Rz も自動的に成立する。</p>
+<div class="eq">P<sub>max</sub> = [A(U²+V²)−2RUV] / (A²−R²)<br><strong>L−P<sub>max</sub> &gt; M ⇒ 区間に整合するCPランク3以下の行列は存在しない。</strong></div>
+<p>したがって、測定行列のCPランクが内部状態数以下になる実験条件の下では、3状態以下の候補模型を排除できる。前提や整合条件を満たさない場合は、実装を単純にするため保留としてよい。この十分条件を満たさないことは、3状態で十分だという意味ではない。</p>
+
+<details><summary>五値判定の証明：平面への配置から、残る高さを評価する</summary><div class="proof">
+<p>反対に、区間内のXが X=FᵀF、F≥0、Fの行数≤3 と書けたとする。必要なら零行を足し、4本の列ベクトルをℝ³内で考える。対角はL以上、全ての非対角成分はM以下で、L&gt;Mだから、どの2列についてもGram行列の行列式は L²−M²&gt;0 以上。従って全列は非零で、対ごとに一次独立である。</p>
+<p>Brandts–KřížekのCorollary 3.6をそのまま適用できる。非負八分空間内で、二つの列が同じ座標を0に持つ配置を選べる。これは既知の定理であり、その仮定はここで全て満たされている。今回はL&gt;Mを前提にしたため、退化例の摂動処理を必要としない。<a href="#ref34">[34]</a></p>
+
+<p><strong>反対頂点の組が座標平面にある場合：</strong>全列をその平面へ射影する。各サイクル辺は平面上の列に接しているため、その内積は変わらない。対角と反対頂点間の内積は増えず、全列は非負の2次元に入る。</p>
+<p>角度が最小の列をv<sub>i</sub>とし、そのサイクル上の隣接列をv<sub>j</sub>,v<sub>k</sub>とする。二つの行列式は同符号なので、2次元のLagrange恒等式から</p>
+<div class="eq small">(v<sub>i</sub>·v<sub>j</sub>)(v<sub>i</sub>·v<sub>k</sub>)−∥v<sub>i</sub>∥²(v<sub>j</sub>·v<sub>k</sub>)<br>=−det(v<sub>i</sub>,v<sub>j</sub>)det(v<sub>i</sub>,v<sub>k</sub>)≤0。</div>
+<p>j,kは反対頂点である。よってm²≤Dzとなり、前提に反する。射影後の零列はm&gt;0に反するため生じない。これは<a href="#round4">前の2次元補題</a>と同じ議論である。</p>
+
+<p><strong>隣接する組が座標平面にある場合：</strong>サイクルの対称性により列1,2と置いてよい。次の記号を使う。</p>
+<div class="eq small">a=X₁₁、b=X₂₂、r=X₁₂、u=X₁₃、x=X₂₄、v=X₁₄、w=X₂₃、<br>Δ=ab−r²≥L²−M²&gt;0。</div>
+<p>列3,4の座標平面への射影内積はP=N/Δであり、</p>
+<div class="eq small">N=buv−r(ux+wv)+awx。</div>
+<p>射影が非負座標平面にあるため、P≥0、従ってN≥0である。この必要条件から、元の区間を次のように絞れる。</p>
+
+<p><strong>v,wの上限：</strong>a,b≤D、r≥mを使い、u,xをzへ増やすと上界は増える。偏微分はDv−mx、Dw−muで、m(D−z)&gt;0以上である。よって</p>
+<div class="eq small">0≤N≤Dz(v+w)−m(z²+vw)。</div>
+<p>右辺のwに関する偏微分はDz−mv≤Dz−m²&lt;0。wを下限mへ置くと、v(m²−Dz)≤mz(D−z)が得られる。v≤Mも合わせてv≤V。対称にw≤Vである。</p>
+
+<p><strong>rの上限：</strong>rを置き換えず、a,b≤Dだけを使うと</p>
+<div class="eq small">r≤D(uv+wx)/(ux+wv)<br>≤Dz(v+w)/(z²+vw)≤2Dzm/(z²+m²)。</div>
+<p>最初の分母はwv≥m²&gt;0。中央の比はu,xを増やすと増加する。例えばu微分の分子はw(v²−x²)&gt;0である。最後の比はv,w≥m&gt;zで各々減少し、両者をmにすると最大になる。r≤Mと合わせ、r≤Rを得る。</p>
+
+<p><strong>a,bの下限：</strong>b≤D、r≥mを使い、u,xをzへ増やす。この際の偏微分Dv−mxとaw−muは、前提L&gt;M≥m&gt;zから正である。すると</p>
+<div class="eq small">a≥mz/w+mv/z−Dv/w。</div>
+<p>右辺のv微分はm/z−D/w≥(m²−Dz)/(mz)&gt;0、w微分は(Dv−mz)/w²&gt;0である。v=w=mで最小となるためa≥z+m²/z−D。a≥Lも合わせてa≥A、対称にb≥Aとなる。</p>
+
+<p><strong>u,xの下限：</strong>a,b≤D、r≥mを使い、xだけをzへ増やすと、</p>
+<div class="eq small">u≥w(mv−Dz)/(Dv−mz)。</div>
+<p>分母と分子はm²&gt;Dzから正。wを増やすと増え、v微分の分子はz(D²−m²)&gt;0である。v=w=mにしてu≥(m²−Dz)/(D−z)=Uを得る。対称にx≥Uである。ここまでで、a,b≥A、r≤R、v,w≤V、u,x≥Uがそろった。</p>
+
+<p><strong>射影ノルムの上限：</strong>列3の射影の二乗ノルムは</p>
+<div class="eq small">P₃=(bu²−2ruw+aw²)/(ab−r²)。</div>
+<p>a,bについての偏微分は、それぞれ −(bu−rw)²/Δ²、−(aw−ru)²/Δ² で非正。従ってa,bを下限Aへ置くとP₃は増える。この変更中もA&gt;R≥rにより分母は正である。</p>
+<p>a=b=Aとした後は、Au≤Dz&lt;m²≤rw、ru≤Rz&lt;Am≤Awである。従ってP₃はuに関して減少、wに関して増加する。またr微分の符号は</p>
+<div class="eq small">(Au−rw)(ru−Aw)&gt;0</div>
+<p>で決まり、rについても増加する。よってu=U、w=V、r=Rを代入したP<sub>max</sub>が上限になる。列4の射影ノルムP₄=(bv²−2rvx+ax²)/Δも、xが小さい側、vが大きい側として同じ上限を持つ。</p>
+
+<p><strong>残る高さから矛盾：</strong>列3,4の第3座標をh₃,h₄≥0とする。全体の二乗ノルムはL以上なのでh₃²,h₄²≥L−P<sub>max</sub>。判定条件L−P<sub>max</sub>&gt;M≥m&gt;0の下では、</p>
+<div class="eq small">X₃₄=P+h₃h₄≥L−P<sub>max</sub>&gt;M。</div>
+<p>これはサイクル辺の上限X₃₄≤Mに反する。平面に置かれる二列が反対頂点でも隣接頂点でも不可能なので、区間内のCP3行列は存在しない。□</p>
+</div></details>
+
+<h4>3. H₀の閉じた誤差箱への代入</h4>
+<p>∥X−H₀∥<sub>max</sub>≤e、e=11/62と仮定する。CP3の候補ならXは成分非負なので、五値はL=2−e、D=2+e、m=1−e、M=1+e、z=eと取れる。前提と全ての整合条件を、有理数演算で確認できる。</p>
+<div class="table-wrap"><table><thead><tr><th>量</th><th>厳密値</th></tr></thead><tbody>
+<tr><td>L、D、m、M、z</td><td>113/62、135/62、51/62、73/62、11/62</td></tr>
+<tr><td>A、U、V、R</td><td>113/62、9/62、187/186、75735/84382</td></tr>
+<tr><td>P<sub>max</sub></td><td>1607793697181 / 2499351279048</td></tr>
+<tr><td>L−M−P<sub>max</sub></td><td><strong>4690998979 / 2499351279048 &gt; 0</strong></td></tr>
+</tbody></table></div>
+<p>最後の正の余裕は約0.0018768866。符号の判定はこの小数表示に頼らず、分子・分母が正の整数であることから行う。従って誤差e以下の閉箱にCP3行列はない。対角下限Lと辺上限Mの差が正なので、零列・比例列も前提によって除かれ、閉箱の端点に未処理の例外はない。</p>
+<p>再現コード <code>round6_geometry_certificate.py</code> はPython標準ライブラリのFractionだけで全ての符号と分母を検算する。最適化ソルバーの「解が見つからなかった」という判定は使っていない。11/62はこの手順で証明した下界であり、この手順自体を最適化した値でもない。</p>
+</div>
+
+<h4>同じ合成実験への換算</h4><p>容量尺度1 J/K、λ=0.25 s⁻¹、1 Kを1秒の線形ランプで立上げ、0.1秒待って各h=5.025725秒を測る条件では、a=e<sup>−0.025</sup>(1−e<sup>−0.25</sup>)/0.25·(1−e<sup>−λh</sup>)²。真の熱流の最大誤差Eは、</p><div class="eq">E ≥ aD₃/(2h) ≥ 11a/(124h) ≈ <strong>7.794238 mW</strong>.</div><p>以前の三集約による7.321860 mWに対して33/31倍。区分二次ランプでは約7.784105 mW、既述の電気的縮尺では約7.784105 µA。これは全4入力・4出力・観測区間のどこかで避けられない誤差であり、全時刻・全出力で常に生じる値ではない。</p>
+<div id="round6-positive">
+<h3>B. ゼロ結合を禁止したときの最少数 — 既知結果の具体化</h3>
+<p>Bomze–Dickinson–StillのDefinition 1.1は、H=FᵀFの因子Fの全成分を<strong>厳密に正</strong>にしたときの最少行数をcp⁺(H)と定義する。分解不能なら∞。以下の頁・定理番号は、取得した<strong>2014 11 04の公開著者稿</strong>に対応し、刊行版の番号との一致は未確認である。<a href="#ref61">[61]</a></p>
+<div class="table-wrap"><table><thead><tr><th>ρ</th><th>通常ランク</th><th>非負因子の最少行数</th><th>正因子の最少行数</th></tr></thead><tbody>
+<tr><td>0</td><td>3</td><td>4</td><td>∞</td></tr><tr><td>0&lt;ρ&lt;1/2</td><td>3</td><td>4</td><td>4</td></tr><tr><td>ρ=1/2</td><td>3</td><td>3</td><td><strong>4</strong></td></tr><tr><td>ρ&gt;1/2</td><td>3</td><td>3</td><td>3</td></tr>
+</tbody></table></div>
+<p>この表は、既知のCPランクの境界と、同稿の正因子化の議論を組み合わせた具体化として扱う。独立した新理論とは主張しない。</p>
+<details><summary>正因子の構成と、境界に正の3行因子がない証明</summary><div class="proof">
+<p>F₀を四角形の0/1辺因子とし、各行・列の和を2とする。α=(√(1+ρ)−1)/2と置くと、F₄=F₀+αJはρ&gt;0で全成分が正であり、</p>
+<div class="eq">F₄ᵀF₄=H₀+(4α+4α²)J=Hρ.</div>
+<p>これはBDS Theorem 4.8（p.6）のPerron方向への加算による正因子化の直接例。H₀の正規化Perronベクトルx=1/2·1、固有値4、加算係数μ=4ρを使う。定理の証明は、このように零成分を持つ非負行列も明示的に扱う。ρ&lt;1/2では既知のcp(Hρ)=4が下限を与え、ρ=0ではH₁₃=0のため正因子は不可能。</p>
+<p>ρ&gt;1/2ではh=√(1+ρ)、q=√(3/8)として、既存の直交回転から得た3行因子は次のとおり。</p>
+<div class="eq small">F₃ =<br>[ h/2−q, h/2+q, h/2+q, h/2−q ]<br>[ qh−1/4, qh−3/4, qh+1/4, qh+3/4 ]<br>[ qh+3/4, qh+1/4, qh−3/4, qh−1/4 ].</div>
+<p>F₃ᵀF₃=Hρ、h/2&gt;q、qh&gt;3/4なので全成分が正。通常ランク3が下限を与える。境界ρ=1/2では非負3行因子はあるが、別の正3行因子もないことを示す必要がある。</p>
+<p>H*=H₁/₂=GᵀG、G&gt;0、Gが3行と仮定する。x=1/2·1、y=GxとするとH*x=6x、Gᵀy=6x、yᵀy=6。十分小さいt&gt;0ではGₜ=G−tyxᵀも正で、</p>
+<div class="eq small">GₜᵀGₜ=H*−6(2t−t²)xxᵀ=H<sub>1/2−3t+(3/2)t²</sub>.</div>
+<p>右辺のパラメータは0と1/2の間になるため、CPランク4という既知結果に矛盾する。よって境界のcp⁺は4。CP錐の内部を仮定するBDS Theorem 4.9を、ランク3のHρへ無条件に適用した証明ではない。□</p>
+</div></details>
+<details><summary>熱回路で「結合が正」と読み替えられる条件</summary><div class="proof">
+<p>前掲の熱回路モデルでQ=C<sub>I</sub><sup>−1/2</sup>L<sub>II</sub>C<sub>I</sub><sup>−1/2</sup>、B=C<sub>I</sub><sup>−1/2</sup>(−L<sub>IB</sub>)とする。H=BᵀQ<sup>−2</sup>BだからF=Q<sup>−1</sup>Bが非負Gram因子になる。全境界–内部結合が正ならB&gt;0、Q<sup>−1</sup>は非負で対角が正なのでF&gt;0。従って内部数r≥cp⁺(H)。より一般に、各内部連結成分が全境界へ接続する場合も同じ必要条件が成立する。</p>
+<p>逆に正の因子Fの各行fについてv=Σⱼfⱼ、容量C=v²、境界との伝導gⱼ=λvfⱼを選べば、全結合が正の独立星形を構成できる。境界間の残余伝導−Kᵢⱼ−λHᵢⱼ≥0という、もとの実現条件は別に必要。したがってこの条件下では、全境界–内部結合を正にした最少内部数がcp⁺(H)となる。</p>
+<p>さらに単一極の厳密実現でr=rank(H)=3なら、Bの行ランクも3。対称Qの各固有空間の留数が半正定値なので、目標にない極を相殺することはできずQB=λB。従ってQ=λIで、内部同士の伝導はゼロとなる。ρ=1/2のどの厳密な3内部実現にも、少なくとも一つの境界–内部結合のゼロが必要である。全境界への結合が正という条件は、内部点同士もつながっているという条件ではない。</p>
+</div></details>
+<div class="callout caution"><strong>厳密実現の差と、近似誤差の下限は別。</strong>δ&gt;0ならH₁/₂₊δは正の3行因子を持ち、∥H₁/₂₊δ−H₁/₂∥<sub>max</sub>=δ。従って境界行列から正3因子集合までの距離は0。微小な結合を禁じる量的条件なしに、頑健な4状態認証へ読み替えない。</div>
+</div>
+<div id="round6-sensor">
+<h3>C. 測定器の遅れを補正してから、状態数を判定する</h3>
+<p>真の熱流をqᵢⱼ、観測をyᵢⱼとする。入力実験jの一定の正の倍率bⱼ、出力iの一定の正の倍率aᵢ、一次遅れθᵢ&gt;0を許し、観測区間で次を満たすと仮定する。</p>
+<div class="eq">θᵢ ẏᵢⱼ+yᵢⱼ=aᵢbⱼqᵢⱼ+cᵢⱼ.</div>
+<p>cᵢⱼは定数オフセット。各出力チャンネルの倍率・時定数は実験間で一定、立上りの形は全入力で共通、物体の初期平衡と回路条件は従来どおり。未知の任意フィルター、時刻ずれ、チャンネル混合はこのモデルに含めない。</p>
+<div class="eq small">Jᵢⱼ=∫<sub>T</sub><sup>T+h</sup>yᵢⱼ(u)du−∫<sub>T+h</sub><sup>T+2h</sup>yᵢⱼ(u)du,<br>Eᵢⱼ=2yᵢⱼ(T+h)−yᵢⱼ(T)−yᵢⱼ(T+2h),<br><strong>Aᵢⱼ=Jᵢⱼ+θᵢEᵢⱼ=aᵢbⱼDᵢⱼ.</strong></div>
+<p>証明はセンサーの微分方程式を各窓で積分して引くだけ。等長窓なので定数は消え、微分項が3端点の式になる。センサーの初期値は任意でよく、立上り中の境界容量の応答も補正される。ただし、物体そのものの初期化条件は残る。</p>
+<details><summary>補正しないと、内部0個からCPランク4が現れる反例</summary><div class="proof">
+<p>A(C₄)を四角形の隣接行列、K=2I−A(C₄)、C<sub>B</sub>=4Iとする。内部容量は0個。単位ステップの真の応答はq=K·1<sub>t≥0</sub>+C<sub>B</sub>δ₀で、t&gt;0では一定である。同じゼロ初期値の一次遅れk(t)=e<sup>−t</sup>を全出力へかけると、</p>
+<div class="eq">y(t)=K(1−e<sup>−t</sup>)+C<sub>B</sub>e<sup>−t</sup>=K+H₀e<sup>−t</sup>,<br>J=e<sup>−T</sup>(1−e<sup>−h</sup>)²H₀.</div>
+<p>JのCPランクは4だが、物体の内部数は0。共通かつ非負のセンサーフィルターという条件だけでは、従来の判定は保証されない。θ=1の端点差Eは−Jなので、補正A=J+Eは厳密に0へ戻る。</p>
+<p>この反例は理想ステップだけに依存しない。立上りが共通の単調ランプで、正の微分測度μが[0,T₀]にある場合、窓の開始T&gt;T₀では係数e<sup>−T</sup>が∫e<sup>−(T−v)</sup>μ(dv)&gt;0に置き換わる。同じ偽のH₀信号が残る。無限尾を持つ遅れに対し、有限時間待つだけでは厳密には消えない。</p>
+</div></details>
+<h4>一定の正の倍率は、相反する二つの測定から消せる</h4>
+<p>補正後のAは倍率のため対称とは限らない。算術平均ではなく、相反ペアの幾何平均を使う。</p>
+<div class="eq small">Gᵢⱼ=√(AᵢⱼAⱼᵢ)=sᵢsⱼDᵢⱼ,　sᵢ=√(aᵢbᵢ),<br>Cᵢᵢ=1,　<strong>Cᵢⱼ=√[AᵢⱼAⱼᵢ/(AᵢᵢAⱼⱼ)]=Dᵢⱼ/√(DᵢᵢDⱼⱼ)</strong>.</div>
+<p>Dの対角が正のときに限り後式を使える。正の対角合同はCPランクを保存する既知の操作であり、cp(C)=cp(D)。<a href="#ref58">[58]</a> 従って、正の一定ゲインの分離形aᵢbⱼと共通波形が検証されていれば、絶対倍率が未知でも状態数の排除はできる。H₀に比例する理想信号ならC=H₀/2となる。mWなどの絶対誤差へ戻すには、別途振幅・ゲインの校正が必要。</p>
+<h4>時定数の校正誤差と、各測定の異なる誤差幅</h4>
+<p>|J−Ĵ|≤ε<sub>J</sub>、|E−Ê|≤ε<sub>E</sub>、|θ−θ̂|≤δθ、0&lt;θ≤θ⁺を全対象で同時に保証する。Â=Ĵ+θ̂Êについて、</p>
+<div class="eq">|A−Â|≤ε<sub>A</sub>:=ε<sub>J</sub>+θ⁺ε<sub>E</sub>+δθ|Ê|.</div>
+<p>A−Â=(J−Ĵ)+θ(E−Ê)+(θ−θ̂)Êに三角不等式を適用した。端点誤差がε₀,ε₁,ε₂ならε<sub>E</sub>=ε₀+2ε₁+ε₂。各窓の積分誤差は和をε<sub>J</sub>へ入れる。全時刻で観測誤差≤σ、時定数が正確ならε<sub>A</sub>≤(2h+4θ)σに数値積分誤差を加えればよい。独立雑音の仮定は不要。</p>
+<p>各Aの区間をℓᵢⱼ=max(0,Âᵢⱼ−ε<sub>A,ij</sub>)、uᵢⱼ=Âᵢⱼ+ε<sub>A,ij</sub>と置く。すべてのuが非負、対角のℓが正なら、</p>
+<div class="eq small">Lᵢⱼ=√[ℓᵢⱼℓⱼᵢ/(uᵢᵢuⱼⱼ)],<br>Uᵢⱼ=√[uᵢⱼuⱼᵢ/(ℓᵢᵢℓⱼⱼ)]</div>
+<p>がCᵢⱼの安全な下限・上限になる。c=min<sub>cycle</sub>Lᵢⱼ、z⁺=min(1,max<sub>opposite</sub>Uᵢⱼ)としてc&gt;M(1,z⁺)なら3状態以下を排除する。上の五値判定にも、対角上下限を1、サイクル上限をmin(1,max<sub>cycle</sub>Uᵢⱼ)として渡せる。</p>
+<p>uᵢⱼ&lt;0やLᵢⱼ&gt;1なら、まず仮定した測定器・物理模型のクラスとの不整合である。「だから4状態」とは結論しない。対角下限が0以下なら、この正規化は使わない。統計的区間を使う場合は全成分・使用した窓選択を同時に覆う必要があり、標準偏差をそのまま決定論的な幅へ置き換えない。</p>
+<details><summary>適用範囲の追加監査：窓を増やせばよいとは限らない</summary>
+<p>二窓の重みを(1,−3,3,−1)の四窓へ変えると、定常以外のドリフトも消せるが、CP性は一般には保てない。Q=[[2,−1],[−1,2]]、B=I、T=h=log(10/9)で、内部核Q<sup>−2</sup>e<sup>−QT</sup>(I−e<sup>−Qh</sup>)⁴の非対角成分は厳密に−346880018961/2000000000000000。半正定値でも非負とは限らない。</p>
+<p>全状態数へ拡張する自己畳み込みdg=ν*νも、νが非負であることが必要。ν=2δ₀−δ<sub>log2</sub>を許すと、同じ二内部系の二窓差に負の非対角成分が生じる。また、内部容量を非対角へ広げると、C<sub>I</sub>=[[2,−1],[−1,2]]、L<sub>II</sub>=−L<sub>IB</sub>=L<sub>BB</sub>=I、T=h=3log2で非対角成分−143/1024となる。相反・受動という条件だけで、対角内部容量の仮定を省略してはいけない。</p>
+<p>いずれも適用範囲を確認する独立な解析例。これらの注意一般の学術的新規性を主張するものではない。</p>
+</details>
+</div>
+<div id="round6-literature">
+<h3>D. 公開本文の照合で、帰属をどう更新したか</h3>
+<p>BDSの15頁公開著者稿を本文・文献表まで照合した。全定理を独立に証明し直したという意味ではない。比較に直接使った箇所は、Definition 1.1、Theorems 2.4・4.8・5.1、Lemma 5.2、§6の半代数的な集合の議論である。<a href="#ref61">[61]</a></p>
+<div class="table-wrap"><table><thead><tr><th>先行結果</th><th>今回の扱い</th></tr></thead><tbody>
+<tr><td>Theorem 2.4（p.3）：CPランクの下半連続性</td><td>H₀からCP3まで正の距離があるという存在論は既知。最大成分ノルムでの具体的定数は同定理にない。同稿が帰属する2013年原論文の命題本文は未取得。</td></tr>
+<tr><td>Theorem 4.8（p.6）：Perron方向への加算で正因子化</td><td>Hρの正4因子構成を、同定理の直接例へ帰属。正成分の族を作ること自体は成果候補から外す。</td></tr>
+<tr><td>Theorem 5.1（p.7）、Lemma 5.2（p.8）</td><td>4×4の最大CPランク4、正成分のCP行列のCP-plusランク≤4を既知として利用する。</td></tr>
+<tr><td>内部での局所一定性、genericity</td><td>全Hρはランク3の4×4行列でCP錐の境界にある。錐の内部の定理や全空間での一般性を、この族へそのまま移さない。</td></tr>
+<tr><td>三集約極値式、11/62の個別成分評価、二窓測定</td><td>同じ命題は読んだBDS稿では確認できない。これは一資料との比較結果であり、先取性の確定ではない。基礎の認識定理・正規化・線形フィルターの代数は既知。</td></tr>
+</tbody></table></div>
+<p>追加リストの取得状況も反映した。以下の「未取得」は無料本文が存在しないという断定ではない。</p>
+<div class="table-wrap"><table><thead><tr><th>照合候補</th><th>2026 09 21時点の確認範囲</th></tr></thead><tbody>
+<tr><td>Basson–Halkias 1965 <a href="#ref62">[62]</a></td><td>IEEE登録書誌・DOIを確認。中心本文は未取得。</td></tr>
+<tr><td>Stein–Moore 1971 <a href="#ref63">[63]</a></td><td>DOI、巻頁年を確定。中心本文は未取得。</td></tr>
+<tr><td>Stein 1971会議稿 <a href="#ref64">[64]</a></td><td>Stein1973の参考文献で題名・会議・頁を確認。会議録番号71 C 53-CT。本文未取得。</td></tr>
+<tr><td>Mathew–Chandrashekaran <a href="#ref65">[65]</a></td><td>出版社の要旨・書誌・参考文献まで。オンライン公開2026 09 19、巻号は2027年。購読限定で具体的な角度閾値は未照合。</td></tr>
+<tr><td>De Tommasiほか 2014 <a href="#ref66">[66]</a></td><td>著者掲載の要旨とDOIまで。時間領域の受動RC同定との本文比較は残る。</td></tr>
+<tr><td>Berman–Shaked-Monderer 2003／Shaked-Monderer–Berman 2021 <a href="#ref60">[60]</a> <a href="#ref67">[67]</a></td><td>書誌・目次・試し読み入口まで。必要な小サイズ・CPランクの章本文は未取得。</td></tr>
+</tbody></table></div>
+<p>回路側では、共通帰線を持つことと全内部容量が接地されることを区別する。またZ(s)の実現からY(s)=Z(s)<sup>−1</sup>へ移す際は、可逆性・極構造・入出力・容量配置・数える状態が保たれるかを確認する。今回のKは特異であり、「インピーダンスとアドミタンスは容易に読み替えられる」として未読の最小性定理を代用しない。</p>
+<p><strong>残す成果候補：</strong>既知の幾何定理から導いた具体的な集約・成分別の不等式、検算可能な誤差定数とSDP分離例、明示した測定器モデル下の状態数判定への組み合わせ。数学的な証明と、歴史的な新規性の確認は引き続き分けて扱う。</p>
+</div>
+<details><summary>11/62の厳密な有理数検算 — Python標準ライブラリ</summary><button type="button" data-round6-download="round6-geometry-code" data-filename="round6_geometry_certificate.py">コードを保存</button><pre id="round6-geometry-code">&quot;&quot;&quot;Exact rational margins for the Round 6 coordinate-plane exclusion.
+
+The mathematical implication is proved in round6_geometry.md; this script
+certifies the chosen constants and strict signs without floating-point tests.
+&quot;&quot;&quot;
+from fractions import Fraction as Q
+from pathlib import Path
+import json
+
+
+def certify(e):
+    assert Q(1, 6) &lt; e &lt; Q(1, 4)
+    m, M, L, D = 1-e, 1+e, 2-e, 2+e
+    assert 0 &lt; e &lt; m &lt;= M &lt; L &lt;= D
+    A = max(L, 1/e-4+e)
+    V = min(M, 2*e*m/(1-4*e))
+    R = min(M, 2*D*e*m/(e*e+m*m))
+    U = (1-4*e)/2
+    assert 0 &lt; U &lt;= e &lt; m
+    assert L &lt;= A &lt;= D
+    assert m &lt;= V &lt;= M and m &lt;= R &lt;= M
+    assert A &gt; R
+    assert m*m &gt; D*e
+    assert D*m &gt; M*e
+    assert A*m &gt; R*e
+    Pmax = (A*(U*U+V*V)-2*R*U*V)/(A*A-R*R)
+    assert Pmax &gt;= 0
+    assert L-Pmax &gt; M
+    return dict(error_budget=e, m=m, M=M, L=L, D=D,
+                A=A, U=U, V=V, R=R,
+                opposite_pair_margin=m*m-D*e,
+                projected_norm_upper=Pmax,
+                fourth_edge_margin=L-M-Pmax)
+
+
+def main():
+    main_result = certify(Q(11, 62))
+    # A slightly larger rational budget certifies a uniform strict margin
+    # for general-position approximation of a boundary/degenerate factor.
+    perturbation_result = certify(Q(17742, 100000))
+    assert perturbation_result[&#x27;error_budget&#x27;] &gt; main_result[&#x27;error_budget&#x27;]
+    data = {&#x27;status&#x27;: &#x27;Exact rational assertions passed&#x27;,
+            &#x27;proved_lower_bound&#x27;: str(main_result[&#x27;error_budget&#x27;]),
+            &#x27;main_exact&#x27;: {k: str(v) for k,v in main_result.items()},
+            &#x27;display_only&#x27;: {k: float(v) for k,v in main_result.items()},
+            &#x27;strict_perturbation_budget&#x27;: str(perturbation_result[&#x27;error_budget&#x27;]),
+            &#x27;strict_perturbation_margin&#x27;: str(perturbation_result[&#x27;fourth_edge_margin&#x27;]),
+            &#x27;pairwise_independence_directly_from_L_greater_than_M&#x27;: True,
+            &#x27;global_optimality_claimed&#x27;: False}
+    output = Path(__file__).with_name(&#x27;round6_geometry_certificate.json&#x27;)
+    output.write_text(json.dumps(data, indent=2)+&#x27;\n&#x27;)
+    print(json.dumps(data, indent=2))
+
+
+if __name__ == &#x27;__main__&#x27;:
+    main()
+</pre></details><details><summary>センサー・正因子・倍率相殺の独立数値検査 — Python + NumPy</summary><button type="button" data-round6-download="round6-protocol-code" data-filename="round6_independent_audit.py">コードを保存</button><pre id="round6-protocol-code">&quot;&quot;&quot;Independent numerical checks accompanying round6_independent_audit.md.
+Analytic arguments are in the note; floating-point checks are not proofs.
+&quot;&quot;&quot;
+import json
+import math
+from pathlib import Path
+import numpy as np
+
+
+H0 = np.array([[2, 1, 0, 1], [1, 2, 1, 0],
+               [0, 1, 2, 1], [1, 0, 1, 2]], dtype=float)
+J = np.ones((4, 4))
+A = H0 - 2 * np.eye(4)
+K = 2 * np.eye(4) - A
+CB = 4 * np.eye(4)
+
+
+def e_integral(rate, left, right):
+    return (math.exp(-rate * left) - math.exp(-rate * right)) / rate
+
+
+def two_window(fun_integral, T, h):
+    return fun_integral(T, T+h) - fun_integral(T+h, T+2*h)
+
+
+def F3(rho):
+    h, q = math.sqrt(1+rho), math.sqrt(3/8)
+    return np.array([[h/2-q, h/2+q, h/2+q, h/2-q],
+                     [q*h-.25, q*h-.75, q*h+.25, q*h+.75],
+                     [q*h+.75, q*h+.25, q*h-.75, q*h-.25]])
+
+
+def F4(rho):
+    F0 = np.array([[1, 1, 0, 0], [0, 1, 1, 0],
+                   [0, 0, 1, 1], [1, 0, 0, 1]], dtype=float)
+    return F0 + ((math.sqrt(1+rho)-1)/2) * J
+
+
+def main():
+    result = {&#x27;checks_are_numerical&#x27;: True}
+    # Zero-internal-node sensor counterexample.
+    T, h = .7, .8
+    y = lambda t: K + H0 * math.exp(-t)
+    iy = lambda l, r: K * (r-l) + H0 * e_integral(1, l, r)
+    Dy = two_window(iy, T, h)
+    Ey = 2*y(T+h) - y(T) - y(T+2*h)
+    coefficient = math.exp(-T) * (1-math.exp(-h))**2
+    result[&#x27;fake_sensor&#x27;] = {
+        &#x27;coefficient&#x27;: coefficient,
+        &#x27;uncorrected_residual&#x27;: float(np.max(np.abs(Dy-coefficient*H0))),
+        &#x27;corrected_residual&#x27;: float(np.max(np.abs(Dy+Ey))),
+        &#x27;K_min_eigenvalue&#x27;: float(np.linalg.eigvalsh(K).min()),
+        &#x27;K_row_sums&#x27;: K.sum(axis=1).tolist(),
+    }
+    assert np.max(np.abs(Dy-coefficient*H0)) &lt; 1e-14
+    assert np.max(np.abs(Dy+Ey)) &lt; 1e-14
+
+    # General first-order sensor: q(t)=q0+sum weights exp(-alpha t).
+    # Independent exact antiderivatives; nonzero sensor initialization.
+    records = []
+    q0, weights, rates, initial = 1.7, [2.3, -.4], [.31, 1.73], -1.2
+    for beta in [.2, .9, 3.1, 7.0]:
+        for T, h in [(.03, .07), (.5, .8), (1.4, 2.0)]:
+            def y(t):
+                return q0 + (initial-q0)*math.exp(-beta*t) + sum(
+                    w*beta/(beta-a)*(math.exp(-a*t)-math.exp(-beta*t))
+                    for w, a in zip(weights, rates))
+            def iq(l, r):
+                return q0*(r-l) + sum(w*e_integral(a, l, r)
+                                      for w, a in zip(weights, rates))
+            def iy(l, r):
+                return q0*(r-l) + (initial-q0)*e_integral(beta, l, r) + sum(
+                    w*beta/(beta-a)*(e_integral(a, l, r)-e_integral(beta, l, r))
+                    for w, a in zip(weights, rates))
+            Dq, Dy = two_window(iq, T, h), two_window(iy, T, h)
+            Ey = 2*y(T+h)-y(T)-y(T+2*h)
+            residual = abs(Dq-Dy-Ey/beta)
+            assert residual &lt; 3e-14
+            records.append({&#x27;beta&#x27;: beta, &#x27;T&#x27;: T, &#x27;h&#x27;: h, &#x27;residual&#x27;: residual})
+    result[&#x27;sensor_identity&#x27;] = records
+
+    # Shared-endpoint composite trapezoidal weights and exact l1 noise bound.
+    trap_records = []
+    for N in [1, 2, 5, 10]:
+        h = .8
+        dt = h/N
+        for tau in [.01, .2, 1.0]:
+            w = np.r_[dt/2, np.full(N-1, dt), 0.,
+                      np.full(N-1, -dt), -dt/2]
+            w[0] -= tau
+            w[N] += 2*tau
+            w[-1] -= tau
+            exact = abs(dt/2-tau)+3*tau+dt/2+2*(N-1)*dt
+            assert abs(np.sum(np.abs(w))-exact) &lt; 1e-14
+            trap_records.append({&#x27;N&#x27;: N, &#x27;tau&#x27;: tau, &#x27;l1_weight&#x27;: exact})
+    result[&#x27;trapezoid_noise_weights&#x27;] = trap_records
+
+    factor_records = []
+    for rho in [1e-6, .1, .49, .5, .500001, .7, 1., 5.]:
+        expected = H0 + rho*J
+        g4 = F4(rho)
+        assert g4.min() &gt; 0
+        assert np.max(np.abs(g4.T@g4-expected)) &lt; 2e-14
+        record = {&#x27;rho&#x27;: rho, &#x27;F4_min&#x27;: float(g4.min()),
+                  &#x27;F4_gram_residual&#x27;: float(np.max(np.abs(g4.T@g4-expected)))}
+        if rho &gt;= .5:
+            g3 = F3(rho)
+            assert g3.min() &gt;= -2e-16
+            if rho &gt; .5: assert g3.min() &gt; 0
+            assert np.max(np.abs(g3.T@g3-expected)) &lt; 2e-14
+            record.update(F3_min=float(g3.min()),
+                          F3_gram_residual=float(np.max(np.abs(g3.T@g3-expected))))
+        factor_records.append(record)
+    result[&#x27;factors&#x27;] = factor_records
+
+    # Gain cancellation through symmetric geometric means.
+    H = H0+.3*J
+    a, b = np.array([.3, 2., 1.2, 4.]), np.array([3., .7, 2., .4])
+    M = a[:, None] * H * b[None, :]
+    C = np.sqrt(M*M.T/np.outer(np.diag(M), np.diag(M)))
+    normalized_H = H / np.sqrt(np.outer(np.diag(H), np.diag(H)))
+    result[&#x27;gain_normalization_residual&#x27;] = float(np.max(np.abs(C-normalized_H)))
+    assert np.max(np.abs(C-normalized_H)) &lt; 1e-14
+
+    out = Path(__file__).with_suffix(&#x27;.json&#x27;)
+    out.write_text(json.dumps(result, indent=2)+&#x27;\n&#x27;)
+    print(&#x27;All independent numerical checks passed.&#x27;)
+    print(&#x27;Maximum sensor identity residual:&#x27;, max(x[&#x27;residual&#x27;] for x in records))
+    print(&#x27;Results:&#x27;, out)
+
+
+if __name__ == &#x27;__main__&#x27;:
+    main()
+</pre></details><details><summary>有理数検算の実行記録</summary><pre>{
+  &quot;status&quot;: &quot;Exact rational assertions passed&quot;,
+  &quot;proved_lower_bound&quot;: &quot;11/62&quot;,
+  &quot;main_exact&quot;: {
+    &quot;error_budget&quot;: &quot;11/62&quot;,
+    &quot;m&quot;: &quot;51/62&quot;,
+    &quot;M&quot;: &quot;73/62&quot;,
+    &quot;L&quot;: &quot;113/62&quot;,
+    &quot;D&quot;: &quot;135/62&quot;,
+    &quot;A&quot;: &quot;113/62&quot;,
+    &quot;U&quot;: &quot;9/62&quot;,
+    &quot;V&quot;: &quot;187/186&quot;,
+    &quot;R&quot;: &quot;75735/84382&quot;,
+    &quot;opposite_pair_margin&quot;: &quot;9/31&quot;,
+    &quot;projected_norm_upper&quot;: &quot;1607793697181/2499351279048&quot;,
+    &quot;fourth_edge_margin&quot;: &quot;4690998979/2499351279048&quot;
+  },
+  &quot;display_only&quot;: {
+    &quot;error_budget&quot;: 0.1774193548387097,
+    &quot;m&quot;: 0.8225806451612904,
+    &quot;M&quot;: 1.1774193548387097,
+    &quot;L&quot;: 1.8225806451612903,
+    &quot;D&quot;: 2.1774193548387095,
+    &quot;A&quot;: 1.8225806451612903,
+    &quot;U&quot;: 0.14516129032258066,
+    &quot;V&quot;: 1.0053763440860215,
+    &quot;R&quot;: 0.897525538621981,
+    &quot;opposite_pair_margin&quot;: 0.2903225806451613,
+    &quot;projected_norm_upper&quot;: 0.6432844037007102,
+    &quot;fourth_edge_margin&quot;: 0.0018768866218704544
+  },
+  &quot;strict_perturbation_budget&quot;: &quot;8871/50000&quot;,
+  &quot;strict_perturbation_margin&quot;: &quot;964422841882034536069568877539212231/519259289904624073914823037628800000000&quot;,
+  &quot;pairwise_independence_directly_from_L_greater_than_M&quot;: true,
+  &quot;global_optimality_claimed&quot;: false
+}
+</pre></details><details><summary>独立数値検査の実行記録</summary><pre>{
+  &quot;checks_are_numerical&quot;: true,
+  &quot;fake_sensor&quot;: {
+    &quot;coefficient&quot;: 0.15058382721735358,
+    &quot;uncorrected_residual&quot;: 5.551115123125783e-16,
+    &quot;corrected_residual&quot;: 8.881784197001252e-16,
+    &quot;K_min_eigenvalue&quot;: -8.586881206085195e-16,
+    &quot;K_row_sums&quot;: [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  &quot;sensor_identity&quot;: [
+    {
+      &quot;beta&quot;: 0.2,
+      &quot;T&quot;: 0.03,
+      &quot;h&quot;: 0.07,
+      &quot;residual&quot;: 3.011479954295737e-15
+    },
+    {
+      &quot;beta&quot;: 0.2,
+      &quot;T&quot;: 0.5,
+      &quot;h&quot;: 0.8,
+      &quot;residual&quot;: 2.220446049250313e-16
+    },
+    {
+      &quot;beta&quot;: 0.2,
+      &quot;T&quot;: 1.4,
+      &quot;h&quot;: 2.0,
+      &quot;residual&quot;: 1.3322676295501878e-15
+    },
+    {
+      &quot;beta&quot;: 0.9,
+      &quot;T&quot;: 0.03,
+      &quot;h&quot;: 0.07,
+      &quot;residual&quot;: 4.683753385137379e-16
+    },
+    {
+      &quot;beta&quot;: 0.9,
+      &quot;T&quot;: 0.5,
+      &quot;h&quot;: 0.8,
+      &quot;residual&quot;: 1.3322676295501878e-15
+    },
+    {
+      &quot;beta&quot;: 0.9,
+      &quot;T&quot;: 1.4,
+      &quot;h&quot;: 2.0,
+      &quot;residual&quot;: 1.7763568394002505e-15
+    },
+    {
+      &quot;beta&quot;: 3.1,
+      &quot;T&quot;: 0.03,
+      &quot;h&quot;: 0.07,
+      &quot;residual&quot;: 1.8735013540549517e-16
+    },
+    {
+      &quot;beta&quot;: 3.1,
+      &quot;T&quot;: 0.5,
+      &quot;h&quot;: 0.8,
+      &quot;residual&quot;: 5.551115123125783e-16
+    },
+    {
+      &quot;beta&quot;: 3.1,
+      &quot;T&quot;: 1.4,
+      &quot;h&quot;: 2.0,
+      &quot;residual&quot;: 1.3877787807814457e-16
+    },
+    {
+      &quot;beta&quot;: 7.0,
+      &quot;T&quot;: 0.03,
+      &quot;h&quot;: 0.07,
+      &quot;residual&quot;: 4.163336342344337e-17
+    },
+    {
+      &quot;beta&quot;: 7.0,
+      &quot;T&quot;: 0.5,
+      &quot;h&quot;: 0.8,
+      &quot;residual&quot;: 3.8163916471489756e-16
+    },
+    {
+      &quot;beta&quot;: 7.0,
+      &quot;T&quot;: 1.4,
+      &quot;h&quot;: 2.0,
+      &quot;residual&quot;: 2.5673907444456745e-16
+    }
+  ],
+  &quot;trapezoid_noise_weights&quot;: [
+    {
+      &quot;N&quot;: 1,
+      &quot;tau&quot;: 0.01,
+      &quot;l1_weight&quot;: 0.8200000000000001
+    },
+    {
+      &quot;N&quot;: 1,
+      &quot;tau&quot;: 0.2,
+      &quot;l1_weight&quot;: 1.2000000000000002
+    },
+    {
+      &quot;N&quot;: 1,
+      &quot;tau&quot;: 1.0,
+      &quot;l1_weight&quot;: 4.0
+    },
+    {
+      &quot;N&quot;: 2,
+      &quot;tau&quot;: 0.01,
+      &quot;l1_weight&quot;: 1.2200000000000002
+    },
+    {
+      &quot;N&quot;: 2,
+      &quot;tau&quot;: 0.2,
+      &quot;l1_weight&quot;: 1.6
+    },
+    {
+      &quot;N&quot;: 2,
+      &quot;tau&quot;: 1.0,
+      &quot;l1_weight&quot;: 4.8
+    },
+    {
+      &quot;N&quot;: 5,
+      &quot;tau&quot;: 0.01,
+      &quot;l1_weight&quot;: 1.46
+    },
+    {
+      &quot;N&quot;: 5,
+      &quot;tau&quot;: 0.2,
+      &quot;l1_weight&quot;: 2.08
+    },
+    {
+      &quot;N&quot;: 5,
+      &quot;tau&quot;: 1.0,
+      &quot;l1_weight&quot;: 5.28
+    },
+    {
+      &quot;N&quot;: 10,
+      &quot;tau&quot;: 0.01,
+      &quot;l1_weight&quot;: 1.54
+    },
+    {
+      &quot;N&quot;: 10,
+      &quot;tau&quot;: 0.2,
+      &quot;l1_weight&quot;: 2.24
+    },
+    {
+      &quot;N&quot;: 10,
+      &quot;tau&quot;: 1.0,
+      &quot;l1_weight&quot;: 5.4399999999999995
+    }
+  ],
+  &quot;factors&quot;: [
+    {
+      &quot;rho&quot;: 1e-06,
+      &quot;F4_min&quot;: 2.499999375293882e-07,
+      &quot;F4_gram_residual&quot;: 4.440892098500626e-16
+    },
+    {
+      &quot;rho&quot;: 0.1,
+      &quot;F4_min&quot;: 0.024404424085075815,
+      &quot;F4_gram_residual&quot;: 4.440892098500626e-16
+    },
+    {
+      &quot;rho&quot;: 0.49,
+      &quot;F4_min&quot;: 0.11032778078668515,
+      &quot;F4_gram_residual&quot;: 4.440892098500626e-16
+    },
+    {
+      &quot;rho&quot;: 0.5,
+      &quot;F4_min&quot;: 0.11237243569579447,
+      &quot;F4_gram_residual&quot;: 4.440892098500626e-16,
+      &quot;F3_min&quot;: -1.1102230246251565e-16,
+      &quot;F3_gram_residual&quot;: 4.440892098500626e-16
+    },
+    {
+      &quot;rho&quot;: 0.500001,
+      &quot;F4_min&quot;: 0.11237263981990575,
+      &quot;F4_gram_residual&quot;: 8.881784197001252e-16,
+      &quot;F3_min&quot;: 2.0412411128045704e-07,
+      &quot;F3_gram_residual&quot;: 4.440892098500626e-16
+    },
+    {
+      &quot;rho&quot;: 0.7,
+      &quot;F4_min&quot;: 0.15192024052026487,
+      &quot;F4_gram_residual&quot;: 4.440892098500626e-16,
+      &quot;F3_min&quot;: 0.0395478048244704,
+      &quot;F3_gram_residual&quot;: 4.440892098500626e-16
+    },
+    {
+      &quot;rho&quot;: 1.0,
+      &quot;F4_min&quot;: 0.20710678118654757,
+      &quot;F4_gram_residual&quot;: 4.440892098500626e-16,
+      &quot;F3_min&quot;: 0.0947343454907531,
+      &quot;F3_gram_residual&quot;: 2.220446049250313e-16
+    },
+    {
+      &quot;rho&quot;: 5.0,
+      &quot;F4_min&quot;: 0.7247448713915889,
+      &quot;F4_gram_residual&quot;: 1.7763568394002505e-15,
+      &quot;F3_min&quot;: 0.6123724356957945,
+      &quot;F3_gram_residual&quot;: 1.7763568394002505e-15
+    }
+  ],
+  &quot;gain_normalization_residual&quot;: 1.1102230246251565e-16
+}
+</pre></details></section><section id="round4"><span class="tag">追究4 · 原論文の照合から、鋭い不等式へ</span><span class="tag amber">証明を記録・式の先取性は未確定</span>
+<h2>三つの集約値から得られる、最良の状態数判定</h2><p class="revision-note">以下は2026 09 20の記録。三集約式の最良性はそのままで、全成分を使う下界は翌日の<a href="#round6-geometry">11/62</a>へ強化した。最新の本文照合は<a href="#round6-literature">追究6</a>を参照。</p>
 <p>今回の文献照合から、前回は予想として残した不等式を証明できた。<strong>既知のCPランク3の幾何学的判定定理を、測定量の三つの集約値だけで使える鋭い式へ変換した</strong>結果である。係数誤差の下限は約0.101から1/6へ改善し、特定の既存SDPでは判定できない行列も、この式で排除できると厳密に確認した。</p>
 <div class="cards"><div class="card"><strong>1/6</strong>3状態以下との係数誤差の下限。最小誤差そのものを決定したわけではない。</div><div class="card"><strong>鋭い集約式</strong>対角上限・反対頂点間の上限・隣接成分の下限だけを使う範囲で最良。</div><div class="card"><strong>厳密な比較例</strong>既存SDPは下界3に留まるが、強化式は4状態以上を認証する。</div></div>
 
@@ -237,7 +858,7 @@
 <p>現在の成果候補は、<strong>既知の認識定理から導いた鋭い三集約値の境界、その誤差区間への適用、既存SDPと分離する厳密例</strong>である。同じ明示式・同値な極値問題の先取性は未確定。既知定理への依存を明示した、有用な系として記録する。</p>
 <p>追加査読では400初期値の局所探索で約0.196676467を再現し、それを下回る値は得られなかったと報告された。この追加計算は査読報告に基づくもので、ここで再実行した結果ではない。下界側を詰める手掛かりとして、既存の上界因子の零成分を参考に、3×4非負因子の支持パターンごとの必要条件を調べる方法が考えられる。ただし、最適因子が同じ支持を持つとは未証明であり、全成分が正の因子も含めて検討する必要がある。</p>
 <p>次の数学的な問いは、全成分を使ったH₀からCP3までの最適距離、対角スケーリングも選びながら非一様な誤差区間を最良に判定する方法、そしてこの最良集約式に相当する既刊の幾何学的極値問題があるか。実用側は、RCアナログで校正誤差を含めても棄却余裕が残るかである。実機検証や未取得本文の照合を済ませたことにはしない。</p>
-<p>追加査読から、Berman–Shaked-Monderer（2003）の単行本と、Bomze–Dickinson–Still（2015）を次の照合候補に加えた。前者は書誌、後者は書誌・要旨を確認した段階で、関連定理の本文照合は残る。2015年論文の主題はCPランクとCP-plusランクの位相構造などであり、今回の4×4の三集約境界と同じ明示式があると確認したわけではない。<a href="#ref60">[60]</a> <a href="#ref61">[61]</a></p>
+<p>追加査読から、Berman–Shaked-Monderer（2003）の単行本と、Bomze–Dickinson–Still（2015）を次の照合候補に加えた。前者は書誌、後者は書誌・要旨を確認した段階で、当時は関連定理の本文照合が残っていた。現在は2014年公開著者稿を本文照合し、<a href="#round6-literature">帰属を更新した</a>。2015年論文の主題はCPランクとCP-plusランクの位相構造などであり、今回の4×4の三集約境界と同じ明示式があると確認したわけではない。<a href="#ref60">[60]</a> <a href="#ref61">[61]</a></p>
 <p class="muted">証明は別担当が独立監査。SDP比較は有理演算で全制約を確認。達成因子の両枝・端点・尺度は33ケースで実装確認し、最大相対差4.45×10⁻¹⁶。数値検査は一般証明を置き換えない。文献台帳は61件で、本文確認と要旨のみを区別している。</p>
 <details><summary>最良集約式の達成因子・設計値の再現</summary><button type="button" id="download-sharp-code">round4_sharp_certificate.py を保存</button><pre id="sharp-code">&quot;&quot;&quot;Reproduce sharp aggregate bounds and the physical design constants.
 
@@ -2372,7 +2993,7 @@ z
 <p>となって矛盾する。最後の不等式は、3a²+3b²−2ab−2a−2b≤0と同値。この凸二次式は[2/3,1]²の頂点で最大を取り、頂点値は−8/9,−1/3,−1/3,0。</p>
 <p>従って1/(1+ρ)≤2/3、すなわちρ≥1/2が必要。達成にはq=√(3/8)としてQの行を(1/2,−q,q), (q,−1/4,−3/4), (q,3/4,1/4)と取る。Qは直交行列で、ρ=1/2のときQRの行は(0,√(3/2),√(3/2),0), (1/2,0,1,3/2), (3/2,1,0,1/2)。全て非負。ρを増やしても全成分は減らない。</p>
 <p>4行の非負因子は全ρで存在する。H₀の辺因子を行に並べた行列をF₀とし、α=(√(1+ρ)−1)/2とすれば、F<sub>ρ</sub>=F₀+αJに対してF<sub>ρ</sub>ᵀF<sub>ρ</sub>=H<sub>ρ</sub>。以上で最少数が決まる。□</p></div></details>
-</section></details><details class="archive" id="research-history"><summary>C. 研究の履歴：カオスからの出発、旧下限、測定の証明と訂正</summary><p class="archive-note">探索過程を残すための記録です。旧下限0.049、0.097、0.101などは、最新の1/6へ改善されています。各節の新規性判断も最新の照合を優先してください。節番号は元の研究記録に対応します。</p><section id="chaos"><h2>1. カオス理論とは、どこでつながるか</h2>
+</section></details><details class="archive" id="research-history"><summary>C. 研究の履歴：カオスからの出発、旧下限、測定の証明と訂正</summary><p class="archive-note">探索過程を残すための記録です。旧下限0.049、0.097、0.101などは、三集約では1/6、現在の全成分評価では11/62へ改善されています。各節の新規性判断も最新の照合を優先してください。節番号は元の研究記録に対応します。</p><section id="chaos"><h2>1. カオス理論とは、どこでつながるか</h2>
 <p>粗視化は、多数の変数を少数へ置き換える操作。カオスは、決定論的な運動が初期値に敏感になる性質である。両者は接点があるが同じものではない。カオスのない線形熱伝導でも、内部を消せば記憶が残る。</p>
 <div class="eq">ẋ = −Ax + Bz + f,　ż = Bᵀx − Dz<br>⇒　ẋ(t) = −Ax(t) + ∫₀ᵗ B e<sup>−D(t−s)</sup>Bᵀ x(s) ds + B e<sup>−Dt</sup>z(0) + f(t)</div>
 <p>x は残す変数、z は消す変数。消去は厳密でも、過去の x と初期の z の影響が残る。これを短い履歴・少数の補助状態・雑音などで近似するのが記憶を扱う粗視化である。Mori–Zwanzig は、この発想を非線形・確率系へ広げる枠組みの一つ。<a href="#ref1">[1]</a> <a href="#ref3">[3]</a></p>
@@ -2390,7 +3011,7 @@ z
 <tr><td>スカラーの上下界を行列へ</td><td>作用素凸性、block求積、resolventの順序 <a href="#ref14">[14–16]</a></td><td>成分別順序・半正定値順序・時間域を区別した条件。</td></tr>
 </tbody></table></div>
 <p>特に、Lang–LuはFDT整合雑音の変更を将来課題としているが、一般SVEの研究はドリフト核・雑音フィルタの同時近似を既に扱う。「ある論文が未解決と書いている」だけを、分野全体の空白と見なさなかった。<a href="#ref20">[20]</a> <a href="#ref22">[22]</a></p>
-<p>当初の文献台帳には主要59件を掲載した。追加査読の候補2件を加えた現在の台帳は61件である。「本文確認」は関連箇所を読んだことを指し、論文全体の全証明の独立検証を意味しない。要旨のみの文献を本文確認済みとして数えていない。</p>
+<p>当初の文献台帳には主要59件を掲載した。追加査読と取得候補を加えた現在の台帳は67件である。「本文確認」は関連箇所を読んだことを指し、論文全体の全証明の独立検証を意味しない。要旨のみの文献を本文確認済みとして数えていない。</p>
 </section><section id="outcome"><span class="tag">証明草案を収録・独立監査</span><span class="tag amber">学術的新規性は未確定</span>
 <h2>測定から、これ以上小さくできない物理模型を見分ける</h2><p class="muted">追究4を追加：原論文照合から強化式を証明。誤差下限1/6、最良集約境界、既存SDPと分離する有理数例。<a href="#round4">今回の調査結果へ</a>。</p>
 <p><strong>同じ外部応答を、何個の「本物の熱容量」で再現できるか。</strong>単なる数式の状態数と、正の熱容量・非負の熱伝導率だけで作る物理模型の状態数は一致しないことがある。この差を、特定の熱ネットワーク群について厳密に特徴づける命題を導いた。</p>
@@ -4619,11 +5240,11 @@ here=Path(__file__).resolve().parent
 np.savez(here/&#x27;pulse-data.npz&#x27;,times=times,q3=q3,q4=q4)
 print(json.dumps(results,indent=2))
 </pre></details>
-</section></details><details class="archive" id="bibliography"><summary>E. 文献61件：確認した範囲と未取得資料</summary><p class="archive-note">本文を確認した資料と、要旨・書誌のみの資料を区別しています。61件全てを全文精読したという意味ではありません。追加した2件は、上記の確認範囲を明記した照合候補です。</p><section id="references"><h2>11. 主要文献61件と確認範囲</h2><p class="muted">本文確認済み＝関連する定理・設定・導出を点検。要旨のみ＝その範囲を超えた同値性判断には使用しない。プレプリント年と刊行年が異なる場合は併記。解説論文はその旨を記載。</p><div class="table-wrap"><table class="refs"><thead><tr><th>番号・年</th><th>文献</th><th>確認範囲</th><th>今回への意味</th></tr></thead><tbody><tr id="ref1"><td>[1]<br>1973</td><td><a href="https://link.springer.com/article/10.1007/BF01008729">Zwanzig — Nonlinear generalized Langevin equations</a></td><td>要旨</td><td>非線形系からの厳密GLEという出発点は既知。</td></tr><tr id="ref2"><td>[2]<br>2009</td><td><a href="https://www.pnas.org/doi/10.1073/pnas.0902633106">Darve, Solomon &amp; Kia — Computing generalized Langevin equations and generalized Fokker–Planck equations</a></td><td>要旨</td><td>射影と記憶項を計算する先行研究。</td></tr><tr id="ref3"><td>[3]<br>2018</td><td><a href="https://arxiv.org/abs/1708.02235">Zhu, Dominy &amp; Venturi — On the estimation of the Mori–Zwanzig memory integral</a></td><td>本文・定理3.1–3.5</td><td>短記憶・t-model・階層近似の誤差と収束条件。</td></tr><tr id="ref4"><td>[4]<br>2017</td><td><a href="https://arxiv.org/abs/1611.06277">Gouasmi, Parish &amp; Duraisamy — A priori estimation of memory effects</a></td><td>要旨</td><td>非線形系の記憶推定。近似直交力学と真の核を区別。</td></tr><tr id="ref5"><td>[5]<br>2017</td><td><a href="https://arxiv.org/abs/1409.5748">Kelly &amp; Melbourne — Deterministic homogenization for fast–slow systems with chaotic noise</a></td><td>本文・定理1.1/2.3</td><td>高速カオスから拡散極限。弱収束と同一軌道誤差は別。</td></tr><tr id="ref6"><td>[6]<br>2022</td><td><a href="https://arxiv.org/abs/1903.10418">Chevyrev et al. — Deterministic homogenization under optimal moment assumptions, Part 2</a></td><td>要旨</td><td>モーメント条件と確率極限の精密化。</td></tr><tr id="ref7"><td>[7]<br>2021</td><td><a href="https://arxiv.org/abs/2010.13768">Chandramoorthy &amp; Wang — On the probability of finding nonphysical solutions through shadowing</a></td><td>要旨</td><td>近い真軌道の存在だけから物理統計の正しさは出ない。</td></tr><tr id="ref8"><td>[8]<br>2026</td><td><a href="https://doi.org/10.1073/pnas.2525390123">de Wit et al. — Data-driven Mori–Zwanzig modeling of Lagrangian particle dynamics in turbulent flows</a></td><td>著者稿本文</td><td>乱流粒子の短期精度と長期統計の実験的再現。</td></tr><tr id="ref9"><td>[9]<br>2026</td><td><a href="https://arxiv.org/abs/2601.00015">Stauffer, Gorji &amp; Lunati — Surrogate Trajectories Along Probability Flows</a></td><td>本文・§5/7.2</td><td>一時刻周辺分布の保存と経路統計の保存を区別。</td></tr><tr id="ref10"><td>[10]<br>2016/17</td><td><a href="https://arxiv.org/abs/1605.04886">Ma, Li &amp; Liu — The Derivation and Approximation of Coarse-grained Dynamics from Langevin Dynamics</a></td><td>本文・定理1/2</td><td>有理近似と補助雑音によるFDT保持。</td></tr><tr id="ref11"><td>[11]<br>2016</td><td><a href="https://arxiv.org/abs/1606.02596">Lei, Baker &amp; Li — Data-driven parameterization of the generalized Langevin equation</a></td><td>本文・式3–18</td><td>短時間モーメント・積分核・補助状態を合わせる方法。</td></tr><tr id="ref12"><td>[12]<br>2021</td><td><a href="https://arxiv.org/abs/2101.02657">Bockius et al. — Model reduction techniques for extended Markov parameterizations for GLE</a></td><td>本文・正実性と実現</td><td>相関からProny/正実補題でモデル化。実現できないフィットも扱う。</td></tr><tr id="ref13"><td>[13]<br>2023</td><td><a href="https://arxiv.org/abs/2301.08931">Koyama — Exponential sum approximations of finite completely monotonic functions</a></td><td>本文・定理2.14等</td><td>正測度の指数和近似と幾何収束。</td></tr><tr id="ref14"><td>[14]<br>2025</td><td><a href="https://doi.org/10.1007/s10915-025-02799-z">Zimmerling, Druskin &amp; Simoncini — Monotonicity, Bounds and Acceleration of Block Gauss and Gauss–Radau Quadrature</a></td><td>著者稿本文・定理</td><td>実Laplace変数のresolvent順序。時間域の行列順序と区別。</td></tr><tr id="ref15"><td>[15]<br>2013</td><td><a href="https://www.math.kent.edu/~reichel/publications/blkagauss.pdf">Fenu et al. — Block Gauss and anti-Gauss quadrature with application to networks</a></td><td>本文・序論と方法</td><td>条件付きの成分別行列関数評価。</td></tr><tr id="ref16"><td>[16]<br>2003</td><td><a href="https://arxiv.org/abs/math/0204049">Hansen &amp; Pedersen — Jensen’s Operator Inequality</a></td><td>本文・特徴付け</td><td>作用素凸性は通常の凸性より強い。</td></tr><tr id="ref17"><td>[17]<br>2024</td><td><a href="https://arxiv.org/abs/2102.13505">Alfonsi &amp; Kebaier — Approximation of stochastic Volterra equations with kernels of completely monotone type</a></td><td>要旨・後続定理との照合</td><td>核が異なるSVEのL2誤差。原定理全体は未精読。</td></tr><tr id="ref18"><td>[18]<br>2023</td><td><a href="https://arxiv.org/abs/2108.05048">Bayer &amp; Breneis — Markovian approximations of stochastic Volterra equations with the fractional kernel</a></td><td>要旨</td><td>Gaussian求積による多因子化と強収束。</td></tr><tr id="ref19"><td>[19]<br>2024–26</td><td><a href="https://arxiv.org/abs/2402.11705">Lang &amp; Lu — Learning Memory Kernels in Generalized Langevin Equations</a></td><td>本文・§1–4</td><td>相関推定誤差から重み付き核誤差への保証。</td></tr><tr id="ref20"><td>[20]<br>2025/26</td><td><a href="https://arxiv.org/abs/2512.10256">Lang &amp; Lu — Error Analysis of GLE with Approximated Memory Kernels</a></td><td>本文・序論、比較定理、§3/6</td><td>同期した加法白色雑音で核摂動を評価。FDT雑音の変更は対象外。</td></tr><tr id="ref21"><td>[21]<br>2026 07</td><td><a href="https://arxiv.org/abs/2607.05151">Braun, Hanke &amp; Wolf — On data-driven parameterizations of multidimensional generalized Langevin dynamics</a></td><td>要旨のみ</td><td>二次ポテンシャル・多次元のMarkov実現。本文取得未了。</td></tr><tr id="ref22"><td>[22]<br>2026 09</td><td><a href="https://arxiv.org/abs/2609.17472">Corneille et al. — Convergence in Hölder norms for Markovian approximations of stochastic Volterra equations</a></td><td>本文・設定、定理3.15周辺</td><td>ドリフト核と雑音フィルタをともに変更する経路誤差。</td></tr><tr id="ref23"><td>[23]<br>2025</td><td><a href="https://doi.org/10.1103/PhysRevE.111.034105">Giona, Procopio &amp; Pezzotti — Dynamic fluctuation-dissipation theory for GLE</a></td><td>著者稿本文・前半と結論</td><td>安定性、Markov実現、確率実現を区別。</td></tr><tr id="ref24"><td>[24]<br>2013</td><td><a href="https://arxiv.org/abs/1102.2950">Dörfler &amp; Bullo — Kron Reduction of Graphs with Applications to Electrical Networks</a></td><td>著者本文・主要定理</td><td>Schur補完、符号保存、内部経路による境界辺生成。</td></tr><tr id="ref25"><td>[25]<br>2022/23</td><td><a href="https://arxiv.org/abs/2203.12084">Singh et al. — Time-Domain Generalization of Kron Reduction</a></td><td>本文・定理1</td><td>不均一R/Lでも時間域の縮約。対象素子が熱/RCとは異なる。</td></tr><tr id="ref26"><td>[26]<br>2015</td><td><a href="https://arxiv.org/abs/1507.00219">Oyaro &amp; Triverio — TurboMOR</a></td><td>本文・Appendix A</td><td>多端子RCの受動性と高次モーメント保存。</td></tr><tr id="ref27"><td>[27]<br>2020</td><td><a href="https://arxiv.org/abs/2003.03559">Cheng et al. — Reduced Order Modeling of Diffusively Coupled Network Systems</a></td><td>本文・最適辺重み</td><td>グラフ構造を保つ拡散系の縮約。</td></tr><tr id="ref28"><td>[28]<br>2022</td><td><a href="https://arxiv.org/abs/2211.15301">Min &amp; Mallada — Learning Coherent Clusters in Weakly-Connected Network Systems</a></td><td>本文・集約条件</td><td>クラスター化による低次元化。</td></tr><tr id="ref29"><td>[29]<br>2020</td><td><a href="https://arxiv.org/abs/1907.05478">Redmann — An L2_T-error bound for time-limited balanced truncation</a></td><td>本文・誤差定理</td><td>有限時間のL2保証そのものは既知。</td></tr><tr id="ref30"><td>[30]<br>2020</td><td><a href="https://arxiv.org/abs/2006.09170">Dorschky, Reis &amp; Voigt — Balanced truncation for symmetric second order systems</a></td><td>本文・受動性条件</td><td>二階系・受動性を保つ縮約。</td></tr><tr id="ref31"><td>[31]<br>2026 07</td><td><a href="https://arxiv.org/abs/2607.05934">Xu et al. — FlexRC</a></td><td>要旨のみ</td><td>多端子RCの多点モーメント整合。</td></tr><tr id="ref32"><td>[32]<br>2025</td><td><a href="https://arxiv.org/abs/2510.16550">Yin et al. — SMP-RCR</a></td><td>本文・§I–III</td><td>疎RC、モーメント一致、負素子を避ける課題。</td></tr><tr id="ref33"><td>[33]<br>1982</td><td><a href="https://ieeexplore.ieee.org/document/1085084/">Matsumoto — RC admittance matrix realization by linear transformation</a></td><td>要旨・書誌のみ</td><td>最重要未比較。transformerless grounded RC合成の定理5。</td></tr><tr id="ref34"><td>[34]<br>2016</td><td><a href="https://arxiv.org/abs/1604.06197">Brandts &amp; Křížek — Factorization of CP-rank-3 completely positive matrices</a></td><td>本文・§1.2/3、Corollary 3.6・式(6)</td><td>基礎例・閾値1/2は既知定理の系。追究4の鋭い集約境界も同定理から導出。刊行版pp959,965–967を追加照合。</td></tr><tr id="ref35"><td>[35]<br>2004</td><td><a href="https://sites.math.rutgers.edu/~sussmann/papers/res-farina-tutorial-positive-realization.pdf">Benvenuti &amp; Farina — A Tutorial on the Positive Realization Problem</a></td><td>本文・錐と最少実現</td><td>正値性による次数増大という一般現象は既知。解説論文。</td></tr><tr id="ref36"><td>[36]<br>2021/22</td><td><a href="https://arxiv.org/abs/2006.13333">Grussler, Damm &amp; Sepulchre — Balanced truncation of k-positive systems</a></td><td>本文</td><td>内部正値性・対称性と低次数化の関係。</td></tr><tr id="ref37"><td>[37]<br>2001</td><td><a href="https://ieeexplore.ieee.org/document/955077/">Ganesh &amp; Chen — RC-in RC-out model order reduction accurate up to second order moments</a></td><td>要旨・書誌のみ</td><td>RC素子へ戻しながら初期モーメントを合わせる方法。本文未読。</td></tr><tr id="ref38"><td>[38]<br>2024</td><td><a href="https://re.public.polimi.it/handle/11311/1287338">Codecasa et al. — Fast Error-Bounded MOR-Based Approximation of Heat Conduction Problems in Electronics</a></td><td>機関公開要旨</td><td>熱伝導の実用的誤差保証。本文比較は未了。</td></tr><tr id="ref39"><td>[39]<br>2023</td><td><a href="https://arxiv.org/abs/2301.01052">Liljegren-Sailer — A time domain a posteriori error bound for balancing-related model order reduction</a></td><td>要旨</td><td>有限時間・非零初期値も扱う。</td></tr><tr id="ref40"><td>[40]<br>2020</td><td><a href="https://arxiv.org/abs/2006.02495">Schröder &amp; Voigt — Balanced Truncation with A Priori Error Bounds for LTI Systems with Nonzero Initial Value</a></td><td>要旨</td><td>初期値を含めた先験誤差保証。</td></tr><tr id="ref41"><td>[41]<br>2014/16</td><td><a href="https://arxiv.org/html/1404.3240v1">Fawzi &amp; Parrilo — Self-scaled bounds for atomic cone ranks: applications to nonnegative rank and cp-rank</a></td><td>arXiv:1404.3240v1の本文・§1/4、特に§4.2の式(51)、§4.5</td><td>刊行版：Math. Programming 158(1):417–465（2016）。本ノートの式(51)・節番号とコードは<strong>arXiv:1404.3240v1</strong>に対応。閉性・CPランクSDP・K₂,₃例を確認し、同版のSDPを実装して厳密比較。</td></tr><tr id="ref42"><td>[42]<br>2019</td><td><a href="https://fscdn.rohm.com/en/products/databook/applinote/discrete/transistor/what_is_a_thermal_model_tr_an-e.pdf">ROHM — What is a Thermal Model?</a></td><td>メーカー資料本文・pp1–3</td><td>熱とRC回路の対応、測定からのCauer模型、各素子と材料層は1対1とは限らない。</td></tr><tr id="ref43"><td>[43]<br>2022</td><td><a href="https://doi.org/10.1016/j.automatica.2022.110422">Luca Benvenuti — Minimal positive realizations: A survey</a></td><td>著者稿の冒頭pp1–5を分担確認。§7/9の追加取得は403、未精読。</td><td>Automatica 143, 110422。非負Hankelランクによる次数下界と実験からの区画数推定。更新survey。</td></tr><tr id="ref44"><td>[44]<br>2012/15</td><td><a href="https://arxiv.org/pdf/1210.6970">Fawzi &amp; Parrilo — Lower bounds on nonnegative rank via nonnegative nuclear norms</a></td><td>本文・§2.1–2.3、Theorem 3</td><td>Math. Programming 153(1):41–66。近似非負ランクの定量的下界。誤差に頑健な次数認証の一般論は既知。</td></tr><tr id="ref45"><td>[45]<br>2017/18稿</td><td><a href="https://arxiv.org/pdf/1708.01573">Gribling, de Laat &amp; Laurent — Lower bounds on matrix factorization ranks via noncommutative polynomial optimization</a></td><td>本文・§3、§3.5.1 Lemma 11</td><td>既存SDPを強めるモーメント階層。収束先を整数CPランクそのものと取り違えない。</td></tr><tr id="ref46"><td>[46]<br>1973</td><td><a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/cta.4490010203">Richard A. Stein — RC admittance realization by grounded-capacitor structures</a></td><td>出版社要旨・参考文献のみ</td><td>IJCTA 1(2):119–126。接地容量の多端子回路と最少容量個数を明示。最小性の厳密な範囲は本文未読。</td></tr><tr id="ref47"><td>[47]<br>2009</td><td><a href="https://ieeexplore.ieee.org/document/5274986/">D. B. Kandić &amp; B. D. Reljin — On Synthesis of Immitance Matrices of Transformerless RLC Networks</a></td><td>公開要旨・書誌のみ</td><td>ECCTD:303–306、DOI 10.1109/ECCTD.2009.5274986。非最小の共通接地RC実現も扱う。本文比較未了。</td></tr><tr id="ref48"><td>[48]<br>2008</td><td><a href="https://onlinelibrary.wiley.com/doi/10.1155/2008/513582">Kandić &amp; Reljin — Explicit Solution of the Inverse Eigenvalue Problem of Real Symmetric Matrices and Its Application to Electrical Network Synthesis</a></td><td>本文・主要定理と§5。追究4で出版社PDFの式(5.3)–(5.4)も確認</td><td>対称行列・符号条件と回路合成。driving-pointの構成を固定多端子の最小性と同一視しない。</td></tr><tr id="ref49"><td>[49]<br>2008</td><td><a href="https://escholarship.org/content/qt18b40014/qt18b40014.pdf">de Callafon et al. — General Realization Algorithm for Modal Identification of Linear Dynamic Systems</a></td><td>本文・ERA/GRA、weighted Hankelの節</td><td>J. Engineering Mechanics 134(9):712–722。有限の任意入力を扱う実現は既存。通常次数と物理的次数を区別。</td></tr><tr id="ref50"><td>[50]<br>2020</td><td><a href="https://www.jstage.jst.go.jp/article/nolta/11/2/11_157/_pdf/-char/en">Fukunaga &amp; Funaki — Transient thermal network model identification for power module packages</a></td><td>本文・§2–5</td><td>NOLTA 11(2):157–169。熱入力→温度の実測、逆畳み込み、雑音処理。今回との入出力差を明示。</td></tr><tr id="ref51"><td>[51]<br>2007</td><td><a href="https://zbc.uz.zgora.pl/repozytorium/Content/78645/download/">Kaczorek — Positive partial realization problem for linear discrete-time systems</a></td><td>本文・定理と結論</td><td>有限Markov系列の正値実現と構成の十分条件。全低次数候補を排除する議論とは区別。</td></tr><tr id="ref52"><td>[52]<br>2010/11稿</td><td><a href="https://arxiv.org/html/1010.3566v3">Bocci, Carlini &amp; Rapallo — Perturbation of matrices and non-negative rank with a view toward statistical models</a></td><td>本文・Theorem 2</td><td>非負ランクが減らない近傍の存在。定性的な距離の存在を新規性にしない。</td></tr><tr id="ref53"><td>[53]<br>2026</td><td><a href="https://arxiv.org/html/2605.14058v1">Baeckelant, Vandaele &amp; Gillis — Computing Lower Bounds on the Nonnegative Rank via Non-Convex Optimization Solvers</a></td><td>v1本文・§2–4。v2の更新書誌も確認</td><td>古典的な下界を非凸最適化で計算する比較研究。今回の式の先取性を保証する資料ではない。</td></tr><tr id="ref54"><td>[54]<br>1981</td><td><a href="https://meiji.repo.nii.ac.jp/record/11803/files/kagakugijutsukiyo_19_11-1.pdf">松本直樹 — 線形変換によるRC回路網の構成 / Synthesis of RC Networks through Use of Linear Transformation</a></td><td>本文・式(6b)/(9)、§4–5、回路図と結語。主要頁は画像でも確認</td><td>明治大学科学技術研究所紀要19、11-1–11-15。共通帰線は全容量接地を意味しない。1982の代用にはしない。</td></tr><tr id="ref55"><td>[55]<br>1976</td><td><a href="https://mspace.lib.umanitoba.ca/bitstream/1993/13712/1/Ali_Some_new.pdf">Adel Ahmed Ali — Some new aspects of congruence transformation as applied to RC ladder networks</a></td><td>大学公開博士論文・§2.2、pp6–7の式(2.1)–(2.5)を画像確認</td><td>正則な平方のHowitt変換とSchur補の不変性。素子値の総和と素子個数の最小化も区別。</td></tr><tr id="ref56"><td>[56]<br>2001</td><td><a href="https://journals.uwyo.edu/index.php/ela/article/download/135/135/135">Naomi Shaked-Monderer — Minimal CP Rank</a></td><td>本文・序論、Theorem 1.6、Example 2.1 p143</td><td>ELA8:140–157。正成分化A+ε(A1)(A1)ᵀはHρの構成と一致。正確な閾値は同例にはない。</td></tr><tr id="ref57"><td>[57]<br>1998</td><td><a href="https://doi.org/10.1098/rspa.1998.0218">J. B. M. Melissen — How different can colours be? Maximum separation of points on a spherical octant</a></td><td>原論文の公開全文転載・§1/5、pp1501–1504、式(5.1)を分担確認</td><td>Proc. R. Soc. A454:1499–1508。4点の最適分離から既知の定量的CP3排除式。今回の三集約境界とは別の極値問題。</td></tr><tr id="ref58"><td>[58]<br>2017/18</td><td><a href="https://link.springer.com/article/10.1007/s10100-017-0499-2">I. M. Bomze — Building a completely positive factorization</a></td><td>本文・§2、§3.1–3.2、Theorem 3.1、§6</td><td>CEJOR26:287–305。正対角合同によるCPランク不変性と正規化は既知。非一様対角の利用自体は新規でない。</td></tr><tr id="ref59"><td>[59]<br>1968</td><td><a href="https://doi.org/10.14288/1.0104245">Richard Adolph Stein — On the synthesis of two-element-kind multiport networks</a></td><td>大学の書誌・原要旨の転載。本文は取得できず</td><td>UBC学位論文の新たな取得候補。1973著者との同一性・本文定理の連続性は未確定。impedanceの要旨をadmittance定理の代用にしない。</td></tr><tr id="ref60"><td>[60]<br>2003</td><td><a href="https://cris.technion.ac.il/en/publications/completely-positive-matrices/">Abraham Berman &amp; Naomi Shaked-Monderer — Completely Positive Matrices</a></td><td>著者所属機関の書誌を確認。対象本文は未取得</td><td>World Scientific、DOI 10.1142/5273。追加査読による照合候補。小サイズ行列・CPランクの関連節と、三集約境界との同値性は本文照合待ち。</td></tr>
-<tr id="ref61"><td>[61]<br>2015</td><td><a href="https://ucrisportal.univie.ac.at/de/publications/the-structure-of-completely-positive-matrices-according-to-their-/">Bomze, Dickinson &amp; Still — The structure of completely positive matrices according to their CP-rank and CP-plus-rank</a></td><td>著者所属機関の書誌・要旨を確認。関連定理の本文は未照合</td><td>Linear Algebra and its Applications 482:191–206、DOI 10.1016/j.laa.2015.05.021。CP/CP-plusランクの位相的性質・最小分解の多重性。4×4の明示式や今回の最良境界を確認した資料ではない。</td></tr>
+</section></details><details class="archive" id="bibliography"><summary>E. 文献67件：確認した範囲と未取得資料</summary><p class="archive-note">本文を確認した資料と、要旨・書誌のみの資料を区別しています。67件全てを全文精読したという意味ではありません。BDSは公開著者稿を新たに本文照合し、追加6件は取得範囲を明記しています。</p><section id="references"><h2>11. 主要文献67件と確認範囲</h2><p class="muted">本文確認済み＝関連する定理・設定・導出を点検。要旨のみ＝その範囲を超えた同値性判断には使用しない。プレプリント年と刊行年が異なる場合は併記。解説論文はその旨を記載。</p><div class="table-wrap"><table class="refs"><thead><tr><th>番号・年</th><th>文献</th><th>確認範囲</th><th>今回への意味</th></tr></thead><tbody><tr id="ref1"><td>[1]<br>1973</td><td><a href="https://link.springer.com/article/10.1007/BF01008729">Zwanzig — Nonlinear generalized Langevin equations</a></td><td>要旨</td><td>非線形系からの厳密GLEという出発点は既知。</td></tr><tr id="ref2"><td>[2]<br>2009</td><td><a href="https://www.pnas.org/doi/10.1073/pnas.0902633106">Darve, Solomon &amp; Kia — Computing generalized Langevin equations and generalized Fokker–Planck equations</a></td><td>要旨</td><td>射影と記憶項を計算する先行研究。</td></tr><tr id="ref3"><td>[3]<br>2018</td><td><a href="https://arxiv.org/abs/1708.02235">Zhu, Dominy &amp; Venturi — On the estimation of the Mori–Zwanzig memory integral</a></td><td>本文・定理3.1–3.5</td><td>短記憶・t-model・階層近似の誤差と収束条件。</td></tr><tr id="ref4"><td>[4]<br>2017</td><td><a href="https://arxiv.org/abs/1611.06277">Gouasmi, Parish &amp; Duraisamy — A priori estimation of memory effects</a></td><td>要旨</td><td>非線形系の記憶推定。近似直交力学と真の核を区別。</td></tr><tr id="ref5"><td>[5]<br>2017</td><td><a href="https://arxiv.org/abs/1409.5748">Kelly &amp; Melbourne — Deterministic homogenization for fast–slow systems with chaotic noise</a></td><td>本文・定理1.1/2.3</td><td>高速カオスから拡散極限。弱収束と同一軌道誤差は別。</td></tr><tr id="ref6"><td>[6]<br>2022</td><td><a href="https://arxiv.org/abs/1903.10418">Chevyrev et al. — Deterministic homogenization under optimal moment assumptions, Part 2</a></td><td>要旨</td><td>モーメント条件と確率極限の精密化。</td></tr><tr id="ref7"><td>[7]<br>2021</td><td><a href="https://arxiv.org/abs/2010.13768">Chandramoorthy &amp; Wang — On the probability of finding nonphysical solutions through shadowing</a></td><td>要旨</td><td>近い真軌道の存在だけから物理統計の正しさは出ない。</td></tr><tr id="ref8"><td>[8]<br>2026</td><td><a href="https://doi.org/10.1073/pnas.2525390123">de Wit et al. — Data-driven Mori–Zwanzig modeling of Lagrangian particle dynamics in turbulent flows</a></td><td>著者稿本文</td><td>乱流粒子の短期精度と長期統計の実験的再現。</td></tr><tr id="ref9"><td>[9]<br>2026</td><td><a href="https://arxiv.org/abs/2601.00015">Stauffer, Gorji &amp; Lunati — Surrogate Trajectories Along Probability Flows</a></td><td>本文・§5/7.2</td><td>一時刻周辺分布の保存と経路統計の保存を区別。</td></tr><tr id="ref10"><td>[10]<br>2016/17</td><td><a href="https://arxiv.org/abs/1605.04886">Ma, Li &amp; Liu — The Derivation and Approximation of Coarse-grained Dynamics from Langevin Dynamics</a></td><td>本文・定理1/2</td><td>有理近似と補助雑音によるFDT保持。</td></tr><tr id="ref11"><td>[11]<br>2016</td><td><a href="https://arxiv.org/abs/1606.02596">Lei, Baker &amp; Li — Data-driven parameterization of the generalized Langevin equation</a></td><td>本文・式3–18</td><td>短時間モーメント・積分核・補助状態を合わせる方法。</td></tr><tr id="ref12"><td>[12]<br>2021</td><td><a href="https://arxiv.org/abs/2101.02657">Bockius et al. — Model reduction techniques for extended Markov parameterizations for GLE</a></td><td>本文・正実性と実現</td><td>相関からProny/正実補題でモデル化。実現できないフィットも扱う。</td></tr><tr id="ref13"><td>[13]<br>2023</td><td><a href="https://arxiv.org/abs/2301.08931">Koyama — Exponential sum approximations of finite completely monotonic functions</a></td><td>本文・定理2.14等</td><td>正測度の指数和近似と幾何収束。</td></tr><tr id="ref14"><td>[14]<br>2025</td><td><a href="https://doi.org/10.1007/s10915-025-02799-z">Zimmerling, Druskin &amp; Simoncini — Monotonicity, Bounds and Acceleration of Block Gauss and Gauss–Radau Quadrature</a></td><td>著者稿本文・定理</td><td>実Laplace変数のresolvent順序。時間域の行列順序と区別。</td></tr><tr id="ref15"><td>[15]<br>2013</td><td><a href="https://www.math.kent.edu/~reichel/publications/blkagauss.pdf">Fenu et al. — Block Gauss and anti-Gauss quadrature with application to networks</a></td><td>本文・序論と方法</td><td>条件付きの成分別行列関数評価。</td></tr><tr id="ref16"><td>[16]<br>2003</td><td><a href="https://arxiv.org/abs/math/0204049">Hansen &amp; Pedersen — Jensen’s Operator Inequality</a></td><td>本文・特徴付け</td><td>作用素凸性は通常の凸性より強い。</td></tr><tr id="ref17"><td>[17]<br>2024</td><td><a href="https://arxiv.org/abs/2102.13505">Alfonsi &amp; Kebaier — Approximation of stochastic Volterra equations with kernels of completely monotone type</a></td><td>要旨・後続定理との照合</td><td>核が異なるSVEのL2誤差。原定理全体は未精読。</td></tr><tr id="ref18"><td>[18]<br>2023</td><td><a href="https://arxiv.org/abs/2108.05048">Bayer &amp; Breneis — Markovian approximations of stochastic Volterra equations with the fractional kernel</a></td><td>要旨</td><td>Gaussian求積による多因子化と強収束。</td></tr><tr id="ref19"><td>[19]<br>2024–26</td><td><a href="https://arxiv.org/abs/2402.11705">Lang &amp; Lu — Learning Memory Kernels in Generalized Langevin Equations</a></td><td>本文・§1–4</td><td>相関推定誤差から重み付き核誤差への保証。</td></tr><tr id="ref20"><td>[20]<br>2025/26</td><td><a href="https://arxiv.org/abs/2512.10256">Lang &amp; Lu — Error Analysis of GLE with Approximated Memory Kernels</a></td><td>本文・序論、比較定理、§3/6</td><td>同期した加法白色雑音で核摂動を評価。FDT雑音の変更は対象外。</td></tr><tr id="ref21"><td>[21]<br>2026 07</td><td><a href="https://arxiv.org/abs/2607.05151">Braun, Hanke &amp; Wolf — On data-driven parameterizations of multidimensional generalized Langevin dynamics</a></td><td>要旨のみ</td><td>二次ポテンシャル・多次元のMarkov実現。本文取得未了。</td></tr><tr id="ref22"><td>[22]<br>2026 09</td><td><a href="https://arxiv.org/abs/2609.17472">Corneille et al. — Convergence in Hölder norms for Markovian approximations of stochastic Volterra equations</a></td><td>本文・設定、定理3.15周辺</td><td>ドリフト核と雑音フィルタをともに変更する経路誤差。</td></tr><tr id="ref23"><td>[23]<br>2025</td><td><a href="https://doi.org/10.1103/PhysRevE.111.034105">Giona, Procopio &amp; Pezzotti — Dynamic fluctuation-dissipation theory for GLE</a></td><td>著者稿本文・前半と結論</td><td>安定性、Markov実現、確率実現を区別。</td></tr><tr id="ref24"><td>[24]<br>2013</td><td><a href="https://arxiv.org/abs/1102.2950">Dörfler &amp; Bullo — Kron Reduction of Graphs with Applications to Electrical Networks</a></td><td>著者本文・主要定理</td><td>Schur補完、符号保存、内部経路による境界辺生成。</td></tr><tr id="ref25"><td>[25]<br>2022/23</td><td><a href="https://arxiv.org/abs/2203.12084">Singh et al. — Time-Domain Generalization of Kron Reduction</a></td><td>本文・定理1</td><td>不均一R/Lでも時間域の縮約。対象素子が熱/RCとは異なる。</td></tr><tr id="ref26"><td>[26]<br>2015</td><td><a href="https://arxiv.org/abs/1507.00219">Oyaro &amp; Triverio — TurboMOR</a></td><td>本文・Appendix A</td><td>多端子RCの受動性と高次モーメント保存。</td></tr><tr id="ref27"><td>[27]<br>2020</td><td><a href="https://arxiv.org/abs/2003.03559">Cheng et al. — Reduced Order Modeling of Diffusively Coupled Network Systems</a></td><td>本文・最適辺重み</td><td>グラフ構造を保つ拡散系の縮約。</td></tr><tr id="ref28"><td>[28]<br>2022</td><td><a href="https://arxiv.org/abs/2211.15301">Min &amp; Mallada — Learning Coherent Clusters in Weakly-Connected Network Systems</a></td><td>本文・集約条件</td><td>クラスター化による低次元化。</td></tr><tr id="ref29"><td>[29]<br>2020</td><td><a href="https://arxiv.org/abs/1907.05478">Redmann — An L2_T-error bound for time-limited balanced truncation</a></td><td>本文・誤差定理</td><td>有限時間のL2保証そのものは既知。</td></tr><tr id="ref30"><td>[30]<br>2020</td><td><a href="https://arxiv.org/abs/2006.09170">Dorschky, Reis &amp; Voigt — Balanced truncation for symmetric second order systems</a></td><td>本文・受動性条件</td><td>二階系・受動性を保つ縮約。</td></tr><tr id="ref31"><td>[31]<br>2026 07</td><td><a href="https://arxiv.org/abs/2607.05934">Xu et al. — FlexRC</a></td><td>要旨のみ</td><td>多端子RCの多点モーメント整合。</td></tr><tr id="ref32"><td>[32]<br>2025</td><td><a href="https://arxiv.org/abs/2510.16550">Yin et al. — SMP-RCR</a></td><td>本文・§I–III</td><td>疎RC、モーメント一致、負素子を避ける課題。</td></tr><tr id="ref33"><td>[33]<br>1982</td><td><a href="https://ieeexplore.ieee.org/document/1085084/">Matsumoto — RC admittance matrix realization by linear transformation</a></td><td>要旨・書誌のみ</td><td>最重要未比較。transformerless grounded RC合成の定理5。</td></tr><tr id="ref34"><td>[34]<br>2016</td><td><a href="https://arxiv.org/abs/1604.06197">Brandts &amp; Křížek — Factorization of CP-rank-3 completely positive matrices</a></td><td>本文・§1.2/3、Corollary 3.6・式(6)</td><td>基礎例・閾値1/2は既知定理の系。追究4の鋭い集約境界も同定理から導出。刊行版pp959,965–967を追加照合。</td></tr><tr id="ref35"><td>[35]<br>2004</td><td><a href="https://sites.math.rutgers.edu/~sussmann/papers/res-farina-tutorial-positive-realization.pdf">Benvenuti &amp; Farina — A Tutorial on the Positive Realization Problem</a></td><td>本文・錐と最少実現</td><td>正値性による次数増大という一般現象は既知。解説論文。</td></tr><tr id="ref36"><td>[36]<br>2021/22</td><td><a href="https://arxiv.org/abs/2006.13333">Grussler, Damm &amp; Sepulchre — Balanced truncation of k-positive systems</a></td><td>本文</td><td>内部正値性・対称性と低次数化の関係。</td></tr><tr id="ref37"><td>[37]<br>2001</td><td><a href="https://ieeexplore.ieee.org/document/955077/">Ganesh &amp; Chen — RC-in RC-out model order reduction accurate up to second order moments</a></td><td>要旨・書誌のみ</td><td>RC素子へ戻しながら初期モーメントを合わせる方法。本文未読。</td></tr><tr id="ref38"><td>[38]<br>2024</td><td><a href="https://re.public.polimi.it/handle/11311/1287338">Codecasa et al. — Fast Error-Bounded MOR-Based Approximation of Heat Conduction Problems in Electronics</a></td><td>機関公開要旨</td><td>熱伝導の実用的誤差保証。本文比較は未了。</td></tr><tr id="ref39"><td>[39]<br>2023</td><td><a href="https://arxiv.org/abs/2301.01052">Liljegren-Sailer — A time domain a posteriori error bound for balancing-related model order reduction</a></td><td>要旨</td><td>有限時間・非零初期値も扱う。</td></tr><tr id="ref40"><td>[40]<br>2020</td><td><a href="https://arxiv.org/abs/2006.02495">Schröder &amp; Voigt — Balanced Truncation with A Priori Error Bounds for LTI Systems with Nonzero Initial Value</a></td><td>要旨</td><td>初期値を含めた先験誤差保証。</td></tr><tr id="ref41"><td>[41]<br>2014/16</td><td><a href="https://arxiv.org/html/1404.3240v1">Fawzi &amp; Parrilo — Self-scaled bounds for atomic cone ranks: applications to nonnegative rank and cp-rank</a></td><td>arXiv:1404.3240v1の本文・§1/4、特に§4.2の式(51)、§4.5</td><td>刊行版：Math. Programming 158(1):417–465（2016）。本ノートの式(51)・節番号とコードは<strong>arXiv:1404.3240v1</strong>に対応。閉性・CPランクSDP・K₂,₃例を確認し、同版のSDPを実装して厳密比較。</td></tr><tr id="ref42"><td>[42]<br>2019</td><td><a href="https://fscdn.rohm.com/en/products/databook/applinote/discrete/transistor/what_is_a_thermal_model_tr_an-e.pdf">ROHM — What is a Thermal Model?</a></td><td>メーカー資料本文・pp1–3</td><td>熱とRC回路の対応、測定からのCauer模型、各素子と材料層は1対1とは限らない。</td></tr><tr id="ref43"><td>[43]<br>2022</td><td><a href="https://doi.org/10.1016/j.automatica.2022.110422">Luca Benvenuti — Minimal positive realizations: A survey</a></td><td>著者稿の冒頭pp1–5を分担確認。§7/9の追加取得は403、未精読。</td><td>Automatica 143, 110422。非負Hankelランクによる次数下界と実験からの区画数推定。更新survey。</td></tr><tr id="ref44"><td>[44]<br>2012/15</td><td><a href="https://arxiv.org/pdf/1210.6970">Fawzi &amp; Parrilo — Lower bounds on nonnegative rank via nonnegative nuclear norms</a></td><td>本文・§2.1–2.3、Theorem 3</td><td>Math. Programming 153(1):41–66。近似非負ランクの定量的下界。誤差に頑健な次数認証の一般論は既知。</td></tr><tr id="ref45"><td>[45]<br>2017/18稿</td><td><a href="https://arxiv.org/pdf/1708.01573">Gribling, de Laat &amp; Laurent — Lower bounds on matrix factorization ranks via noncommutative polynomial optimization</a></td><td>本文・§3、§3.5.1 Lemma 11</td><td>既存SDPを強めるモーメント階層。収束先を整数CPランクそのものと取り違えない。</td></tr><tr id="ref46"><td>[46]<br>1973</td><td><a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/cta.4490010203">Richard A. Stein — RC admittance realization by grounded-capacitor structures</a></td><td>出版社要旨・参考文献のみ</td><td>IJCTA 1(2):119–126。接地容量の多端子回路と最少容量個数を明示。最小性の厳密な範囲は本文未読。</td></tr><tr id="ref47"><td>[47]<br>2009</td><td><a href="https://ieeexplore.ieee.org/document/5274986/">D. B. Kandić &amp; B. D. Reljin — On Synthesis of Immitance Matrices of Transformerless RLC Networks</a></td><td>公開要旨・書誌のみ</td><td>ECCTD:303–306、DOI 10.1109/ECCTD.2009.5274986。非最小の共通接地RC実現も扱う。本文比較未了。</td></tr><tr id="ref48"><td>[48]<br>2008</td><td><a href="https://onlinelibrary.wiley.com/doi/10.1155/2008/513582">Kandić &amp; Reljin — Explicit Solution of the Inverse Eigenvalue Problem of Real Symmetric Matrices and Its Application to Electrical Network Synthesis</a></td><td>本文・主要定理と§5。追究4で出版社PDFの式(5.3)–(5.4)も確認</td><td>対称行列・符号条件と回路合成。driving-pointの構成を固定多端子の最小性と同一視しない。</td></tr><tr id="ref49"><td>[49]<br>2008</td><td><a href="https://escholarship.org/content/qt18b40014/qt18b40014.pdf">de Callafon et al. — General Realization Algorithm for Modal Identification of Linear Dynamic Systems</a></td><td>本文・ERA/GRA、weighted Hankelの節</td><td>J. Engineering Mechanics 134(9):712–722。有限の任意入力を扱う実現は既存。通常次数と物理的次数を区別。</td></tr><tr id="ref50"><td>[50]<br>2020</td><td><a href="https://www.jstage.jst.go.jp/article/nolta/11/2/11_157/_pdf/-char/en">Fukunaga &amp; Funaki — Transient thermal network model identification for power module packages</a></td><td>本文・§2–5</td><td>NOLTA 11(2):157–169。熱入力→温度の実測、逆畳み込み、雑音処理。今回との入出力差を明示。</td></tr><tr id="ref51"><td>[51]<br>2007</td><td><a href="https://zbc.uz.zgora.pl/repozytorium/Content/78645/download/">Kaczorek — Positive partial realization problem for linear discrete-time systems</a></td><td>本文・定理と結論</td><td>有限Markov系列の正値実現と構成の十分条件。全低次数候補を排除する議論とは区別。</td></tr><tr id="ref52"><td>[52]<br>2010/11稿</td><td><a href="https://arxiv.org/html/1010.3566v3">Bocci, Carlini &amp; Rapallo — Perturbation of matrices and non-negative rank with a view toward statistical models</a></td><td>本文・Theorem 2</td><td>非負ランクが減らない近傍の存在。定性的な距離の存在を新規性にしない。</td></tr><tr id="ref53"><td>[53]<br>2026</td><td><a href="https://arxiv.org/html/2605.14058v1">Baeckelant, Vandaele &amp; Gillis — Computing Lower Bounds on the Nonnegative Rank via Non-Convex Optimization Solvers</a></td><td>v1本文・§2–4。v2の更新書誌も確認</td><td>古典的な下界を非凸最適化で計算する比較研究。今回の式の先取性を保証する資料ではない。</td></tr><tr id="ref54"><td>[54]<br>1981</td><td><a href="https://meiji.repo.nii.ac.jp/record/11803/files/kagakugijutsukiyo_19_11-1.pdf">松本直樹 — 線形変換によるRC回路網の構成 / Synthesis of RC Networks through Use of Linear Transformation</a></td><td>本文・式(6b)/(9)、§4–5、回路図と結語。主要頁は画像でも確認</td><td>明治大学科学技術研究所紀要19、11-1–11-15。共通帰線は全容量接地を意味しない。1982の代用にはしない。</td></tr><tr id="ref55"><td>[55]<br>1976</td><td><a href="https://mspace.lib.umanitoba.ca/bitstream/1993/13712/1/Ali_Some_new.pdf">Adel Ahmed Ali — Some new aspects of congruence transformation as applied to RC ladder networks</a></td><td>大学公開博士論文・§2.2、pp6–7の式(2.1)–(2.5)を画像確認</td><td>正則な平方のHowitt変換とSchur補の不変性。素子値の総和と素子個数の最小化も区別。</td></tr><tr id="ref56"><td>[56]<br>2001</td><td><a href="https://journals.uwyo.edu/index.php/ela/article/download/135/135/135">Naomi Shaked-Monderer — Minimal CP Rank</a></td><td>本文・序論、Theorem 1.6、Example 2.1 p143</td><td>ELA8:140–157。正成分化A+ε(A1)(A1)ᵀはHρの構成と一致。正確な閾値は同例にはない。</td></tr><tr id="ref57"><td>[57]<br>1998</td><td><a href="https://doi.org/10.1098/rspa.1998.0218">J. B. M. Melissen — How different can colours be? Maximum separation of points on a spherical octant</a></td><td>原論文の公開全文転載・§1/5、pp1501–1504、式(5.1)を分担確認</td><td>Proc. R. Soc. A454:1499–1508。4点の最適分離から既知の定量的CP3排除式。今回の三集約境界とは別の極値問題。</td></tr><tr id="ref58"><td>[58]<br>2017/18</td><td><a href="https://link.springer.com/article/10.1007/s10100-017-0499-2">I. M. Bomze — Building a completely positive factorization</a></td><td>本文・§2、§3.1–3.2、Theorem 3.1、§6</td><td>CEJOR26:287–305。正対角合同によるCPランク不変性と正規化は既知。非一様対角の利用自体は新規でない。</td></tr><tr id="ref59"><td>[59]<br>1968</td><td><a href="https://doi.org/10.14288/1.0104245">Richard Adolph Stein — On the synthesis of two-element-kind multiport networks</a></td><td>大学の書誌・原要旨の転載。本文は取得できず</td><td>UBC学位論文の新たな取得候補。1973著者との同一性・本文定理の連続性は未確定。impedanceの要旨をadmittance定理の代用にしない。</td></tr><tr id="ref60"><td>[60]<br>2003</td><td><a href="https://cris.technion.ac.il/en/publications/completely-positive-matrices/">Abraham Berman &amp; Naomi Shaked-Monderer — Completely Positive Matrices</a></td><td>著者所属機関の書誌を確認。対象本文は未取得</td><td>World Scientific、DOI 10.1142/5273。追加査読による照合候補。小サイズ行列・CPランクの関連節と、三集約境界との同値性は本文照合待ち。</td></tr>
+<tr id="ref61"><td>[61]<br>2014稿／2015刊行</td><td><a href="https://api.newton.ac.uk/website/v0/events/preprints/NI14088">Bomze, Dickinson &amp; Still — The structure of completely positive matrices according to their CP-rank and CP-plus-rank（公開著者稿）</a></td><td>2014 11 04の15頁稿を本文・文献表まで照合。Definition1.1、Theorems2.4/4.8/5.1、Lemma5.2、§6を重点確認。刊行版との番号は未照合</td><td>LAA482:191–206、DOI10.1016/j.laa.2015.05.021。下半連続性・正距離の存在・正因子化は既知。三集約式・今回の個別成分定数・二窓手順の同じ記載はこの稿では確認できず。</td></tr><tr id="ref62"><td>[62]<br>1965</td><td><a href="https://doi.org/10.1109/TCT.1965.1082411">Basson &amp; Halkias — The Realization of RC N-Ports</a></td><td>IEEE登録書誌・DOIを確認。本文未取得</td><td>IEEE Trans Circuit Theory12(2):247–256。共通帰線RC実現の古典候補。固定アドミタンス・対角内部容量・全次数最小性との同値性は未照合。</td></tr><tr id="ref63"><td>[63]<br>1971</td><td><a href="https://doi.org/10.1109/TCT.1971.1083258">Stein &amp; Moore — On the synthesis of RC multiport networks by linear transformations</a></td><td>IEEE登録書誌・DOIを確認。本文未取得</td><td>IEEE Trans Circuit Theory18(2):294–297。変換と最小性の正確な範囲は未照合。</td></tr><tr id="ref64"><td>[64]<br>1971</td><td><a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/cta.4490010203">Stein — Synthesis of grounded-capacitor multiport RC networks</a></td><td>リンク先1973論文の参考文献で書誌確認。会議稿本文未取得</td><td>London、IEEE Int Symp Electrical Network Theory、49–50。会議録71 C 53-CT。1973論文とは区別して扱う。</td></tr><tr id="ref65"><td>[65]<br>2026公開／2027巻号</td><td><a href="https://link.springer.com/article/10.1007/s40314-026-03906-y">Mathew &amp; Chandrashekaran — Sufficient conditions for a doubly non-negative matrix to be completely positive</a></td><td>出版社要旨・書誌・参考文献。購読限定、公開著者稿未取得</td><td>Comp. Appl. Math.46:51。公開2026 09 19。錐の最大角に基づく十分条件・CP因子・cp-rank=rankを要旨が述べる。具体的閾値との比較は未実施。</td></tr><tr id="ref66"><td>[66]<br>2014</td><td><a href="https://doi.org/10.1109/SAPIW.2014.6844531">De Tommasi, Magnani, d’Alessandro &amp; de Magistris — Time domain identification of passive multiport RC networks with convex optimization: An application to thermal impedance macromodeling</a></td><td>著者ページの要旨・Crossref書誌を確認。本文未取得</td><td>IEEE SPI2014:1–4。時間定数推定と受動制約下の留数同定。二窓による全低状態数候補の排除との本文比較は残る。</td></tr><tr id="ref67"><td>[67]<br>2021</td><td><a href="https://cris.technion.ac.il/en/publications/copositive-and-completely-positive-matrices/">Shaked-Monderer &amp; Berman — Copositive and Completely Positive Matrices</a></td><td>機関書誌・試し読み入口まで。関連章本文未取得</td><td>World Scientific、DOI10.1142/11386。2003年書の更新・増補版。小サイズ・CPランク・rank-revealing因子化の章を今後照合。</td></tr>
 </tbody></table></div></section></details>
 </main>
-<footer class="reader-footer"><p>数学探索プロジェクト · 2026 09 20<br>導出・数値実験・独立監査：AIとの協働。方向性と結論の監査：横田さん。形式証明・人間の専門家による査読・実機検証は未実施。証明の状態と新規性の状態を分けて記録しています。</p><p>このHTMLは外部通信なしで閲覧・操作できます。本文から証明へのリンクを開くと、対応する詳細が展開されます。</p></footer>
+<footer class="reader-footer"><p>数学探索プロジェクト · 初版 2026 09 20 ／ 更新 2026 09 21<br>導出・数値実験・独立監査：AIとの協働。方向性と結論の監査：横田さん。形式証明・人間の専門家による査読・実機検証は未実施。証明の状態と新規性の状態を分けて記録しています。</p><p>このHTMLは外部通信なしで閲覧・操作できます。本文から証明へのリンクを開くと、対応する詳細が展開されます。</p></footer>
 <script>const r=document.getElementById('rho');function update(){const x=Number(r.value);document.getElementById('rho-v').value=x.toFixed(2);document.getElementById('nodes').value=x<.5?'4':'3'}r.addEventListener('input',update);update();document.getElementById('download-code').addEventListener('click',()=>{const a=document.createElement('a');const url=URL.createObjectURL(new Blob([document.getElementById('code').textContent],{type:'text/x-python;charset=utf-8'}));a.href=url;a.download='verify_thermal.py';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)})</script>
 <script>
 function certificatePsi(d,z){d=Math.max(0,d);const u=Math.min(Math.max(0,z),d);return Math.min(u*(2*d-u),(d+u)**2/4)}
@@ -4715,9 +5336,9 @@ function drawNoise(){const e=state.eta,c=1-e,z=e,d=2+e,M=envelope(d,z),margin=c-
  $('noise-left-bar').style.width=(c/1.1*100)+'%';$('noise-right-bar').style.width=(M/1.1*100)+'%';$('noise-verdict').classList.toggle('inconclusive',!reject);$('noise-verdict').textContent=reject?'3状態以下を排除：許した誤差では届きません。':'判定保留：この条件だけでは排除できません。';
  $('noise-detail').textContent='差 c − M = '+fmt(margin,6)+'。'+(reject?'四辺を小さく、対向と対角を大きくしても、3状態の限界を越えています。':'「3状態で十分」という結論ではありません。全成分を使う、より詳しい判定の余地があります。');
 }
-function drawDistance(){const el=$('distance-plot'),w=Math.max(250,Math.round(el.getBoundingClientRect().width)),h=160,L=26,R=20,x=v=>L+(w-L-R)*v/.22,low=1/6,up=.196676467057347;let s=line(x(0),75,x(.22),75,'#b7c6b7',2)+line(x(low),75,x(up),75,'#0c7166',9);s+='<circle cx="'+x(low)+'" cy="75" r="5" fill="#0c7166"/><circle cx="'+x(up)+'" cy="75" r="5" fill="#faf9f4" stroke="#0c7166" stroke-width="2"/>';
- s+=line(x(low),75,x(low),40,'#6a8e7b')+tx(x(low)-5,25,'下限 1/6','text-anchor="end"')+line(x(up),80,x(up),112,'#6a8e7b')+tx(x(up),134,'上界 約0.1966765','text-anchor="end"');
- s+=tx(x(0),102,'0')+tx(x(.22),102,'0.22','text-anchor="end"')+tx(L,55,'真の最小値は緑の区間内');el.innerHTML=svgBox(w,h,s,'下限と上界の間に残る未決定の距離');}
+function drawDistance(){const el=$('distance-plot'),w=Math.max(250,Math.round(el.getBoundingClientRect().width)),h=160,L=26,R=20,x=v=>L+(w-L-R)*v/.22,low=11/62,up=.196676467057347;let s=line(x(0),75,x(.22),75,'#b7c6b7',2)+line(x(low),75,x(up),75,'#0c7166',9);s+='<circle cx="'+x(low)+'" cy="75" r="5" fill="#0c7166"/><circle cx="'+x(up)+'" cy="75" r="5" fill="#faf9f4" stroke="#0c7166" stroke-width="2"/>';
+ s+=line(x(low),75,x(low),40,'#6a8e7b')+tx(x(low)-5,25,'下限 11/62','text-anchor="end"')+line(x(up),80,x(up),112,'#6a8e7b')+tx(x(up),134,'上界 約0.1966765','text-anchor="end"');
+ s+=tx(x(0),102,'0')+tx(x(.22),102,'0.22','text-anchor="end"')+tx(L,55,'最小値の未決定区間');el.innerHTML=svgBox(w,h,s,'下限と上界の間に残る未決定の距離');}
 function openAnchor(){let id=decodeURIComponent(location.hash.slice(1)),el=$(id);if(!el)return;let node=el,changed=false;while(node){if(node.tagName==='DETAILS'&&!node.open){node.open=true;changed=true}node=node.parentElement}if(changed)requestAnimationFrame(()=>el.scrollIntoView({behavior:'auto',block:'start'}));}
 $('heat-inputs').addEventListener('click',e=>{const b=e.target.closest('[data-heat]');if(!b)return;state.heat=Number(b.dataset.heat);all('[data-heat]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));drawHeat()});
 $('heat-time').addEventListener('input',()=>{state.time=Number($('heat-time').value);drawHeat()});let timer=null;
@@ -4743,4 +5364,60 @@ function save(blob,name){const url=URL.createObjectURL(blob),a=document.createEl
 document.getElementById('download-sdp-log-gzip').addEventListener('click',()=>{save(new Blob([bytes()],{type:'application/gzip'}),'round3_sdp_results.json.gz');out.textContent='元のJSONを含む圧縮ログの保存を開始しました。'});
 if(!('DecompressionStream' in window)){jsonButton.disabled=true;out.textContent='このブラウザーではJSONの展開に対応していません。圧縮ログを保存して展開できます。';return}
 jsonButton.addEventListener('click',async()=>{jsonButton.disabled=true;out.textContent='実行ログを展開しています…';try{const data=await new Response(new Blob([bytes()]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();save(new Blob([data],{type:'application/json;charset=utf-8'}),'round3_sdp_results.json');out.textContent='全32回分のJSONを展開して、保存を開始しました。'}catch(error){out.textContent='JSONの展開に失敗しました。圧縮ログを保存して展開できます。'}finally{jsonButton.disabled=false}});
-})();</script></body></html>
+})();</script><script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id), H=[[2,1,0,1],[1,2,1,0],[0,1,2,1],[1,0,1,2]],F0=[[1,1,0,0],[0,1,1,0],[0,0,1,1],[1,0,0,1]];
+function factor(r,positive){
+ if(positive&&r===0)return null;
+ if(r<.5||(positive&&r===.5)){const a=(Math.sqrt(1+r)-1)/2;return F0.map(row=>row.map(v=>v+a))}
+ const h=Math.sqrt(1+r),q=Math.sqrt(3/8);
+ const F=[[h/2-q,h/2+q,h/2+q,h/2-q],[q*h-.25,q*h-.75,q*h+.25,q*h+.75],[q*h+.75,q*h+.25,q*h-.75,q*h-.25]];
+ return F.map(row=>row.map(v=>Math.abs(v)<1e-14?0:v));
+}
+function table(A,rowLabels){return '<table class="lab-matrix"><thead><tr><th></th>'+[1,2,3,4].map(i=>'<th>B'+i+'</th>').join('')+'</tr></thead><tbody>'+A.map((row,i)=>'<tr><th>'+rowLabels[i]+'</th>'+row.map(v=>'<td class="'+(v===0?'zero':'')+'">'+v.toFixed(3)+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+function drawPositive(){const r=Number($('lab-rho').value),strict=$('require-positive').checked,F=factor(r,strict);
+ $('positive-ordinary').textContent=r<.5?'4':'3';$('positive-strict').textContent=r===0?'不可能':r<=.5?'4':'3';
+ $('positive-factor').innerHTML=F?table(F,F.map((_,i)=>'f'+(i+1))):'';
+ $('positive-coupling-note').textContent=!F?'ρ=0は行列にゼロ成分があるため、すべて正の因子では何本使っても厳密に表せません。':r===.5?(strict?'境界ρ=0.5。正の結合だけで厳密に表すには4個必要です。表示はその4行因子です。':'境界ρ=0.5。3行で厳密に表せますが、表示した因子には4つのゼロがあります。'):(strict?'全成分が正の':'ゼロを許す')+F.length+'行因子を表示しています。';
+}
+let sensorMode='raw';
+function sensorData(mode){const theta=1,T=.1,h=1,a=theta*Math.exp(-T/theta)*(-Math.expm1(-h/theta))**2;return H.map(row=>row.map(v=>mode==='raw'?a*v:0))}
+function drawSensor(){const raw=sensorMode==='raw';$('sensor-matrix').innerHTML=table(sensorData(sensorMode),['B1','B2','B3','B4']);
+ $('sensor-verdict').textContent=raw?'見かけの判定：4状態以上':'二窓差は0：内部状態を要求しない';$('sensor-verdict').classList.toggle('inconclusive',raw);
+ $('sensor-note').textContent=raw?'実際の内部容量は0個です。観測にはセンサーの動特性が含まれ、物体の真の熱流を使うという判定の前提を満たしていません。':sensorMode==='true'?'立上りの後では真の熱流は一定。等しい長さの二窓で差を取ると0になります。':'既知の一次遅れを端点値で補正すると、解析的に二窓差は0へ戻ります。この表示には雑音を加えていません。';
+ document.querySelectorAll('[data-sensor]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sensor===sensorMode)));
+}
+$('require-positive').addEventListener('change',drawPositive);$('lab-rho').addEventListener('input',drawPositive);document.querySelectorAll('[data-rho]').forEach(b=>b.addEventListener('click',drawPositive));
+$('sensor-modes').addEventListener('click',e=>{const b=e.target.closest('[data-sensor]');if(!b)return;sensorMode=b.dataset.sensor;drawSensor()});
+drawPositive();drawSensor();window.Round6Lab={factor,sensorData,drawPositive};
+})();
+(function(){
+'use strict';
+const $=id=>document.getElementById(id),keys=['L','D','m','M','z'];
+function certificate(L,D,m,M,z){
+ const a=[L,D,m,M,z];if(a.some(v=>!Number.isFinite(v))||L<0||D<=0||m<0||M<m||L>D||z<0||m>D)return {kind:'invalid'};
+ const scale=Math.max(...a),tol=1e-10;[L,D,m,M,z]=a.map(v=>v/scale);
+ const zc=Math.min(z,D),psi=Math.min(zc*(2*D-zc),(D+zc)**2/4);
+ if(m*m-psi>tol)return {kind:'three',reject:true,margin:(m-Math.sqrt(psi))*scale};
+ if(!(z>tol&&m-z>tol&&L-M>tol&&m*m-D*z>tol))return {kind:'outside',reject:false};
+ const A=Math.max(L,z+m*m/z-D),U=(m*m-D*z)/(D-z),V=Math.min(M,m*z*(D-z)/(m*m-D*z)),R=Math.min(M,2*D*z*m/(z*z+m*m));
+ if(!(U>0&&U<=z+tol&&A<=D+tol&&R>=m-tol&&V>=m-tol&&A-R>tol))return {kind:'outside',reject:false};
+ const P=(A*(U-V)**2+2*(A-R)*U*V)/((A-R)*(A+R)),gap=L-M-P;
+ return {kind:'five',reject:gap>tol,margin:gap*scale,projectedNorm:P*scale,A:A*scale,U:U*scale,V:V*scale,R:R*scale};
+}
+function draw(){const a=keys.map(k=>Number($('five-'+k).value)),empty=keys.some(k=>$('five-'+k).value.trim()===''),r=empty?{kind:'invalid'}:certificate(...a);const o=$('five-verdict');o.classList.toggle('inconclusive',!r.reject);
+ o.textContent=r.kind==='invalid'?'入力を確認：有限で整合した上下限が必要です。':r.reject?'棄却成立：この区間に合う3状態以下の模型はありません。':'判定保留：この条件では3状態以下を排除できません。';
+ $('five-detail').textContent=r.kind==='three'?'三集約式だけで棄却できます。余裕 m−M(D,z) = '+r.margin.toPrecision(6):r.kind==='five'?'五値条件：射影ノルムの上限 P = '+r.projectedNorm.toPrecision(7)+'、残る辺の矛盾余裕 L−M−P = '+r.margin.toPrecision(7)+'。':r.kind==='outside'?'三集約式では保留です。現在の値は、実装した五値条件の適用範囲に入りません。':'0≤L≤D、0≤m≤M、m≤D、z≥0を確認してください。';
+ return r;
+}
+function preset(value){if(value==='correlation'){[1,1,.5,.5,0].forEach((v,i)=>$('five-'+keys[i]).value=v)}else{const e=value==='bound'?11/62:Number(value);[2-e,2+e,1-e,1+e,e].forEach((v,i)=>$('five-'+keys[i]).value=v)}draw()}
+keys.forEach(k=>$('five-'+k).addEventListener('input',draw));document.querySelectorAll('[data-five]').forEach(b=>b.addEventListener('click',()=>preset(b.dataset.five)));
+function noiseFull(){const e=ReaderLab.state.eta,ok=e<=11/62;const el=$('full-noise-verdict');el.textContent=ok?'全成分を使う追加保証でも棄却成立（η≤11/62）。':'11/62までの追加保証では判定保留。';el.classList.toggle('inconclusive',!ok)}
+$('noise-eta').addEventListener('input',noiseFull);document.querySelectorAll('[data-eta]').forEach(b=>b.addEventListener('click',noiseFull));
+draw();noiseFull();window.FiveBoundsLab={certificate,preset,draw};
+})();
+
+document.querySelectorAll('[data-round6-download]').forEach(button=>button.addEventListener('click',()=>{const data=document.getElementById(button.dataset.round6Download).textContent;const url=URL.createObjectURL(new Blob([data],{type:'text/x-python;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=button.dataset.filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}));
+
+</script></body></html>
