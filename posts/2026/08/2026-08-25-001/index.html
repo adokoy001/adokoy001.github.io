@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>エンジンサウンドラボを公開しました · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="V10・4ローター・ガスタービン・アフターバーナー・水平対向ターボ。5つの回転機械をブラウザでリアルタイム合成する遊び場です。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-25-001/"><meta property="og:title" content="エンジンサウンドラボを公開しました"><meta property="og:description" content="V10・4ローター・ガスタービン・アフターバーナー・水平対向ターボ。5つの回転機械をブラウザでリアルタイム合成する遊び場です。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-25-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>エンジンサウンドラボを公開しました</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-08-25T11:00:00+09:00">2026-08-25T11:00:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-437a172d7b13/">開発</a><a class="tag" href="/tags/javascript/">JavaScript</a><a class="tag" href="/tags/entry-fd2460833058/">ゲーム</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="エンジンサウンドラボを公開しました">エンジンサウンドラボを公開しました</h1>
+<p>ブラウザの中でエンジンを回して、聴いて、覗ける遊び場を作りました。</p>
+<p>→ <a href="/works/engine-sound-lab/">エンジンサウンドラボ</a></p>
+<p>録音素材は一切使っていません。20,000rpmまで回る3.0L NAのV10、ペリフェラルポートの4ローター、ガスタービン、5ゾーンアフターバーナー、水平対向4ターボの5機関を、それぞれ専用のDSPとしてAudioWorklet上でサンプル単位に合成しています。排気パルスがランナー長のぶん遅れて集合管で干渉する物理寄りの作りなので、等長・不等長エキマニやXパイプ、サイレンサーの有無で音がちゃんと変わります。3Dの断面モデルも連動していて、スローモーションにすると点火順序と排気の流れを目で追えます。</p>
+<p>おまけの愛車ガレージでは、好きなエンジンを積んだ車が3kmコースを周回するのをトラックサイドから観戦できます。ドップラー効果は可変ディレイで真面目にやっています。</p>
+<p>音が出ます。ヘッドホン推奨。スマホでも動きます。</p>
+<hr>
+<p><strong>追記（2026-08-25）</strong>: 5機関のうちターボファン（アフターバーナー）だけ、個別に作り込んだ単体版を公開しました。</p>
+<p>→ <a href="/works/afterburner-lab/">アフターバーナーラボ</a></p>
+<p>高度と機速のスライダーでラム圧と大気の薄さが推力に効くようになり、ファンブレード枚数やバイパス比などのエンジンカスタム、空気の流れのパーティクル表示（観察用のゆっくり版と、露光軌跡で描く実速版）、始動・停止シーケンスの作り込みが入っています。停止後にファンが遠心力の抜けた回転数まで落ちると鳴り始めるカラカラ音は、実機と同じ理屈です。</p>
+<p>安全率を下げるとレッドライン超過で推力が伸びますが、疲労が蓄積して、そのうち何かの拍子に派手に壊れます。壊れたら直せます。</p>
+<p>統合版のターボファンにも、ブレード形状の修正（ファン・圧縮機・タービン）と全開維持時の音の修正を反映してあります。</p>
+<hr>
+<p><strong>追記（2026-08-25 その2）</strong>: アフターバーナーラボに <strong>空母発艦モード</strong> を足しました。エンジン単体のテストベンチだったものに、ニミッツ級の飛行甲板を丸ごと繋げた形です。</p>
+<p>始動 → スロットル全開 → 敬礼、の3ステップで射出されます。C-13-1相当のカタパルト（ストローク94m）が2〜3秒で3.5G、対気175ktまで引っ張り上げて、艦首で一度沈んでから上がっていきます。</p>
+<p>面白いのは失敗できるところです。カタパルト圧を落とす、アイドルのまま敬礼する、重い機体なのに甲板風が弱い——このどれかをやると、艦首を出た瞬間に沈下して海に突き刺さります。射出エネルギーと揚力の釣り合いをそのまま計算しているだけなので、同じ重量でも甲板風を25kt入れてやれば助かります。</p>
+<p>甲板脇の固定カメラで見ると、機体が横を抜ける瞬間にドップラーが掛かります。接近側で約+30%、通過後に−19%。可変ディレイで距離をそのまま音の遅れとして与えているので、素直にそうなります。カタパルト解放の金属音、ストローク末端のウォーターブレーキの衝撃、蒸気の噴き出しも足しました。</p>
+<p>発艦したあとは操縦できます。ピッチは荷重倍数コマンド（中立が1G水平飛行）、ロールは約140°/s、ヨーは画面下の左右スライダー。操縦席視点に切り替えると、ピッチラダーと速度ベクトル、速度・高度テープのHUDが出ます。舵面も実際に動くので、外から見ればエルロンとラダーがどちらに切れているか分かります。</p>
+<p>着艦装置はまだ無いので、飛び立ったら帰ってこられません。</p>
+<p>→ <a href="/works/afterburner-lab/">アフターバーナーラボ</a></p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/08/2026-08-24-001/">← ブラウザ言語モデルでCoTを検証する — 評価汚染の指摘により結論を三度修正した記録</a><a rel="next" href="/posts/2026/08/2026-08-26-001/">直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/08/2026-08-26-001/">直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った</a></li><li><a href="/posts/2026/08/2026-08-24-001/">ブラウザ言語モデルでCoTを検証する — 評価汚染の指摘により結論を三度修正した記録</a></li><li><a href="/posts/2026/08/2026-08-22-002/">TinyLM LabからTensorFlow.jsを卒業した——手書き逆伝播とWebGPU、そして日本語対話コーパスの公開</a></li><li><a href="/posts/2026/08/2026-08-22-001/">ブラウザで学習するMoE言語モデルを作った</a></li><li><a href="/posts/2026/08/2026-08-16-001/">AIに作らせたゲームを2本、サイトに公開した</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

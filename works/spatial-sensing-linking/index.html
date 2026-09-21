@@ -1,0 +1,1867 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="有限実木の距離観測と独立区間の固定・可変接続について、証明、新規性の照合、出典、再現コードを収録する研究ノート。"><title>空間の観測と接続 — 新規性照合と証明</title><style>
+:root{color-scheme:light;--ink:#191d22;--muted:#535a61;--line:#cdd1d5;--blue:#155581}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:white;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Noto Sans CJK JP","Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;font-size:16px;line-height:1.9}
+main{max-width:1100px;margin:auto;padding:48px 40px 90px}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.3;letter-spacing:.02em;margin:0 0 30px}
+h2{font-size:1.65rem;line-height:1.5;border-top:2px solid var(--ink);padding-top:28px;margin:48px 0 22px}
+h3{font-size:1.25rem;line-height:1.65;margin:32px 0 14px}h4{font-size:1.06rem;margin:24px 0 12px}
+p{margin:16px 0}a{color:var(--blue);text-underline-offset:3px;overflow-wrap:anywhere}a:hover{text-decoration-thickness:2px}
+nav{display:flex;flex-wrap:wrap;gap:8px 24px;border-block:1px solid var(--line);padding:16px 0;margin:28px 0}
+nav a{white-space:nowrap;font-weight:600}.controls{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0}
+button,.download{font:inherit;line-height:1.4;border:1px solid #6c747b;padding:8px 14px;background:white;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block}
+button:hover,.download:hover{background:#f1f3f4}button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+details{border-block:1px solid var(--line);margin:20px 0;padding:16px 0}summary{font-size:1.2rem;font-weight:650;cursor:pointer;line-height:1.7}
+details>div{padding-top:8px}details h2{border:0;margin-top:16px;padding-top:0}details[open] summary{margin-bottom:18px}
+.table-scroll{max-width:100%;overflow-x:auto;margin:22px 0}table{width:100%;border-collapse:collapse;font-size:.92rem;line-height:1.75}
+th{text-align:left;background:#eef1f3;border-bottom:2px solid #aeb5bb;padding:12px 14px;vertical-align:top;font-weight:650}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top;min-width:120px}td:first-child{min-width:170px}tbody tr:nth-child(even){background:#fafbfc}
+.equation{max-width:100%;overflow-x:auto;overflow-y:hidden;margin:26px 0;padding:16px 8px;position:relative;text-align:center}
+math{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",serif;font-size:1.12em;min-width:max-content}
+math mtext{font-family:"Noto Sans JP","Noto Sans CJK JP","Yu Gothic",sans-serif}
+.eq-label{font-family:serif;font-size:.9em;color:var(--muted);display:block;text-align:right;margin-top:8px}
+pre{background:#f5f6f7;border:1px solid #dce0e3;padding:16px;overflow:auto;max-width:100%;font-size:.84rem;line-height:1.55}
+code{font-family:"SFMono-Regular",Consolas,"Liberation Mono","Noto Sans JP",monospace;font-size:.9em;overflow-wrap:anywhere}p code,li code,td code{background:#f1f3f5;padding:1px 3px}
+blockquote{margin:24px 0;padding:0 24px;border-left:3px solid #a8afb5;color:#343a40}li{margin:7px 0}ul,ol{padding-left:26px}
+.note{color:var(--muted);font-size:.9rem}.metadata{font-size:.86rem;color:var(--muted);border-top:1px solid var(--line);margin-top:48px;padding-top:20px}
+.skip{position:absolute;left:-9999px}.skip:focus{position:static;margin:20px;display:block}
+svg{max-width:100%;height:auto}section{scroll-margin-top:24px}#sources li{margin:18px 0}#code-source{max-height:500px}
+@media(max-width:640px){body{font-size:15px}main{padding:28px 18px 60px}h2{font-size:1.4rem;margin-top:38px}h3{font-size:1.15rem}.table-scroll table{min-width:720px}td,th{padding:11px}nav{gap:8px 16px}summary{font-size:1.08rem}.equation{padding-inline:3px}math{font-size:1.04em}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{body{font-size:10pt;line-height:1.65}main{max-width:none;padding:0}nav,.controls,.interactive-controls,.download,.skip{display:none!important}h1{font-size:25pt}h2{font-size:17pt;break-after:avoid}h3,summary{break-after:avoid}table{font-size:8pt}tr{break-inside:avoid}.table-scroll,.equation{overflow:visible}details{break-inside:auto}details>div{display:block!important}summary{list-style:none}#code-source{max-height:none;white-space:pre-wrap}.equation math{font-size:10pt}a{color:inherit;text-decoration:none}.metadata{margin-top:20px}}
+</style></head><body><a class="skip" href="#main">本文へ</a><main id="main">
+<h1>空間の観測と接続</h1>
+<p><strong>主な成果候補は、有限実木の距離観測に対する「有限誤差の完全な曲線」と、独立な直線上の不確実位置に対する「固定／可変接続の最良係数」である。</strong> 両者の一般証明・達成例・再現検証を収録する。照合した一次資料では、これらの主結果それぞれと同一の定理を特定できていない。ただし、先行発表の不存在は証明しておらず、学術的新規性は未確定である。</p>
+<p>追加の文献照合を踏まえ、距離座標・安定性の一般論・全配置連結性という問題設定を既存研究に帰属させる。葉への基準点移動や最良推定誤差への換算は、主成果を支える短い帰結として扱う。<strong>証明を記録したことと、初めて発見されたことは別の判定である。</strong></p>
+<p lang="en"><strong>S2 — Sharp robust adaptivity gap.</strong> For every n ≥ 2, the supremum, over families of n nonempty bounded closed intervals on the real line with independently chosen positions and positive adaptive cost, of the optimal fixed-tree bottleneck cost divided by the realization-adaptive bottleneck cost is ⌈n/2⌉.</p>
+
+<p>この係数は区間族全体にわたる最悪比であり、各入力で必ず比が等しくなるという意味ではない。</p>
+<nav aria-label="研究ノートの目次"><a href="#assessment">新規性の判定</a><a href="#examples">動かして見る</a><a href="#comparison">先行研究との比較</a><a href="#proofs">定理と証明</a><a href="#verification">検証・コード</a><a href="#sources">出典・限界</a><a href="#review-updates">レビュー対応</a></nav><section id="assessment"><h2>主張別の新規性判定</h2>
+<p>「主候補」は、文献との差を独立した主張として説明しやすいという評価であり、新規性の確率を意味しない。「短い帰結」は数学的な依存関係の評価で、同一の式が既刊文献に掲載済みという断定ではない。</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>主張</th>
+<th>既存研究との重なり</th>
+<th>今回残る差分・評価</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1.1 距離座標・射影恒等式・単射条件</td>
+<td>距離写像、木の識別構造は既知</td>
+<td>導入・補題。新規性の中心に置かない</td>
+</tr>
+<tr>
+<td>S1.2 最良の逆Lipschitz係数</td>
+<td>定量的歪み・局所等長性は既知</td>
+<td>枝長と付け根間隔による正確な係数は同一結果未確認。ただし恒等式から短い最適化で得る</td>
+</tr>
+<tr>
+<td><strong>S1.3 有限誤差の曖昧さ直径</strong></td>
+<td>一般的な安定性、等しい観測の緩和識別は既知</td>
+<td><strong>任意の有限基準点集合、非単射を含む閉形式・跳躍の位置と量が主候補</strong></td>
+</tr>
+<tr>
+<td>S1.4 最良推定誤差 = 半直径</td>
+<td>最適回復・情報半径と実木の中心原理</td>
+<td><strong>既知原理の直接の系</strong>。木より広い復元先でも成立する</td>
+</tr>
+<tr>
+<td>S1.5 全点対を同時に改善する葉配置</td>
+<td>葉を用いた最小識別集合は既知</td>
+<td>同一の数値優越文言は未特定だが、凸包幾何からの短い帰結。補助命題として収録</td>
+</tr>
+<tr>
+<td><strong>S2.1 固定／可変接続比 ≤ ceil(n/2)</strong></td>
+<td>可変側のWCU、固定側のrobust bottleneckは既知</td>
+<td><strong>二つの最適値を結ぶ、全nで最良の比較係数が主候補</strong></td>
+</tr>
+<tr>
+<td><strong>S2.2・S2.3 短い区間による構造定理</strong></td>
+<td>区間交差グラフと道の中心を使う技法は初等的</td>
+<td><strong>短い区間だけの連結性・長い区間の端点条件という必要十分条件と、鋭い強化係数が主候補</strong></td>
+</tr>
+<tr>
+<td>S2.4 高速計算・凸包不変性</td>
+<td>ソート、隙間、極端配置の利用は既知の基本技法</td>
+<td>R_A の同一公式は未確認。R_F は既知のBorůvka法を特殊化して O(n log n) で計算。補助的な計算法・系として扱う</td>
+</tr>
+<tr>
+<td>S2.5 独立性を外した相関反例</td>
+<td>固定／可変という一般的な量化の差</td>
+<td>仮定の必要性を示す境界例。独立した新規性を主張しない</td>
+</tr>
+</tbody>
+</table></div>
+<p>S1では <a href="https://arxiv.org/html/2410.16224v1">Ilmavirtaほかのtravel-time理論</a>、<a href="https://drum.lib.umd.edu/bitstreams/fc568aaf-1954-4721-9884-854431b48e67/download">木のmetric dimension</a>、<a href="https://arxiv.org/html/1007.2207v1">実木の中心原理</a> が主要な比較先となる。S2では <a href="https://arxiv.org/html/1009.3469v4">ChambersほかのWCU</a> と <a href="https://arxiv.org/pdf/1307.4521">Kasperski–Zielińskiのrobust bottleneck還元</a> が直接の出発点になる。</p>
+<p><strong>外部の専門家へ優先して照合を求める単位は、S2の最良係数と構造定理、次にS1の全誤差曲線である。</strong> S2は上界・各nの等号例・短区間数による強化まで一体の主張になっている。S1は既知の距離写像に対する明示的な特殊化として、その正確な式に価値がある。どちらも既存の一般原理そのものを新たに発明したとは位置づけない。</p></section><section id="examples"><h2>二つの結果を動かして見る</h2><!-- Research figures. All selectors and IDs use the rv- prefix. Insert once per document. -->
+<style>
+.rv-figure{--rv-ink:#17212a;--rv-blue:#1757b8;--rv-muted:#5c6873;--rv-rule:#c7cfd6;max-width:100%;margin:2rem 0;color:var(--rv-ink);border-top:2px solid var(--rv-ink);padding-top:1rem;font-family:inherit;line-height:1.65}
+.rv-figure *{box-sizing:border-box}.rv-figure h3{margin:0 0 .65rem;font-size:1.25rem}.rv-figure p{margin:.7rem 0}.rv-figure svg{display:block;width:100%;height:auto;overflow:visible;font-family:inherit}.rv-figure svg text{fill:var(--rv-ink)}.rv-figure svg .rv-blue{fill:var(--rv-blue)}.rv-figure .rv-muted{color:var(--rv-muted)}
+.rv-panels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.5rem;align-items:start}.rv-panel{min-width:0;margin:0}.rv-panel figcaption{font-size:.92rem;margin-top:.5rem}.rv-control-row{display:flex;align-items:center;gap:.6rem 1rem;flex-wrap:wrap;margin:1rem 0}.rv-control-row label{font-weight:600}.rv-control-row input[type=range]{flex:1 1 180px;min-width:0;max-width:400px;accent-color:var(--rv-blue);height:30px}.rv-control-row output{font-variant-numeric:tabular-nums;min-width:4.6em;text-align:right}.rv-figure button{font:inherit;border:1px solid var(--rv-ink);background:#fff;color:var(--rv-ink);padding:.35rem .7rem;cursor:pointer;border-radius:0;box-shadow:none}.rv-figure button:hover{background:#edf3fb}.rv-figure button:focus-visible,.rv-figure input:focus-visible{outline:3px solid var(--rv-blue);outline-offset:3px}.rv-readout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem 1.25rem;border-top:1px solid var(--rv-rule);border-bottom:1px solid var(--rv-rule);padding:.8rem 0;margin:1rem 0}.rv-readout dt{font-size:.92rem;margin:0}.rv-readout dd{margin:.15rem 0 0;font-size:1.2rem;font-weight:650;font-variant-numeric:tabular-nums}.rv-readout .rv-guarantee{font-size:.95rem;font-weight:400}.rv-formula{font-family:inherit;font-size:1.12rem}.rv-note{font-size:.92rem}.rv-figure .rv-live{min-height:3.4em}.rv-only-js{display:none}.rv-ready .rv-only-js{display:flex}.rv-figure noscript p{border-left:3px solid var(--rv-rule);padding-left:.8rem}.rv-figure .rv-svg-border{stroke:var(--rv-rule);fill:none}.rv-figure .rv-table-wrap{max-width:100%;overflow-x:auto}
+@media(max-width:700px){.rv-panels{grid-template-columns:minmax(0,1fr);gap:1rem}.rv-figure h3{font-size:1.15rem}.rv-readout{gap:.7rem}.rv-control-row{gap:.4rem .7rem}.rv-figure button{font-size:.92rem}}
+@media print{.rv-only-js,.rv-ready .rv-only-js{display:none}.rv-figure{break-inside:avoid}.rv-panels{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+</style>
+
+<section class="rv-figure" id="rv-tree" aria-labelledby="rv-tree-heading">
+<h3 id="rv-tree-heading">S1 の図解 — 小さな観測誤差が、大きな位置の曖昧さを生む</h3>
+<p>基準点 S₁・S₂ に対する距離を測る。幹の各辺は長さ 1、外枝は各 10。距離は木の道に沿って測る。</p>
+<div class="rv-panels">
+<figure class="rv-panel">
+<svg viewBox="0 0 440 245" role="img" aria-labelledby="rv-tree-svg-title rv-tree-svg-desc">
+<title id="rv-tree-svg-title">長い外枝が二本ある木</title>
+<desc id="rv-tree-svg-desc">幹は S1、b、c、S2 の順で、三つの辺は全て長さ1。bからX、cからYへの外枝はそれぞれ長さ10。図は長さの縮尺を表さない。XとYの距離は21だが、二つの距離観測の差は各1。</desc>
+<path d="M42 175H388M150 175V44M270 175V44" fill="none" stroke="#17212a" stroke-width="3"/>
+<path d="M150 44V175H270V44" fill="none" stroke="#1757b8" stroke-width="4"/>
+<g fill="#17212a"><circle cx="150" cy="175" r="4"/><circle cx="270" cy="175" r="4"/></g>
+<g fill="#fff" stroke="#1757b8" stroke-width="3"><circle cx="150" cy="44" r="7"/><circle cx="270" cy="44" r="7"/></g>
+<g fill="#17212a"><rect x="35" y="168" width="14" height="14"/><rect x="381" y="168" width="14" height="14"/></g>
+<g font-size="20" text-anchor="middle"><text x="150" y="26" class="rv-blue">X</text><text x="270" y="26" class="rv-blue">Y</text><text x="42" y="211">S₁</text><text x="150" y="211">b</text><text x="270" y="211">c</text><text x="388" y="211">S₂</text><text x="96" y="161">1</text><text x="210" y="161">1</text><text x="330" y="161">1</text><text x="121" y="116">10</text><text x="299" y="116">10</text></g>
+<text x="220" y="240" text-anchor="middle" font-size="16">模式図：線分の長さは縮尺を表さない</text>
+</svg>
+<figcaption>X の観測は (11, 12)、Y は (12, 11)。真の位置は 21 離れているが、観測の最大成分差は 1。</figcaption>
+</figure>
+<figure class="rv-panel">
+<svg viewBox="0 0 440 285" role="img" aria-labelledby="rv-error-svg-title rv-error-svg-desc">
+<title id="rv-error-svg-title">最良の最悪位置誤差 E と、各観測の許容誤差 ε</title>
+<desc id="rv-error-svg-desc">横軸は各観測の誤差 ε、0から1。縦軸は最良の推定器の最悪位置誤差 E。εが0.5未満ではEはε。εが0.5に達した時点で10.5となり、その後は10.5。0.5,0.5は空丸、0.5,10.5は塗丸。二点を結ぶ関数線はない。</desc>
+<g stroke="#dbe0e5" stroke-width="1"><path d="M64 40H420M64 140.57H420"/></g>
+<path d="M64 24V232H424" fill="none" stroke="#17212a" stroke-width="1.4"/>
+<g font-size="16" text-anchor="end"><text x="54" y="237">0</text><text x="54" y="146">5</text><text x="54" y="46">10.5</text></g>
+<g font-size="16" text-anchor="middle"><text x="64" y="255">0</text><text x="242" y="255">0.5</text><text x="420" y="255">1</text></g>
+<text x="12" y="20" font-size="19">E</text><text x="430" y="273" text-anchor="end" font-size="19">ε</text>
+<path d="M64 232L242 222.857" fill="none" stroke="#1757b8" stroke-width="3"/>
+<path d="M242 40H420" fill="none" stroke="#1757b8" stroke-width="3"/>
+<circle cx="242" cy="222.857" r="5.5" fill="#fff" stroke="#1757b8" stroke-width="2.5"/>
+<circle cx="242" cy="40" r="5.5" fill="#1757b8"/>
+<g id="rv-error-marker"><circle cx="238.44" cy="223.04" r="9" fill="none" stroke="#17212a" stroke-width="2"/><circle cx="238.44" cy="223.04" r="2" fill="#17212a"/></g>
+<text x="308" y="75" font-size="17" class="rv-blue">E = 10.5</text>
+<text x="102" y="207" font-size="17" class="rv-blue">E = ε</text>
+</svg>
+<figcaption>空丸は値に含まれず、塗丸は含まれる。ε = 0.5 での飛びを、連続な線で補間していない。</figcaption>
+</figure>
+</div>
+<p class="rv-formula">E(ε) = ε （0 ≤ ε &lt; 0.5）、E(ε) = 10.5 （ε ≥ 0.5）</p>
+<div class="rv-control-row rv-only-js">
+<label for="rv-epsilon">各観測の許容誤差 ε</label><input id="rv-epsilon" type="range" min="0" max="100" step="1" value="49" aria-describedby="rv-tree-model"><output id="rv-epsilon-out" for="rv-epsilon">0.49</output>
+<button type="button" id="rv-before">閾値直前：0.49</button><button type="button" id="rv-at">閾値到達：0.50</button>
+</div>
+<dl class="rv-readout" aria-live="polite" aria-atomic="true"><div><dt>最良の最悪位置誤差 E(ε)</dt><dd id="rv-error-value">0.49</dd></div><div><dt>曖昧さ直径 A(2ε)</dt><dd id="rv-ambiguity-value">0.98</dd></div></dl>
+<p id="rv-tree-model" class="rv-note">この数値は全ての真の位置・許容誤差についての最悪値。推定器は木の任意の点を返せる。平均的な誤差や、今の受信値だけの誤差を表すものではない。</p>
+<p id="rv-tree-state" class="rv-note rv-live">ε = 0.49 では、離れた二本の外枝の候補はまだ同じ受信値に重ならない。</p>
+<noscript><p>静的な比較：ε = 0.49 なら E = 0.49、ε = 0.50 なら E = 10.50。JavaScript を有効にするとスライダーで比較できる。</p></noscript>
+</section>
+
+<section class="rv-figure" id="rv-interval" aria-labelledby="rv-interval-heading">
+<h3 id="rv-interval-heading">S2 の図解 — 接続を先に固定するための、ちょうど必要な代償</h3>
+<p>n − 1 個の点を 1, …, n − 1 に固定し、残りの点だけが区間 [0, n] を動く。可変接続は位置を見た後で木を選び、固定接続は全ての位置に備えて同じ木を使う。</p>
+<div class="rv-control-row rv-only-js"><label for="rv-point-count">点の総数 n</label><input id="rv-point-count" type="range" min="3" max="9" step="1" value="6"><output id="rv-count-out" for="rv-point-count">6</output></div>
+<div class="rv-control-row rv-only-js"><label for="rv-position">移動点の位置 x</label><input id="rv-position" type="range" min="0" max="600" step="1" value="0" aria-describedby="rv-position-note"><output id="rv-position-out" for="rv-position">0.00</output><button id="rv-left" type="button">左端</button><button id="rv-middle" type="button">中央</button><button id="rv-right" type="button">右端</button></div>
+<figure class="rv-panel">
+<svg viewBox="0 0 560 330" role="img" aria-labelledby="rv-interval-svg-title rv-interval-svg-desc">
+<title id="rv-interval-svg-title">六つの点の接続。可変接続と固定接続の比較</title>
+<desc id="rv-interval-svg-desc">初期例は n=6、動く点は x=0、固定された五点は1から5。上段の可変接続は位置の順に隣を結び、今の最大辺は1。下段の固定接続は固定された五点の鎖に、動く点と位置3の点の辺を加え、今の最大辺は3。全配置での最悪値は、最良の可変接続が1、最良の固定接続が3。</desc>
+<text x="14" y="27" font-size="19">可変：位置の順で、隣同士を結ぶ</text>
+<text x="14" y="183" font-size="19">固定：固定点の鎖 ＋ 点 j への1辺</text>
+<g id="rv-interval-drawing">
+<path d="M28 95H532M28 251H532" fill="none" stroke="#c7cfd6" stroke-width="1"/>
+<path d="M28 95H448" fill="none" stroke="#17212a" stroke-width="3"/>
+<path d="M112 251H448" fill="none" stroke="#17212a" stroke-width="3"/>
+<path d="M28 251Q154 175 280 251" fill="none" stroke="#1757b8" stroke-width="3"/>
+<g fill="#17212a"><circle cx="112" cy="95" r="4.5"/><circle cx="196" cy="95" r="4.5"/><circle cx="280" cy="95" r="4.5"/><circle cx="364" cy="95" r="4.5"/><circle cx="448" cy="95" r="4.5"/><circle cx="112" cy="251" r="4.5"/><circle cx="196" cy="251" r="4.5"/><circle cx="280" cy="251" r="4.5"/><circle cx="364" cy="251" r="4.5"/><circle cx="448" cy="251" r="4.5"/></g>
+<g font-size="19" text-anchor="middle"><text x="112" y="77">1</text><text x="196" y="77">2</text><text x="280" y="77">3</text><text x="364" y="77">4</text><text x="448" y="77">5</text><text x="112" y="281">1</text><text x="196" y="281">2</text><text x="280" y="281">3</text><text x="364" y="281">4</text><text x="448" y="281">5</text><text x="28" y="122">0</text><text x="532" y="122">6</text><text x="28" y="281">0</text><text x="532" y="281">6</text></g>
+<g fill="#fff" stroke="#1757b8" stroke-width="3"><circle cx="28" cy="95" r="8"/><circle cx="28" cy="251" r="8"/></g>
+<text x="154" y="207" text-anchor="middle" font-size="18" class="rv-blue">長さ 3.00</text>
+<text x="14" y="147" font-size="18" class="rv-blue">青い輪：移動点 x = 0.00</text>
+<text x="14" y="316" font-size="18">固定する接続先：j = 3</text>
+</g>
+</svg>
+<figcaption id="rv-position-note">上下の点の位置は同じ。青い輪が移動点、黒点が固定点。固定接続の弧は「どの点同士を結ぶか」を示し、辺長は横軸上の距離 |x − j|。点が重なるときもラベルは別の点で、間の辺長は 0。</figcaption>
+</figure>
+<dl class="rv-readout" aria-live="polite" aria-atomic="true">
+<div><dt>可変接続：今の配置の最大辺</dt><dd id="rv-adaptive-now">1.00</dd><dd class="rv-guarantee">全配置での最悪値 R<sub>A</sub> = <span id="rv-adaptive-worst">1</span></dd></div>
+<div><dt>固定接続：今の配置の最大辺</dt><dd id="rv-fixed-now">3.00</dd><dd class="rv-guarantee">全配置での最悪値 R<sub>F</sub> = <span id="rv-fixed-worst">3</span></dd></div>
+</dl>
+<p class="rv-formula" id="rv-interval-formula">この区間族では R<sub>A</sub> = 1、R<sub>F</sub> = ⌈6/2⌉ = 3。</p>
+<p class="rv-note" id="rv-interval-explain">移動点をいつも点 j = 3 に結べば、辺長はどの位置でも 3 以下。どの固定木にも移動点につながる辺が必要なので、これより小さい保証にはできない。</p>
+<noscript><p>静的な基準例：n = 6、移動点 x = 0。可変接続の最大辺は 1、図示した最良の固定接続の最大辺は 3。n を一般化すると保証の比は ⌈n/2⌉。</p></noscript>
+</section>
+
+<script>
+(function () {
+  'use strict';
+  var tree = document.getElementById('rv-tree');
+  var interval = document.getElementById('rv-interval');
+  if (!tree || !interval) return;
+  var el = function (id) { return document.getElementById(id); };
+  var fmt = function (x) { return Number(x).toFixed(2); };
+  var svgNS = 'http://www.w3.org/2000/svg';
+  function element(tag, attrs, text) {
+    var e = document.createElementNS(svgNS, tag);
+    Object.keys(attrs).forEach(function (k) { e.setAttribute(k, String(attrs[k])); });
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function updateTree() {
+    // The threshold uses integer ticks: no floating point test can turn 0.50 into < 0.50.
+    var tick = Number(el('rv-epsilon').value), epsilon = tick / 100;
+    var E = tick < 50 ? epsilon : 10.5;
+    el('rv-epsilon-out').textContent = fmt(epsilon);
+    el('rv-epsilon').setAttribute('aria-valuetext', 'ε = ' + fmt(epsilon) + '、最良の最悪位置誤差 ' + fmt(E));
+    el('rv-error-value').textContent = fmt(E);
+    el('rv-ambiguity-value').textContent = fmt(2 * E);
+    Array.prototype.forEach.call(el('rv-error-marker').children, function (c) {
+      c.setAttribute('cx', String(64 + epsilon * 356));
+      c.setAttribute('cy', String(232 - E * 192 / 10.5));
+    });
+    el('rv-tree-state').textContent = tick < 50
+      ? 'ε = ' + fmt(epsilon) + ' では、離れた二本の外枝の候補はまだ同じ受信値に重ならない。'
+      : 'ε = ' + fmt(epsilon) + ' では、先端 X・Y は同じ受信値 (11.5, 11.5) に整合できる。最良の推定器でも、どちらかへの誤差は 10.5 以上になる。';
+  }
+  el('rv-epsilon').addEventListener('input', updateTree);
+  el('rv-before').addEventListener('click', function () { el('rv-epsilon').value = '49'; updateTree(); });
+  el('rv-at').addEventListener('click', function () { el('rv-epsilon').value = '50'; updateTree(); });
+  var previousN = 6;
+  function updateIntervals(fromCount) {
+    var n = Number(el('rv-point-count').value);
+    if (fromCount) {
+      var proportion = Number(el('rv-position').value) / (previousN * 100);
+      el('rv-position').max = String(n * 100);
+      el('rv-position').value = String(Math.round(proportion * n * 100));
+      previousN = n;
+    }
+    var x = Number(el('rv-position').value) / 100;
+    var j = Math.floor(n / 2), R = Math.ceil(n / 2);
+    var positions = [x];
+    for (var i = 1; i < n; i++) positions.push(i);
+    positions.sort(function (a, b) { return a - b; });
+    var adaptive = 0;
+    for (i = 1; i < positions.length; i++) adaptive = Math.max(adaptive, positions[i] - positions[i - 1]);
+    var fixed = Math.max(1, Math.abs(x - j));
+    el('rv-count-out').textContent = String(n);
+    el('rv-position-out').textContent = fmt(x);
+    el('rv-position').setAttribute('aria-valuetext', '位置 ' + fmt(x) + '、区間 0 から ' + n);
+    el('rv-adaptive-now').textContent = fmt(adaptive);
+    el('rv-fixed-now').textContent = fmt(fixed);
+    el('rv-fixed-worst').textContent = String(R);
+    el('rv-interval-formula').innerHTML = 'この区間族では R<sub>A</sub> = 1、R<sub>F</sub> = ⌈' + n + '/2⌉ = ' + R + '。';
+    el('rv-interval-explain').textContent = '移動点をいつも点 j = ' + j + ' に結べば、辺長はどの位置でも ' + R + ' 以下。どの固定木にも移動点につながる辺が必要なので、これより小さい保証にはできない。';
+    el('rv-interval-svg-title').textContent = n + ' 個の点の接続。可変接続と固定接続の比較';
+    el('rv-interval-svg-desc').textContent = 'n = ' + n + '、移動点は x = ' + fmt(x) + '。上段の可変接続の今の最大辺は ' + fmt(adaptive) + '。下段は移動点を点 ' + j + ' に固定して結び、今の最大辺は ' + fmt(fixed) + '。全配置での最悪値は、最良の可変接続が1、最良の固定接続が ' + R + '。';
+    var g = el('rv-interval-drawing');
+    while (g.firstChild) g.removeChild(g.firstChild);
+    var px = function (z) { return 28 + 504 * z / n; };
+    function draw(tag, attrs, text) { g.appendChild(element(tag, attrs, text)); }
+    function label(z, y, value, blue) { draw('text', {x:px(z), y:y, 'font-size':19, 'text-anchor':'middle', 'class':blue ? 'rv-blue' : ''}, value); }
+    draw('path', {d:'M28 95H532M28 251H532', fill:'none', stroke:'#c7cfd6', 'stroke-width':1});
+    // Each adaptive edge is drawn explicitly, including a zero-length edge when labels coincide.
+    for (i = 1; i < positions.length; i++) draw('line', {x1:px(positions[i-1]),y1:95,x2:px(positions[i]),y2:95,stroke:'#17212a','stroke-width':3});
+    draw('path', {d:'M' + px(1) + ' 251H' + px(n-1),fill:'none',stroke:'#17212a','stroke-width':3});
+    var centerX = (px(x) + px(j)) / 2;
+    if (x !== j) draw('path', {d:'M' + px(x) + ' 251Q' + centerX + ' 175 ' + px(j) + ' 251',fill:'none',stroke:'#1757b8','stroke-width':3});
+    for (i = 1; i < n; i++) {
+      draw('circle', {cx:px(i),cy:95,r:4.5,fill:'#17212a'});
+      draw('circle', {cx:px(i),cy:251,r:4.5,fill:'#17212a'});
+      label(i,77,String(i)); label(i,281,String(i));
+    }
+    label(0,122,'0'); label(n,122,String(n)); label(0,281,'0'); label(n,281,String(n));
+    draw('circle', {cx:px(x),cy:95,r:8,fill:'#fff',stroke:'#1757b8','stroke-width':3});
+    draw('circle', {cx:px(x),cy:251,r:8,fill:'#fff',stroke:'#1757b8','stroke-width':3});
+    if (Number.isInteger(x) && x >= 1 && x < n) {
+      draw('circle', {cx:px(x),cy:95,r:3,fill:'#17212a'});
+      draw('circle', {cx:px(x),cy:251,r:3,fill:'#17212a'});
+    }
+    draw('text', {x:centerX,y:207,'text-anchor':'middle','font-size':18,'class':'rv-blue'}, '長さ ' + fmt(Math.abs(x-j)));
+    draw('text', {x:14,y:147,'font-size':18,'class':'rv-blue'}, '青い輪：移動点 x = ' + fmt(x));
+    draw('text', {x:14,y:316,'font-size':18}, '固定する接続先：j = ' + j);
+  }
+  el('rv-point-count').addEventListener('input', function () { updateIntervals(true); });
+  el('rv-position').addEventListener('input', function () { updateIntervals(false); });
+  el('rv-left').addEventListener('click', function () { el('rv-position').value = '0'; updateIntervals(false); });
+  el('rv-middle').addEventListener('click', function () { el('rv-position').value = String(Number(el('rv-point-count').value) * 50); updateIntervals(false); });
+  el('rv-right').addEventListener('click', function () { el('rv-position').value = el('rv-position').max; updateIntervals(false); });
+  updateTree(); updateIntervals(false);
+  tree.classList.add('rv-ready'); interval.classList.add('rv-ready');
+})();
+</script>
+</section><section id="comparison"><h2>先行研究との詳しい比較</h2>
+<h3>S1：同じ距離写像を扱う研究との境界</h3>
+<p>Ilmavirta・Kykkänen・Lassas・Saksala・Shedlock の <em>Lipschitz Stability of Travel Time Data</em> は、測定集合への距離関数を sup ノルムで比較する、まさに同じ観測写像を使う。定義1、注意11、命題17・23では、実木の全葉を観測する等長な場合や、局所等長性の条件が扱われる。したがって、距離座標や安定性という発想を新規とはしない。本稿の差分は、<strong>任意に固定した有限の測定集合について、枝長・付け根の間隔から最良係数と全誤差曲線を評価し切ること</strong>にある。<a href="https://arxiv.org/html/2410.16224v1">原著本文</a></p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>比較する既知結果</th>
+<th>本稿と共通する部分</th>
+<th>同一主張とはいえない理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Khullerほか：木のmetric dimension</td>
+<td>識別を妨げる無観測の枝、葉を用いた識別集合</td>
+<td>主題は識別集合の最小個数。実数辺長・辺内部を含む固定集合の最良係数を直接与えない</td>
+</tr>
+<tr>
+<td>Ilmavirtaほか：travel-time representation</td>
+<td>同じsupノルムの距離観測、等長性・局所安定性</td>
+<td>主結果は空間全体の安定な復元。有限誤差で生じる枝対の候補を列挙する本稿の閉形式とは別</td>
+</tr>
+<tr>
+<td>Peterinほか：distance differences</td>
+<td>距離差の「有無」だけでなく大きさを使う</td>
+<td>座標ごとの絶対差を足す ℓ1 型の閾値。S1の ℓ∞ 誤差曲線とは目的が異なる</td>
+</tr>
+<tr>
+<td>Mürmannほか：relaxed metric dimension</td>
+<td>同じ観測を与える点同士の空間的な曖昧さ</td>
+<td>完全に等しい署名を扱う。任意に小さい非零観測差と有界な数値誤差は別問題</td>
+</tr>
+<tr>
+<td>Leほか：landmark distortion</td>
+<td>sup型距離下界と定量的な歪み</td>
+<td>ランダムグラフ等の確率的評価。本稿は固定された有限実木に対する厳密値</td>
+</tr>
+</tbody>
+</table></div>
+<p>比較箇所：<a href="https://drum.lib.umd.edu/bitstreams/fc568aaf-1954-4721-9884-854431b48e67/download">Khullerほか §2.1</a>、<a href="https://arxiv.org/abs/2309.00922">Peterinほか</a>、<a href="https://arxiv.org/html/2505.11193v2">Mürmannほか 定理3.1–3.2</a>、<a href="https://arxiv.org/html/2504.08216v2">Leほか Algorithm 1・定理4.1</a>。表は各論文の目的と量の比較であり、未読箇所まで同一結果の不存在を保証するものではない。</p>
+<p><strong>S1.2とS1.3の強さも分けて評価する。</strong> 射影恒等式から最良係数は二つの枝上の高さを動かす短い最適化で得られる。有限誤差曲線も初等的な計算ではあるが、観測上の距離が閾値に達したときだけ枝対が候補に入るため、全体を一つの最大値の式にすると、非単射の場合と跳躍量まで含む明示的な記述になる。式が簡潔であることは実用上の利点である一方、学術的新規性の強さや掲載価値を自動的に保証しない。</p>
+<h3>S1：新規性を弱める、より一般的な既知原理</h3>
+<p><strong>最良推定誤差への換算は、既知原理の直接の系である。</strong> 実木内の有界集合は、直径の半分の半径の球で覆える。Aksoy–Oikhberg の定理6.2・注意6.4がこの幾何学的事実を与える。より一般に、hyperconvex な空間では、中心間距離が半径の和以下である球族の共通交点が存在するので、半直径の中心原理が成り立つ。<a href="https://arxiv.org/html/1007.2207v1">原著 §2・§6</a></p>
+<p>本稿による直接の導出は次の通りである。受信値に整合する集合を C とすると、その直径は A(2ε) 以下で、最良の最悪誤差は C の外接半径である。逆に観測差が 2ε 以下の任意の二点は、観測ベクトルの中点という同じ受信値を持ち得る。この上界・下界を合わせて E(ε)=A(2ε)/2 を得る。ここで新たに必要な計算は <strong>A 自体の評価</strong>であり、半分にするという原理ではない。</p>
+<p><strong>葉への移動も、既知の spanning・凸包構造から短く導ける。</strong> Lang–Pavón–Züst は spanning を距離差の上限で定義し、補題2.4で木の凸包内の道を生成集合へ延長できることを述べている。<a href="https://arxiv.org/pdf/1303.6826">原著 §2</a></p>
+<p>そこから本稿で導く、数値優越を説明する式を示す。K=hull(S) を含むように葉集合 S′ を選ぶと、各 s∈S について</p>
+<div class="equation" tabindex="0"><math aria-label="d(x,s)=\max_{t\in S&#x27;}\{d(x,t)-d(s,t)\}\qquad(x\in T)." alttext="d(x,s)=\max_{t\in S&#x27;}\{d(x,t)-d(s,t)\}\qquad(x\in T)." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>d</mi><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>s</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><msub><mo>max</mo><mrow><mi>t</mi><mo>&#x02208;</mo><msup><mi>S</mi><mi>&#x02032;</mi></msup></mrow></msub><mo stretchy="false">&#x0007B;</mo><mi>d</mi><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>t</mi><mo stretchy="false">&#x00029;</mo><mo>&#x02212;</mo><mi>d</mi><mo stretchy="false">&#x00028;</mo><mi>s</mi><mo>&#x0002C;</mo><mi>t</mi><mo stretchy="false">&#x00029;</mo><mo stretchy="false">&#x0007D;</mo><mspace width="2em" /><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x02208;</mo><mi>T</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0002E;</mo></mrow></math></div>
+<p>三角不等式が一方の不等式を与え、x から s を通る道を適切な t まで延長すると等号になる。この最大値演算は sup ノルムに関して 1-Lipschitz なので、元の観測 F_S は新しい観測 F_{S′} から誤差を増幅せずに復元できる。したがって全点対の観測差が改善する。同じ文言の既刊定理は未特定だが、独立した主要新定理として強調するより、配置最適化を有限探索に還元する補助命題として扱うのが妥当である。</p>
+<p>距離関数の tight span の固定点性も、射影恒等式の背景にある。S 上の関数 f_p(s)=d(p,s)、p∈hull(S) は S の tight span に属するという木の凸包の既知性質と、Bryantほかの定理2.1(iii)が再掲する固定点性を合わせると、二つの距離関数の差は正側と負側で同じ最大幅を持つ。本稿の高さ h,k による定数シフトを加えると、観測差が d(p,q)+|h−k| になる。この接続は本稿の推論であり、当該論文が本稿の全誤差曲線を掲載しているという意味ではない。<a href="https://arxiv.org/pdf/2501.13202v2">原著 §2.1</a></p>
+<h3>S2：量化順序を揃えて比較する</h3>
+<p>配置を x、ラベル上の全域木を T、配置における最大木辺を B_T(x) とする。似た題名の論文でも、以下の目的は異なる。</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>目的</th>
+<th>数式</th>
+<th>本稿との関係</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>有利な配置を選ぶbest-case接続</td>
+<td>min_x min_T B_T(x)</td>
+<td>Cabello–Gajserなど。全配置の保証とは異なる</td>
+</tr>
+<tr>
+<td>配置後に木を選べるworst-case接続</td>
+<td>max_x min_T B_T(x)</td>
+<td>本稿の R_A。ChambersほかのWCUと同じ目的</td>
+</tr>
+<tr>
+<td>全配置を保証する固定木</td>
+<td>min_T max_x B_T(x)</td>
+<td>本稿の R_F。各辺を最大費用に置換する既知還元が使える</td>
+</tr>
+<tr>
+<td>固定グラフの最悪総延長</td>
+<td>min_T max_x Σ_e d_e(x)</td>
+<td>locational uncertaintyの主要な別目的。最大辺の比とは異なる</td>
+</tr>
+</tbody>
+</table></div>
+<p>Chambersほかの §5 のWCUでは通信半径 α に対して距離 2α 以下を辺にするので、論文の最適半径と本稿の R_A には2倍の換算がある。同節の単位円盤に対する近似は、点区間と任意に長い区間を混在させる本稿の等号例を包含しない。<a href="https://arxiv.org/html/1009.3469v4">WCUの定義・§5</a></p>
+<p>Kasperski–Zieliński は、最悪シナリオ下のボトルネック問題が、各要素の費用を最大値に置き換えた確定問題へ帰着することを §3 冒頭で述べる。本稿では最大化同士の交換から</p>
+<div class="equation" tabindex="0"><math aria-label="w_{ij}=\max_{x_i\in I_i,x_j\in I_j}|x_i-x_j|
+=\max(b_i-a_j,b_j-a_i)" alttext="w_{ij}=\max_{x_i\in I_i,x_j\in I_j}|x_i-x_j|
+=\max(b_i-a_j,b_j-a_i)" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>w</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>&#x0003D;</mo><msub><mo>max</mo><mrow><msub><mi>x</mi><mi>i</mi></msub><mo>&#x02208;</mo><msub><mi>I</mi><mi>i</mi></msub><mo>&#x0002C;</mo><msub><mi>x</mi><mi>j</mi></msub><mo>&#x02208;</mo><msub><mi>I</mi><mi>j</mi></msub></mrow></msub><mo stretchy="false">&#x0007C;</mo><msub><mi>x</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mi>x</mi><mi>j</mi></msub><mo stretchy="false">&#x0007C;</mo><mo>&#x0003D;</mo><mo>max</mo><mo stretchy="false">&#x00028;</mo><msub><mi>b</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>j</mi></msub><mo>&#x0002C;</mo><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>i</mi></msub><mo stretchy="false">&#x00029;</mo></mrow></math></div>
+<p>を使った最小ボトルネック全域木になる。この還元を新規成果とはしない。比較の対象は <strong>R_A と R_F を結ぶ鋭い不等式</strong>である。<a href="https://arxiv.org/pdf/1307.4521">原著 §3</a></p>
+<p>位置が確定する前に辺集合を固定する発想も既存である。imprecise spanner は全実現で同じ辺集合に伸長比を保証する。ただし全対最短路の伸長と辺数が目的であり、固定／可変ボトルネック比の定理と同じではない。<a href="https://doi.org/10.1016/j.comgeo.2023.102051">Poureidi–Farshi, 2024</a></p>
+<h3>S2：adaptivity gap の先行研究との比較</h3>
+<p><strong>固定解と実現後に選ぶ解の差は、robust な adaptivity gap という既知の枠組みに属する。</strong> 本稿の R_F/R_A は、その最小化問題における比に当たる。Awasthi–Goyal–Lu (2019) と Bertsimas–Goyal–Lu (2015) は、連続の packing LP について、この差を不確実集合の構造から評価している。著者公開稿の定義と主要定理を照合したが、S2の木の選択・最大辺目的・独立位置区間を、そのまま同一の既刊定理とは特定できていない。<a href="https://www.columbia.edu/~vg2277/column-wise.pdf">Awasthiほか：著者公開稿 §1・§6、定理9</a>、<a href="https://www.columbia.edu/~vg2277/static-ar-paper.pdf">Bertsimasほか：著者公開稿 §2・§4、定理3</a></p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>比較軸</th>
+<th>上記論文の主たるpackingモデル</th>
+<th>S2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>実現後の決定</td>
+<td>非負の連続ベクトル</td>
+<td>ラベル上の全域木</td>
+</tr>
+<tr>
+<td>目的</td>
+<td>線形報酬の最悪値を最大化</td>
+<td>最大辺長の最悪値を最小化</td>
+</tr>
+<tr>
+<td>不確実性</td>
+<td>非負係数行列の集合と、その行・列の構造</td>
+<td>独立な位置区間の直積。辺距離には相関が生じる</td>
+</tr>
+<tr>
+<td>比の向き</td>
+<td>可変解の報酬／静的解の報酬</td>
+<td>固定木の必要距離／可変木の必要距離</td>
+</tr>
+</tbody>
+</table></div>
+<p>位置が独立であることは、辺費用が独立な区間を取ることを意味しない。例えば I₁={1}, I₂={2}, I₃=[0,3] では R_A=1、R_F=2。可動点 x による距離は (d₁₂,d₁₃,d₂₃)=(1,|x−1|,|x−2|) で、最後の二成分は各々 [0,2] を取るが同時に2にはならない。各辺の範囲だけを独立に組み合わせると、位置配置からは生じない (1,2,2) を許し、可変値も2へ増える。これは既存論文への反例ではなく、モデルの取り違えによる帰着を排除する例である。</p>
+<p>連続LPとの違いだけで、間接的な帰着の可能性まで否定してはいけない。既刊定理の直接の系とするには、両最適値と、不確実集合についての仮定を保存する帰着が必要である。この照合ではその帰着を得ていないため、係数と短い区間の構造を候補として残し、<strong>新規性未確定</strong>という判断を維持する。</p>
+<h3>S2：短い区間の構造は、既知の区間グラフだけで説明できるか</h3>
+<p>固定距離 r のrobust graphの辺条件は b_i−r≤a_j、b_j−r≤a_i である。これは signed interval／co-threshold-tolerance graph に現れる表現と対応し、幅が r 以下の区間だけに制限すると J_i=[b_i−r,a_i] の通常の区間交差グラフになる。原著の辺条件は厳密不等号だが、有限データでは端点を十分小さく摂動することで、同じ辺集合を持つ厳密不等号表現に直せる。この表現自体は新規ではない。<a href="https://arxiv.org/html/2012.09475v2">Halldórsson–de Lima §2、定理3</a></p>
+<p>一方、本稿の前提は「robust graph が連結」ではなく、<strong>各実現で、その実現に応じた辺を使えば連結</strong>という条件である。既知のグラフ構造だけではこの差を埋められないことは、小例でも分かる。</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>r=1、固定点区間 {0},{1} に加える区間</th>
+<th>固定距離1のrobust graph</th>
+<th style="text-align: right;">全配置連結性の値 R_A</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[−1,2]</td>
+<td>固定点同士の1辺と、孤立した長区間頂点</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>[−100,100]</td>
+<td>固定点同士の1辺と、孤立した長区間頂点</td>
+<td style="text-align: right;">100</td>
+</tr>
+</tbody>
+</table></div>
+<p>両例は同じrobust graphと短長分類を持つが、全配置の接続保証が異なる。したがって、符号付き区間グラフという既知の表現だけから S2.3 の必要十分条件が直ちに出るわけではない。本稿では、長い区間の削除補題で全配置の量化を扱い、短い区間の連結性と長い区間の両端の確実な接続先を証明する。この構造を介して道の中央に接続先を選ぶと、最良係数 ceil((m+1)/2) が得られる。</p>
+<h3>高速公式と、2026年の隣接研究</h3>
+<p>全域木の最小ボトルネック値を「全cutの最小横断辺の最大」と書く一般原理は、Edmonds–Fulkerson の <em>Bottleneck Extrema</em> による blocker のmin–max定理の特殊例である。S2のcut表現そのものを新規とはしない。直線上で端点へ押し出し、cutをprefixに圧縮して R_A を O(n log n) で求める式は、その具体的な計算結果として収録する。<a href="https://web.vu.lt/mif/s.jukna/EC_Book_2nd/Edmonds-Fulkerson.pdf">原著 §2、pp.300–303</a></p>
+<p>Löffler–Raichel の2026年の論文は、同じ不確実区間モデルで最大隙間を扱う。ただし目的は、前処理をした後に与えられた実現の隙間を高速に復元すること。定義19の量は最大隙間の下界で、全実現での最大値 R_A とは違う。<a href="https://arxiv.org/html/2601.19453v1">§1.4・§5.2、定義18–19</a></p>
+<p>Acharyyaほかの2026年の論文は、色が与えられた区間から代表点を選び、全色を含む最小区間を最大化する。2色の場合には異色点間の最小距離を最大化する目的になり、本稿の R_A はさらにcut、すなわち色分けにも最大を取る量である。論文の与えられた色に対するアルゴリズムを、そのまま本稿の最良比較係数と同一視できない。<a href="https://link.springer.com/article/10.1007/s00224-026-10270-1">定義・§2–3</a></p>
+<p>Consuegra–Narasimhan の <em>Geometric Avatar Problems</em> も候補位置から代表点を選ぶが、§2で扱うのは「最小隙間の最大化」と「最大隙間の最小化」である。本稿の「最大隙間の最大化」と固定木の比較とは異なる。<a href="https://users.cs.fiu.edu/~giri/papers/Avatar_FSTTCS2013.pdf">§2、定理1–2</a></p></section><section id="proofs"><h2>定理・仮定・完全な証明</h2><p>以下は一般の入力に対する数学的論証である。有限検査の記録とは区別する。証明支援系による形式検証と、人間の専門家による査読は未実施。</p><div class="controls"><button type="button" id="expand-all">証明と付録をすべて開く</button><button type="button" id="collapse-all">証明と付録を閉じる</button><button type="button" id="print-report">印刷する</button></div><details class="proof-block" id="proof-tree"><summary>S1：実木の観測差・最良係数・全誤差曲線・葉配置</summary><div><h2>1. S1：枝分かれ空間の距離観測</h2>
+<h3>1.1 対象と誤差モデル</h3>
+<p>有限本の正の長さの辺からなる、閉路のない連結空間 T を考える。辺の途中も点として含める「有限実木」であり、距離 d は道に沿った長さである。平面に描いたときの直線距離ではない。まず diam(T)&gt;0 とする。</p>
+<p>有限非空の基準点集合 S を固定し、観測写像と観測差を</p>
+<div class="equation" tabindex="0"><math aria-label="F_S(x)=(d(x,s))_{s\in S},\qquad
+\rho_S(x,y)=\|F_S(x)-F_S(y)\|_\infty" alttext="F_S(x)=(d(x,s))_{s\in S},\qquad
+\rho_S(x,y)=\|F_S(x)-F_S(y)\|_\infty" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>F</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mo stretchy="false">&#x00028;</mo><mi>d</mi><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>s</mi><mo stretchy="false">&#x00029;</mo><msub><mo stretchy="false">&#x00029;</mo><mrow><mi>s</mi><mo>&#x02208;</mo><mi>S</mi></mrow></msub><mo>&#x0002C;</mo><mspace width="2em" /><msub><mi>&#x003C1;</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>y</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mo fence="false" stretchy="false">&#x02016;</mo><msub><mi>F</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo stretchy="false">&#x00029;</mo><mo>&#x02212;</mo><msub><mi>F</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>y</mi><mo stretchy="false">&#x00029;</mo><msub><mo fence="false" stretchy="false">&#x02016;</mo><mo>&#x0221E;</mo></msub></mrow></math></div>
+<p>と定義する。三角不等式より常に ρ_S(x,y)≤d(x,y)。基準点が辺の途中にある場合も、その点で辺を分割すれば以下の議論は変わらない。</p>
+<p>K=hull(S) を、全基準点を結ぶ最小部分木とする。π(x) は x から K への最近点で、一意である。K の外の部分木は、ただ一つの付け根を通って K とつながる。</p>
+<h3>1.2 S1.1：観測が残す情報の恒等式</h3>
+<p>p=π(x), q=π(y), h=d(x,p), k=d(y,q) とおく。このとき、単射性を仮定せず</p>
+<div class="equation" tabindex="0"><math aria-label="観測差 rho S は、射影点 p と q の距離と、外側の高さ h と k の差の絶対値との和に等しい。" alttext="\boxed{\rho_S(x,y)=d(p,q)+|h-k|.}
+" id="eq-t1" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><menclose notation="box"><mrow><msub><mi>&#x003C1;</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>y</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mi>d</mi><mo stretchy="false">&#x00028;</mo><mi>p</mi><mo>&#x0002C;</mo><mi>q</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0002B;</mo><mo stretchy="false">&#x0007C;</mo><mi>h</mi><mo>&#x02212;</mo><mi>k</mi><mo stretchy="false">&#x0007C;</mo><mo>&#x0002E;</mo></mrow></menclose></mrow></math><span class="eq-label">(T1)</span></div>
+<p><strong>証明。</strong> 全ての s∈S について、木の道の一意性から d(x,s)=h+d(p,s)。p=q なら直ちに成立する。p≠q のとき D=d(p,q) とおく。K が S の凸包であるため、p,q 自身を含めて道 [p,q] の両側に基準点が存在する。従って d(p,s)−d(q,s) の最大値と最小値は D と −D である。他の値はこの間にあるので、</p>
+<div class="equation" tabindex="0"><math aria-label="\rho_S(x,y)=\max\{|h-k+D|,|h-k-D|\}=D+|h-k|." alttext="\rho_S(x,y)=\max\{|h-k+D|,|h-k-D|\}=D+|h-k|." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>&#x003C1;</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>y</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mo>max</mo><mo stretchy="false">&#x0007B;</mo><mo stretchy="false">&#x0007C;</mo><mi>h</mi><mo>&#x02212;</mo><mi>k</mi><mo>&#x0002B;</mo><mi>D</mi><mo stretchy="false">&#x0007C;</mo><mo>&#x0002C;</mo><mo stretchy="false">&#x0007C;</mo><mi>h</mi><mo>&#x02212;</mo><mi>k</mi><mo>&#x02212;</mo><mi>D</mi><mo stretchy="false">&#x0007C;</mo><mo stretchy="false">&#x0007D;</mo><mo>&#x0003D;</mo><mi>D</mi><mo>&#x0002B;</mo><mo stretchy="false">&#x0007C;</mo><mi>h</mi><mo>&#x02212;</mo><mi>k</mi><mo stretchy="false">&#x0007C;</mo><mo>&#x0002E;</mo></mrow></math></div>
+<p>両極値を達成する基準点の存在を詳しく示す。q∈S なら s₊=q とすればよい。q∉S なら、K の葉は S に属するので q は葉ではなく、K∖{q} には p を含まない成分 C が存在する。この C に S の点がなければ、C を除いたより小さい連結部分木が S を含み、K の最小性に反する。従って s₊∈C∩S を選べる。道 [p,s₊] は q を通るため d(p,s₊)−d(q,s₊)=D。p,q を交換すると差が −D の基準点 s₋ も得られる。三角不等式による絶対値の上界 D と合わせ、両極値が ±D と確定する。∎</p>
+<p><strong>単射の必要十分条件。</strong> 各付け根から K の外へ出る部分が、根を端点とする一本の区間であること。すなわち、同じ付け根から二本以上の枝が出ず、その先にも枝分かれがないことである。</p>
+<p>実際、外向きの二方向が分かれると、分岐から等距離にある別々の点は同じ根と高さを持ち、(T1) で識別不能になる。逆に各根の外側が一本の区間なら、ρ=0 は根と高さの一致を意味し、その点自身が一意に決まる。K 上の点は高さ0として含まれる。</p>
+<h3>1.3 S1.2：最悪増幅率の厳密式</h3>
+<p>単射の場合に、正の長さを持つ外枝の付け根を b、その長さを L_b とする。異なる付け根間の距離を D_bc=d(b,c)&gt;0 とおく。</p>
+<div class="equation" tabindex="0"><math aria-label="最良係数 c は、1 と、相異なる外枝の付け根対について D を D プラス枝長の小さい方の2倍で割った値、これら全ての最小値。" alttext="c(T,S):=\inf_{x\ne y}\frac{\rho_S(x,y)}{d(x,y)}
+=\boxed{\min\left(\{1\}\cup
+\left\{\frac{D_{bc}}{D_{bc}+2\min(L_b,L_c)}:b&lt;c\right\}\right)}.
+" id="eq-t2" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>c</mi><mo stretchy="false">&#x00028;</mo><mi>T</mi><mo>&#x0002C;</mo><mi>S</mi><mo stretchy="false">&#x00029;</mo><mi>:</mi><mo>&#x0003D;</mo><msub><mo>inf</mo><mrow><mi>x</mi><mo>&#x02260;</mo><mi>y</mi></mrow></msub><mfrac><mrow><msub><mi>&#x003C1;</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>y</mi><mo stretchy="false">&#x00029;</mo></mrow><mrow><mi>d</mi><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>y</mi><mo stretchy="false">&#x00029;</mo></mrow></mfrac><mo>&#x0003D;</mo><menclose notation="box"><mrow><mo>min</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x00028;</mo><mo stretchy="false">&#x0007B;</mo><mn>1</mn><mo stretchy="false">&#x0007D;</mo><mo>&#x0222A;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x0007B;</mo><mfrac><mrow><msub><mi>D</mi><mrow><mi>b</mi><mi>c</mi></mrow></msub></mrow><mrow><msub><mi>D</mi><mrow><mi>b</mi><mi>c</mi></mrow></msub><mo>&#x0002B;</mo><mn>2</mn><mo>min</mo><mo stretchy="false">&#x00028;</mo><msub><mi>L</mi><mi>b</mi></msub><mo>&#x0002C;</mo><msub><mi>L</mi><mi>c</mi></msub><mo stretchy="false">&#x00029;</mo></mrow></mfrac><mi>:</mi><mi>b</mi><mo>&#x0003C;</mo><mi>c</mi><mo stretchy="true" fence="true" form="postfix">&#x0007D;</mo></mrow><mo stretchy="true" fence="true" form="postfix">&#x00029;</mo></mrow></mrow></menclose><mo>&#x0002E;</mo></mrow></math><span class="eq-label">(T2)</span></div>
+<p>b&lt;c は、付け根対を重複なく数えるための任意の順序である。外枝が二本未満なら c=1。単射でなければ c=0。</p>
+<p><strong>証明。</strong> 同じ外枝内の二点、または少なくとも一方が K にある二点では ρ=d。異なる付け根からの高さ h,k の二点では</p>
+<div class="equation" tabindex="0"><math aria-label="\rho=D+|h-k|,\qquad d=D+h+k." alttext="\rho=D+|h-k|,\qquad d=D+h+k." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>&#x003C1;</mi><mo>&#x0003D;</mo><mi>D</mi><mo>&#x0002B;</mo><mo stretchy="false">&#x0007C;</mo><mi>h</mi><mo>&#x02212;</mo><mi>k</mi><mo stretchy="false">&#x0007C;</mo><mo>&#x0002C;</mo><mspace width="2em" /><mi>d</mi><mo>&#x0003D;</mo><mi>D</mi><mo>&#x0002B;</mo><mi>h</mi><mo>&#x0002B;</mo><mi>k</mi><mo>&#x0002E;</mo></mrow></math></div>
+<p>h≥k と仮定すると、比は 1−2k/(D+h+k) なので h を k まで減らすと増えない。次に h=k の共通値を増やすと D/(D+2k) は減少する。従って h=k=min(L_b,L_c) で最小になる。有限個の付け根対で最小を取れば (T2) を得る。∎</p>
+<p>最良の逆Lipschitz係数、すなわち位置差／観測差の最大倍率は 1/c である。この量は、基準点が何個あるかだけでは決まらない。近接した分岐から長い無観測枝が伸びると、任意に大きくなる。</p>
+<h3>1.4 S1.3：有限の誤差でどこまで曖昧になるか</h3>
+<p>δ≥0 に対して</p>
+<div class="equation" tabindex="0"><math aria-label="A_S(\delta):=\max\{d(x,y):\rho_S(x,y)\le\delta\}" alttext="A_S(\delta):=\max\{d(x,y):\rho_S(x,y)\le\delta\}" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>A</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>&#x003B4;</mi><mo stretchy="false">&#x00029;</mo><mi>:</mi><mo>&#x0003D;</mo><mo>max</mo><mo stretchy="false">&#x0007B;</mo><mi>d</mi><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>y</mi><mo stretchy="false">&#x00029;</mo><mi>:</mi><msub><mi>&#x003C1;</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>y</mi><mo stretchy="false">&#x00029;</mo><mo>&#x02264;</mo><mi>&#x003B4;</mi><mo stretchy="false">&#x0007D;</mo></mrow></math></div>
+<p>を定義する。最大値はコンパクト性で達成される。単射の場合の完全な式は</p>
+<div class="equation" tabindex="0"><math aria-label="曖昧さ直径 A は、delta と木の直径の小さい方、および D が delta 以下の外枝対について、D プラス二つの枝長の和と、delta プラス小さい枝長の2倍との小さい方を求め、これら全ての最大値。" alttext="\boxed{A_S(\delta)=\max\left(
+\{\min(\delta,\operatorname{diam}T)\}
+\cup\left\{
+\min\bigl(D_{bc}+L_b+L_c,\ \delta+2\min(L_b,L_c)\bigr)
+: b&lt;c,\ D_{bc}\le\delta
+\right\}\right).}
+" id="eq-t3" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><menclose notation="box"><mrow><msub><mi>A</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>&#x003B4;</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mo>max</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x00028;</mo><mo stretchy="false">&#x0007B;</mo><mo>min</mo><mo stretchy="false">&#x00028;</mo><mi>&#x003B4;</mi><mo>&#x0002C;</mo><mo>diam</mo><mi>T</mi><mo stretchy="false">&#x00029;</mo><mo stretchy="false">&#x0007D;</mo><mo>&#x0222A;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x0007B;</mo><mo>min</mo><mo stretchy="true" fence="true" minsize="1.2em" maxsize="1.2em">(</mo><msub><mi>D</mi><mrow><mi>b</mi><mi>c</mi></mrow></msub><mo>&#x0002B;</mo><msub><mi>L</mi><mi>b</mi></msub><mo>&#x0002B;</mo><msub><mi>L</mi><mi>c</mi></msub><mo>&#x0002C;</mo><mtext>&#x000A0;</mtext><mi>&#x003B4;</mi><mo>&#x0002B;</mo><mn>2</mn><mo>min</mo><mo stretchy="false">&#x00028;</mo><msub><mi>L</mi><mi>b</mi></msub><mo>&#x0002C;</mo><msub><mi>L</mi><mi>c</mi></msub><mo stretchy="false">&#x00029;</mo><mo stretchy="true" fence="true" minsize="1.2em" maxsize="1.2em">)</mo><mi>:</mi><mi>b</mi><mo>&#x0003C;</mo><mi>c</mi><mo>&#x0002C;</mo><mtext>&#x000A0;</mtext><msub><mi>D</mi><mrow><mi>b</mi><mi>c</mi></mrow></msub><mo>&#x02264;</mo><mi>&#x003B4;</mi><mo stretchy="true" fence="true" form="postfix">&#x0007D;</mo></mrow><mo stretchy="true" fence="true" form="postfix">&#x00029;</mo></mrow><mo>&#x0002E;</mo></mrow></menclose></mrow></math><span class="eq-label">(T3)</span></div>
+<p><strong>証明。</strong> 異なる外枝の対では、制約は D+|h−k|≤δ。δ&lt;D ならこの対は実行不可能である。δ≥D とし、L_b≤L_c としてよい。h+k の最大値は、短い枝を h=L_b とし、もう一方を k=min(L_c,L_b+δ−D) に取ることで達成される。従って最大距離は min(D+L_b+L_c,δ+2L_b)。</p>
+<p>残る対の距離は δ 以下である。一方、直径を与える道上には min(δ,diam T) 離れた二点があり、ρ≤d だからその対は必ず実行可能。これで上界と達成が一致する。∎</p>
+<p><strong>閾値の条件 D_bc≤δ は不可欠。A は連続とは限らない。</strong> 二本以上の外枝があるとき</p>
+<div class="equation" tabindex="0"><math aria-label="\Delta=\min_{b&lt;c}D_{bc}" alttext="\Delta=\min_{b&lt;c}D_{bc}" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>&#x00394;</mi><mo>&#x0003D;</mo><msub><mo>min</mo><mrow><mi>b</mi><mo>&#x0003C;</mo><mi>c</mi></mrow></msub><msub><mi>D</mi><mrow><mi>b</mi><mi>c</mi></mrow></msub></mrow></math></div>
+<p>とすれば、0≤δ&lt;Δ では A_S(δ)=δ。最初の閾値では</p>
+<div class="equation" tabindex="0"><math aria-label="最初の閾値 Delta での曖昧さ直径は、Delta と、付け根距離が Delta の枝対における小さい枝長の最大値の2倍との和。" alttext="A_S(\Delta)=\Delta+
+2\max_{b&lt;c:\,D_{bc}=\Delta}\min(L_b,L_c)&gt;\Delta.
+" id="eq-t4" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>A</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>&#x00394;</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mi>&#x00394;</mi><mo>&#x0002B;</mo><mn>2</mn><msub><mo>max</mo><mrow><mi>b</mi><mo>&#x0003C;</mo><mi>c</mi><mi>:</mi><mspace width="0.167em" /><msub><mi>D</mi><mrow><mi>b</mi><mi>c</mi></mrow></msub><mo>&#x0003D;</mo><mi>&#x00394;</mi></mrow></msub><mo>min</mo><mo stretchy="false">&#x00028;</mo><msub><mi>L</mi><mi>b</mi></msub><mo>&#x0002C;</mo><msub><mi>L</mi><mi>c</mi></msub><mo stretchy="false">&#x00029;</mo><mo>&#x0003E;</mo><mi>&#x00394;</mi><mo>&#x0002E;</mo></mrow></math><span class="eq-label">(T4)</span></div>
+<p>つまり、誤差がある幅に達した瞬間に、離れた枝の候補が一斉に現れる。局所等長性の存在そのものは既存のtravel-time理論で扱われており、ここでは木に対して閾値と跳躍量を明示した。</p>
+<h3>1.5 非単射の場合を含む一般式</h3>
+<p>各付け根 b に付く外部部分木の最大高さを H_b&gt;0 とする。これらを K から外向きに根付ける。付け根自身も含め、二方向以上に外向きに分かれる頂点 z について、分岐点 z から測った各外向き方向の最大距離のうち大きい二つを α_z≥β_z&gt;0 とする。</p>
+<p>このとき一般の有限非空 S について</p>
+<div class="equation" tabindex="0"><math aria-label="一般の曖昧さ直径は、delta と木の直径の小さい方、条件 D が delta 以下の異なる付け根対の項、および外向き分岐ごとの項の最大値。付け根対の項は D プラス二つの高さの和と delta プラス低い高さの2倍の最小値。分岐の項は alpha プラス beta と delta プラス2 beta の最小値。" alttext="\boxed{\begin{array}{l}
+A_S(\delta)=\max\Big(\{\min(\delta,\operatorname{diam}T)\}\\
+\cup\{\min(D_{bc}+H_b+H_c,\delta+2\min(H_b,H_c)):
+b&lt;c,\ D_{bc}\le\delta\}\\
+\cup\{\min(\alpha_z+\beta_z,\delta+2\beta_z):z\text{ は外向き分岐}\}\Big).
+\end{array}}
+" id="eq-t5" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><menclose notation="box"><mrow><mtable><mtr><mtd columnalign="left"><msub><mi>A</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>&#x003B4;</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mo>max</mo><mo minsize="1.623em" maxsize="1.623em">(</mo><mo stretchy="false">&#x0007B;</mo><mo>min</mo><mo stretchy="false">&#x00028;</mo><mi>&#x003B4;</mi><mo>&#x0002C;</mo><mo>diam</mo><mi>T</mi><mo stretchy="false">&#x00029;</mo><mo stretchy="false">&#x0007D;</mo></mtd></mtr><mtr><mtd columnalign="left"><mo>&#x0222A;</mo><mo stretchy="false">&#x0007B;</mo><mo>min</mo><mo stretchy="false">&#x00028;</mo><msub><mi>D</mi><mrow><mi>b</mi><mi>c</mi></mrow></msub><mo>&#x0002B;</mo><msub><mi>H</mi><mi>b</mi></msub><mo>&#x0002B;</mo><msub><mi>H</mi><mi>c</mi></msub><mo>&#x0002C;</mo><mi>&#x003B4;</mi><mo>&#x0002B;</mo><mn>2</mn><mo>min</mo><mo stretchy="false">&#x00028;</mo><msub><mi>H</mi><mi>b</mi></msub><mo>&#x0002C;</mo><msub><mi>H</mi><mi>c</mi></msub><mo stretchy="false">&#x00029;</mo><mo stretchy="false">&#x00029;</mo><mi>:</mi><mi>b</mi><mo>&#x0003C;</mo><mi>c</mi><mo>&#x0002C;</mo><mtext>&#x000A0;</mtext><msub><mi>D</mi><mrow><mi>b</mi><mi>c</mi></mrow></msub><mo>&#x02264;</mo><mi>&#x003B4;</mi><mo stretchy="false">&#x0007D;</mo></mtd></mtr><mtr><mtd columnalign="left"><mo>&#x0222A;</mo><mo stretchy="false">&#x0007B;</mo><mo>min</mo><mo stretchy="false">&#x00028;</mo><msub><mi>&#x003B1;</mi><mi>z</mi></msub><mo>&#x0002B;</mo><msub><mi>&#x003B2;</mi><mi>z</mi></msub><mo>&#x0002C;</mo><mi>&#x003B4;</mi><mo>&#x0002B;</mo><mn>2</mn><msub><mi>&#x003B2;</mi><mi>z</mi></msub><mo stretchy="false">&#x00029;</mo><mi>:</mi><mi>z</mi><mtext>&#x000A0;は外向き分岐</mtext><mo stretchy="false">&#x0007D;</mo><mo minsize="1.623em" maxsize="1.623em">)</mo><mo>&#x0002E;</mo></mtd></mtr></mtable></mrow></menclose></mrow></math><span class="eq-label">(T5)</span></div>
+<p>同じ根へ射影される二点が別方向へ分かれる場合、その最終共通点 z からの距離を u,v とすれば、ρ=|u−v|、d=u+v。長方形の中での最大化は (T3) と同じ計算になる。方向別の高さを増やすほど候補値は増えるので、各分岐では大きい二つだけを使えばよい。同じ方向の祖先・子孫の対では ρ=d。他の根の対は (T1) と H_b を用いる。この分類で全対を覆い、各項に達成点がある。</p>
+<p>特に無誤差でも残る曖昧さは</p>
+<div class="equation" tabindex="0"><math aria-label="A_S(0)=2\max_z\beta_z" alttext="A_S(0)=2\max_z\beta_z" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>A</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mn>0</mn><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mn>2</mn><msub><mo>max</mo><mi>z</mi></msub><msub><mi>&#x003B2;</mi><mi>z</mi></msub></mrow></math></div>
+<p>であり、分岐がなければ0とする。これは単射条件と一致する。</p>
+<h3>1.6 S1.4：最良の決定論的推定誤差</h3>
+<p>受信値を y=F_S(x)+e とし、各成分の誤差を独立に −ε≤e_s≤ε の任意値とする。推定器 g は受信値から <strong>T の任意の点</strong>を返してよい。このモデルで</p>
+<div class="equation" tabindex="0"><math aria-label="最良の最悪位置推定誤差 E epsilon は、観測差の許容値を2 epsilon とした曖昧さ直径 A の半分。" alttext="E_S(\varepsilon):=
+\inf_g\sup_{x\in T,\ \|e\|_\infty\le\varepsilon}
+d\bigl(g(F_S(x)+e),x\bigr)
+=\boxed{\frac{A_S(2\varepsilon)}2}.
+" id="eq-t6" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>E</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>&#x003B5;</mi><mo stretchy="false">&#x00029;</mo><mi>:</mi><mo>&#x0003D;</mo><msub><mo>inf</mo><mi>g</mi></msub><msub><mo>sup</mo><mrow><mi>x</mi><mo>&#x02208;</mo><mi>T</mi><mo>&#x0002C;</mo><mtext>&#x000A0;</mtext><mo fence="false" stretchy="false">&#x02016;</mo><mi>e</mi><msub><mo fence="false" stretchy="false">&#x02016;</mo><mo>&#x0221E;</mo></msub><mo>&#x02264;</mo><mi>&#x003B5;</mi></mrow></msub><mi>d</mi><mo stretchy="true" fence="true" minsize="1.2em" maxsize="1.2em">(</mo><mi>g</mi><mo stretchy="false">&#x00028;</mo><msub><mi>F</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0002B;</mo><mi>e</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0002C;</mo><mi>x</mi><mo stretchy="true" fence="true" minsize="1.2em" maxsize="1.2em">)</mo><mo>&#x0003D;</mo><menclose notation="box"><mrow><mfrac><mrow><msub><mi>A</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mn>2</mn><mi>&#x003B5;</mi><mo stretchy="false">&#x00029;</mo></mrow><mn>2</mn></mfrac></mrow></menclose><mo>&#x0002E;</mo></mrow></math><span class="eq-label">(T6)</span></div>
+<p><strong>上界。</strong> y に整合する集合 C_y={x:||F_S(x)−y||∞≤ε} は非空ならコンパクトで、その直径は A_S(2ε) 以下。実木上の非空コンパクト集合は、直径対の中点を中心として直径の半分の半径で覆える。その点を返す推定器を選ぶ。実現不能な y での出力は任意でよい。</p>
+<p>この半径の事実を直接確認する。D=d(u,v) とし、z∈C_y の [u,v] への射影を p、a=d(z,p)、t=d(p,u) とおく。木の道の一意性と直径の定義から</p>
+<div class="equation" tabindex="0"><math aria-label="a+t\le D,\qquad a+(D-t)\le D,
+\qquad a\le\min\{t,D-t\}." alttext="a+t\le D,\qquad a+(D-t)\le D,
+\qquad a\le\min\{t,D-t\}." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>a</mi><mo>&#x0002B;</mo><mi>t</mi><mo>&#x02264;</mo><mi>D</mi><mo>&#x0002C;</mo><mspace width="2em" /><mi>a</mi><mo>&#x0002B;</mo><mo stretchy="false">&#x00028;</mo><mi>D</mi><mo>&#x02212;</mo><mi>t</mi><mo stretchy="false">&#x00029;</mo><mo>&#x02264;</mo><mi>D</mi><mo>&#x0002C;</mo><mspace width="2em" /><mi>a</mi><mo>&#x02264;</mo><mo>min</mo><mo stretchy="false">&#x0007B;</mo><mi>t</mi><mo>&#x0002C;</mo><mi>D</mi><mo>&#x02212;</mo><mi>t</mi><mo stretchy="false">&#x0007D;</mo><mo>&#x0002E;</mo></mrow></math></div>
+<p>中点 m までの道も p を通るので</p>
+<div class="equation" tabindex="0"><math aria-label="d(z,m)=a+|t-D/2|
+\le\min\{t,D-t\}+|t-D/2|=D/2." alttext="d(z,m)=a+|t-D/2|
+\le\min\{t,D-t\}+|t-D/2|=D/2." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>d</mi><mo stretchy="false">&#x00028;</mo><mi>z</mi><mo>&#x0002C;</mo><mi>m</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mi>a</mi><mo>&#x0002B;</mo><mo stretchy="false">&#x0007C;</mo><mi>t</mi><mo>&#x02212;</mo><mi>D</mi><mo>&#x0002F;</mo><mn>2</mn><mo stretchy="false">&#x0007C;</mo><mo>&#x02264;</mo><mo>min</mo><mo stretchy="false">&#x0007B;</mo><mi>t</mi><mo>&#x0002C;</mo><mi>D</mi><mo>&#x02212;</mo><mi>t</mi><mo stretchy="false">&#x0007D;</mo><mo>&#x0002B;</mo><mo stretchy="false">&#x0007C;</mo><mi>t</mi><mo>&#x02212;</mo><mi>D</mi><mo>&#x0002F;</mo><mn>2</mn><mo stretchy="false">&#x0007C;</mo><mo>&#x0003D;</mo><mi>D</mi><mo>&#x0002F;</mo><mn>2</mn><mo>&#x0002E;</mo></mrow></math></div>
+<p>D=0 でも同じ結論となる。従って全ての z を半径 D/2 の球で覆える。中心を C_y 内に制約する必要はない。</p>
+<p><strong>下界。</strong> A_S(2ε) を達成する x,x' の観測ベクトルの座標ごとの中点を y とする。これは両者と整合する。どの出力 g(y) も三角不等式から、少なくとも一方の真値まで A_S(2ε)/2 以上離れる。∎</p>
+<p>この半直径の結論は、情報半径・最適回復と実木の外接半径の性質による直接の系である。より広くhyperconvexな復元先にも同じ原理が使える。新規性比較節で既知原理との関係を示す。<strong>推定器が必ず観測と整合する点だけを返す、という追加制約の下では一般に成立しない。</strong></p>
+<h3>1.7 21倍の例での正確な閾値</h3>
+<p>幹線 S₁—b—c—S₂ の各辺長を1、bとcから外へ伸びる行き止まりを各10とする。二つの先端 X,Y の距離は21だが、基準点への観測はそれぞれ (11,12)、(12,11)。この木の直径は21、Δ=1、c=1/21 である。</p>
+<div class="equation" tabindex="0"><math aria-label="A_S(\delta)=\begin{cases}\delta&amp;0\le\delta&lt;1,\\21&amp;\delta\ge1,\end{cases}
+\qquad
+E_S(\varepsilon)=\begin{cases}\varepsilon&amp;0\le\varepsilon&lt;1/2,\\21/2&amp;\varepsilon\ge1/2.\end{cases}" alttext="A_S(\delta)=\begin{cases}\delta&amp;0\le\delta&lt;1,\\21&amp;\delta\ge1,\end{cases}
+\qquad
+E_S(\varepsilon)=\begin{cases}\varepsilon&amp;0\le\varepsilon&lt;1/2,\\21/2&amp;\varepsilon\ge1/2.\end{cases}" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>A</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>&#x003B4;</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x0007B;</mo><mtable><mtr><mtd columnalign="left"><mi>&#x003B4;</mi></mtd><mtd columnalign="left"><mn>0</mn><mo>&#x02264;</mo><mi>&#x003B4;</mi><mo>&#x0003C;</mo><mn>1</mn><mo>&#x0002C;</mo></mtd></mtr><mtr><mtd columnalign="left"><mn>21</mn></mtd><mtd columnalign="left"><mi>&#x003B4;</mi><mo>&#x02265;</mo><mn>1</mn><mo>&#x0002C;</mo></mtd></mtr></mtable></mrow><mspace width="2em" /><msub><mi>E</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>&#x003B5;</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x0007B;</mo><mtable><mtr><mtd columnalign="left"><mi>&#x003B5;</mi></mtd><mtd columnalign="left"><mn>0</mn><mo>&#x02264;</mo><mi>&#x003B5;</mi><mo>&#x0003C;</mo><mn>1</mn><mo>&#x0002F;</mo><mn>2</mn><mo>&#x0002C;</mo></mtd></mtr><mtr><mtd columnalign="left"><mn>21</mn><mo>&#x0002F;</mo><mn>2</mn></mtd><mtd columnalign="left"><mi>&#x003B5;</mi><mo>&#x02265;</mo><mn>1</mn><mo>&#x0002F;</mo><mn>2</mn><mo>&#x0002E;</mo></mtd></mtr></mtable></mrow></mrow></math></div>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align: right;">各観測の最大誤差 ε</th>
+<th style="text-align: right;">同じ受信値に整合し得る2点の最大隔たり</th>
+<th style="text-align: right;">最良の推定器の最悪位置誤差</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">0.10</td>
+<td style="text-align: right;">0.20</td>
+<td style="text-align: right;">0.10</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.49</td>
+<td style="text-align: right;">0.98</td>
+<td style="text-align: right;">0.49</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.50</td>
+<td style="text-align: right;">21.00</td>
+<td style="text-align: right;">10.50</td>
+</tr>
+<tr>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">21.00</td>
+<td style="text-align: right;">10.50</td>
+</tr>
+</tbody>
+</table></div>
+<p>これは「観測誤差に応じて位置誤差が常に滑らかに増える」という期待の反例になる。最悪の場合についての主張であり、平均誤差や確率的な発生頻度を述べてはいない。</p>
+<h3>1.8 S1.5：基準点配置を葉の有限集合へ還元する</h3>
+<p><strong>定理。</strong> |S|≥2 なら、T の葉だけからなる集合 S' で、|S'|≤|S| かつ</p>
+<div class="equation" tabindex="0"><math aria-label="全ての点 x と y に対し、葉へ移した基準点集合 S プライムの観測差は、元の集合 S の観測差以上。" alttext="\rho_{S&#x27;}(x,y)\ge\rho_S(x,y)\qquad(\forall x,y\in T)
+" id="eq-t7" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>&#x003C1;</mi><mrow><msup><mi>S</mi><mi>&#x02032;</mi></msup></mrow></msub><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>y</mi><mo stretchy="false">&#x00029;</mo><mo>&#x02265;</mo><msub><mi>&#x003C1;</mi><mi>S</mi></msub><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>y</mi><mo stretchy="false">&#x00029;</mo><mspace width="2em" /><mo stretchy="false">&#x00028;</mo><mo>&#x02200;</mo><mi>x</mi><mo>&#x0002C;</mo><mi>y</mi><mo>&#x02208;</mo><mi>T</mi><mo stretchy="false">&#x00029;</mo></mrow></math><span class="eq-label">(T7)</span></div>
+<p>を満たすものが存在する。</p>
+<p><strong>証明。</strong> K の各葉を、K に戻らない方向に T の葉まで延長する。既に T の葉であれば動かさない。各延長は異なる葉に到達し、その集合 S' の凸包 K' は K を含む。K の各葉は S に属するので、個数は増えない。</p>
+<p>固定した x,y に対し f(s)=d(x,s)−d(y,s) は、s の道 [x,y] への射影位置のアフィン関数である。任意の道上では一定または単調に変化するため、|f| の基準点凸包上での最大値は基準点上の最大値に等しい。K⊂K' から、</p>
+<div class="equation" tabindex="0"><math aria-label="\max_{s\in S}|f(s)|=\max_{s\in K}|f(s)|
+\le\max_{s\in K&#x27;}|f(s)|=\max_{s\in S&#x27;}|f(s)|." alttext="\max_{s\in S}|f(s)|=\max_{s\in K}|f(s)|
+\le\max_{s\in K&#x27;}|f(s)|=\max_{s\in S&#x27;}|f(s)|." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mo>max</mo><mrow><mi>s</mi><mo>&#x02208;</mo><mi>S</mi></mrow></msub><mo stretchy="false">&#x0007C;</mo><mi>f</mi><mo stretchy="false">&#x00028;</mo><mi>s</mi><mo stretchy="false">&#x00029;</mo><mo stretchy="false">&#x0007C;</mo><mo>&#x0003D;</mo><msub><mo>max</mo><mrow><mi>s</mi><mo>&#x02208;</mo><mi>K</mi></mrow></msub><mo stretchy="false">&#x0007C;</mo><mi>f</mi><mo stretchy="false">&#x00028;</mo><mi>s</mi><mo stretchy="false">&#x00029;</mo><mo stretchy="false">&#x0007C;</mo><mo>&#x02264;</mo><msub><mo>max</mo><mrow><mi>s</mi><mo>&#x02208;</mo><msup><mi>K</mi><mi>&#x02032;</mi></msup></mrow></msub><mo stretchy="false">&#x0007C;</mo><mi>f</mi><mo stretchy="false">&#x00028;</mo><mi>s</mi><mo stretchy="false">&#x00029;</mo><mo stretchy="false">&#x0007C;</mo><mo>&#x0003D;</mo><msub><mo>max</mo><mrow><mi>s</mi><mo>&#x02208;</mo><msup><mi>S</mi><mi>&#x02032;</mi></msup></mrow></msub><mo stretchy="false">&#x0007C;</mo><mi>f</mi><mo stretchy="false">&#x00028;</mo><mi>s</mi><mo stretchy="false">&#x00029;</mo><mo stretchy="false">&#x0007C;</mo><mo>&#x0002E;</mo></mrow></math></div>
+<p>これが (T7) である。∎</p>
+<p>従って、全ての δ で同時に A_{S'}(δ)≤A_S(δ)。c も悪化しない。基準点の設置位置を自由に選べ、各点の費用が同じで、個数予算が m≥2 のとき、c の最大化や任意の誤差幅での最悪誤差最小化は、葉の部分集合を調べれば最適解を得られる。</p>
+<p>予算が2個以上で元の集合が1点の場合は、先に任意の別の基準点を一つ加えてから定理を適用できる。これは連続配置から有限配置への厳密な還元である。葉数を ℓ とすれば、素朴には高々 min(m,ℓ) 個を選ぶ部分集合を列挙できる。<strong>葉の個数に関する多項式時間アルゴリズムは本稿では証明していない。</strong> また設置禁止場所・位置依存の費用・基準点1個だけの一般問題は対象に含めない。</p>
+<h3>1.9 境界と適用外</h3>
+<ul>
+<li>T が一点なら位置誤差と曖昧さは常に0。c は空集合上の下限となるため、本稿では別規約を与えず定理の対象を diam(T)&gt;0 に限定した。</li>
+<li>閉路のある空間には、付け根への一意な射影や道の一意性をそのまま移せない。</li>
+<li>基準点への距離を異なる速度・未知の開始時刻を含む到達時間で観測するモデル、距離ごとに誤差幅が異なるモデルは未検証。</li>
+<li>木の構造そのものは既知とする。空間全体の復元と、既知の空間内での位置推定は異なる問題である。</li>
+</ul></div></details><details class="proof-block" id="proof-interval"><summary>S2：短い区間の構造・最良比較係数・全nの等号例</summary><div><h2>2. S2：直線上の不確実な位置の接続</h2>
+<h3>2.1. 定義と主定理</h3>
+<p><code>n &gt;= 2</code> とし、各点の独立した位置不確実性を閉区間</p>
+<div class="equation" tabindex="0"><math aria-label="I_i=[a_i,b_i]\subset\mathbb R,\qquad a_i\le b_i" alttext="I_i=[a_i,b_i]\subset\mathbb R,\qquad a_i\le b_i" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>I</mi><mi>i</mi></msub><mo>&#x0003D;</mo><mo stretchy="false">[</mo><msub><mi>a</mi><mi>i</mi></msub><mo>&#x0002C;</mo><msub><mi>b</mi><mi>i</mi></msub><mo stretchy="false">]</mo><mo>&#x02282;</mo><mi mathvariant="double-struck">R</mi><mo>&#x0002C;</mo><mspace width="2em" /><msub><mi>a</mi><mi>i</mi></msub><mo>&#x02264;</mo><msub><mi>b</mi><mi>i</mi></msub></mrow></math></div>
+<p>で表す。点区間、同一区間の重複、点の一致を許す。全域木は点のラベル <code>1,...,n</code> 上の木である。配置 <code>x=(x_1,...,x_n)</code> に対して</p>
+<div class="equation" tabindex="0"><math aria-label="B(x)=\min_T\max_{ij\in E(T)}|x_i-x_j|,
+\quad R_A=\max_{x\in\prod_i I_i}B(x)," alttext="B(x)=\min_T\max_{ij\in E(T)}|x_i-x_j|,
+\quad R_A=\max_{x\in\prod_i I_i}B(x)," xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>B</mi><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><msub><mo>min</mo><mi>T</mi></msub><msub><mo>max</mo><mrow><mi>i</mi><mi>j</mi><mo>&#x02208;</mo><mi>E</mi><mo stretchy="false">&#x00028;</mo><mi>T</mi><mo stretchy="false">&#x00029;</mo></mrow></msub><mo stretchy="false">&#x0007C;</mo><msub><mi>x</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mi>x</mi><mi>j</mi></msub><mo stretchy="false">&#x0007C;</mo><mo>&#x0002C;</mo><mspace width="1em" /><msub><mi>R</mi><mi>A</mi></msub><mo>&#x0003D;</mo><msub><mo>max</mo><mrow><mi>x</mi><mo>&#x02208;</mo><msub><mo>&#x0220F;</mo><mi>i</mi></msub><msub><mi>I</mi><mi>i</mi></msub></mrow></msub><mi>B</mi><mo stretchy="false">&#x00028;</mo><mi>x</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0002C;</mo></mrow></math></div>
+<div class="equation" tabindex="0"><math aria-label="R_F=\min_T\max_{x\in\prod_i I_i}\max_{ij\in E(T)}|x_i-x_j|." alttext="R_F=\min_T\max_{x\in\prod_i I_i}\max_{ij\in E(T)}|x_i-x_j|." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>R</mi><mi>F</mi></msub><mo>&#x0003D;</mo><msub><mo>min</mo><mi>T</mi></msub><msub><mo>max</mo><mrow><mi>x</mi><mo>&#x02208;</mo><msub><mo>&#x0220F;</mo><mi>i</mi></msub><msub><mi>I</mi><mi>i</mi></msub></mrow></msub><msub><mo>max</mo><mrow><mi>i</mi><mi>j</mi><mo>&#x02208;</mo><mi>E</mi><mo stretchy="false">&#x00028;</mo><mi>T</mi><mo stretchy="false">&#x00029;</mo></mrow></msub><mo stretchy="false">&#x0007C;</mo><msub><mi>x</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mi>x</mi><mi>j</mi></msub><mo stretchy="false">&#x0007C;</mo><mo>&#x0002E;</mo></mrow></math></div>
+<p>有限個の木とコンパクト配置空間を扱うので、最大・最小はいずれも存在する。<code>R_A</code> は、配置に応じて接続木を選び直せる場合の、全配置を保証する最小通信距離。<code>R_F</code> は、先に固定した同じ木の全辺を全配置で使用可能にする最小通信距離。</p>
+<p><strong>主定理（一般証明を記録）。</strong></p>
+<div class="equation" tabindex="0"><math aria-label="\boxed{R_A\le R_F\le\left\lceil\frac n2\right\rceil R_A.}" alttext="\boxed{R_A\le R_F\le\left\lceil\frac n2\right\rceil R_A.}" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><menclose notation="box"><mrow><msub><mi>R</mi><mi>A</mi></msub><mo>&#x02264;</mo><msub><mi>R</mi><mi>F</mi></msub><mo>&#x02264;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x02308;</mo><mfrac><mi>n</mi><mn>2</mn></mfrac><mo stretchy="true" fence="true" form="postfix">&#x02309;</mo></mrow><msub><mi>R</mi><mi>A</mi></msub><mo>&#x0002E;</mo></mrow></menclose></mrow></math></div>
+<p>右側の係数は各 <code>n &gt;= 2</code> で最良である。</p>
+<h3>2.2. 距離 r での補題</h3>
+<p>以下、<code>r&gt;0</code> とし、全ての許容配置について、距離 <code>r</code> 以下の点対を辺とするグラフが連結であると仮定する。</p>
+<h4>補題1：長い区間の削除</h4>
+<p>区間 <code>I_i</code> の長さが <code>r</code> 以上なら、その点を削除しても、残りの各配置の距離 <code>r</code> グラフは連結である（残りが1点なら自明）。</p>
+<p><strong>証明。</strong> 残りの点のある配置が不連結だとする。実直線上では、ソート順に隣接した点 <code>u&lt;v</code> の間に <code>g=v-u&gt;r</code> の隙間がある。その隙間の左と右を追加の1点 <code>x</code> で接続するには</p>
+<div class="equation" tabindex="0"><math aria-label="x\in[v-r,u+r]" alttext="x\in[v-r,u+r]" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>x</mi><mo>&#x02208;</mo><mo stretchy="false">[</mo><mi>v</mi><mo>&#x02212;</mo><mi>r</mi><mo>&#x0002C;</mo><mi>u</mi><mo>&#x0002B;</mo><mi>r</mi><mo stretchy="false">]</mo></mrow></math></div>
+<p>が必要である。この区間が空でなければ、その長さは <code>2r-g&lt;r</code> である。長さが <code>r</code> 以上ある <code>I_i</code> の全点をここに含めることはできない。従って許容される <code>x</code> のどれかでは元の全体グラフも不連結になり、仮定に反する。∎</p>
+<p>この補題は繰り返して適用できる。<strong>削除できる条件は幅≥r、主証明で実際に削除する条件は幅&gt;r</strong> である。幅がちょうど r の区間も補題上は削除可能だが、以降は削除せず、幅≤r の「短い区間」集合に残す。こうして、残す集合と削除する集合は重複も漏れもなく全区間を分ける。</p>
+<h4>補題2：短い区間は少なくとも1本存在する</h4>
+<div class="equation" tabindex="0"><math aria-label="S=\{i:b_i-a_i\le r\},\qquad m=|S|" alttext="S=\{i:b_i-a_i\le r\},\qquad m=|S|" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>S</mi><mo>&#x0003D;</mo><mo stretchy="false">&#x0007B;</mo><mi>i</mi><mi>:</mi><msub><mi>b</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>i</mi></msub><mo>&#x02264;</mo><mi>r</mi><mo stretchy="false">&#x0007D;</mo><mo>&#x0002C;</mo><mspace width="2em" /><mi>m</mi><mo>&#x0003D;</mo><mo stretchy="false">&#x0007C;</mo><mi>S</mi><mo stretchy="false">&#x0007C;</mo></mrow></math></div>
+<p>とおくと、<code>m&gt;=1</code> である。</p>
+<p><strong>証明。</strong> 全区間の長さが <code>r</code> より大きいと仮定する。補題1を使って2本を残すまで削除する。残った2区間の長さを <code>w_1,w_2&gt;r</code> とすれば、両区間間の最大距離は少なくとも</p>
+<div class="equation" tabindex="0"><math aria-label="\frac{w_1+w_2}{2}&gt;r" alttext="\frac{w_1+w_2}{2}&gt;r" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mfrac><mrow><msub><mi>w</mi><mn>1</mn></msub><mo>&#x0002B;</mo><msub><mi>w</mi><mn>2</mn></msub></mrow><mrow><mn>2</mn></mrow></mfrac><mo>&#x0003E;</mo><mi>r</mi></mrow></math></div>
+<p>である。実際 <code>b_1-a_2</code> と <code>b_2-a_1</code> の和が <code>w_1+w_2</code> なので、その少なくとも一方はこの半分以上である。許容される2点配置に距離が <code>r</code> を超えるものが存在し、連結性に反する。∎</p>
+<h4>補題3：短い区間だけなら固定木が距離 r で存在する</h4>
+<p>全区間の幅が <code>r</code> 以下で、全配置で距離 <code>r</code> 連結なら、同じ距離 <code>r</code> で全配置に使える固定全域木が存在する。</p>
+<p><strong>証明。</strong> 各区間について非空閉区間</p>
+<div class="equation" tabindex="0"><math aria-label="J_i=[b_i-r,a_i]" alttext="J_i=[b_i-r,a_i]" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>J</mi><mi>i</mi></msub><mo>&#x0003D;</mo><mo stretchy="false">[</mo><msub><mi>b</mi><mi>i</mi></msub><mo>&#x02212;</mo><mi>r</mi><mo>&#x0002C;</mo><msub><mi>a</mi><mi>i</mi></msub><mo stretchy="false">]</mo></mrow></math></div>
+<p>を定義する。ラベル <code>i,j</code> を、全許容位置で距離 <code>r</code> 以下になる場合に結ぶ。その条件は</p>
+<div class="equation" tabindex="0"><math aria-label="b_i-a_j\le r,\quad b_j-a_i\le r," alttext="b_i-a_j\le r,\quad b_j-a_i\le r," xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>b</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>j</mi></msub><mo>&#x02264;</mo><mi>r</mi><mo>&#x0002C;</mo><mspace width="1em" /><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>i</mi></msub><mo>&#x02264;</mo><mi>r</mi><mo>&#x0002C;</mo></mrow></math></div>
+<p>従ってちょうど <code>J_i</code> と <code>J_j</code> が交差することに等しい。</p>
+<p>この交差グラフが不連結なら、有限個の閉区間の成分の間に正の隙間がある。隣接成分の間で、全ラベルを非空な左群 <code>L</code> と右群 <code>R</code> に分けると</p>
+<div class="equation" tabindex="0"><math aria-label="\max_{i\in L}a_i &lt; \min_{j\in R}(b_j-r)." alttext="\max_{i\in L}a_i &lt; \min_{j\in R}(b_j-r)." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mo>max</mo><mrow><mi>i</mi><mo>&#x02208;</mo><mi>L</mi></mrow></msub><msub><mi>a</mi><mi>i</mi></msub><mo>&#x0003C;</mo><msub><mo>min</mo><mrow><mi>j</mi><mo>&#x02208;</mo><mi>R</mi></mrow></msub><mo stretchy="false">&#x00028;</mo><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><mi>r</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0002E;</mo></mrow></math></div>
+<p>左群では <code>x_i=a_i</code>、右群では <code>x_j=b_j</code> を選ぶ。その配置には幅 <code>r</code> より大きな隙間が生じ、連結性の仮定に反する。よって交差グラフは連結であり、その任意の全域木を固定木にできる。∎</p>
+<p>補題1で長い区間を全て削除すると短い区間集合 <code>S</code> の全配置連結性が残り、補題3が適用できる。その固定距離 <code>r</code> グラフを <code>H</code> とする。</p>
+<h4>補題4：長い区間の両端には、それぞれ確実に接続できる短い区間がある</h4>
+<p>長い区間 <code>I_i=[A,B]</code> を1本選ぶ。少なくとも1個の <code>u in S</code> が存在して</p>
+<div class="equation" tabindex="0"><math aria-label="\max_{y\in I_u}|A-y|\le r" alttext="\max_{y\in I_u}|A-y|\le r" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mo>max</mo><mrow><mi>y</mi><mo>&#x02208;</mo><msub><mi>I</mi><mi>u</mi></msub></mrow></msub><mo stretchy="false">&#x0007C;</mo><mi>A</mi><mo>&#x02212;</mo><mi>y</mi><mo stretchy="false">&#x0007C;</mo><mo>&#x02264;</mo><mi>r</mi></mrow></math></div>
+<p>となる。同様に、少なくとも1個の <code>v in S</code> について <code>max_{y in I_v}|B-y|&lt;=r</code> となる。</p>
+<p><strong>証明。</strong> <code>I_i</code> 以外の長い区間を全て削除すると、短い区間集合と <code>I_i</code> の全配置連結性が残る。<code>x_i=A</code> に固定する。仮に全ての短い区間 <code>I_j</code> について <code>|A-y_j|&gt;r</code> となる位置 <code>y_j in I_j</code> を選べるなら、それらを独立に同時選択することで <code>A</code> が孤立する。従って、全ての位置で <code>A</code> と距離 <code>r</code> 以内にある短い区間が少なくとも1本ある。<code>B</code> も同様。∎</p>
+<h3>2.3. 主定理の構成的証明</h3>
+<p><code>r=R_A&gt;0</code> とする。上記の短い区間集合 <code>S</code>、そのサイズ <code>m&gt;=1</code>、固定距離 <code>r</code> グラフ <code>H</code> を使う。</p>
+<p>長い区間がなければ補題3より <code>R_F&lt;=r</code> であり、証明が完了する。</p>
+<p>長い区間 <code>I_i=[A,B]</code> を1本選び、補題4の短い区間 <code>u,v</code> を選ぶ。<code>H</code> 内の <code>u</code> から <code>v</code> への単純路を取る。仮想的な固定端点 <code>A,B</code> を加えると</p>
+<div class="equation" tabindex="0"><math aria-label="A\longrightarrow I_u\longrightarrow\cdots\longrightarrow I_v\longrightarrow B" alttext="A\longrightarrow I_u\longrightarrow\cdots\longrightarrow I_v\longrightarrow B" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>A</mi><mi>&#x027F6;</mi><msub><mi>I</mi><mi>u</mi></msub><mi>&#x027F6;</mi><mo>&#x022EF;</mo><mi>&#x027F6;</mi><msub><mi>I</mi><mi>v</mi></msub><mi>&#x027F6;</mi><mi>B</mi></mrow></math></div>
+<p>という、全ての辺が全配置で距離 <code>r</code> 以下である道が得られる。道を v₀=A,v₁,…,v_L=B と書く。内部頂点は相異なる短い区間のラベルで、その個数 L−1 は1以上 m 以下だから、2≤L≤m+1。u=v の場合は A,I_u,B の2辺の道とする。</p>
+<p>中央の添字 t=⌊L/2⌋ を選ぶと、L≥2 より 1≤t≤L−1。従って v_t は必ず内部の短い区間 I_j である。両端からの辺数 t と L−t はともに ⌈L/2⌉ 以下になる。各辺の距離保証と三角不等式により、I_j の任意の位置 y について</p>
+<div class="equation" tabindex="0"><math aria-label="|A-y|\le\left\lceil\frac L2\right\rceil r,
+\qquad
+|B-y|\le\left\lceil\frac L2\right\rceil r." alttext="|A-y|\le\left\lceil\frac L2\right\rceil r,
+\qquad
+|B-y|\le\left\lceil\frac L2\right\rceil r." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mo stretchy="false">&#x0007C;</mo><mi>A</mi><mo>&#x02212;</mo><mi>y</mi><mo stretchy="false">&#x0007C;</mo><mo>&#x02264;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x02308;</mo><mfrac><mi>L</mi><mn>2</mn></mfrac><mo stretchy="true" fence="true" form="postfix">&#x02309;</mo></mrow><mi>r</mi><mo>&#x0002C;</mo><mspace width="2em" /><mo stretchy="false">&#x0007C;</mo><mi>B</mi><mo>&#x02212;</mo><mi>y</mi><mo stretchy="false">&#x0007C;</mo><mo>&#x02264;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x02308;</mo><mfrac><mi>L</mi><mn>2</mn></mfrac><mo stretchy="true" fence="true" form="postfix">&#x02309;</mo></mrow><mi>r</mi><mo>&#x0002E;</mo></mrow></math></div>
+<p>実直線上では <code>|x-y|</code> の <code>x in [A,B]</code> に関する最大値は端点で達成される。従って</p>
+<div class="equation" tabindex="0"><math aria-label="\max_{x\in I_i,y\in I_j}|x-y|
+\le\left\lceil\frac{m+1}{2}\right\rceil r." alttext="\max_{x\in I_i,y\in I_j}|x-y|
+\le\left\lceil\frac{m+1}{2}\right\rceil r." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mo>max</mo><mrow><mi>x</mi><mo>&#x02208;</mo><msub><mi>I</mi><mi>i</mi></msub><mo>&#x0002C;</mo><mi>y</mi><mo>&#x02208;</mo><msub><mi>I</mi><mi>j</mi></msub></mrow></msub><mo stretchy="false">&#x0007C;</mo><mi>x</mi><mo>&#x02212;</mo><mi>y</mi><mo stretchy="false">&#x0007C;</mo><mo>&#x02264;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x02308;</mo><mfrac><mrow><mi>m</mi><mo>&#x0002B;</mo><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac><mo stretchy="true" fence="true" form="postfix">&#x02309;</mo></mrow><mi>r</mi><mo>&#x0002E;</mo></mrow></math></div>
+<p>各長い区間に対し、このような短い区間を1本選んで固定辺を加える。短い区間の固定木と合わせると、全ての長い区間が葉となる固定全域木が得られる。長い区間が1本以上ある場合、<code>m&lt;=n-1</code> なので</p>
+<div class="equation" tabindex="0"><math aria-label="R_F\le\left\lceil\frac{m+1}{2}\right\rceil r
+\le\left\lceil\frac n2\right\rceil r." alttext="R_F\le\left\lceil\frac{m+1}{2}\right\rceil r
+\le\left\lceil\frac n2\right\rceil r." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>R</mi><mi>F</mi></msub><mo>&#x02264;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x02308;</mo><mfrac><mrow><mi>m</mi><mo>&#x0002B;</mo><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac><mo stretchy="true" fence="true" form="postfix">&#x02309;</mo></mrow><mi>r</mi><mo>&#x02264;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x02308;</mo><mfrac><mi>n</mi><mn>2</mn></mfrac><mo stretchy="true" fence="true" form="postfix">&#x02309;</mo></mrow><mi>r</mi><mo>&#x0002E;</mo></mrow></math></div>
+<p><code>R_A=0</code> の場合、どの配置でも距離0で全点が繋がる必要があるので、独立性から全区間が同一の点区間となり、<code>R_F=0</code>。最後に <code>R_A&lt;=R_F</code> は、配置を見て木を選ぶ自由を許すと必要距離が増えないことから直ちに従う。∎</p>
+<h3>2.4. より強い定理と等号例</h3>
+<p><strong>短い区間数による強化（証明済み）。</strong> <code>r=R_A&gt;0</code>、<code>m=#{i:b_i-a_i&lt;=r}</code> とする。</p>
+<ul>
+<li>長い区間がなければ <code>R_F=R_A</code>。</li>
+<li>長い区間があれば <code>R_F&lt;=ceil((m+1)/2) R_A</code>。</li>
+</ul>
+<p>後者は、任意の <code>m&gt;=1</code> と任意の長い区間数 <code>k&gt;=1</code> に対して最良である。</p>
+<p><strong>等号構成。</strong> <code>m</code> 本の固定点区間</p>
+<div class="equation" tabindex="0"><math aria-label="\{1\},\{2\},\ldots,\{m\}" alttext="\{1\},\{2\},\ldots,\{m\}" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mo stretchy="false">&#x0007B;</mo><mn>1</mn><mo stretchy="false">&#x0007D;</mo><mo>&#x0002C;</mo><mo stretchy="false">&#x0007B;</mo><mn>2</mn><mo stretchy="false">&#x0007D;</mo><mo>&#x0002C;</mo><mi>&#x02026;</mi><mo>&#x0002C;</mo><mo stretchy="false">&#x0007B;</mo><mi>m</mi><mo stretchy="false">&#x0007D;</mo></mrow></math></div>
+<p>と、<code>k</code> 本の同一区間 <code>[0,m+1]</code> を使う。全ての可動点は固定点のどれかと距離1以内にあり、固定点の鎖も距離1で連結するので <code>R_A&lt;=1</code>。可動点を全て0に配置すれば幅1の隙間が残るので <code>R_A&gt;=1</code>。従って <code>R_A=1</code>。</p>
+<p>長い区間同士の最悪距離は <code>m+1</code>。長い区間と固定点 <code>j</code> の最悪距離は <code>max(j,m+1-j)</code> で、その最小値は <code>ceil((m+1)/2)</code>。従ってこの値未満では長い区間はどの頂点とも固定辺を持てず、固定木は存在しない。一方、全長区間を中央の固定点に接続すればこの値で固定木ができる。</p>
+<p><code>k=1</code>、<code>m=n-1</code> とすれば元の <code>ceil(n/2)</code> の各点数に対する鋭さが得られる。</p>
+<h3>2.5. 路の短さによる実例ごとの改善</h3>
+<p>長い区間 <code>I_i=[A_i,B_i]</code> の両端に確実に距離 <code>r</code> で接続する短い区間の集合を、それぞれ <code>U_i,V_i</code> とする。短い区間の固定距離 <code>r</code> グラフを <code>H</code> とし、集合間最短路の辺数を</p>
+<div class="equation" tabindex="0"><math aria-label="d_i=\operatorname{dist}_H(U_i,V_i)" alttext="d_i=\operatorname{dist}_H(U_i,V_i)" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>d</mi><mi>i</mi></msub><mo>&#x0003D;</mo><msub><mo>dist</mo><mi>H</mi></msub><mo stretchy="false">&#x00028;</mo><msub><mi>U</mi><mi>i</mi></msub><mo>&#x0002C;</mo><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="false">&#x00029;</mo></mrow></math></div>
+<p>とすれば、上の構成で</p>
+<div class="equation" tabindex="0"><math aria-label="R_F\le r\max\left\{1,\max_{i\notin S}\left\lceil\frac{d_i+2}{2}\right\rceil\right\}" alttext="R_F\le r\max\left\{1,\max_{i\notin S}\left\lceil\frac{d_i+2}{2}\right\rceil\right\}" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>R</mi><mi>F</mi></msub><mo>&#x02264;</mo><mi>r</mi><mo>max</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x0007B;</mo><mn>1</mn><mo>&#x0002C;</mo><msub><mo>max</mo><mrow><mi>i</mi><mo>&#x02209;</mo><mi>S</mi></mrow></msub><mrow><mo stretchy="true" fence="true" form="prefix">&#x02308;</mo><mfrac><mrow><msub><mi>d</mi><mi>i</mi></msub><mo>&#x0002B;</mo><mn>2</mn></mrow><mrow><mn>2</mn></mrow></mfrac><mo stretchy="true" fence="true" form="postfix">&#x02309;</mo></mrow><mo stretchy="true" fence="true" form="postfix">&#x0007D;</mo></mrow></mrow></math></div>
+<p>という実例ごとの証明書が得られる。長い区間がないときは右辺を <code>r</code> とする。これは最適な <code>R_F</code> の公式ではなく、構成的な上界である。</p>
+<h3>2.6. 計算検査の再現性</h3>
+<p><code>spatial_research_verify.py intervals</code> は標準Pythonのみを使い、整数演算で以下を再現する。</p>
+<ol>
+<li>端点 <code>0,...,6</code> の全28種類の閉区間から、重複可・順序無視で <code>n=3,4,5</code> 本選ぶ。</li>
+<li>全 <code>2^n</code> の端点配置を列挙し、ソート後の最大隣接間隔の最大を <code>R_A</code> とする。</li>
+<li>完全グラフの辺重み <code>max(|a_i-b_j|,|b_i-a_j|)</code> にKruskal法を適用し、最大木辺を <code>R_F</code> とする。</li>
+<li>上の証明に対応した構成で固定木を実際に作り、短い区間の連結性、両端の確実な接続先、道の中央頂点による上界、全域木の辺数、強化上界を検査する。</li>
+</ol>
+<p>端点配置だけで <code>R_A</code> が厳密に求まる理由: 任意配置の最大隙間で点を左右群に分け、左群の各点をその左端、右群をその右端へ動かす。隙間は減らず、端点配置が得られる。逆方向は端点配置が許容配置の一部なので自明。</p>
+<p>保存された検証記録の母集団:</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>n</th>
+<th style="text-align: right;">区間族数</th>
+<th style="text-align: right;">R_A=0 の例</th>
+<th style="text-align: right;">最大比 R_F/R_A</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3</td>
+<td style="text-align: right;">4,060</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr>
+<td>4</td>
+<td style="text-align: right;">31,465</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr>
+<td>5</td>
+<td style="text-align: right;">201,376</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr>
+<td>合計</td>
+<td style="text-align: right;">236,901</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table></div>
+<p>これらの有限検査は証明の代わりではない。主定理の一般的な根拠は上記の数学的証明である。</p>
+<h3>2.7. 任意のコンパクト集合への拡張と独立性の境界</h3>
+<p><strong>凸包不変性（証明済み）。</strong> 各ラベルの不確実集合を任意の非空コンパクト集合 <code>U_i subset R</code> としても、これを閉区間 <code>I_i=[min U_i,max U_i]</code> に置き換えて <code>R_A</code> と <code>R_F</code> は変わらない。</p>
+<p><code>R_F</code> については、各点対の最大距離は互いの端点の組で達成されるためである。<code>R_A</code> については、区間族の任意配置の最大隙間で左右群を分け、左群を各集合の最小値、右群を各集合の最大値へ移すと隙間が減らない。移動先の全点は元のコンパクト集合に属する。従って区間族の <code>R_A</code> は元の集合族の <code>R_A</code> 以下で、逆不等式は配置空間の包含から従う。</p>
+<p>従って主定理は、独立した任意非空コンパクト集合 <code>U_i subset R</code> にそのまま成り立つ。強化定理の短さは <code>diam(U_i)&lt;=R_A</code> で判定すればよい。</p>
+<p><strong>独立性を外すと主定理は偽。</strong> 許容配置を、固定位置集合 <code>{0,1,...,n-1}</code> の全順列だけに限定する相関モデルを考える。各配置では隣接位置を結べるので <code>R_A=1</code>。一方、どのラベル対も許容配置のどれかで両端 <code>0,n-1</code> を占めるため、各固定辺の最大距離は <code>n-1</code> である。従って <code>R_F=n-1</code> となり、<code>n&gt;=4</code> で <code>ceil(n/2)</code> 上界を破る。この相関モデルでは、各点の周辺的な不確実集合だけを用いると独立性の情報を失うため、凸包不変性を適用できない。</p>
+<h4>2.7.1 全配置連結性の必要十分条件</h4>
+<p>任意の <code>r&gt;0</code> に対し、幅が <code>r</code> 以下の区間を短い区間集合 <code>S</code> とし、その全配置で使える距離 <code>r</code> グラフを <code>H</code> とする。<code>n&gt;=2</code> では、全配置が距離 <code>r</code> で連結であることは、次の3条件と同値である。</p>
+<ol>
+<li><code>S</code> が非空。</li>
+<li><code>H</code> が連結。</li>
+<li>各長い区間の両端について、その端点との距離が全位置で <code>r</code> 以下になる短い区間が存在する（両端で別の短い区間でよい）。</li>
+</ol>
+<p>必要性は補題2〜4で証明済み。十分性を示すため、短い区間の任意配置を固定する。<code>H</code> の固定木があるので短い点の距離 <code>r</code> グラフは連結し、それらの閉 <code>r</code> 近傍の和集合は実直線上の1つの閉区間になる。条件3により各長い区間の両端がこの和集合に属するので、長い区間全体も含まれる。従って各長い点のどの位置も、短い点のどれかと距離 <code>r</code> 以下で結ばれる。</p>
+<p>条件2が成り立つとき、条件3は各長い区間 <code>[A,B]</code> について</p>
+<div class="equation" tabindex="0"><math aria-label="A\ge\min_{j\in S} b_j-r,
+\qquad
+B\le\max_{j\in S} a_j+r" alttext="A\ge\min_{j\in S} b_j-r,
+\qquad
+B\le\max_{j\in S} a_j+r" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>A</mi><mo>&#x02265;</mo><msub><mo>min</mo><mrow><mi>j</mi><mo>&#x02208;</mo><mi>S</mi></mrow></msub><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><mi>r</mi><mo>&#x0002C;</mo><mspace width="2em" /><mi>B</mi><mo>&#x02264;</mo><msub><mo>max</mo><mrow><mi>j</mi><mo>&#x02208;</mo><mi>S</mi></mrow></msub><msub><mi>a</mi><mi>j</mi></msub><mo>&#x0002B;</mo><mi>r</mi></mrow></math></div>
+<p>と同値になる。確実に少なくとも1個の短い区間へ接続できる位置集合は</p>
+<div class="equation" tabindex="0"><math aria-label="\bigcup_{j\in S}[b_j-r,a_j+r]
+=\left[\min_{j\in S} b_j-r,\max_{j\in S} a_j+r\right]" alttext="\bigcup_{j\in S}[b_j-r,a_j+r]
+=\left[\min_{j\in S} b_j-r,\max_{j\in S} a_j+r\right]" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mo>&#x022C3;</mo><mrow><mi>j</mi><mo>&#x02208;</mo><mi>S</mi></mrow></msub><mo stretchy="false">[</mo><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><mi>r</mi><mo>&#x0002C;</mo><msub><mi>a</mi><mi>j</mi></msub><mo>&#x0002B;</mo><mi>r</mi><mo stretchy="false">]</mo><mo>&#x0003D;</mo><mrow><mo stretchy="true" fence="true" form="prefix">[</mo><msub><mo>min</mo><mrow><mi>j</mi><mo>&#x02208;</mo><mi>S</mi></mrow></msub><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><mi>r</mi><mo>&#x0002C;</mo><msub><mo>max</mo><mrow><mi>j</mi><mo>&#x02208;</mo><mi>S</mi></mrow></msub><msub><mi>a</mi><mi>j</mi></msub><mo>&#x0002B;</mo><mi>r</mi><mo stretchy="true" fence="true" form="postfix">]</mo></mrow></mrow></math></div>
+<p>だからである。等号は、<code>H</code> が区間 <code>[b_j-r,a_j]</code> の連結な交差グラフであることから従う。</p></div></details><details class="proof-block" id="proof-independent"><summary>付録A：S2の独立した帰納的証明（English）</summary><div><h2>付録A：S2の独立した帰納的証明</h2>
+<p>以下は主本文の交差区間による証明と別に導出した英語の証明記録。両方とも通常の数学的論証であり、証明支援系による形式証明ではない。</p><div lang="en"><h3>A. Setting and claim</h3>
+<p>Let n ≥ 2 and let I_i = [a_i,b_i] be nonempty bounded closed intervals on the real line. A realization independently selects x_i in I_i. Let T range over spanning trees on the labelled vertex set {1,...,n}. Define</p>
+<div class="equation" tabindex="0"><math aria-label="R_A=\max_x\min_T\max_{ij\in E(T)}|x_i-x_j|,
+\qquad R_F=\min_T\max_x\max_{ij\in E(T)}|x_i-x_j|." alttext="R_A=\max_x\min_T\max_{ij\in E(T)}|x_i-x_j|,
+\qquad R_F=\min_T\max_x\max_{ij\in E(T)}|x_i-x_j|." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>R</mi><mi>A</mi></msub><mo>&#x0003D;</mo><msub><mo>max</mo><mi>x</mi></msub><msub><mo>min</mo><mi>T</mi></msub><msub><mo>max</mo><mrow><mi>i</mi><mi>j</mi><mo>&#x02208;</mo><mi>E</mi><mo stretchy="false">&#x00028;</mo><mi>T</mi><mo stretchy="false">&#x00029;</mo></mrow></msub><mo stretchy="false">&#x0007C;</mo><msub><mi>x</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mi>x</mi><mi>j</mi></msub><mo stretchy="false">&#x0007C;</mo><mo>&#x0002C;</mo><mspace width="2em" /><msub><mi>R</mi><mi>F</mi></msub><mo>&#x0003D;</mo><msub><mo>min</mo><mi>T</mi></msub><msub><mo>max</mo><mi>x</mi></msub><msub><mo>max</mo><mrow><mi>i</mi><mi>j</mi><mo>&#x02208;</mo><mi>E</mi><mo stretchy="false">&#x00028;</mo><mi>T</mi><mo stretchy="false">&#x00029;</mo></mrow></msub><mo stretchy="false">&#x0007C;</mo><msub><mi>x</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mi>x</mi><mi>j</mi></msub><mo stretchy="false">&#x0007C;</mo><mo>&#x0002E;</mo></mrow></math></div>
+<p>Then</p>
+<div class="equation" tabindex="0"><math aria-label="R_F\le\left\lceil\frac n2\right\rceil R_A." alttext="R_F\le\left\lceil\frac n2\right\rceil R_A." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>R</mi><mi>F</mi></msub><mo>&#x02264;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x02308;</mo><mfrac><mi>n</mi><mn>2</mn></mfrac><mo stretchy="true" fence="true" form="postfix">&#x02309;</mo></mrow><msub><mi>R</mi><mi>A</mi></msub><mo>&#x0002E;</mo></mrow></math></div>
+<p>The factor is sharp for every n ≥ 2, including both parities.</p>
+<p>For a realization, its optimal bottleneck spanning-tree value is the largest consecutive gap after sorting its n coordinates (ties allowed). Thus R_A ≤ r means that every realization has all consecutive gaps ≤ r. Call such a family universally r-connected.</p>
+<p>For distinct labels define the robust edge weight</p>
+<p>d_ij = max(b_i-a_j, b_j-a_i).</p>
+<p>This is exactly max_{x_i in I_i,x_j in I_j}|x_i-x_j|. Consequently R_F is the minimum bottleneck of a spanning tree in the complete graph with weights d_ij. It suffices to prove that the graph containing edges d_ij ≤ ⌈n/2⌉r is connected whenever the family is universally r-connected.</p>
+<h3>A. Lemma 1: deleting a long interval</h3>
+<p>Assume r &gt; 0. If a universally r-connected family contains an interval I_i of length at least r, deleting that interval leaves a universally r-connected family.</p>
+<p>Proof. Otherwise some fixed realization of the remaining labels has a consecutive gap (y,z) of length g = z-y &gt; r. For an added point x_i to remove every gap larger than r across this particular gap, it must lie in</p>
+<p>[z-r, y+r].</p>
+<p>This interval has length 2r-g &lt; r; if its endpoints are reversed, it is empty. Since all choices x_i in I_i must work, I_i would have to be contained in this interval, contrary to its length being at least r. A remaining singleton is universally r-connected by convention. QED.</p>
+<h3>A. Lemma 2: width bound for a deletable interval</h3>
+<p>Assume n ≥ 2, the full family is universally r-connected, and deleting I_i leaves a universally r-connected family. Then</p>
+<p>b_i-a_i ≤ n r.</p>
+<p>Proof. Put L = min_{j ≠ i} b_j and R = max_{j ≠ i} a_j. If a_i &lt; L-r, select x_i=a_i and x_j=b_j for all j ≠ i; x_i is isolated from the others by a gap &gt; r. Hence a_i ≥ L-r. The symmetric realization x_i=b_i, x_j=a_j gives b_i ≤ R+r.</p>
+<p>It remains to show R-L ≤ (n-2)r. If R ≤ L this is immediate. If R &gt; L, the labels attaining R as a left endpoint and L as a right endpoint must be distinct. Choose those two endpoints in a realization of the remaining n-1 labels. The span of that realization is at least R-L and, by universal r-connectivity, is at most (n-2)r. Therefore</p>
+<p>b_i-a_i ≤ R-L+2r ≤ nr.</p>
+<p>QED.</p>
+<h3>A. Lemma 3: robust neighbor by a two-sided counting argument</h3>
+<p>Assume r &gt; 0, the n-interval family is universally r-connected, k is a positive integer with 2k ≥ n, and a distinguished interval I_i has width ≤ 2kr. Then some j ≠ i satisfies d_ij ≤ kr.</p>
+<p>Proof. Suppose every d_ij &gt; kr. Define</p>
+<p>ell = b_i-kr,    u = a_i+kr.</p>
+<p>The width assumption implies ell ≤ u. For each j ≠ i, the inequality d_ij &gt; kr says that at least one of the following holds:</p>
+<p>a_j &lt; ell,    b_j &gt; u.</p>
+<p>Independently select a bad endpoint for every other label: choose a_j &lt; ell whenever possible; otherwise choose b_j &gt; u. The selected points partition into a left group of size p, with all coordinates &lt; ell, and a right group of size q, with all coordinates &gt; u. We have p+q=n-1.</p>
+<p>Both groups are nonempty. If the right group were empty, choosing x_i=b_i would leave a gap &gt; kr ≥ r between x_i and all remaining points. If the left group were empty, x_i=a_i gives the symmetric contradiction.</p>
+<p>Now keep all selected endpoints fixed and choose x_i=a_i. Let z be the first right-group point. Then z-a_i &gt; kr. All selected points strictly between a_i and z belong to the left group, so there are at most p of them. Universal r-connectivity therefore gives z-a_i ≤ (p+1)r. It follows that p+1 &gt; k, and since p and k are integers, p ≥ k.</p>
+<p>Next choose x_i=b_i. Let y be the last left-group point. Then b_i-y &gt; kr, and at most q right-group points lie strictly between y and b_i. The same argument gives q ≥ k.</p>
+<p>Thus n-1 = p+q ≥ 2k ≥ n, a contradiction. QED.</p>
+<p>The strict inequalities here matter: d_ij &gt; kr gives distances strictly greater than kr, forcing at least k intermediary points, rather than merely k-1.</p>
+<h3>A. Main theorem by induction</h3>
+<p>It suffices to prove the graph statement for every r &gt; 0 and n ≥ 2.</p>
+<p>Base n=2: universal r-connectivity says precisely d_12 ≤ r, and ceil(2/2)=1.</p>
+<p>Inductive step n≥3: put k=⌈n/2⌉, so k≥2 and 2k≥n.</p>
+<p>Case 1: some interval has width ≥ r. Delete it using Lemma 1. By induction, the robust graph on the remaining n-1 labels is connected at threshold ⌈(n−1)/2⌉r ≤ kr. Lemma 2 bounds the deleted interval's width by nr ≤ 2kr. Lemma 3 supplies a robust edge of weight ≤ kr from it to a remaining label. Adding that edge proves connectivity on all n labels.</p>
+<p>Case 2: every interval has width &lt; r. Choose its midpoint c_i=(a_i+b_i)/2 and half-width h_i=(b_i-a_i)/2 &lt; r/2. Sort the midpoints. Since their realization is r-connected, consecutive midpoint gaps are ≤ r. For each consecutive pair i,j,</p>
+<p>d_ij = |c_i-c_j| + h_i+h_j &lt; 2r ≤ kr.</p>
+<p>Their consecutive-pair path is therefore a spanning tree in the robust graph. This completes the induction.</p>
+<p>Take r=R_A if R_A&gt;0. If R_A=0, every realization consists of equal coordinates. Independence then forces every interval to be the same singleton, so R_F=0 as well.</p>
+<h3>A. Sharpness</h3>
+<p>Take n-1 singleton intervals at 1,2,...,n-1 and one moving interval [0,n]. Every realization has consecutive gaps at most 1, and the realization with moving point 0 has a gap 1; hence R_A=1.</p>
+<p>Every spanning tree must attach the moving label to at least one singleton t in {1,...,n-1}. That edge has robust weight</p>
+<p>max(t,n-t) ≥ ⌈n/2⌉.</p>
+<p>Conversely, connect the singleton labels consecutively and attach the moving label to an integer t nearest n/2. The robust bottleneck is ⌈n/2⌉. Therefore R_F=⌈n/2⌉, proving sharpness.</p></div></div></details></section><section id="verification"><h2>3. 計算方法・独立監査・再現</h2>
+<h3>3.1 適応半径の簡潔な高速公式</h3>
+<p>n≥2 とし、区間を左端の順 a₁≤⋯≤aₙ に並べる。同じ左端を持つ区間の順序は任意でよい。</p>
+<div class="equation" tabindex="0"><math aria-label="\boxed{R_A=\max\left\{0,
+\max_{1\le k&lt;n}\left(\min_{j&gt;k}b_j-a_k\right),
+\max_j b_j-a_n\right\}.}
+" alttext="\boxed{R_A=\max\left\{0,
+\max_{1\le k&lt;n}\left(\min_{j&gt;k}b_j-a_k\right),
+\max_j b_j-a_n\right\}.}
+" id="eq-i-fast" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><menclose notation="box"><mrow><msub><mi>R</mi><mi>A</mi></msub><mo>&#x0003D;</mo><mo>max</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x0007B;</mo><mn>0</mn><mo>&#x0002C;</mo><msub><mo>max</mo><mrow><mn>1</mn><mo>&#x02264;</mo><mi>k</mi><mo>&#x0003C;</mo><mi>n</mi></mrow></msub><mrow><mo stretchy="true" fence="true" form="prefix">&#x00028;</mo><msub><mo>min</mo><mrow><mi>j</mi><mo>&#x0003E;</mo><mi>k</mi></mrow></msub><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>k</mi></msub><mo stretchy="true" fence="true" form="postfix">&#x00029;</mo></mrow><mo>&#x0002C;</mo><msub><mo>max</mo><mi>j</mi></msub><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>n</mi></msub><mo stretchy="true" fence="true" form="postfix">&#x0007D;</mo></mrow><mo>&#x0002E;</mo></mrow></menclose></mrow></math><span class="eq-label">(I-fast)</span></div>
+<p>並べ替え後の右端のsuffix最小値を使えば O(n log n) 時間、O(n) 作業領域で計算できる。実数の比較・四則演算を一定費用とするモデルであり、有理数ビット長の費用は別に数える。</p>
+<p><strong>証明。</strong> 全配置の最大隣接gapの最大は、非空真部分集合 U を左側にする全てのcutについて</p>
+<div class="equation" tabindex="0"><math aria-label="R_A=\max_{\varnothing\ne U\subsetneq[n]}
+\left(\min_{j\notin U}b_j-\max_{i\in U}a_i\right)" alttext="R_A=\max_{\varnothing\ne U\subsetneq[n]}
+\left(\min_{j\notin U}b_j-\max_{i\in U}a_i\right)" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>R</mi><mi>A</mi></msub><mo>&#x0003D;</mo><msub><mo>max</mo><mrow><mo>&#x02205;</mo><mo>&#x02260;</mo><mi>U</mi><mo>&#x0228A;</mo><mo stretchy="false">[</mo><mi>n</mi><mo stretchy="false">]</mo></mrow></msub><mrow><mo stretchy="true" fence="true" form="prefix">&#x00028;</mo><msub><mo>min</mo><mrow><mi>j</mi><mo>&#x02209;</mo><mi>U</mi></mrow></msub><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><msub><mo>max</mo><mrow><mi>i</mi><mo>&#x02208;</mo><mi>U</mi></mrow></msub><msub><mi>a</mi><mi>i</mi></msub><mo stretchy="true" fence="true" form="postfix">&#x00029;</mo></mrow></mrow></math></div>
+<p>で与えられる。任意配置の最大gapはそのcutの右辺以下で、正の右辺は左群の点を各左端、右群を各右端に置けば達成する。最大値が0の場合も R_A≥0 と合わせればよい。</p>
+<p>任意のcutの t=max_{i∈U}a_i について、a_j&gt;t の点が残っていれば、U を {i:a_i≤t} へ拡大してもgapは減らず、prefixの項に帰着する。残っていなければ t=a_n なのでgapは max_j b_j−a_n 以下。逆に各prefixは実際のcutであり、jを最大右端のラベルとして補集合を {j} にすれば、そのgapは b_j−max_{i≠j}a_i≥max_jb_j−a_n となる。∎</p>
+<p>実装では第3項を max_j(b_j−max_{i≠j}a_i) という同値な形で計算する。j=n の差分は prefix 項 k=n−1 に含まれるため、全体の最大値は一致する。詳細は§3.3に記す。</p>
+<p>n=1 では R_A=R_F=0 と別に定義する。この場合に (I-fast) を適用すると、幅のある一区間で誤答になるので適用しない。</p>
+<p>固定半径 R_F は、既知のrobust bottleneck原理によって、各辺の最悪距離を重みにした最小ボトルネック全域木で求まる。全辺を列挙するKruskal法なら O(n² log n) 時間となるが、中心順の2走査を用いたBorůvka法によって、R_Fとそれを達成する木を O(n log n) の比較・算術操作、O(n)領域で求められる。全辺Kruskal法は独立な検証用として残す。第2節の構成は最良係数を保証する固定木を返すが、その木が各入力における R_F を必ず達成するという主張ではない。</p>
+<h3>3.1.1 固定接続の高速計算と最適木の構成</h3>
+<p>既知のBorůvka法を、区間の中心順で辺重みが分離する構造に適用する。以下の方法で R_F とそれを達成する木を O(n log n) の比較・算術操作、O(n) 領域で求める。新規性の主候補は増やさず、計算手法の具体化として扱う。<a href="https://algs4.cs.princeton.edu/43mst/BoruvkaMST.java.html">標準Borůvka法の著者公開実装</a></p>
+<h4>定理</h4>
+<p><code>n &gt;= 2</code> 個の非空有界閉区間 <code>I_i=[a_i,b_i]</code> を考え、異なるラベル間の重みを</p>
+<div class="equation" tabindex="0"><math aria-label="w_{ij}=\max(b_i-a_j,b_j-a_i)" alttext="w_{ij}=\max(b_i-a_j,b_j-a_i)" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>w</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>&#x0003D;</mo><mo>max</mo><mo stretchy="false">&#x00028;</mo><msub><mi>b</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>j</mi></msub><mo>&#x0002C;</mo><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>i</mi></msub><mo stretchy="false">&#x00029;</mo></mrow></math></div>
+<p>とする。この完全グラフの最小全域木を <code>O(n log n)</code> の比較・算術操作、<code>O(n)</code> 領域で構成できる。その最大辺重みは</p>
+<div class="equation" tabindex="0"><math aria-label="R_F=\min_T\max_{ij\in E(T)}w_{ij}" alttext="R_F=\min_T\max_{ij\in E(T)}w_{ij}" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>R</mi><mi>F</mi></msub><mo>&#x0003D;</mo><msub><mo>min</mo><mi>T</mi></msub><msub><mo>max</mo><mrow><mi>i</mi><mi>j</mi><mo>&#x02208;</mo><mi>E</mi><mo stretchy="false">&#x00028;</mo><mi>T</mi><mo stretchy="false">&#x00029;</mo></mrow></msub><msub><mi>w</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow></math></div>
+<p>である。区間の重複、中心の一致、点区間、辺重みの同点を許す。</p>
+<p>整数・有理数の場合、厳密計算をそのまま用いられる。計算量は比較・算術操作数についての評価であり、任意精度数のビット演算費用まで <code>O(1)</code> と主張するものではない。</p>
+<h4>一度のソートで辺の式が分離する</h4>
+<p>中心 <code>c_i=(a_i+b_i)/2</code> と半幅 <code>h_i=(b_i-a_i)/2</code> を置くと、<code>i != j</code> に対して</p>
+<div class="equation" tabindex="0"><math aria-label="w_{ij}=h_i+h_j+|c_i-c_j|." alttext="w_{ij}=h_i+h_j+|c_i-c_j|." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mi>w</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>&#x0003D;</mo><msub><mi>h</mi><mi>i</mi></msub><mo>&#x0002B;</mo><msub><mi>h</mi><mi>j</mi></msub><mo>&#x0002B;</mo><mo stretchy="false">&#x0007C;</mo><msub><mi>c</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mi>c</mi><mi>j</mi></msub><mo stretchy="false">&#x0007C;</mo><mo>&#x0002E;</mo></mrow></math></div>
+<p>したがって中心順に並べた <code>i&lt;j</code> について</p>
+<div class="equation" tabindex="0"><math aria-label="\boxed{w_{ij}=b_j-a_i.}" alttext="\boxed{w_{ij}=b_j-a_i.}" xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><menclose notation="box"><mrow><msub><mi>w</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>&#x0003D;</mo><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>i</mi></msub><mo>&#x0002E;</mo></mrow></menclose></mrow></math></div>
+<p>中心が同じ場合も成立する。実装では半整数を作らず、<code>a_i+b_i</code> で一度だけソートすればよい。</p>
+<h4>各成分の最小外向き辺を線形時間で求める</h4>
+<p>現在の全域森の各成分に「色」を付ける。頂点 <code>i</code> の左側にある異なる色の頂点との最小辺は</p>
+<div class="equation" tabindex="0"><math aria-label="\min_{j&lt;i,\ C(j)\ne C(i)}w_{ji}
+=b_i-\max_{j&lt;i,\ C(j)\ne C(i)}a_j." alttext="\min_{j&lt;i,\ C(j)\ne C(i)}w_{ji}
+=b_i-\max_{j&lt;i,\ C(j)\ne C(i)}a_j." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mo>min</mo><mrow><mi>j</mi><mo>&#x0003C;</mo><mi>i</mi><mo>&#x0002C;</mo><mtext>&#x000A0;</mtext><mi>C</mi><mo stretchy="false">&#x00028;</mo><mi>j</mi><mo stretchy="false">&#x00029;</mo><mo>&#x02260;</mo><mi>C</mi><mo stretchy="false">&#x00028;</mo><mi>i</mi><mo stretchy="false">&#x00029;</mo></mrow></msub><msub><mi>w</mi><mrow><mi>j</mi><mi>i</mi></mrow></msub><mo>&#x0003D;</mo><msub><mi>b</mi><mi>i</mi></msub><mo>&#x02212;</mo><msub><mo>max</mo><mrow><mi>j</mi><mo>&#x0003C;</mo><mi>i</mi><mo>&#x0002C;</mo><mtext>&#x000A0;</mtext><mi>C</mi><mo stretchy="false">&#x00028;</mo><mi>j</mi><mo stretchy="false">&#x00029;</mo><mo>&#x02260;</mo><mi>C</mi><mo stretchy="false">&#x00028;</mo><mi>i</mi><mo stretchy="false">&#x00029;</mo></mrow></msub><msub><mi>a</mi><mi>j</mi></msub><mo>&#x0002E;</mo></mrow></math></div>
+<p>右側なら</p>
+<div class="equation" tabindex="0"><math aria-label="\min_{j&gt;i,\ C(j)\ne C(i)}w_{ij}
+=\min_{j&gt;i,\ C(j)\ne C(i)}b_j-a_i." alttext="\min_{j&gt;i,\ C(j)\ne C(i)}w_{ij}
+=\min_{j&gt;i,\ C(j)\ne C(i)}b_j-a_i." xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><msub><mo>min</mo><mrow><mi>j</mi><mo>&#x0003E;</mo><mi>i</mi><mo>&#x0002C;</mo><mtext>&#x000A0;</mtext><mi>C</mi><mo stretchy="false">&#x00028;</mo><mi>j</mi><mo stretchy="false">&#x00029;</mo><mo>&#x02260;</mo><mi>C</mi><mo stretchy="false">&#x00028;</mo><mi>i</mi><mo stretchy="false">&#x00029;</mo></mrow></msub><msub><mi>w</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>&#x0003D;</mo><msub><mo>min</mo><mrow><mi>j</mi><mo>&#x0003E;</mo><mi>i</mi><mo>&#x0002C;</mo><mtext>&#x000A0;</mtext><mi>C</mi><mo stretchy="false">&#x00028;</mo><mi>j</mi><mo stretchy="false">&#x00029;</mo><mo>&#x02260;</mo><mi>C</mi><mo stretchy="false">&#x00028;</mo><mi>i</mi><mo stretchy="false">&#x00029;</mo></mrow></msub><msub><mi>b</mi><mi>j</mi></msub><mo>&#x02212;</mo><msub><mi>a</mi><mi>i</mi></msub><mo>&#x0002E;</mo></mrow></math></div>
+<p>左から右への走査では、走査済み頂点の <code>a_j</code> の最大値を<strong>異なる2色分</strong>だけ保持する。最大の色が現在頂点と異なればそれを使い、同じなら2番目の色を使う。右から左も <code>b_j</code> の最小値を2色分保持する。同色の記録はその色の最良値にまとめる。新たな記録1件を既存の高々2件に挿入して比較するだけなので、更新・照会は <code>O(1)</code>。</p>
+<p>なぜ2色だけで足りるか。各照会が除外するのは現在頂点の1色だけであり、全色の最良記録の先頭2色があれば、除外後の最良値が必ずその中にあるからである。</p>
+<p>2回の走査から各頂点の最小外向き辺が分かる。それらを成分ごとに比較して最小を取れば、各成分の最小外向き辺になる。この段階全体は <code>O(n)</code>。</p>
+<h4>Borůvka 法による正しさと計算量</h4>
+<p>各成分が選んだ最小外向き辺を追加して成分を縮約する。これは Borůvka 法の標準的な1段階であり、カット性質から最小全域木へ延長可能な全域森を保つ。同じ重みがあるときは、全段階を通じて</p>
+<p><code>(重み, 小さい方の元ラベル, 大きい方の元ラベル)</code></p>
+<p>という共通の順序で選ぶ。これにより、標準的な一貫した同点処理ができる。走査の値の同点も元ラベルの小さい方を優先すれば、同じ辺順序に一致する。</p>
+<p>重複を除いた選択辺に閉路があると仮定し、その閉路で共通順序が最大の辺を取る。その辺を選んだ成分には、閉路上のもう1本の、より小さい外向き辺があるため、最小辺を選んだことに矛盾する。したがって選択辺は森となり、以下の深さ優先探索はその全辺を保持する。</p>
+<p>成分が <code>k&gt;1</code> 個ある段階では、各成分に外向き辺が存在する。縮約後の各成分は旧成分を少なくとも2個含むため、成分数は高々 <code>k/2</code>。したがって段階数は <code>O(log n)</code>。</p>
+<p>実装では毎回、選んだ高々 <code>k</code> 本の辺を旧成分上の隣接リストに置き、深さ優先探索で新しい成分番号を振る。これは <code>O(k)</code>。全頂点の色配列を更新する費用は <code>O(n)</code>。この縮約と色配列の更新は線形時間なので、走査以外に余分な段階ごとの対数因子は生じない。</p>
+<p>初期ソート <code>O(n log n)</code> と、各 <code>O(n)</code> の <code>O(log n)</code> 段階を合わせて <code>O(n log n)</code>。色配列、走査記録、成分隣接リスト、出力木は合計 <code>O(n)</code> 領域で足りる。</p>
+<p>最後に、任意の最小全域木は最小ボトルネック全域木である。実際、その最大辺 <code>e</code> を除いたカットを横切る辺は <code>w(e)</code> 未満ではあり得ない。もしあれば交換により総重みが減るからである。したがって、すべての全域木はそのカットを <code>w(e)</code> 以上の辺で横切る必要があり、出力木の最大辺は <code>R_F</code> に等しい。∎</p>
+<h4>手順の要約</h4>
+<pre><code class="language-text">中心順を一度だけソートする
+各頂点を別成分として開始する
+成分が2個以上ある間:
+    左右2走査で、各成分の最小外向き辺を求める
+    選ばれた辺を追加する
+    旧成分上のグラフを線形時間で縮約し、色配列を更新する
+出力木と、その最大辺重みを返す
+</code></pre>
+<p>コード：<code>spatial_research_verify.py</code> の <code>robust_fixed_fast(intervals)</code>。返り値は <code>(R_F, 辺一覧, 各段階の成分数)</code>。辺は <code>(重み, 元ラベル1, 元ラベル2)</code>。</p>
+<h4>独立検証結果</h4>
+<p>実行コマンド：<code>python spatial_research_verify.py fixed</code></p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>検証</th>
+<th style="text-align: right;">件数</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>整数端点0〜6、n=2</td>
+<td style="text-align: right;">406</td>
+<td>全区間多重集合</td>
+</tr>
+<tr>
+<td>同、n=3</td>
+<td style="text-align: right;">4,060</td>
+<td>同上</td>
+</tr>
+<tr>
+<td>同、n=4</td>
+<td style="text-align: right;">31,465</td>
+<td>同上</td>
+</tr>
+<tr>
+<td>上記合計</td>
+<td style="text-align: right;">35,931</td>
+<td>完全グラフ Kruskal と照合</td>
+</tr>
+<tr>
+<td>整数端点0〜4、n=2〜4</td>
+<td style="text-align: right;">3,860</td>
+<td>Prüfer 列による全ラベル付き木の直接最小最大値とも照合。上記の部分集合であり件数を加算しない</td>
+</tr>
+<tr>
+<td>整数乱数、n=2〜50</td>
+<td style="text-align: right;">2,500</td>
+<td>ラベル順をランダム化</td>
+</tr>
+<tr>
+<td>有理数乱数、n=2〜19</td>
+<td style="text-align: right;">200</td>
+<td><code>fractions.Fraction</code> による厳密比較</td>
+</tr>
+<tr>
+<td>指定退化例</td>
+<td style="text-align: right;">4</td>
+<td>n=1、同一位置50点、中心共通の入れ子50区間、一直線の50点</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>不一致0件。</strong> 比較は <code>R_F</code> だけでなく、重み総和と共通の同点処理による最小全域木の全辺まで確認した。各段階の成分数半減も確認した。乱数種は <code>20260914</code>。数学的な比較に浮動小数は使用していない。有限検証は上記の一般証明を補助するものであり、形式検証ではない。</p>
+<h3>3.2 検証の範囲</h3>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>対象</th>
+<th>方法</th>
+<th>検証記録</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S2の一般上界</td>
+<td>短い区間の交差グラフを使う構成的証明</td>
+<td>主本文に全証明を収録</td>
+</tr>
+<tr>
+<td>S2の独立証明</td>
+<td>長区間の削除・幅の上界・左右の点数による帰納法</td>
+<td>付録Aに収録。主証明とは別に導出</td>
+</tr>
+<tr>
+<td>区間の全域木構成</td>
+<td>n=3,4,5、整数端点0〜6の全区間多重集合。全端点配置oracle・高速式・Kruskal・構成木の保証を整数演算で照合</td>
+<td>236,901族、全件一致</td>
+</tr>
+<tr>
+<td>(I-fast)そのものの独立検査</td>
+<td>n=2,3,4、整数端点0〜6の全区間多重集合で、全cutと照合</td>
+<td>35,931族、全件一致。上の母集団と重複するため合算しない</td>
+</tr>
+<tr>
+<td>木の係数 c</td>
+<td>80本の重み付き木。辺対の直線配置を有理数で厳密列挙</td>
+<td>80件一致。単射60・非単射20</td>
+</tr>
+<tr>
+<td>木の A_S(δ)</td>
+<td>各辺対で二変数半平面制約の頂点を有理数で厳密列挙。閾値の直前・一致・直後を含む</td>
+<td>586設定、全件一致</td>
+</tr>
+<tr>
+<td>葉への優越</td>
+<td>新旧観測差の全直線配置を共通細分し、その頂点で検査</td>
+<td>4,707頂点、全件一致</td>
+</tr>
+</tbody>
+</table></div>
+<p>木の検証は点を格子状に抜き出す方法ではなく、列挙した各木の<strong>辺内部を含む連続領域</strong>を最適化する。観測差を表す符号付きアフィン関数の最大値を直接扱い、幾何学的な射影公式を最適化oracleに使用しない。分岐構造から求める予測式と比較する。</p>
+<p>比率の検査では、観測差のアフィン関数が切り替わる直線配置の各セル内で線形分数関数になる。分母が正のセルでは値は頂点値の範囲にあり、対角上で分母・分子が共に0の場合も、その点からの線分で比は一定なので欠落しない。葉優越の差は共通細分した各セルでアフィンになる。</p>
+<p>80本は、明示した5例と seed=20260914 で生成した75例。辺長は正整数、頂点数3〜8を中心とする。基準点は頂点に置くが、次数2の点も含むため、辺を分割した内部基準点を含めて扱える。これは全ての木の列挙でも一般定理の形式証明でもない。</p>
+<h3>3.3 再現コード</h3>
+<p>このHTMLに埋め込んだ <code>spatial_research_verify.py</code> は標準Pythonのみを使用する。数学的な比較に浮動小数は使用せず、整数または <code>fractions.Fraction</code> で処理する。</p>
+<pre><code class="language-bash">python spatial_research_verify.py all
+python spatial_research_verify.py intervals --sizes 3 4 5 --max-endpoint 6
+python spatial_research_verify.py trees
+python spatial_research_verify.py fixed
+</code></pre>
+<p>最初のコマンドで全検査を再現できる。木の全入力、各係数、閾値数、葉への移動結果は、実行したスクリプトと同じディレクトリの <code>tree_verification_results.json</code> に出力される。区間は全入力を規則から再生成する。簡易実行には <code>intervals --sizes 3 --max-endpoint 4</code> を使える。</p>
+<p>高速の区間実装は (I-fast) と同値な「補集合が一点であるcut」の最大を用いる形で実装し、独立な全端点配置oracleと比較している。具体的に、左端順の j&lt;n では max_{i≠j} a_i=a_n。j=n のときにだけ生じる b_n−a_{n−1} は、表示式の prefix 項 k=n−1 そのものである。従ってコードの max_j(b_j−max_{i≠j}a_i) と表示式の max_j b_j−a_n は、prefix 項と合わせた全体の最大値として一致する。左端が同じ場合もこの説明は変わらない。式に似たコードを二つ書いて一致を確認するだけの検査を避けた。</p><p><a id="download-code" class="download" download="spatial_research_verify.py" href="data:text/x-python;base64,IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJTcGF0aWFsIG1hdGhlbWF0aWNhbCBleHBsb3JhdGlvbjogcmVwcm9kdWNpYmxlIGV4YWN0IHZlcmlmaWNhdGlvbi4KRGF0ZTogMjAyNiAwOSAxNC4gUmVxdWlyZXMgb25seSB0aGUgUHl0aG9uIHN0YW5kYXJkIGxpYnJhcnkuCgpVc2FnZToKICBweXRob24gc3BhdGlhbF9yZXNlYXJjaF92ZXJpZnkucHkgYWxsCiAgcHl0aG9uIHNwYXRpYWxfcmVzZWFyY2hfdmVyaWZ5LnB5IGludGVydmFscyAtLXNpemVzIDMgNCA1IC0tbWF4LWVuZHBvaW50IDYKICBweXRob24gc3BhdGlhbF9yZXNlYXJjaF92ZXJpZnkucHkgaW50ZXJ2YWxzIC0taGVscAogIHB5dGhvbiBzcGF0aWFsX3Jlc2VhcmNoX3ZlcmlmeS5weSB0cmVlcwogIHB5dGhvbiBzcGF0aWFsX3Jlc2VhcmNoX3ZlcmlmeS5weSBmaXhlZAoKV2l0aCBubyBtb2RlIGFyZ3VtZW50LCBydW5zIGFsbCBjaGVja3MuIEludGVydmFsIG9wdGlvbnMgYWxzbyBhcHBseSB0byBgYWxsYC4KCkludGVydmFsIGNoZWNrcyBleGhhdXN0aXZlbHkgZW51bWVyYXRlIG11bHRpc2V0cyBvZiBjbG9zZWQgaW50ZWdlci1lbmRwb2ludAppbnRlcnZhbHMgd2l0aGluIHRoZSByZXF1ZXN0ZWQgcmFuZ2U7IHJlcGVhdGVkIGFuZCBzaW5nbGV0b24gaW50ZXJ2YWxzIGFyZQphbGxvd2VkLiBBbiBpbmRlcGVuZGVudCBlbmRwb2ludCBvcmFjbGUgY2hlY2tzIHRoZSBPKG4gbG9nIG4pIGFkYXB0aXZlLXJhZGl1cwpmb3JtdWxhLCB3aGlsZSBhbiBvcHRpbWFsIHJvYnVzdCBNQlNUIGFuZCBjb25zdHJ1Y3RpdmUgY2VydGlmaWNhdGVzIGNoZWNrIHRoZQpzdHJlbmd0aGVuZWQgYm91bmQgb24gdGhlIGludGVydmFsIGFkYXB0aXZpdHkgZ2FwLiBBbGwgaW50ZXJ2YWwgY29tcHV0YXRpb25zCnVzZSBpbnRlZ2Vycy4KClRyZWUgY2hlY2tzIHVzZSBkaXJlY3QgZWRnZS1kaXN0YW5jZSBmb3JtdWxhcywgd2l0aG91dCB0aGUgbGFuZG1hcmsgcHJvamVjdGlvbgppZGVudGl0eSwgYXMgYW4gaW5kZXBlbmRlbnQgb3JhY2xlLiBFeGFjdCBGcmFjdGlvbiBwb2x5dG9wZSBvcHRpbWl6YXRpb24gYW5kCmFmZmluZSBhcnJhbmdlbWVudHMgY292ZXIgZW50aXJlIGVkZ2VzIGZvciBlYWNoIG9mIHRoZSA4MCBzcGVjaWZpZWQgd2VpZ2h0ZWQKdHJlZXMgd2l0aCB2ZXJ0ZXggbGFuZG1hcmtzICg1IGRlc2lnbmF0ZWQgY2FzZXMgYW5kIDc1IGNhc2VzIGZyb20gc2VlZAoyMDI2MDkxNCkuIFRoZXkgY2hlY2sgdGhlIGFtYmlndWl0eSBkaWFtZXRlciwgaW52ZXJzZSBMaXBzY2hpdHogY29uc3RhbnQsIGFuZApsZWFmLWxhbmRtYXJrIGRvbWluYW5jZS4gTm8gZmxvYXRpbmcgcG9pbnQgY29tcGFyaXNvbnMgb3IgZ3JpZCBzYW1wbGluZyBhcmUKdXNlZC4gVHJlZSByZXN1bHRzIGFyZSB3cml0dGVuIHRvIHRyZWVfdmVyaWZpY2F0aW9uX3Jlc3VsdHMuanNvbiBiZXNpZGUgdGhpcwpzY3JpcHQuCgpUaGUgZml4ZWQgbW9kZSBjaGVja3MgdGhlIE8obiBsb2cgbikgcm9idXN0IGZpeGVkLXRyZWUgYWxnb3JpdGhtIGFnYWluc3QKY29tcGxldGUtZ3JhcGggS3J1c2thbCwgZGlyZWN0IFBydWZlciB0cmVlIGVudW1lcmF0aW9uLCBhbmQgc2VlZGVkIGludGVnZXIKYW5kIHJhdGlvbmFsIGluc3RhbmNlczsgaXQgYWxzbyBjaGVja3MgdGhlIHJldHVybmVkIHJvYnVzdC13ZWlnaHQgTVNULgoKVGhlc2UgZmluaXRlLCByZXByb2R1Y2libGUgY2hlY2tzIHN1cHBvcnQgdGhlIGFjY29tcGFueWluZyBnZW5lcmFsIHByb29mczsKdGhleSBuZWl0aGVyIHByb3ZlIHRoZSBjbGFpbXMgZm9yIGFsbCBpbnN0YW5jZXMgbm9yIGNvbnN0aXR1dGUgYSBmb3JtYWwgcHJvb2YuCiIiIgoKIyA9PT09PSBJbmRlcGVuZGVudCBpbnRlcnZhbCBpbXBsZW1lbnRhdGlvbiA9PT09PQpmcm9tIGFyZ3BhcnNlIGltcG9ydCBBcmd1bWVudFBhcnNlcgpmcm9tIGNvbGxlY3Rpb25zIGltcG9ydCBkZXF1ZQpmcm9tIGl0ZXJ0b29scyBpbXBvcnQgY29tYmluYXRpb25zX3dpdGhfcmVwbGFjZW1lbnQsIHByb2R1Y3QKZnJvbSBtYXRoIGltcG9ydCBjb21iCmltcG9ydCBqc29uCgoKZGVmIHJvYnVzdF9kaXN0YW5jZShmaXJzdCwgc2Vjb25kKToKICAgIGEsIGIgPSBmaXJzdAogICAgYywgZCA9IHNlY29uZAogICAgcmV0dXJuIG1heChhYnMoYSAtIGQpLCBhYnMoYiAtIGMpKQoKCmRlZiBhZGFwdGl2ZV9yYWRpdXMoZmFtaWx5KToKICAgICIiIkV4YWN0OiBtb3ZpbmcgZWFjaCBzaWRlIG9mIGEgbWF4aW1hbCBnYXAgb3V0d2FyZCBwcmVzZXJ2ZXMgaXRzIGdhcC4iIiIKICAgIGlmIGxlbihmYW1pbHkpIDw9IDE6CiAgICAgICAgcmV0dXJuIDAKICAgIHJldHVybiBtYXgoCiAgICAgICAgbWF4KHJpZ2h0IC0gbGVmdCBmb3IgbGVmdCwgcmlnaHQgaW4gemlwKG9yZGVyZWQsIG9yZGVyZWRbMTpdKSkKICAgICAgICBmb3IgZW5kcG9pbnRzIGluIHByb2R1Y3QoKmZhbWlseSkKICAgICAgICBmb3Igb3JkZXJlZCBpbiBbc29ydGVkKGVuZHBvaW50cyldCiAgICApCgoKZGVmIGFkYXB0aXZlX3JhZGl1c19mYXN0KGZhbWlseSk6CiAgICAiIiJFeGFjdCBPKG4gbG9nIG4pIGZvcm11bGEgdmlhIG1heGltYWwtZ2FwIGN1dHMsIGNoZWNrZWQgYWdhaW5zdCBlbmRwb2ludHMuIiIiCiAgICBuID0gbGVuKGZhbWlseSkKICAgIGlmIG4gPD0gMToKICAgICAgICByZXR1cm4gMAogICAgb3JkZXJlZCA9IHNvcnRlZChmYW1pbHkpCiAgICBzdWZmaXhfbWluID0gWzBdICogbgogICAgc3VmZml4X21pblstMV0gPSBvcmRlcmVkWy0xXVsxXQogICAgZm9yIGkgaW4gcmFuZ2UobiAtIDIsIC0xLCAtMSk6CiAgICAgICAgc3VmZml4X21pbltpXSA9IG1pbihvcmRlcmVkW2ldWzFdLCBzdWZmaXhfbWluW2kgKyAxXSkKICAgIGFuc3dlciA9IG1heCgwLCBtYXgoc3VmZml4X21pbltrICsgMV0gLSBvcmRlcmVkW2tdWzBdCiAgICAgICAgICAgICAgICAgICAgICAgIGZvciBrIGluIHJhbmdlKG4gLSAxKSkpCiAgICBmb3IgaiwgKGEsIGIpIGluIGVudW1lcmF0ZShvcmRlcmVkKToKICAgICAgICBsYXJnZXN0X290aGVyX2EgPSBvcmRlcmVkWy0yXVswXSBpZiBqID09IG4gLSAxIGVsc2Ugb3JkZXJlZFstMV1bMF0KICAgICAgICBhbnN3ZXIgPSBtYXgoYW5zd2VyLCBiIC0gbGFyZ2VzdF9vdGhlcl9hKQogICAgcmV0dXJuIGFuc3dlcgoKCmRlZiBmaXhlZF9yYWRpdXMoZmFtaWx5KToKICAgICIiIktydXNrYWwgb24gcGFpcndpc2Ugd29yc3QgZGlzdGFuY2VzOyBNU1QgaXMgYSBib3R0bGVuZWNrIE1TVC4iIiIKICAgIG4gPSBsZW4oZmFtaWx5KQogICAgaWYgbiA8PSAxOgogICAgICAgIHJldHVybiAwCiAgICBwYXJlbnQgPSBsaXN0KHJhbmdlKG4pKQogICAgcmVtYWluaW5nID0gbgoKICAgIGRlZiByb290KHZlcnRleCk6CiAgICAgICAgd2hpbGUgcGFyZW50W3ZlcnRleF0gIT0gdmVydGV4OgogICAgICAgICAgICBwYXJlbnRbdmVydGV4XSA9IHBhcmVudFtwYXJlbnRbdmVydGV4XV0KICAgICAgICAgICAgdmVydGV4ID0gcGFyZW50W3ZlcnRleF0KICAgICAgICByZXR1cm4gdmVydGV4CgogICAgZWRnZXMgPSBzb3J0ZWQoCiAgICAgICAgKHJvYnVzdF9kaXN0YW5jZShmYW1pbHlbaV0sIGZhbWlseVtqXSksIGksIGopCiAgICAgICAgZm9yIGkgaW4gcmFuZ2UobikgZm9yIGogaW4gcmFuZ2UoaSkKICAgICkKICAgIGZvciB3ZWlnaHQsIGksIGogaW4gZWRnZXM6CiAgICAgICAgdSwgdiA9IHJvb3QoaSksIHJvb3QoaikKICAgICAgICBpZiB1ICE9IHY6CiAgICAgICAgICAgIHBhcmVudFt1XSA9IHYKICAgICAgICAgICAgcmVtYWluaW5nIC09IDEKICAgICAgICBpZiByZW1haW5pbmcgPT0gMToKICAgICAgICAgICAgcmV0dXJuIHdlaWdodAogICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoIkNvbXBsZXRlIGdyYXBoIGRpZCBub3QgYmVjb21lIGNvbm5lY3RlZCIpCgoKZGVmIHNob3J0ZXN0X3BhdGgoYWRqYWNlbmN5LCBzdGFydHMsIHRhcmdldHMpOgogICAgcXVldWUgPSBkZXF1ZShzdGFydHMpCiAgICBwcmVkZWNlc3NvciA9IHt2ZXJ0ZXg6IE5vbmUgZm9yIHZlcnRleCBpbiBzdGFydHN9CiAgICB0YXJnZXRfc2V0ID0gc2V0KHRhcmdldHMpCiAgICB3aGlsZSBxdWV1ZToKICAgICAgICB2ZXJ0ZXggPSBxdWV1ZS5wb3BsZWZ0KCkKICAgICAgICBpZiB2ZXJ0ZXggaW4gdGFyZ2V0X3NldDoKICAgICAgICAgICAgcGF0aCA9IFtdCiAgICAgICAgICAgIHdoaWxlIHZlcnRleCBpcyBub3QgTm9uZToKICAgICAgICAgICAgICAgIHBhdGguYXBwZW5kKHZlcnRleCkKICAgICAgICAgICAgICAgIHZlcnRleCA9IHByZWRlY2Vzc29yW3ZlcnRleF0KICAgICAgICAgICAgcmV0dXJuIHBhdGhbOjotMV0KICAgICAgICBmb3IgbmVpZ2hib3IgaW4gYWRqYWNlbmN5W3ZlcnRleF06CiAgICAgICAgICAgIGlmIG5laWdoYm9yIG5vdCBpbiBwcmVkZWNlc3NvcjoKICAgICAgICAgICAgICAgIHByZWRlY2Vzc29yW25laWdoYm9yXSA9IHZlcnRleAogICAgICAgICAgICAgICAgcXVldWUuYXBwZW5kKG5laWdoYm9yKQogICAgcmFpc2UgQXNzZXJ0aW9uRXJyb3IoIk5vIHBhdGggYmV0d2VlbiBlbmRwb2ludCBuZWlnaGJvciBzZXRzIikKCgpkZWYgY29uc3RydWN0aXZlX3RyZWUoZmFtaWx5LCByYWRpdXMpOgogICAgIiIiUmV0dXJuIGEgZml4ZWQgdHJlZSBhbmQgdGhlIHByb3ZlZCBib3VuZCwgYXNzZXJ0aW5nIGFsbCBjZXJ0aWZpY2F0ZXMuCgogICAgU2hvcnQgY29yZTogaW50ZXJ2YWxzIG9mIGxlbmd0aCA8PSByYWRpdXMuIExvbmcgaW50ZXJ2YWxzIGJlY29tZSBsZWF2ZXMuCiAgICBUaGUgcHJvb2YgZ2l2ZXMgYSBzaGFycGVyIGZhY3RvciBjZWlsKChtKzEpLzIpLCBtID0gY29yZSBzaXplLCBpZiBhbnkKICAgIGxvbmcgaW50ZXJ2YWwgaXMgcHJlc2VudCwgYW5kIGZhY3RvciAxIGlmIGFsbCBpbnRlcnZhbHMgYXJlIHNob3J0LgogICAgIiIiCiAgICBuID0gbGVuKGZhbWlseSkKICAgIGlmIG4gPD0gMToKICAgICAgICByZXR1cm4gW10sIDAKICAgIGlmIHJhZGl1cyA9PSAwOgogICAgICAgIGFzc2VydCBhbGwoYSA9PSBiID09IGZhbWlseVswXVswXSBmb3IgYSwgYiBpbiBmYW1pbHkpCiAgICAgICAgcmV0dXJuIFsoMCwgaSkgZm9yIGkgaW4gcmFuZ2UoMSwgbildLCAwCgogICAgY29yZSA9IFtpIGZvciBpLCAoYSwgYikgaW4gZW51bWVyYXRlKGZhbWlseSkgaWYgYiAtIGEgPD0gcmFkaXVzXQogICAgbG9uZyA9IFtpIGZvciBpLCAoYSwgYikgaW4gZW51bWVyYXRlKGZhbWlseSkgaWYgYiAtIGEgPiByYWRpdXNdCiAgICBhc3NlcnQgY29yZSwgIkEgcm9idXN0bHkgY29ubmVjdGVkIGZhbWlseSBtdXN0IGhhdmUgYSBzaG9ydCBpbnRlcnZhbCIKICAgIGFkamFjZW5jeSA9IHsKICAgICAgICBpOiBbaiBmb3IgaiBpbiBjb3JlIGlmIGogIT0gaSBhbmQKICAgICAgICAgICAgcm9idXN0X2Rpc3RhbmNlKGZhbWlseVtpXSwgZmFtaWx5W2pdKSA8PSByYWRpdXNdCiAgICAgICAgZm9yIGkgaW4gY29yZQogICAgfQogICAgdHJlZSA9IFtdCiAgICBzZWVuID0ge2NvcmVbMF19CiAgICBxdWV1ZSA9IGRlcXVlKFtjb3JlWzBdXSkKICAgIHdoaWxlIHF1ZXVlOgogICAgICAgIHZlcnRleCA9IHF1ZXVlLnBvcGxlZnQoKQogICAgICAgIGZvciBuZWlnaGJvciBpbiBhZGphY2VuY3lbdmVydGV4XToKICAgICAgICAgICAgaWYgbmVpZ2hib3Igbm90IGluIHNlZW46CiAgICAgICAgICAgICAgICBzZWVuLmFkZChuZWlnaGJvcikKICAgICAgICAgICAgICAgIHRyZWUuYXBwZW5kKCh2ZXJ0ZXgsIG5laWdoYm9yKSkKICAgICAgICAgICAgICAgIHF1ZXVlLmFwcGVuZChuZWlnaGJvcikKICAgIGFzc2VydCBzZWVuID09IHNldChjb3JlKSwgIlRoZSBzaG9ydCBjb3JlIG11c3QgaGF2ZSBhIGZpeGVkIHJhZGl1cyB0cmVlIgoKICAgIGZvciBpIGluIGxvbmc6CiAgICAgICAgYSwgYiA9IGZhbWlseVtpXQogICAgICAgIHN0YXJ0cyA9IFtqIGZvciBqIGluIGNvcmUgaWYKICAgICAgICAgICAgICAgICAgcm9idXN0X2Rpc3RhbmNlKChhLCBhKSwgZmFtaWx5W2pdKSA8PSByYWRpdXNdCiAgICAgICAgdGFyZ2V0cyA9IFtqIGZvciBqIGluIGNvcmUgaWYKICAgICAgICAgICAgICAgICAgIHJvYnVzdF9kaXN0YW5jZSgoYiwgYiksIGZhbWlseVtqXSkgPD0gcmFkaXVzXQogICAgICAgIGFzc2VydCBzdGFydHMgYW5kIHRhcmdldHMsICJFYWNoIGVuZHBvaW50IGhhcyBhIGd1YXJhbnRlZWQgY29yZSBuZWlnaGJvciIKICAgICAgICBwYXRoID0gc2hvcnRlc3RfcGF0aChhZGphY2VuY3ksIHN0YXJ0cywgdGFyZ2V0cykKICAgICAgICAjIEF1Z21lbnRlZCBwYXRoOiBlbmRwb2ludCBhLCBjb3JlIHBhdGggdmVydGljZXMsIGVuZHBvaW50IGIuCiAgICAgICAgIyBJdHMgZWRnZSBjb3VudCBpcyBsZW4ocGF0aCkrMTsgdGhpcyBpcyBhbiBpbnRlcmlvciBjZW50cmFsIHZlcnRleC4KICAgICAgICBjZW50ZXIgPSBwYXRoWyhsZW4ocGF0aCkgLSAxKSAvLyAyXQogICAgICAgIGFzc2VydCByb2J1c3RfZGlzdGFuY2UoZmFtaWx5W2ldLCBmYW1pbHlbY2VudGVyXSkgPD0gXAogICAgICAgICAgICAoKGxlbihwYXRoKSArIDIpIC8vIDIpICogcmFkaXVzCiAgICAgICAgdHJlZS5hcHBlbmQoKGksIGNlbnRlcikpCgogICAgZmFjdG9yID0gKGxlbihjb3JlKSArIDIpIC8vIDIgaWYgbG9uZyBlbHNlIDEKICAgIGJvdW5kID0gZmFjdG9yICogcmFkaXVzCiAgICBhc3NlcnQgbGVuKHRyZWUpID09IG4gLSAxCiAgICBhc3NlcnQgbWF4KHJvYnVzdF9kaXN0YW5jZShmYW1pbHlbaV0sIGZhbWlseVtqXSkgZm9yIGksIGogaW4gdHJlZSkgPD0gYm91bmQKICAgIGFzc2VydCBib3VuZCA8PSAoKG4gKyAxKSAvLyAyKSAqIHJhZGl1cwogICAgcmV0dXJuIHRyZWUsIGJvdW5kCgoKZGVmIHJ1bl9pbnRlcnZhbHMoKToKICAgIHBhcnNlciA9IEFyZ3VtZW50UGFyc2VyKGRlc2NyaXB0aW9uPV9fZG9jX18pCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLXNpemVzIiwgbmFyZ3M9IisiLCB0eXBlPWludCwgZGVmYXVsdD1bMywgNCwgNV0pCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLW1heC1lbmRwb2ludCIsIHR5cGU9aW50LCBkZWZhdWx0PTYpCiAgICBvcHRpb25zID0gcGFyc2VyLnBhcnNlX2FyZ3MoKQogICAgcmVnaW9ucyA9IFsoYSwgYikgZm9yIGEgaW4gcmFuZ2Uob3B0aW9ucy5tYXhfZW5kcG9pbnQgKyAxKQogICAgICAgICAgICAgICBmb3IgYiBpbiByYW5nZShhLCBvcHRpb25zLm1heF9lbmRwb2ludCArIDEpXQogICAgdG90YWwgPSAwCiAgICBmb3IgbiBpbiBvcHRpb25zLnNpemVzOgogICAgICAgIGNvdW50ID0gemVybyA9IHZpb2xhdGlvbnMgPSAwCiAgICAgICAgbnVtZXJhdG9yLCBkZW5vbWluYXRvciwgZXhhbXBsZSA9IDAsIDEsIE5vbmUKICAgICAgICBmb3IgZmFtaWx5IGluIGNvbWJpbmF0aW9uc193aXRoX3JlcGxhY2VtZW50KHJlZ2lvbnMsIG4pOgogICAgICAgICAgICBjb3VudCArPSAxCiAgICAgICAgICAgIGFkYXB0aXZlID0gYWRhcHRpdmVfcmFkaXVzKGZhbWlseSkKICAgICAgICAgICAgYXNzZXJ0IGFkYXB0aXZlX3JhZGl1c19mYXN0KGZhbWlseSkgPT0gYWRhcHRpdmUKICAgICAgICAgICAgZml4ZWQgPSBmaXhlZF9yYWRpdXMoZmFtaWx5KQogICAgICAgICAgICB0cmVlLCBib3VuZCA9IGNvbnN0cnVjdGl2ZV90cmVlKGZhbWlseSwgYWRhcHRpdmUpCiAgICAgICAgICAgIGFzc2VydCBmaXhlZCA8PSBib3VuZAogICAgICAgICAgICBpZiBhZGFwdGl2ZSA9PSAwOgogICAgICAgICAgICAgICAgemVybyArPSAxCiAgICAgICAgICAgIGlmIGZpeGVkID4gKChuICsgMSkgLy8gMikgKiBhZGFwdGl2ZToKICAgICAgICAgICAgICAgIHZpb2xhdGlvbnMgKz0gMQogICAgICAgICAgICBpZiBhZGFwdGl2ZSBhbmQgZml4ZWQgKiBkZW5vbWluYXRvciA+IG51bWVyYXRvciAqIGFkYXB0aXZlOgogICAgICAgICAgICAgICAgbnVtZXJhdG9yLCBkZW5vbWluYXRvciwgZXhhbXBsZSA9IGZpeGVkLCBhZGFwdGl2ZSwgZmFtaWx5CiAgICAgICAgYXNzZXJ0IGNvdW50ID09IGNvbWIobGVuKHJlZ2lvbnMpICsgbiAtIDEsIG4pCiAgICAgICAgdG90YWwgKz0gY291bnQKICAgICAgICBwcmludChqc29uLmR1bXBzKHsKICAgICAgICAgICAgIm4iOiBuLCAiZmFtaWxpZXMiOiBjb3VudCwgInplcm9fYWRhcHRpdmVfcmFkaXVzIjogemVybywKICAgICAgICAgICAgInZpb2xhdGlvbnMiOiB2aW9sYXRpb25zLAogICAgICAgICAgICAibWF4aW11bV9yYXRpb19mcmFjdGlvbiI6IFtudW1lcmF0b3IsIGRlbm9taW5hdG9yXSwKICAgICAgICAgICAgImZpcnN0X21heGltaXplciI6IGV4YW1wbGUsCiAgICAgICAgICAgICJjb25zdHJ1Y3RpdmVfY2VydGlmaWNhdGVzX3ZlcmlmaWVkIjogY291bnQsCiAgICAgICAgfSwgZW5zdXJlX2FzY2lpPUZhbHNlKSkKICAgIHByaW50KGpzb24uZHVtcHMoeyJ0b3RhbF9mYW1pbGllcyI6IHRvdGFsfSkpCgoKIyA9PT09PSBJbmRlcGVuZGVudCB0cmVlIGltcGxlbWVudGF0aW9uID09PT09CmZyb20gZnJhY3Rpb25zIGltcG9ydCBGcmFjdGlvbiBhcyBRCmZyb20gaXRlcnRvb2xzIGltcG9ydCBjb21iaW5hdGlvbnMKZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCByYW5kb20KCgpjbGFzcyBUcmVlOgogICAgZGVmIF9faW5pdF9fKHNlbGYsIGVkZ2VzKToKICAgICAgICBzZWxmLmVkZ2VzID0gWyhhLCBiLCBRKHcpKSBmb3IgYSwgYiwgdyBpbiBlZGdlc10KICAgICAgICBzZWxmLm4gPSAxICsgbWF4KG1heChhLCBiKSBmb3IgYSwgYiwgXyBpbiBlZGdlcykKICAgICAgICBzZWxmLmFkaiA9IFtbXSBmb3IgXyBpbiByYW5nZShzZWxmLm4pXQogICAgICAgIGZvciBhLCBiLCB3IGluIHNlbGYuZWRnZXM6CiAgICAgICAgICAgIHNlbGYuYWRqW2FdLmFwcGVuZCgoYiwgdykpCiAgICAgICAgICAgIHNlbGYuYWRqW2JdLmFwcGVuZCgoYSwgdykpCiAgICAgICAgc2VsZi5kID0gW10KICAgICAgICBmb3Igc3RhcnQgaW4gcmFuZ2Uoc2VsZi5uKToKICAgICAgICAgICAgcm93ID0gW05vbmVdICogc2VsZi5uCiAgICAgICAgICAgIHJvd1tzdGFydF0gPSBRKDApCiAgICAgICAgICAgIHN0YWNrID0gWyhzdGFydCwgLTEpXQogICAgICAgICAgICB3aGlsZSBzdGFjazoKICAgICAgICAgICAgICAgIHYsIHAgPSBzdGFjay5wb3AoKQogICAgICAgICAgICAgICAgZm9yIHUsIHcgaW4gc2VsZi5hZGpbdl06CiAgICAgICAgICAgICAgICAgICAgaWYgdSAhPSBwOgogICAgICAgICAgICAgICAgICAgICAgICByb3dbdV0gPSByb3dbdl0gKyB3CiAgICAgICAgICAgICAgICAgICAgICAgIHN0YWNrLmFwcGVuZCgodSwgdikpCiAgICAgICAgICAgIHNlbGYuZC5hcHBlbmQocm93KQogICAgICAgIHNlbGYuZGlhbWV0ZXIgPSBtYXgobWFwKG1heCwgc2VsZi5kKSkKCiAgICBkZWYgc2Vuc29yX2FmZmluZShzZWxmLCBlLCBzKToKICAgICAgICBhLCBiLCB3ID0gc2VsZi5lZGdlc1tlXQogICAgICAgIGlmIHNlbGYuZFthXVtzXSA8IHNlbGYuZFtiXVtzXToKICAgICAgICAgICAgcmV0dXJuIFEoMSksIHNlbGYuZFthXVtzXQogICAgICAgIHJldHVybiBRKC0xKSwgdyArIHNlbGYuZFtiXVtzXQoKICAgIGRlZiBlZGdlX3JlZ2lvbnMoc2VsZiwgZSwgZiwgc2Vuc29ycyk6CiAgICAgICAgYSwgYiwgbGUgPSBzZWxmLmVkZ2VzW2VdCiAgICAgICAgYywgZCwgbGYgPSBzZWxmLmVkZ2VzW2ZdCiAgICAgICAgY29uc3RyYWludHMgPSBbKC0xLCAwLCAwKSwgKDEsIDAsIGxlKSwgKDAsIC0xLCAwKSwgKDAsIDEsIGxmKV0KICAgICAgICBhZmZpbmVzID0gW10KICAgICAgICBmb3IgcyBpbiBzZW5zb3JzOgogICAgICAgICAgICBheCwgYnggPSBzZWxmLnNlbnNvcl9hZmZpbmUoZSwgcykKICAgICAgICAgICAgYXksIGJ5ID0gc2VsZi5zZW5zb3JfYWZmaW5lKGYsIHMpCiAgICAgICAgICAgIHogPSAoYXgsIC1heSwgYnggLSBieSkKICAgICAgICAgICAgYWZmaW5lcy5leHRlbmQoW3osIHR1cGxlKC10IGZvciB0IGluIHopXSkKICAgICAgICBpZiBlID09IGY6CiAgICAgICAgICAgIHJldHVybiBbCiAgICAgICAgICAgICAgICAoY29uc3RyYWludHMgKyBbKC0xLCAxLCAwKV0sICgxLCAtMSwgMCksIGFmZmluZXMpLAogICAgICAgICAgICAgICAgKGNvbnN0cmFpbnRzICsgWygxLCAtMSwgMCldLCAoLTEsIDEsIDApLCBhZmZpbmVzKSwKICAgICAgICAgICAgXQogICAgICAgIGNhbmRpZGF0ZXMgPSBbKDEsIDEsIHNlbGYuZFthXVtjXSksCiAgICAgICAgICAgICAgICAgICAgICAoMSwgLTEsIGxmICsgc2VsZi5kW2FdW2RdKSwKICAgICAgICAgICAgICAgICAgICAgICgtMSwgMSwgbGUgKyBzZWxmLmRbYl1bY10pLAogICAgICAgICAgICAgICAgICAgICAgKC0xLCAtMSwgbGUgKyBsZiArIHNlbGYuZFtiXVtkXSldCiAgICAgICAgZGlzdGFuY2UgPSBtaW4oY2FuZGlkYXRlcywga2V5PWxhbWJkYSB6OiB2YWx1ZSh6LCAobGUgLyAyLCBsZiAvIDIpKSkKICAgICAgICByZXR1cm4gWyhjb25zdHJhaW50cywgZGlzdGFuY2UsIGFmZmluZXMpXQoKCmRlZiB2YWx1ZSh6LCBwKToKICAgIHJldHVybiB6WzBdICogcFswXSArIHpbMV0gKiBwWzFdICsgelsyXQoKCmRlZiB2ZXJ0aWNlcyhsaW5lcywgZG9tYWluKToKICAgIGFuc3dlciA9IHNldCgpCiAgICBmb3IgKGEsIGIsIGMpLCAodSwgdiwgdykgaW4gY29tYmluYXRpb25zKGxpbmVzLCAyKToKICAgICAgICBkZXRlcm1pbmFudCA9IGEgKiB2IC0gYiAqIHUKICAgICAgICBpZiBub3QgZGV0ZXJtaW5hbnQ6CiAgICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgeCA9IFEoYyAqIHYgLSBiICogdykgLyBkZXRlcm1pbmFudAogICAgICAgIHkgPSBRKGEgKiB3IC0gYyAqIHUpIC8gZGV0ZXJtaW5hbnQKICAgICAgICBpZiBhbGwoaSAqIHggKyBqICogeSA8PSBrIGZvciBpLCBqLCBrIGluIGRvbWFpbik6CiAgICAgICAgICAgIGFuc3dlci5hZGQoKHgsIHkpKQogICAgcmV0dXJuIGFuc3dlcgoKCmRlZiBhcnJhbmdlbWVudF92ZXJ0aWNlcyhkb21haW4sIGFmZmluZXMpOgogICAgbGluZXMgPSBsaXN0KGRvbWFpbikKICAgIGZvciBhLCBiIGluIGNvbWJpbmF0aW9ucyhhZmZpbmVzLCAyKToKICAgICAgICBsaW5lID0gKGFbMF0gLSBiWzBdLCBhWzFdIC0gYlsxXSwgYlsyXSAtIGFbMl0pCiAgICAgICAgaWYgbGluZVswXSBvciBsaW5lWzFdOgogICAgICAgICAgICBsaW5lcy5hcHBlbmQobGluZSkKICAgIHJldHVybiB2ZXJ0aWNlcyhsaW5lcywgZG9tYWluKQoKCmRlZiBvcmFjbGVfYyh0cmVlLCBzZW5zb3JzKToKICAgIHJlc3VsdCA9IFEoMSkKICAgIGZvciBlIGluIHJhbmdlKGxlbih0cmVlLmVkZ2VzKSk6CiAgICAgICAgZm9yIGYgaW4gcmFuZ2UoZSwgbGVuKHRyZWUuZWRnZXMpKToKICAgICAgICAgICAgZm9yIGRvbWFpbiwgZGlzdGFuY2UsIGFmZmluZXMgaW4gdHJlZS5lZGdlX3JlZ2lvbnMoZSwgZiwgc2Vuc29ycyk6CiAgICAgICAgICAgICAgICBmb3IgcCBpbiBhcnJhbmdlbWVudF92ZXJ0aWNlcyhkb21haW4sIGFmZmluZXMpOgogICAgICAgICAgICAgICAgICAgIGQgPSB2YWx1ZShkaXN0YW5jZSwgcCkKICAgICAgICAgICAgICAgICAgICBpZiBkID4gMDoKICAgICAgICAgICAgICAgICAgICAgICAgcmVzdWx0ID0gbWluKHJlc3VsdCwgbWF4KHZhbHVlKHosIHApIGZvciB6IGluIGFmZmluZXMpIC8gZCkKICAgIHJldHVybiByZXN1bHQKCgpkZWYgb3JhY2xlX0EodHJlZSwgc2Vuc29ycywgZGVsdGEpOgogICAgcmVzdWx0ID0gUSgwKQogICAgZm9yIGUgaW4gcmFuZ2UobGVuKHRyZWUuZWRnZXMpKToKICAgICAgICBmb3IgZiBpbiByYW5nZShlLCBsZW4odHJlZS5lZGdlcykpOgogICAgICAgICAgICBmb3IgZG9tYWluLCBkaXN0YW5jZSwgYWZmaW5lcyBpbiB0cmVlLmVkZ2VfcmVnaW9ucyhlLCBmLCBzZW5zb3JzKToKICAgICAgICAgICAgICAgIGZlYXNpYmxlID0gZG9tYWluICsgWyhhLCBiLCBkZWx0YSAtIGMpIGZvciBhLCBiLCBjIGluIGFmZmluZXNdCiAgICAgICAgICAgICAgICBmb3IgcCBpbiB2ZXJ0aWNlcyhmZWFzaWJsZSwgZmVhc2libGUpOgogICAgICAgICAgICAgICAgICAgIHJlc3VsdCA9IG1heChyZXN1bHQsIHZhbHVlKGRpc3RhbmNlLCBwKSkKICAgIHJldHVybiByZXN1bHQKCgpkZWYgaHVsbF92ZXJ0aWNlcyh0cmVlLCBzZW5zb3JzKToKICAgIGh1bGwgPSBzZXQoc2Vuc29ycykKICAgIGZvciBzLCB0IGluIGNvbWJpbmF0aW9ucyhzZW5zb3JzLCAyKToKICAgICAgICBodWxsLnVwZGF0ZSh2IGZvciB2IGluIHJhbmdlKHRyZWUubikKICAgICAgICAgICAgICAgICAgICBpZiB0cmVlLmRbc11bdl0gKyB0cmVlLmRbdl1bdF0gPT0gdHJlZS5kW3NdW3RdKQogICAgcmV0dXJuIGh1bGwKCgpkZWYgc3RydWN0dXJhbF9kYXRhKHRyZWUsIHNlbnNvcnMpOgogICAgaHVsbCA9IGh1bGxfdmVydGljZXModHJlZSwgc2Vuc29ycykKICAgIHJvb3RzID0ge30KICAgIGJyYW5jaF9oZWlnaHRzID0gW10KCiAgICBkZWYgdmlzaXQodiwgcGFyZW50KToKICAgICAgICBjaGlsZF9oZWlnaHRzID0gc29ydGVkKFt3ICsgdmlzaXQodSwgdikgZm9yIHUsIHcgaW4gdHJlZS5hZGpbdl0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBpZiB1ICE9IHBhcmVudCBhbmQgdSBub3QgaW4gaHVsbF0sIHJldmVyc2U9VHJ1ZSkKICAgICAgICBpZiBsZW4oY2hpbGRfaGVpZ2h0cykgPj0gMjoKICAgICAgICAgICAgYnJhbmNoX2hlaWdodHMuYXBwZW5kKCh2LCBjaGlsZF9oZWlnaHRzWzBdLCBjaGlsZF9oZWlnaHRzWzFdKSkKICAgICAgICByZXR1cm4gY2hpbGRfaGVpZ2h0c1swXSBpZiBjaGlsZF9oZWlnaHRzIGVsc2UgUSgwKQoKICAgIGZvciB2IGluIGh1bGw6CiAgICAgICAgaCA9IHZpc2l0KHYsIC0xKQogICAgICAgIGlmIGggPiAwOgogICAgICAgICAgICByb290c1t2XSA9IGgKICAgIHJldHVybiBodWxsLCByb290cywgYnJhbmNoX2hlaWdodHMKCgpkZWYgcHJlZGljdGVkX2ModHJlZSwgcm9vdHMsIGJyYW5jaGVzKToKICAgIGlmIGJyYW5jaGVzOgogICAgICAgIHJldHVybiBRKDApCiAgICByZXR1cm4gbWluKFtRKDEpXSArIFt0cmVlLmRbYl1bY10gLyAodHJlZS5kW2JdW2NdICsgMiAqIG1pbihoLCBrKSkKICAgICAgICAgICAgICAgICAgICAgICAgZm9yIChiLCBoKSwgKGMsIGspIGluIGNvbWJpbmF0aW9ucyhyb290cy5pdGVtcygpLCAyKV0pCgoKZGVmIHByZWRpY3RlZF9BKHRyZWUsIHJvb3RzLCBicmFuY2hlcywgZGVsdGEpOgogICAgdGVybXMgPSBbbWluKGRlbHRhLCB0cmVlLmRpYW1ldGVyKV0KICAgIGZvciAoYiwgaCksIChjLCBrKSBpbiBjb21iaW5hdGlvbnMocm9vdHMuaXRlbXMoKSwgMik6CiAgICAgICAgZCA9IHRyZWUuZFtiXVtjXQogICAgICAgIGlmIGQgPD0gZGVsdGE6CiAgICAgICAgICAgIHRlcm1zLmFwcGVuZChtaW4oZCArIGggKyBrLCBkZWx0YSArIDIgKiBtaW4oaCwgaykpKQogICAgZm9yIF8sIGgsIGsgaW4gYnJhbmNoZXM6CiAgICAgICAgdGVybXMuYXBwZW5kKG1pbihoICsgaywgZGVsdGEgKyAyICogbWluKGgsIGspKSkKICAgIHJldHVybiBtYXgodGVybXMpCgoKZGVmIGRvbWluYXRpbmdfbGVhZl9zZW5zb3JzKHRyZWUsIHNlbnNvcnMpOgogICAgaHVsbCA9IGh1bGxfdmVydGljZXModHJlZSwgc2Vuc29ycykKICAgIGlmIGxlbihodWxsKSA8IDI6CiAgICAgICAgcmV0dXJuIE5vbmUKICAgIHNlbGVjdGVkID0gW10KICAgIGZvciB2IGluIGh1bGw6CiAgICAgICAgaWYgc3VtKHUgaW4gaHVsbCBmb3IgdSwgXyBpbiB0cmVlLmFkalt2XSkgIT0gMToKICAgICAgICAgICAgY29udGludWUKICAgICAgICByZWFjaGFibGUgPSBbXQogICAgICAgIHN0YWNrID0gWyh2LCAtMSldCiAgICAgICAgd2hpbGUgc3RhY2s6CiAgICAgICAgICAgIHUsIHBhcmVudCA9IHN0YWNrLnBvcCgpCiAgICAgICAgICAgIGlmIGxlbih0cmVlLmFkalt1XSkgPT0gMToKICAgICAgICAgICAgICAgIHJlYWNoYWJsZS5hcHBlbmQodSkKICAgICAgICAgICAgc3RhY2suZXh0ZW5kKCh6LCB1KSBmb3IgeiwgXyBpbiB0cmVlLmFkalt1XQogICAgICAgICAgICAgICAgICAgICAgICAgaWYgeiAhPSBwYXJlbnQgYW5kIHogbm90IGluIGh1bGwpCiAgICAgICAgc2VsZWN0ZWQuYXBwZW5kKG1pbihyZWFjaGFibGUpKQogICAgYXNzZXJ0IGxlbihzZXQoc2VsZWN0ZWQpKSA9PSBsZW4oc2VsZWN0ZWQpIDw9IGxlbihzZW5zb3JzKQogICAgYXNzZXJ0IGh1bGwgPD0gaHVsbF92ZXJ0aWNlcyh0cmVlLCBzZWxlY3RlZCkKICAgIHJldHVybiBzZWxlY3RlZAoKCmRlZiB2ZXJpZnlfZG9taW5hbmNlKHRyZWUsIG9sZCwgbmV3KToKICAgICMgQm90aCBvYnNlcnZhdGlvbiBub3JtcyBhcmUgYWZmaW5lIG9uIHRoZSBjb21tb24gZnVsbCBhcnJhbmdlbWVudC4KICAgICMgVGhlcmVmb3JlIGNoZWNraW5nIGl0cyB2ZXJ0aWNlcyBwcm92ZXMgdGhlIGluZXF1YWxpdHkgZm9yIHRoaXMgdHJlZS4KICAgIGNoZWNrZWQgPSAwCiAgICBmb3IgZSBpbiByYW5nZShsZW4odHJlZS5lZGdlcykpOgogICAgICAgIGZvciBmIGluIHJhbmdlKGUsIGxlbih0cmVlLmVkZ2VzKSk6CiAgICAgICAgICAgIG9sZF9yZWdpb25zID0gdHJlZS5lZGdlX3JlZ2lvbnMoZSwgZiwgb2xkKQogICAgICAgICAgICBuZXdfcmVnaW9ucyA9IHRyZWUuZWRnZV9yZWdpb25zKGUsIGYsIG5ldykKICAgICAgICAgICAgZm9yIChkb21haW4sIF8sIGEpLCAoXywgXywgYikgaW4gemlwKG9sZF9yZWdpb25zLCBuZXdfcmVnaW9ucyk6CiAgICAgICAgICAgICAgICBmb3IgcCBpbiBhcnJhbmdlbWVudF92ZXJ0aWNlcyhkb21haW4sIGEgKyBiKToKICAgICAgICAgICAgICAgICAgICBhc3NlcnQgbWF4KHZhbHVlKHosIHApIGZvciB6IGluIGEpIDw9IG1heCh2YWx1ZSh6LCBwKSBmb3IgeiBpbiBiKQogICAgICAgICAgICAgICAgICAgIGNoZWNrZWQgKz0gMQogICAgcmV0dXJuIGNoZWNrZWQKCgpkZWYgcnVuKCk6CiAgICBybmcgPSByYW5kb20uUmFuZG9tKDIwMjYwOTE0KQogICAgY2FzZXMgPSBbCiAgICAgICAgKFsoMCwgMSwgMSksICgxLCAyLCAxKSwgKDIsIDMsIDEpLCAoMSwgNCwgMTApLCAoMiwgNSwgMTApXSwgWzAsIDNdLCAiMjEtZm9sZCBleGFtcGxlIiksCiAgICAgICAgKFsoMCwgMSwgMiksICgxLCAyLCAzKSwgKDEsIDMsIDUpXSwgWzBdLCAibm9uaW5qZWN0aXZlIHRyaXBvZCIpLAogICAgICAgIChbKDAsIDEsIDIpLCAoMSwgMiwgMyldLCBbMF0sICJzaW5nbGUgZW5kcG9pbnQgc2Vuc29yIiksCiAgICAgICAgKFsoMCwgMSwgMiksICgxLCAyLCAzKV0sIFsxXSwgInNpbmdsZSBpbnRlcmlvciBzZW5zb3IiKSwKICAgICAgICAoWygwLCAxLCAyKSwgKDEsIDIsIDMpLCAoMSwgMywgNSksICgzLCA0LCA0KSwgKDMsIDUsIDIpXSwgWzAsIDJdLCAiZGVlcCBvdXRzaWRlIGJyYW5jaGluZyIpLAogICAgXQogICAgZm9yIGluZGV4IGluIHJhbmdlKDc1KToKICAgICAgICBuID0gcm5nLnJhbmRpbnQoMywgOCkKICAgICAgICBlZGdlcyA9IFsocm5nLnJhbmRyYW5nZSh2KSwgdiwgcm5nLnJhbmRpbnQoMSwgNikpIGZvciB2IGluIHJhbmdlKDEsIG4pXQogICAgICAgIHNlbnNvcnMgPSBzb3J0ZWQocm5nLnNhbXBsZShyYW5nZShuKSwgcm5nLnJhbmRpbnQoMSwgbikpKQogICAgICAgIGNhc2VzLmFwcGVuZCgoZWRnZXMsIHNlbnNvcnMsIGYic2VlZGVkIHJhbmRvbSB7aW5kZXh9IikpCiAgICByZXBvcnRzID0gW10KICAgIGNvdW50X0EgPSAwCiAgICBkb21pbmFuY2VfdmVydGljZXMgPSAwCiAgICBpbmplY3RpdmUgPSAwCiAgICBmb3IgZWRnZXMsIHNlbnNvcnMsIGxhYmVsIGluIGNhc2VzOgogICAgICAgIHRyZWUgPSBUcmVlKGVkZ2VzKQogICAgICAgIGh1bGwsIHJvb3RzLCBicmFuY2hlcyA9IHN0cnVjdHVyYWxfZGF0YSh0cmVlLCBzZW5zb3JzKQogICAgICAgIGFjdHVhbF9jID0gb3JhY2xlX2ModHJlZSwgc2Vuc29ycykKICAgICAgICBleHBlY3RfYyA9IHByZWRpY3RlZF9jKHRyZWUsIHJvb3RzLCBicmFuY2hlcykKICAgICAgICBhc3NlcnQgYWN0dWFsX2MgPT0gZXhwZWN0X2MsIChsYWJlbCwgImMiLCBhY3R1YWxfYywgZXhwZWN0X2MpCiAgICAgICAgaW5qZWN0aXZlICs9IG5vdCBib29sKGJyYW5jaGVzKQogICAgICAgIHRocmVzaG9sZHMgPSB7USgwKSwgUSgxLCAyKSwgUSgxKSwgdHJlZS5kaWFtZXRlciAvIDMsIHRyZWUuZGlhbWV0ZXIgLyAyLAogICAgICAgICAgICAgICAgICAgICAgdHJlZS5kaWFtZXRlciwgdHJlZS5kaWFtZXRlciArIDF9CiAgICAgICAgZm9yIGIsIGMgaW4gY29tYmluYXRpb25zKHJvb3RzLCAyKToKICAgICAgICAgICAgZCA9IHRyZWUuZFtiXVtjXQogICAgICAgICAgICB0aHJlc2hvbGRzLnVwZGF0ZSh7ZCwgbWF4KFEoMCksIGQgLSBRKDEsIDIpKSwgZCArIFEoMSwgMil9KQogICAgICAgIGZvciBkZWx0YSBpbiBzb3J0ZWQodGhyZXNob2xkcyk6CiAgICAgICAgICAgIGFjdHVhbF9BID0gb3JhY2xlX0EodHJlZSwgc2Vuc29ycywgZGVsdGEpCiAgICAgICAgICAgIGV4cGVjdF9BID0gcHJlZGljdGVkX0EodHJlZSwgcm9vdHMsIGJyYW5jaGVzLCBkZWx0YSkKICAgICAgICAgICAgYXNzZXJ0IGFjdHVhbF9BID09IGV4cGVjdF9BLCAobGFiZWwsICJBIiwgZGVsdGEsIGFjdHVhbF9BLCBleHBlY3RfQSkKICAgICAgICAgICAgY291bnRfQSArPSAxCiAgICAgICAgbmV3X3NlbnNvcnMgPSBkb21pbmF0aW5nX2xlYWZfc2Vuc29ycyh0cmVlLCBzZW5zb3JzKQogICAgICAgIGlmIG5ld19zZW5zb3JzIGlzIG5vdCBOb25lOgogICAgICAgICAgICBkb21pbmFuY2VfdmVydGljZXMgKz0gdmVyaWZ5X2RvbWluYW5jZSh0cmVlLCBzZW5zb3JzLCBuZXdfc2Vuc29ycykKICAgICAgICByZXBvcnRzLmFwcGVuZCh7Im5hbWUiOiBsYWJlbCwgImVkZ2VzIjogZWRnZXMsICJzZW5zb3JzIjogc2Vuc29ycywKICAgICAgICAgICAgICAgICAgICAgICAgImMiOiBzdHIoYWN0dWFsX2MpLCAiaW5qZWN0aXZlIjogbm90IGJvb2woYnJhbmNoZXMpLAogICAgICAgICAgICAgICAgICAgICAgICAidGhyZXNob2xkc19jaGVja2VkIjogbGVuKHRocmVzaG9sZHMpLAogICAgICAgICAgICAgICAgICAgICAgICAiZG9taW5hdGluZ19sZWFmX3NlbnNvcnMiOiBuZXdfc2Vuc29yc30pCiAgICAgICAgaWYgbGVuKHJlcG9ydHMpICUgMTAgPT0gMDoKICAgICAgICAgICAgcHJpbnQoZiJWYWxpZGF0ZWQge2xlbihyZXBvcnRzKX0gLyB7bGVuKGNhc2VzKX0gdHJlZXMiLCBmbHVzaD1UcnVlKQogICAgcmVzdWx0cyA9IHsKICAgICAgICAic2VlZCI6IDIwMjYwOTE0LAogICAgICAgICJ0cmVlc19jaGVja2VkIjogbGVuKGNhc2VzKSwKICAgICAgICAiaW5qZWN0aXZlX2Nhc2VzIjogaW5qZWN0aXZlLAogICAgICAgICJub25pbmplY3RpdmVfY2FzZXMiOiBsZW4oY2FzZXMpIC0gaW5qZWN0aXZlLAogICAgICAgICJleGFjdF9jb250aW51b3VzX2NfY2hlY2tzIjogbGVuKGNhc2VzKSwKICAgICAgICAiZXhhY3RfY29udGludW91c19BX2NoZWNrcyI6IGNvdW50X0EsCiAgICAgICAgImV4YWN0X2RvbWluYW5jZV9hcnJhbmdlbWVudF92ZXJ0aWNlc19jaGVja2VkIjogZG9taW5hbmNlX3ZlcnRpY2VzLAogICAgICAgICJtaXNtYXRjaGVzIjogMCwKICAgICAgICAibWV0aG9kIjogIkRpcmVjdCBlZGdlLWRpc3RhbmNlIGFmZmluZSBmb3JtdWxhczsgZXhhY3QgRnJhY3Rpb24gYXJyYW5nZW1lbnQgYW5kIHBvbHl0b3BlIHZlcnRleCBlbnVtZXJhdGlvbiIsCiAgICAgICAgInNjb3BlIjogIkZpbml0ZSBsaXN0ZWQgd2VpZ2h0ZWQgdHJlZXMgd2l0aCB2ZXJ0ZXggc2Vuc29yczsgbm8gZ3JpZCBzYW1wbGluZzsgZG9lcyBub3QgcmVwbGFjZSBnZW5lcmFsIHByb29mIiwKICAgICAgICAiY2FzZXMiOiByZXBvcnRzLAogICAgfQogICAgb3V0ID0gUGF0aChfX2ZpbGVfXykud2l0aF9uYW1lKCJ0cmVlX3ZlcmlmaWNhdGlvbl9yZXN1bHRzLmpzb24iKQogICAgb3V0LndyaXRlX3RleHQoanNvbi5kdW1wcyhyZXN1bHRzLCBlbnN1cmVfYXNjaWk9RmFsc2UsIGluZGVudD0yKSArICJcbiIpCiAgICBwcmludChqc29uLmR1bXBzKHtrOiB2IGZvciBrLCB2IGluIHJlc3VsdHMuaXRlbXMoKSBpZiBrICE9ICJjYXNlcyJ9LCBpbmRlbnQ9MikpCgoKCgoKIyA9PT09PSBGaXhlZCByb2J1c3QgTVNUOiBjZW50ZXItc29ydGVkIEJvcnV2a2EgYW5kIGluZGVwZW5kZW50IGNoZWNrcyA9PT09PQpmcm9tIGZyYWN0aW9ucyBpbXBvcnQgRnJhY3Rpb24KCmRlZiBfb2ZmZXIodHdvLCB2YWx1ZSwgdmVydGV4LCBjb2xvcik6CiAgICAiIiJLZWVwIHRoZSB0d28gc21hbGxlc3QgKHZhbHVlLCB2ZXJ0ZXgpIGVudHJpZXMgb2YgZGlzdGluY3QgY29sb3JzLiIiIgogICAgZW50cmllcyA9IHNvcnRlZCh0d28gKyBbKHZhbHVlLCB2ZXJ0ZXgsIGNvbG9yKV0pCiAgICBvdXQgPSBbXQogICAgZm9yIGVudHJ5IGluIGVudHJpZXM6ICAjIEF0IG1vc3QgdGhyZWUgZW50cmllczogY29uc3RhbnQgdGltZS4KICAgICAgICBpZiBhbGwoZW50cnlbMl0gIT0gcHJldmlvdXNbMl0gZm9yIHByZXZpb3VzIGluIG91dCk6CiAgICAgICAgICAgIG91dC5hcHBlbmQoZW50cnkpCiAgICAgICAgICAgIGlmIGxlbihvdXQpID09IDI6CiAgICAgICAgICAgICAgICBicmVhawogICAgcmV0dXJuIG91dAoKCmRlZiByb2J1c3RfZml4ZWRfZmFzdChpbnRlcnZhbHMpOgogICAgIiIiUmV0dXJuIChSRiwgTVNUX2VkZ2VzLCByb3VuZF9jb21wb25lbnRfY291bnRzKS4KCiAgICBFYWNoIGVkZ2UgaXMgKHdlaWdodCwgc21hbGxlcl9sYWJlbCwgbGFyZ2VyX2xhYmVsKS4gT3JpZ2luYWwgbGFiZWwgaW5kaWNlcwogICAgYXJlIHByZXNlcnZlZC4gVGhlIHJldHVybmVkIHRyZWUgYWxzbyBtaW5pbWl6ZXMgdGhlIFNVTSBvZiByb2J1c3QgZWRnZQogICAgd2VpZ2h0cywgd2hpY2ggaW1wbGllcyBpdHMgbWF4aW11bSBlZGdlIGlzIHRoZSBvcHRpbWFsIGJvdHRsZW5lY2sgUkYuCiAgICBuPTEgaXMgYXNzaWduZWQgUkY9MCBhbmQgdGhlIGVtcHR5IHRyZWU7IG49MCBpcyByZWplY3RlZC4KICAgICIiIgogICAgbiA9IGxlbihpbnRlcnZhbHMpCiAgICBpZiBub3QgbiBvciBhbnkoYSA+IGIgZm9yIGEsIGIgaW4gaW50ZXJ2YWxzKToKICAgICAgICByYWlzZSBWYWx1ZUVycm9yKCJFeHBlY3RlZCBub25lbXB0eSBib3VuZGVkIGNsb3NlZCBpbnRlcnZhbHMsIG4gPj0gMSIpCiAgICBvcmRlciA9IHNvcnRlZChyYW5nZShuKSwga2V5PWxhbWJkYSBpOiAoc3VtKGludGVydmFsc1tpXSksIGkpKQogICAgY29sb3JzID0gbGlzdChyYW5nZShuKSkKICAgIGNvdW50ID0gbgogICAgdHJlZSA9IFtdCiAgICBjb3VudHMgPSBbY291bnRdCgogICAgd2hpbGUgY291bnQgPiAxOgogICAgICAgIGJlc3QgPSBbTm9uZV0gKiBjb3VudAogICAgICAgIGZvciByZXZlcnNlIGluIChGYWxzZSwgVHJ1ZSk6CiAgICAgICAgICAgIHR3byA9IFtdCiAgICAgICAgICAgIGZvciBpIGluIChyZXZlcnNlZChvcmRlcikgaWYgcmV2ZXJzZSBlbHNlIG9yZGVyKToKICAgICAgICAgICAgICAgIGNvbG9yID0gY29sb3JzW2ldCiAgICAgICAgICAgICAgICAjIFRoZSBzbWFsbGVzdCBzdG9yZWQgZW50cnkgb3V0c2lkZSB0aGlzIGNvbXBvbmVudCwgaWYgcHJlc2VudC4KICAgICAgICAgICAgICAgIGVsaWdpYmxlID0gbmV4dCgoZW50cnkgZm9yIGVudHJ5IGluIHR3byBpZiBlbnRyeVsyXSAhPSBjb2xvciksIE5vbmUpCiAgICAgICAgICAgICAgICBpZiBlbGlnaWJsZSBpcyBub3QgTm9uZToKICAgICAgICAgICAgICAgICAgICBfLCBqLCBfID0gZWxpZ2libGUKICAgICAgICAgICAgICAgICAgICAjIENlbnRlci1zb3J0ZWQgaV9sZWZ0LGpfcmlnaHQgaW1wbHkgdz1iX3JpZ2h0LWFfbGVmdC4KICAgICAgICAgICAgICAgICAgICB3ZWlnaHQgPSBpbnRlcnZhbHNbal1bMV0gLSBpbnRlcnZhbHNbaV1bMF0gaWYgcmV2ZXJzZSBlbHNlIGludGVydmFsc1tpXVsxXSAtIGludGVydmFsc1tqXVswXQogICAgICAgICAgICAgICAgICAgIGVkZ2UgPSAod2VpZ2h0LCBtaW4oaSwgaiksIG1heChpLCBqKSkKICAgICAgICAgICAgICAgICAgICBpZiBiZXN0W2NvbG9yXSBpcyBOb25lIG9yIGVkZ2UgPCBiZXN0W2NvbG9yXToKICAgICAgICAgICAgICAgICAgICAgICAgYmVzdFtjb2xvcl0gPSBlZGdlCiAgICAgICAgICAgICAgICB2YWx1ZSA9IGludGVydmFsc1tpXVsxXSBpZiByZXZlcnNlIGVsc2UgLWludGVydmFsc1tpXVswXQogICAgICAgICAgICAgICAgdHdvID0gX29mZmVyKHR3bywgdmFsdWUsIGksIGNvbG9yKQoKICAgICAgICAjIEFsbCBjb21wb25lbnRzIGhhdmUgYXQgbGVhc3Qgb25lIG91dGdvaW5nIGVkZ2UgaW4gdGhlIGNvbXBsZXRlIGdyYXBoLgogICAgICAgIGFzc2VydCBhbGwoZWRnZSBpcyBub3QgTm9uZSBmb3IgZWRnZSBpbiBiZXN0KQogICAgICAgIGFkamFjZW5jeSA9IFtbXSBmb3IgXyBpbiByYW5nZShjb3VudCldCiAgICAgICAgZm9yIGVkZ2UgaW4gYmVzdDoKICAgICAgICAgICAgXywgaSwgaiA9IGVkZ2UKICAgICAgICAgICAgdSwgdiA9IGNvbG9yc1tpXSwgY29sb3JzW2pdCiAgICAgICAgICAgIGFkamFjZW5jeVt1XS5hcHBlbmQoKHYsIGVkZ2UpKQogICAgICAgICAgICBhZGphY2VuY3lbdl0uYXBwZW5kKCh1LCBlZGdlKSkKCiAgICAgICAgIyBUcmF2ZXJzZSB0aGUgY2hvc2VuLWVkZ2UgZm9yZXN0IChhbGxvd2luZyBkdXBsaWNhdGUgdW5kaXJlY3RlZCBlZGdlcykuCiAgICAgICAgIyBBc3NpZ24gZGVuc2UgbmV3IGNvbXBvbmVudCBJRHMgaW4gTyhudW1iZXIgb2Ygb2xkIGNvbXBvbmVudHMpLgogICAgICAgIG5ld19jb2xvciA9IFstMV0gKiBjb3VudAogICAgICAgIG5ld19jb3VudCA9IDAKICAgICAgICBmb3Igcm9vdCBpbiByYW5nZShjb3VudCk6CiAgICAgICAgICAgIGlmIG5ld19jb2xvcltyb290XSA+PSAwOgogICAgICAgICAgICAgICAgY29udGludWUKICAgICAgICAgICAgbmV3X2NvbG9yW3Jvb3RdID0gbmV3X2NvdW50CiAgICAgICAgICAgIHN0YWNrID0gW3Jvb3RdCiAgICAgICAgICAgIHdoaWxlIHN0YWNrOgogICAgICAgICAgICAgICAgdSA9IHN0YWNrLnBvcCgpCiAgICAgICAgICAgICAgICBmb3IgdiwgZWRnZSBpbiBhZGphY2VuY3lbdV06CiAgICAgICAgICAgICAgICAgICAgaWYgbmV3X2NvbG9yW3ZdIDwgMDoKICAgICAgICAgICAgICAgICAgICAgICAgbmV3X2NvbG9yW3ZdID0gbmV3X2NvdW50CiAgICAgICAgICAgICAgICAgICAgICAgIHRyZWUuYXBwZW5kKGVkZ2UpCiAgICAgICAgICAgICAgICAgICAgICAgIHN0YWNrLmFwcGVuZCh2KQogICAgICAgICAgICBuZXdfY291bnQgKz0gMQogICAgICAgIGFzc2VydCBuZXdfY291bnQgKiAyIDw9IGNvdW50CiAgICAgICAgY29sb3JzID0gW25ld19jb2xvcltjb2xvcl0gZm9yIGNvbG9yIGluIGNvbG9yc10KICAgICAgICBjb3VudCA9IG5ld19jb3VudAogICAgICAgIGNvdW50cy5hcHBlbmQoY291bnQpCgogICAgYXNzZXJ0IGxlbih0cmVlKSA9PSBuIC0gMQogICAgcmV0dXJuIG1heCgoZWRnZVswXSBmb3IgZWRnZSBpbiB0cmVlKSwgZGVmYXVsdD0wKSwgdHJlZSwgY291bnRzCgoKZGVmIHJvYnVzdF9maXhlZF9jb21wbGV0ZShpbnRlcnZhbHMpOgogICAgIiIiSW5kZXBlbmRlbnQgZnVsbC1lZGdlIEtydXNrYWwgb3JhY2xlLCBPKG5eMiBsb2cgbikuIiIiCiAgICBuID0gbGVuKGludGVydmFscykKICAgIGVkZ2VzID0gc29ydGVkKChtYXgoYmkgLSBhaiwgYmogLSBhaSksIGksIGopCiAgICAgICAgICAgICAgICAgICBmb3IgaSwgKGFpLCBiaSkgaW4gZW51bWVyYXRlKGludGVydmFscykKICAgICAgICAgICAgICAgICAgIGZvciBqLCAoYWosIGJqKSBpbiBlbnVtZXJhdGUoaW50ZXJ2YWxzKSBpZiBpIDwgaikKICAgIHBhcmVudHMgPSBsaXN0KHJhbmdlKG4pKQoKICAgIGRlZiBmaW5kKGkpOgogICAgICAgIHdoaWxlIHBhcmVudHNbaV0gIT0gaToKICAgICAgICAgICAgcGFyZW50c1tpXSA9IHBhcmVudHNbcGFyZW50c1tpXV0KICAgICAgICAgICAgaSA9IHBhcmVudHNbaV0KICAgICAgICByZXR1cm4gaQoKICAgIHRyZWUgPSBbXQogICAgZm9yIGVkZ2UgaW4gZWRnZXM6CiAgICAgICAgXywgaSwgaiA9IGVkZ2UKICAgICAgICB1LCB2ID0gZmluZChpKSwgZmluZChqKQogICAgICAgIGlmIHUgIT0gdjoKICAgICAgICAgICAgcGFyZW50c1t1XSA9IHYKICAgICAgICAgICAgdHJlZS5hcHBlbmQoZWRnZSkKICAgICAgICAgICAgaWYgbGVuKHRyZWUpID09IG4gLSAxOgogICAgICAgICAgICAgICAgYnJlYWsKICAgIHJldHVybiBtYXgoKGVkZ2VbMF0gZm9yIGVkZ2UgaW4gdHJlZSksIGRlZmF1bHQ9MCksIHRyZWUKCgpkZWYgcm9idXN0X2ZpeGVkX3BydWZlcihpbnRlcnZhbHMpOgogICAgIiIiVGhpcmQgb3JhY2xlOiBlbnVtZXJhdGUgbGFiZWxlZCB0cmVlcywgZGlyZWN0bHkgbWluaW1pemUgYm90dGxlbmVjay4iIiIKICAgIG4gPSBsZW4oaW50ZXJ2YWxzKQogICAgaWYgbiA9PSAxOgogICAgICAgIHJldHVybiAwCiAgICBhbnN3ZXIgPSBOb25lCiAgICBmb3IgY29kZSBpbiBwcm9kdWN0KHJhbmdlKG4pLCByZXBlYXQ9biAtIDIpOgogICAgICAgIGRlZ3JlZSA9IFsxXSAqIG4KICAgICAgICBmb3IgdiBpbiBjb2RlOgogICAgICAgICAgICBkZWdyZWVbdl0gKz0gMQogICAgICAgIHdlaWdodHMgPSBbXQogICAgICAgIGZvciB2IGluIGNvZGU6CiAgICAgICAgICAgIHUgPSBuZXh0KGogZm9yIGogaW4gcmFuZ2UobikgaWYgZGVncmVlW2pdID09IDEpCiAgICAgICAgICAgIHdlaWdodHMuYXBwZW5kKG1heChpbnRlcnZhbHNbdV1bMV0gLSBpbnRlcnZhbHNbdl1bMF0sIGludGVydmFsc1t2XVsxXSAtIGludGVydmFsc1t1XVswXSkpCiAgICAgICAgICAgIGRlZ3JlZVt1XSAtPSAxCiAgICAgICAgICAgIGRlZ3JlZVt2XSAtPSAxCiAgICAgICAgdSwgdiA9IFtqIGZvciBqIGluIHJhbmdlKG4pIGlmIGRlZ3JlZVtqXSA9PSAxXQogICAgICAgIHdlaWdodHMuYXBwZW5kKG1heChpbnRlcnZhbHNbdV1bMV0gLSBpbnRlcnZhbHNbdl1bMF0sIGludGVydmFsc1t2XVsxXSAtIGludGVydmFsc1t1XVswXSkpCiAgICAgICAgdmFsdWUgPSBtYXgod2VpZ2h0cykKICAgICAgICBhbnN3ZXIgPSB2YWx1ZSBpZiBhbnN3ZXIgaXMgTm9uZSBlbHNlIG1pbihhbnN3ZXIsIHZhbHVlKQogICAgcmV0dXJuIGFuc3dlcgoKCmRlZiBfcmZfY2hlY2soaW50ZXJ2YWxzLCB1c2VfcHJ1ZmVyPUZhbHNlKToKICAgIHZhbHVlLCBlZGdlcywgY291bnRzID0gcm9idXN0X2ZpeGVkX2Zhc3QoaW50ZXJ2YWxzKQogICAgZXhwZWN0ZWQsIGV4cGVjdGVkX2VkZ2VzID0gcm9idXN0X2ZpeGVkX2NvbXBsZXRlKGludGVydmFscykKICAgIGFzc2VydCB2YWx1ZSA9PSBleHBlY3RlZCwgKGludGVydmFscywgdmFsdWUsIGV4cGVjdGVkKQogICAgYXNzZXJ0IHN1bShlZGdlWzBdIGZvciBlZGdlIGluIGVkZ2VzKSA9PSBzdW0oZWRnZVswXSBmb3IgZWRnZSBpbiBleHBlY3RlZF9lZGdlcyksIGludGVydmFscwogICAgIyBDb21tb24gdG90YWwgZWRnZSBvcmRlcmluZyB5aWVsZHMgdGhlIHNhbWUgdW5pcXVlIHRpZS1icm9rZW4gTVNULgogICAgYXNzZXJ0IHNvcnRlZChlZGdlcykgPT0gc29ydGVkKGV4cGVjdGVkX2VkZ2VzKSwgaW50ZXJ2YWxzCiAgICBhc3NlcnQgYWxsKG1heChpbnRlcnZhbHNbaV1bMV0gLSBpbnRlcnZhbHNbal1bMF0sIGludGVydmFsc1tqXVsxXSAtIGludGVydmFsc1tpXVswXSkgPT0gd2VpZ2h0CiAgICAgICAgICAgICAgIGZvciB3ZWlnaHQsIGksIGogaW4gZWRnZXMpCiAgICBhc3NlcnQgYWxsKDIgKiBhZnRlciA8PSBiZWZvcmUgZm9yIGJlZm9yZSwgYWZ0ZXIgaW4gemlwKGNvdW50cywgY291bnRzWzE6XSkpCiAgICBpZiB1c2VfcHJ1ZmVyOgogICAgICAgIGFzc2VydCB2YWx1ZSA9PSByb2J1c3RfZml4ZWRfcHJ1ZmVyKGludGVydmFscyksIGludGVydmFscwoKCmRlZiBydW5fZml4ZWRfZmFzdCgpOgogICAgdW5pdmVyc2UgPSBbKGEsIGIpIGZvciBhIGluIHJhbmdlKDcpIGZvciBiIGluIHJhbmdlKGEsIDcpXQogICAgZXhoYXVzdGl2ZSA9IHt9CiAgICBmb3IgbiBpbiAoMiwgMywgNCk6CiAgICAgICAgdG90YWwgPSAwCiAgICAgICAgZm9yIGludGVydmFscyBpbiBjb21iaW5hdGlvbnNfd2l0aF9yZXBsYWNlbWVudCh1bml2ZXJzZSwgbik6CiAgICAgICAgICAgIF9yZl9jaGVjayhpbnRlcnZhbHMpCiAgICAgICAgICAgIHRvdGFsICs9IDEKICAgICAgICBleGhhdXN0aXZlW25dID0gdG90YWwKCiAgICAjIEluZGVwZW5kZW50IGRpcmVjdCBtaW5pbWF4IG9yYWNsZSwgd2l0aCBsYWJlbCBwZXJtdXRhdGlvbnMgYW5kIHRpZXMuCiAgICBzbWFsbF91bml2ZXJzZSA9IFsoYSwgYikgZm9yIGEgaW4gcmFuZ2UoNSkgZm9yIGIgaW4gcmFuZ2UoYSwgNSldCiAgICBwcnVmZXJfdG90YWwgPSAwCiAgICBmb3IgbiBpbiAoMiwgMywgNCk6CiAgICAgICAgZm9yIGludGVydmFscyBpbiBjb21iaW5hdGlvbnNfd2l0aF9yZXBsYWNlbWVudChzbWFsbF91bml2ZXJzZSwgbik6CiAgICAgICAgICAgIF9yZl9jaGVjayhpbnRlcnZhbHMsIHVzZV9wcnVmZXI9VHJ1ZSkKICAgICAgICAgICAgcHJ1ZmVyX3RvdGFsICs9IDEKCiAgICBybmcgPSByYW5kb20uUmFuZG9tKDIwMjYwOTE0KQogICAgcmFuZG9tX3RvdGFsID0gMjUwMAogICAgZm9yIF8gaW4gcmFuZ2UocmFuZG9tX3RvdGFsKToKICAgICAgICBuID0gcm5nLnJhbmRyYW5nZSgyLCA1MSkKICAgICAgICBpbnRlcnZhbHMgPSBbXQogICAgICAgIGZvciBpIGluIHJhbmdlKG4pOgogICAgICAgICAgICBhLCBiID0gc29ydGVkKChybmcucmFuZHJhbmdlKC0xMDAsIDEwMSksIHJuZy5yYW5kcmFuZ2UoLTEwMCwgMTAxKSkpCiAgICAgICAgICAgIGludGVydmFscy5hcHBlbmQoKGEsIGIpKQogICAgICAgIHJuZy5zaHVmZmxlKGludGVydmFscykKICAgICAgICBfcmZfY2hlY2soaW50ZXJ2YWxzKQoKICAgIHJhdGlvbmFsX3RvdGFsID0gMjAwCiAgICBmb3IgXyBpbiByYW5nZShyYXRpb25hbF90b3RhbCk6CiAgICAgICAgbiA9IHJuZy5yYW5kcmFuZ2UoMiwgMjApCiAgICAgICAgaW50ZXJ2YWxzID0gW3R1cGxlKHNvcnRlZCgoRnJhY3Rpb24ocm5nLnJhbmRyYW5nZSgtMzAsIDMxKSwgcm5nLnJhbmRyYW5nZSgxLCAxMSkpLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIEZyYWN0aW9uKHJuZy5yYW5kcmFuZ2UoLTMwLCAzMSksIHJuZy5yYW5kcmFuZ2UoMSwgMTEpKSkpKQogICAgICAgICAgICAgICAgICAgICBmb3IgaSBpbiByYW5nZShuKV0KICAgICAgICBfcmZfY2hlY2soaW50ZXJ2YWxzKQogICAgX3JmX2NoZWNrKFsoMCwgMCldKQogICAgX3JmX2NoZWNrKFsoMCwgMCldICogNTApCiAgICBfcmZfY2hlY2soWygtaSwgaSkgZm9yIGkgaW4gcmFuZ2UoNTApXSkKICAgIF9yZl9jaGVjayhbKGksIGkpIGZvciBpIGluIHJhbmdlKDUwKV0pCgogICAgcmVzdWx0ID0gewogICAgICAgICJhbGdvcml0aG0iOiAiY2VudGVyLXNvcnRlZCB0d28tY29sb3IgQm9ydXZrYSwgTyhuIGxvZyBuKSBhcml0aG1ldGljL2NvbXBhcmlzb24gb3BlcmF0aW9ucywgTyhuKSBzcGFjZSIsCiAgICAgICAgImV4aGF1c3RpdmVfaW50ZWdlcl9tdWx0aXNldHNfZW5kcG9pbnRzXzBfdG9fNiI6IGV4aGF1c3RpdmUsCiAgICAgICAgImV4aGF1c3RpdmVfdG90YWwiOiBzdW0oZXhoYXVzdGl2ZS52YWx1ZXMoKSksCiAgICAgICAgInBydWZlcl9jcm9zc2NoZWNrc19lbmRwb2ludHNfMF90b180IjogcHJ1ZmVyX3RvdGFsLAogICAgICAgICJyYW5kb21faW50ZWdlcl9sYWJlbGxlZF9mYW1pbGllcyI6IHJhbmRvbV90b3RhbCwKICAgICAgICAicmFuZG9tX3JhdGlvbmFsX2xhYmVsbGVkX2ZhbWlsaWVzIjogcmF0aW9uYWxfdG90YWwsCiAgICAgICAgImhhbmRwaWNrZWRfZGVnZW5lcmF0ZV9jYXNlcyI6IDQsCiAgICAgICAgIm1pc21hdGNoZXMiOiAwLAogICAgICAgICJzZWVkIjogMjAyNjA5MTQsCiAgICB9CiAgICBwcmludChqc29uLmR1bXBzKHJlc3VsdCwgZW5zdXJlX2FzY2lpPUZhbHNlLCBpbmRlbnQ9MikpCiAgICByZXR1cm4gcmVzdWx0CgoKCgppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOgogICAgaW1wb3J0IHN5cwogICAgbW9kZSA9IHN5cy5hcmd2WzFdIGlmIGxlbihzeXMuYXJndikgPiAxIGVsc2UgImFsbCIKICAgIGlmIG1vZGUgbm90IGluIHsiYWxsIiwgImludGVydmFscyIsICJ0cmVlcyIsICJmaXhlZCJ9OgogICAgICAgIHJhaXNlIFN5c3RlbUV4aXQoIkNob29zZSBhbGwsIGludGVydmFscywgdHJlZXMsIG9yIGZpeGVkIikKICAgIHN5cy5hcmd2ID0gW3N5cy5hcmd2WzBdXSArIHN5cy5hcmd2WzI6XQogICAgaWYgbW9kZSBpbiB7ImFsbCIsICJpbnRlcnZhbHMifToKICAgICAgICBwcmludCgiSU5URVJWQUwgQ0hFQ0tTIiwgZmx1c2g9VHJ1ZSkKICAgICAgICBydW5faW50ZXJ2YWxzKCkKICAgIGlmIG1vZGUgaW4geyJhbGwiLCAiZml4ZWQifToKICAgICAgICBwcmludCgiRklYRUQgUk9CVVNUIFRSRUUgQ0hFQ0tTIiwgZmx1c2g9VHJ1ZSkKICAgICAgICBydW5fZml4ZWRfZmFzdCgpCiAgICBpZiBtb2RlIGluIHsiYWxsIiwgInRyZWVzIn06CiAgICAgICAgcHJpbnQoIlRSRUUgQ0hFQ0tTIiwgZmx1c2g9VHJ1ZSkKICAgICAgICBydW4oKQo=">検証コードを取り出す（Python）</a></p><details class="proof-block"><summary>埋め込んだ検証コードの全文</summary><pre id="code-source"><code>#!/usr/bin/env python3
+&quot;&quot;&quot;Spatial mathematical exploration: reproducible exact verification.
+Date: 2026 09 14. Requires only the Python standard library.
+
+Usage:
+  python spatial_research_verify.py all
+  python spatial_research_verify.py intervals --sizes 3 4 5 --max-endpoint 6
+  python spatial_research_verify.py intervals --help
+  python spatial_research_verify.py trees
+  python spatial_research_verify.py fixed
+
+With no mode argument, runs all checks. Interval options also apply to `all`.
+
+Interval checks exhaustively enumerate multisets of closed integer-endpoint
+intervals within the requested range; repeated and singleton intervals are
+allowed. An independent endpoint oracle checks the O(n log n) adaptive-radius
+formula, while an optimal robust MBST and constructive certificates check the
+strengthened bound on the interval adaptivity gap. All interval computations
+use integers.
+
+Tree checks use direct edge-distance formulas, without the landmark projection
+identity, as an independent oracle. Exact Fraction polytope optimization and
+affine arrangements cover entire edges for each of the 80 specified weighted
+trees with vertex landmarks (5 designated cases and 75 cases from seed
+20260914). They check the ambiguity diameter, inverse Lipschitz constant, and
+leaf-landmark dominance. No floating point comparisons or grid sampling are
+used. Tree results are written to tree_verification_results.json beside this
+script.
+
+The fixed mode checks the O(n log n) robust fixed-tree algorithm against
+complete-graph Kruskal, direct Prufer tree enumeration, and seeded integer
+and rational instances; it also checks the returned robust-weight MST.
+
+These finite, reproducible checks support the accompanying general proofs;
+they neither prove the claims for all instances nor constitute a formal proof.
+&quot;&quot;&quot;
+
+# ===== Independent interval implementation =====
+from argparse import ArgumentParser
+from collections import deque
+from itertools import combinations_with_replacement, product
+from math import comb
+import json
+
+
+def robust_distance(first, second):
+    a, b = first
+    c, d = second
+    return max(abs(a - d), abs(b - c))
+
+
+def adaptive_radius(family):
+    &quot;&quot;&quot;Exact: moving each side of a maximal gap outward preserves its gap.&quot;&quot;&quot;
+    if len(family) &lt;= 1:
+        return 0
+    return max(
+        max(right - left for left, right in zip(ordered, ordered[1:]))
+        for endpoints in product(*family)
+        for ordered in [sorted(endpoints)]
+    )
+
+
+def adaptive_radius_fast(family):
+    &quot;&quot;&quot;Exact O(n log n) formula via maximal-gap cuts, checked against endpoints.&quot;&quot;&quot;
+    n = len(family)
+    if n &lt;= 1:
+        return 0
+    ordered = sorted(family)
+    suffix_min = [0] * n
+    suffix_min[-1] = ordered[-1][1]
+    for i in range(n - 2, -1, -1):
+        suffix_min[i] = min(ordered[i][1], suffix_min[i + 1])
+    answer = max(0, max(suffix_min[k + 1] - ordered[k][0]
+                        for k in range(n - 1)))
+    for j, (a, b) in enumerate(ordered):
+        largest_other_a = ordered[-2][0] if j == n - 1 else ordered[-1][0]
+        answer = max(answer, b - largest_other_a)
+    return answer
+
+
+def fixed_radius(family):
+    &quot;&quot;&quot;Kruskal on pairwise worst distances; MST is a bottleneck MST.&quot;&quot;&quot;
+    n = len(family)
+    if n &lt;= 1:
+        return 0
+    parent = list(range(n))
+    remaining = n
+
+    def root(vertex):
+        while parent[vertex] != vertex:
+            parent[vertex] = parent[parent[vertex]]
+            vertex = parent[vertex]
+        return vertex
+
+    edges = sorted(
+        (robust_distance(family[i], family[j]), i, j)
+        for i in range(n) for j in range(i)
+    )
+    for weight, i, j in edges:
+        u, v = root(i), root(j)
+        if u != v:
+            parent[u] = v
+            remaining -= 1
+        if remaining == 1:
+            return weight
+    raise AssertionError(&quot;Complete graph did not become connected&quot;)
+
+
+def shortest_path(adjacency, starts, targets):
+    queue = deque(starts)
+    predecessor = {vertex: None for vertex in starts}
+    target_set = set(targets)
+    while queue:
+        vertex = queue.popleft()
+        if vertex in target_set:
+            path = []
+            while vertex is not None:
+                path.append(vertex)
+                vertex = predecessor[vertex]
+            return path[::-1]
+        for neighbor in adjacency[vertex]:
+            if neighbor not in predecessor:
+                predecessor[neighbor] = vertex
+                queue.append(neighbor)
+    raise AssertionError(&quot;No path between endpoint neighbor sets&quot;)
+
+
+def constructive_tree(family, radius):
+    &quot;&quot;&quot;Return a fixed tree and the proved bound, asserting all certificates.
+
+    Short core: intervals of length &lt;= radius. Long intervals become leaves.
+    The proof gives a sharper factor ceil((m+1)/2), m = core size, if any
+    long interval is present, and factor 1 if all intervals are short.
+    &quot;&quot;&quot;
+    n = len(family)
+    if n &lt;= 1:
+        return [], 0
+    if radius == 0:
+        assert all(a == b == family[0][0] for a, b in family)
+        return [(0, i) for i in range(1, n)], 0
+
+    core = [i for i, (a, b) in enumerate(family) if b - a &lt;= radius]
+    long = [i for i, (a, b) in enumerate(family) if b - a &gt; radius]
+    assert core, &quot;A robustly connected family must have a short interval&quot;
+    adjacency = {
+        i: [j for j in core if j != i and
+            robust_distance(family[i], family[j]) &lt;= radius]
+        for i in core
+    }
+    tree = []
+    seen = {core[0]}
+    queue = deque([core[0]])
+    while queue:
+        vertex = queue.popleft()
+        for neighbor in adjacency[vertex]:
+            if neighbor not in seen:
+                seen.add(neighbor)
+                tree.append((vertex, neighbor))
+                queue.append(neighbor)
+    assert seen == set(core), &quot;The short core must have a fixed radius tree&quot;
+
+    for i in long:
+        a, b = family[i]
+        starts = [j for j in core if
+                  robust_distance((a, a), family[j]) &lt;= radius]
+        targets = [j for j in core if
+                   robust_distance((b, b), family[j]) &lt;= radius]
+        assert starts and targets, &quot;Each endpoint has a guaranteed core neighbor&quot;
+        path = shortest_path(adjacency, starts, targets)
+        # Augmented path: endpoint a, core path vertices, endpoint b.
+        # Its edge count is len(path)+1; this is an interior central vertex.
+        center = path[(len(path) - 1) // 2]
+        assert robust_distance(family[i], family[center]) &lt;= \
+            ((len(path) + 2) // 2) * radius
+        tree.append((i, center))
+
+    factor = (len(core) + 2) // 2 if long else 1
+    bound = factor * radius
+    assert len(tree) == n - 1
+    assert max(robust_distance(family[i], family[j]) for i, j in tree) &lt;= bound
+    assert bound &lt;= ((n + 1) // 2) * radius
+    return tree, bound
+
+
+def run_intervals():
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument(&quot;--sizes&quot;, nargs=&quot;+&quot;, type=int, default=[3, 4, 5])
+    parser.add_argument(&quot;--max-endpoint&quot;, type=int, default=6)
+    options = parser.parse_args()
+    regions = [(a, b) for a in range(options.max_endpoint + 1)
+               for b in range(a, options.max_endpoint + 1)]
+    total = 0
+    for n in options.sizes:
+        count = zero = violations = 0
+        numerator, denominator, example = 0, 1, None
+        for family in combinations_with_replacement(regions, n):
+            count += 1
+            adaptive = adaptive_radius(family)
+            assert adaptive_radius_fast(family) == adaptive
+            fixed = fixed_radius(family)
+            tree, bound = constructive_tree(family, adaptive)
+            assert fixed &lt;= bound
+            if adaptive == 0:
+                zero += 1
+            if fixed &gt; ((n + 1) // 2) * adaptive:
+                violations += 1
+            if adaptive and fixed * denominator &gt; numerator * adaptive:
+                numerator, denominator, example = fixed, adaptive, family
+        assert count == comb(len(regions) + n - 1, n)
+        total += count
+        print(json.dumps({
+            &quot;n&quot;: n, &quot;families&quot;: count, &quot;zero_adaptive_radius&quot;: zero,
+            &quot;violations&quot;: violations,
+            &quot;maximum_ratio_fraction&quot;: [numerator, denominator],
+            &quot;first_maximizer&quot;: example,
+            &quot;constructive_certificates_verified&quot;: count,
+        }, ensure_ascii=False))
+    print(json.dumps({&quot;total_families&quot;: total}))
+
+
+# ===== Independent tree implementation =====
+from fractions import Fraction as Q
+from itertools import combinations
+from pathlib import Path
+import random
+
+
+class Tree:
+    def __init__(self, edges):
+        self.edges = [(a, b, Q(w)) for a, b, w in edges]
+        self.n = 1 + max(max(a, b) for a, b, _ in edges)
+        self.adj = [[] for _ in range(self.n)]
+        for a, b, w in self.edges:
+            self.adj[a].append((b, w))
+            self.adj[b].append((a, w))
+        self.d = []
+        for start in range(self.n):
+            row = [None] * self.n
+            row[start] = Q(0)
+            stack = [(start, -1)]
+            while stack:
+                v, p = stack.pop()
+                for u, w in self.adj[v]:
+                    if u != p:
+                        row[u] = row[v] + w
+                        stack.append((u, v))
+            self.d.append(row)
+        self.diameter = max(map(max, self.d))
+
+    def sensor_affine(self, e, s):
+        a, b, w = self.edges[e]
+        if self.d[a][s] &lt; self.d[b][s]:
+            return Q(1), self.d[a][s]
+        return Q(-1), w + self.d[b][s]
+
+    def edge_regions(self, e, f, sensors):
+        a, b, le = self.edges[e]
+        c, d, lf = self.edges[f]
+        constraints = [(-1, 0, 0), (1, 0, le), (0, -1, 0), (0, 1, lf)]
+        affines = []
+        for s in sensors:
+            ax, bx = self.sensor_affine(e, s)
+            ay, by = self.sensor_affine(f, s)
+            z = (ax, -ay, bx - by)
+            affines.extend([z, tuple(-t for t in z)])
+        if e == f:
+            return [
+                (constraints + [(-1, 1, 0)], (1, -1, 0), affines),
+                (constraints + [(1, -1, 0)], (-1, 1, 0), affines),
+            ]
+        candidates = [(1, 1, self.d[a][c]),
+                      (1, -1, lf + self.d[a][d]),
+                      (-1, 1, le + self.d[b][c]),
+                      (-1, -1, le + lf + self.d[b][d])]
+        distance = min(candidates, key=lambda z: value(z, (le / 2, lf / 2)))
+        return [(constraints, distance, affines)]
+
+
+def value(z, p):
+    return z[0] * p[0] + z[1] * p[1] + z[2]
+
+
+def vertices(lines, domain):
+    answer = set()
+    for (a, b, c), (u, v, w) in combinations(lines, 2):
+        determinant = a * v - b * u
+        if not determinant:
+            continue
+        x = Q(c * v - b * w) / determinant
+        y = Q(a * w - c * u) / determinant
+        if all(i * x + j * y &lt;= k for i, j, k in domain):
+            answer.add((x, y))
+    return answer
+
+
+def arrangement_vertices(domain, affines):
+    lines = list(domain)
+    for a, b in combinations(affines, 2):
+        line = (a[0] - b[0], a[1] - b[1], b[2] - a[2])
+        if line[0] or line[1]:
+            lines.append(line)
+    return vertices(lines, domain)
+
+
+def oracle_c(tree, sensors):
+    result = Q(1)
+    for e in range(len(tree.edges)):
+        for f in range(e, len(tree.edges)):
+            for domain, distance, affines in tree.edge_regions(e, f, sensors):
+                for p in arrangement_vertices(domain, affines):
+                    d = value(distance, p)
+                    if d &gt; 0:
+                        result = min(result, max(value(z, p) for z in affines) / d)
+    return result
+
+
+def oracle_A(tree, sensors, delta):
+    result = Q(0)
+    for e in range(len(tree.edges)):
+        for f in range(e, len(tree.edges)):
+            for domain, distance, affines in tree.edge_regions(e, f, sensors):
+                feasible = domain + [(a, b, delta - c) for a, b, c in affines]
+                for p in vertices(feasible, feasible):
+                    result = max(result, value(distance, p))
+    return result
+
+
+def hull_vertices(tree, sensors):
+    hull = set(sensors)
+    for s, t in combinations(sensors, 2):
+        hull.update(v for v in range(tree.n)
+                    if tree.d[s][v] + tree.d[v][t] == tree.d[s][t])
+    return hull
+
+
+def structural_data(tree, sensors):
+    hull = hull_vertices(tree, sensors)
+    roots = {}
+    branch_heights = []
+
+    def visit(v, parent):
+        child_heights = sorted([w + visit(u, v) for u, w in tree.adj[v]
+                                if u != parent and u not in hull], reverse=True)
+        if len(child_heights) &gt;= 2:
+            branch_heights.append((v, child_heights[0], child_heights[1]))
+        return child_heights[0] if child_heights else Q(0)
+
+    for v in hull:
+        h = visit(v, -1)
+        if h &gt; 0:
+            roots[v] = h
+    return hull, roots, branch_heights
+
+
+def predicted_c(tree, roots, branches):
+    if branches:
+        return Q(0)
+    return min([Q(1)] + [tree.d[b][c] / (tree.d[b][c] + 2 * min(h, k))
+                        for (b, h), (c, k) in combinations(roots.items(), 2)])
+
+
+def predicted_A(tree, roots, branches, delta):
+    terms = [min(delta, tree.diameter)]
+    for (b, h), (c, k) in combinations(roots.items(), 2):
+        d = tree.d[b][c]
+        if d &lt;= delta:
+            terms.append(min(d + h + k, delta + 2 * min(h, k)))
+    for _, h, k in branches:
+        terms.append(min(h + k, delta + 2 * min(h, k)))
+    return max(terms)
+
+
+def dominating_leaf_sensors(tree, sensors):
+    hull = hull_vertices(tree, sensors)
+    if len(hull) &lt; 2:
+        return None
+    selected = []
+    for v in hull:
+        if sum(u in hull for u, _ in tree.adj[v]) != 1:
+            continue
+        reachable = []
+        stack = [(v, -1)]
+        while stack:
+            u, parent = stack.pop()
+            if len(tree.adj[u]) == 1:
+                reachable.append(u)
+            stack.extend((z, u) for z, _ in tree.adj[u]
+                         if z != parent and z not in hull)
+        selected.append(min(reachable))
+    assert len(set(selected)) == len(selected) &lt;= len(sensors)
+    assert hull &lt;= hull_vertices(tree, selected)
+    return selected
+
+
+def verify_dominance(tree, old, new):
+    # Both observation norms are affine on the common full arrangement.
+    # Therefore checking its vertices proves the inequality for this tree.
+    checked = 0
+    for e in range(len(tree.edges)):
+        for f in range(e, len(tree.edges)):
+            old_regions = tree.edge_regions(e, f, old)
+            new_regions = tree.edge_regions(e, f, new)
+            for (domain, _, a), (_, _, b) in zip(old_regions, new_regions):
+                for p in arrangement_vertices(domain, a + b):
+                    assert max(value(z, p) for z in a) &lt;= max(value(z, p) for z in b)
+                    checked += 1
+    return checked
+
+
+def run():
+    rng = random.Random(20260914)
+    cases = [
+        ([(0, 1, 1), (1, 2, 1), (2, 3, 1), (1, 4, 10), (2, 5, 10)], [0, 3], &quot;21-fold example&quot;),
+        ([(0, 1, 2), (1, 2, 3), (1, 3, 5)], [0], &quot;noninjective tripod&quot;),
+        ([(0, 1, 2), (1, 2, 3)], [0], &quot;single endpoint sensor&quot;),
+        ([(0, 1, 2), (1, 2, 3)], [1], &quot;single interior sensor&quot;),
+        ([(0, 1, 2), (1, 2, 3), (1, 3, 5), (3, 4, 4), (3, 5, 2)], [0, 2], &quot;deep outside branching&quot;),
+    ]
+    for index in range(75):
+        n = rng.randint(3, 8)
+        edges = [(rng.randrange(v), v, rng.randint(1, 6)) for v in range(1, n)]
+        sensors = sorted(rng.sample(range(n), rng.randint(1, n)))
+        cases.append((edges, sensors, f&quot;seeded random {index}&quot;))
+    reports = []
+    count_A = 0
+    dominance_vertices = 0
+    injective = 0
+    for edges, sensors, label in cases:
+        tree = Tree(edges)
+        hull, roots, branches = structural_data(tree, sensors)
+        actual_c = oracle_c(tree, sensors)
+        expect_c = predicted_c(tree, roots, branches)
+        assert actual_c == expect_c, (label, &quot;c&quot;, actual_c, expect_c)
+        injective += not bool(branches)
+        thresholds = {Q(0), Q(1, 2), Q(1), tree.diameter / 3, tree.diameter / 2,
+                      tree.diameter, tree.diameter + 1}
+        for b, c in combinations(roots, 2):
+            d = tree.d[b][c]
+            thresholds.update({d, max(Q(0), d - Q(1, 2)), d + Q(1, 2)})
+        for delta in sorted(thresholds):
+            actual_A = oracle_A(tree, sensors, delta)
+            expect_A = predicted_A(tree, roots, branches, delta)
+            assert actual_A == expect_A, (label, &quot;A&quot;, delta, actual_A, expect_A)
+            count_A += 1
+        new_sensors = dominating_leaf_sensors(tree, sensors)
+        if new_sensors is not None:
+            dominance_vertices += verify_dominance(tree, sensors, new_sensors)
+        reports.append({&quot;name&quot;: label, &quot;edges&quot;: edges, &quot;sensors&quot;: sensors,
+                        &quot;c&quot;: str(actual_c), &quot;injective&quot;: not bool(branches),
+                        &quot;thresholds_checked&quot;: len(thresholds),
+                        &quot;dominating_leaf_sensors&quot;: new_sensors})
+        if len(reports) % 10 == 0:
+            print(f&quot;Validated {len(reports)} / {len(cases)} trees&quot;, flush=True)
+    results = {
+        &quot;seed&quot;: 20260914,
+        &quot;trees_checked&quot;: len(cases),
+        &quot;injective_cases&quot;: injective,
+        &quot;noninjective_cases&quot;: len(cases) - injective,
+        &quot;exact_continuous_c_checks&quot;: len(cases),
+        &quot;exact_continuous_A_checks&quot;: count_A,
+        &quot;exact_dominance_arrangement_vertices_checked&quot;: dominance_vertices,
+        &quot;mismatches&quot;: 0,
+        &quot;method&quot;: &quot;Direct edge-distance affine formulas; exact Fraction arrangement and polytope vertex enumeration&quot;,
+        &quot;scope&quot;: &quot;Finite listed weighted trees with vertex sensors; no grid sampling; does not replace general proof&quot;,
+        &quot;cases&quot;: reports,
+    }
+    out = Path(__file__).with_name(&quot;tree_verification_results.json&quot;)
+    out.write_text(json.dumps(results, ensure_ascii=False, indent=2) + &quot;\n&quot;)
+    print(json.dumps({k: v for k, v in results.items() if k != &quot;cases&quot;}, indent=2))
+
+
+
+
+
+# ===== Fixed robust MST: center-sorted Boruvka and independent checks =====
+from fractions import Fraction
+
+def _offer(two, value, vertex, color):
+    &quot;&quot;&quot;Keep the two smallest (value, vertex) entries of distinct colors.&quot;&quot;&quot;
+    entries = sorted(two + [(value, vertex, color)])
+    out = []
+    for entry in entries:  # At most three entries: constant time.
+        if all(entry[2] != previous[2] for previous in out):
+            out.append(entry)
+            if len(out) == 2:
+                break
+    return out
+
+
+def robust_fixed_fast(intervals):
+    &quot;&quot;&quot;Return (RF, MST_edges, round_component_counts).
+
+    Each edge is (weight, smaller_label, larger_label). Original label indices
+    are preserved. The returned tree also minimizes the SUM of robust edge
+    weights, which implies its maximum edge is the optimal bottleneck RF.
+    n=1 is assigned RF=0 and the empty tree; n=0 is rejected.
+    &quot;&quot;&quot;
+    n = len(intervals)
+    if not n or any(a &gt; b for a, b in intervals):
+        raise ValueError(&quot;Expected nonempty bounded closed intervals, n &gt;= 1&quot;)
+    order = sorted(range(n), key=lambda i: (sum(intervals[i]), i))
+    colors = list(range(n))
+    count = n
+    tree = []
+    counts = [count]
+
+    while count &gt; 1:
+        best = [None] * count
+        for reverse in (False, True):
+            two = []
+            for i in (reversed(order) if reverse else order):
+                color = colors[i]
+                # The smallest stored entry outside this component, if present.
+                eligible = next((entry for entry in two if entry[2] != color), None)
+                if eligible is not None:
+                    _, j, _ = eligible
+                    # Center-sorted i_left,j_right imply w=b_right-a_left.
+                    weight = intervals[j][1] - intervals[i][0] if reverse else intervals[i][1] - intervals[j][0]
+                    edge = (weight, min(i, j), max(i, j))
+                    if best[color] is None or edge &lt; best[color]:
+                        best[color] = edge
+                value = intervals[i][1] if reverse else -intervals[i][0]
+                two = _offer(two, value, i, color)
+
+        # All components have at least one outgoing edge in the complete graph.
+        assert all(edge is not None for edge in best)
+        adjacency = [[] for _ in range(count)]
+        for edge in best:
+            _, i, j = edge
+            u, v = colors[i], colors[j]
+            adjacency[u].append((v, edge))
+            adjacency[v].append((u, edge))
+
+        # Traverse the chosen-edge forest (allowing duplicate undirected edges).
+        # Assign dense new component IDs in O(number of old components).
+        new_color = [-1] * count
+        new_count = 0
+        for root in range(count):
+            if new_color[root] &gt;= 0:
+                continue
+            new_color[root] = new_count
+            stack = [root]
+            while stack:
+                u = stack.pop()
+                for v, edge in adjacency[u]:
+                    if new_color[v] &lt; 0:
+                        new_color[v] = new_count
+                        tree.append(edge)
+                        stack.append(v)
+            new_count += 1
+        assert new_count * 2 &lt;= count
+        colors = [new_color[color] for color in colors]
+        count = new_count
+        counts.append(count)
+
+    assert len(tree) == n - 1
+    return max((edge[0] for edge in tree), default=0), tree, counts
+
+
+def robust_fixed_complete(intervals):
+    &quot;&quot;&quot;Independent full-edge Kruskal oracle, O(n^2 log n).&quot;&quot;&quot;
+    n = len(intervals)
+    edges = sorted((max(bi - aj, bj - ai), i, j)
+                   for i, (ai, bi) in enumerate(intervals)
+                   for j, (aj, bj) in enumerate(intervals) if i &lt; j)
+    parents = list(range(n))
+
+    def find(i):
+        while parents[i] != i:
+            parents[i] = parents[parents[i]]
+            i = parents[i]
+        return i
+
+    tree = []
+    for edge in edges:
+        _, i, j = edge
+        u, v = find(i), find(j)
+        if u != v:
+            parents[u] = v
+            tree.append(edge)
+            if len(tree) == n - 1:
+                break
+    return max((edge[0] for edge in tree), default=0), tree
+
+
+def robust_fixed_prufer(intervals):
+    &quot;&quot;&quot;Third oracle: enumerate labeled trees, directly minimize bottleneck.&quot;&quot;&quot;
+    n = len(intervals)
+    if n == 1:
+        return 0
+    answer = None
+    for code in product(range(n), repeat=n - 2):
+        degree = [1] * n
+        for v in code:
+            degree[v] += 1
+        weights = []
+        for v in code:
+            u = next(j for j in range(n) if degree[j] == 1)
+            weights.append(max(intervals[u][1] - intervals[v][0], intervals[v][1] - intervals[u][0]))
+            degree[u] -= 1
+            degree[v] -= 1
+        u, v = [j for j in range(n) if degree[j] == 1]
+        weights.append(max(intervals[u][1] - intervals[v][0], intervals[v][1] - intervals[u][0]))
+        value = max(weights)
+        answer = value if answer is None else min(answer, value)
+    return answer
+
+
+def _rf_check(intervals, use_prufer=False):
+    value, edges, counts = robust_fixed_fast(intervals)
+    expected, expected_edges = robust_fixed_complete(intervals)
+    assert value == expected, (intervals, value, expected)
+    assert sum(edge[0] for edge in edges) == sum(edge[0] for edge in expected_edges), intervals
+    # Common total edge ordering yields the same unique tie-broken MST.
+    assert sorted(edges) == sorted(expected_edges), intervals
+    assert all(max(intervals[i][1] - intervals[j][0], intervals[j][1] - intervals[i][0]) == weight
+               for weight, i, j in edges)
+    assert all(2 * after &lt;= before for before, after in zip(counts, counts[1:]))
+    if use_prufer:
+        assert value == robust_fixed_prufer(intervals), intervals
+
+
+def run_fixed_fast():
+    universe = [(a, b) for a in range(7) for b in range(a, 7)]
+    exhaustive = {}
+    for n in (2, 3, 4):
+        total = 0
+        for intervals in combinations_with_replacement(universe, n):
+            _rf_check(intervals)
+            total += 1
+        exhaustive[n] = total
+
+    # Independent direct minimax oracle, with label permutations and ties.
+    small_universe = [(a, b) for a in range(5) for b in range(a, 5)]
+    prufer_total = 0
+    for n in (2, 3, 4):
+        for intervals in combinations_with_replacement(small_universe, n):
+            _rf_check(intervals, use_prufer=True)
+            prufer_total += 1
+
+    rng = random.Random(20260914)
+    random_total = 2500
+    for _ in range(random_total):
+        n = rng.randrange(2, 51)
+        intervals = []
+        for i in range(n):
+            a, b = sorted((rng.randrange(-100, 101), rng.randrange(-100, 101)))
+            intervals.append((a, b))
+        rng.shuffle(intervals)
+        _rf_check(intervals)
+
+    rational_total = 200
+    for _ in range(rational_total):
+        n = rng.randrange(2, 20)
+        intervals = [tuple(sorted((Fraction(rng.randrange(-30, 31), rng.randrange(1, 11)),
+                                   Fraction(rng.randrange(-30, 31), rng.randrange(1, 11)))))
+                     for i in range(n)]
+        _rf_check(intervals)
+    _rf_check([(0, 0)])
+    _rf_check([(0, 0)] * 50)
+    _rf_check([(-i, i) for i in range(50)])
+    _rf_check([(i, i) for i in range(50)])
+
+    result = {
+        &quot;algorithm&quot;: &quot;center-sorted two-color Boruvka, O(n log n) arithmetic/comparison operations, O(n) space&quot;,
+        &quot;exhaustive_integer_multisets_endpoints_0_to_6&quot;: exhaustive,
+        &quot;exhaustive_total&quot;: sum(exhaustive.values()),
+        &quot;prufer_crosschecks_endpoints_0_to_4&quot;: prufer_total,
+        &quot;random_integer_labelled_families&quot;: random_total,
+        &quot;random_rational_labelled_families&quot;: rational_total,
+        &quot;handpicked_degenerate_cases&quot;: 4,
+        &quot;mismatches&quot;: 0,
+        &quot;seed&quot;: 20260914,
+    }
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return result
+
+
+
+
+if __name__ == &quot;__main__&quot;:
+    import sys
+    mode = sys.argv[1] if len(sys.argv) &gt; 1 else &quot;all&quot;
+    if mode not in {&quot;all&quot;, &quot;intervals&quot;, &quot;trees&quot;, &quot;fixed&quot;}:
+        raise SystemExit(&quot;Choose all, intervals, trees, or fixed&quot;)
+    sys.argv = [sys.argv[0]] + sys.argv[2:]
+    if mode in {&quot;all&quot;, &quot;intervals&quot;}:
+        print(&quot;INTERVAL CHECKS&quot;, flush=True)
+        run_intervals()
+    if mode in {&quot;all&quot;, &quot;fixed&quot;}:
+        print(&quot;FIXED ROBUST TREE CHECKS&quot;, flush=True)
+        run_fixed_fast()
+    if mode in {&quot;all&quot;, &quot;trees&quot;}:
+        print(&quot;TREE CHECKS&quot;, flush=True)
+        run()
+</code></pre></details></section><section id="corrections"><details class="proof-block"><summary>訂正記録・仮定の境界・次の研究課題</summary><div><h2>5. 訂正・失敗しやすい推論・次の問い</h2>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>論点</th>
+<th>本稿で採用する正確な扱い</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ceil(n/2) を予想として出発した</td>
+<td>一般証明と全 n の達成例を記録。予想の状態を更新</td>
+</tr>
+<tr>
+<td>短い区間だけの固定接続に2r必要という粗い見積り</td>
+<td>交差区間 J_i=[b_i−r,a_i] によって r で十分と分かった</td>
+</tr>
+<tr>
+<td>各頂点に近い隣接先があるだけで全体連結とする</td>
+<td>それだけでは不足。独立証明では削除後の帰納法を必ず組み合わせる</td>
+</tr>
+<tr>
+<td>小さい観測誤差なら、誤差を増やしても滑らかに劣化する</td>
+<td>(T3) は閾値で跳躍する。D≤δ の条件を落とさない</td>
+</tr>
+<tr>
+<td>推定器の最適中心は必ず観測に整合する</td>
+<td>一般には違う。(T6) の出力制約を明記</td>
+</tr>
+<tr>
+<td>葉に最小識別集合を置けること自体を新規とする</td>
+<td>既知。今回の検討対象は全点対の数値的優越</td>
+</tr>
+<tr>
+<td>独立な不確実集合と相関のある全配置集合を同一視する</td>
+<td>全順列の相関反例では n−1 倍になる</td>
+</tr>
+<tr>
+<td>有限検査・複数AIの一致を形式証明や人間査読と呼ぶ</td>
+<td>いずれも未実施。証明本文と検査の実際の範囲を提示</td>
+</tr>
+</tbody>
+</table></div>
+<p>次の研究として具体的に残るのは、(i) S1の葉部分集合最適化を効率よく解くアルゴリズム、(ii) 閉路が一本ある空間や異なる誤差幅への拡張、(iii) S2で最良係数を達成する全ての区間族の分類、(iv) 正確な命題ごとの文献追跡と外部レビュー、(v) 幾何学の定式化を含む証明支援系への移植、(vi) S2の比較係数が木距離やユークリッド空間 ℝᵈ の独立な不確実集合でも成り立つかの検討である。最後の問いでは、実直線で使った隙間・端点・短区間の削除という構造をそのまま仮定できない。これらの一般化の成立は本稿では未証明である。</p>
+<p>現段階で「空間一般を解いた」「新定理が学術的に確定した」とは主張しない。一方で、今回の二つの研究には、仮定・結論・達成例・完全な証明・再現コードを備えた検証可能な単位ができている。</p></div></details></section><section id="sources"><h2>出典と照合範囲</h2>
+<p>本文の比較判断は、以下の一次論文の定義・定理・証明のうち、明記した箇所を根拠とする。「全文から該当節を照合」は、論文全体の全証明を逐行監査したという意味ではない。書誌のみ、要旨のみ、部分プレビューは区別する。定理番号はリンク先の版に対応する。</p>
+<h3>S1：距離観測・木・最適回復</h3>
+<ol>
+<li>
+<p><strong>Joonas Ilmavirta, Antti Kykkänen, Matti Lassas, Teemu Saksala, Andrew Shedlock.</strong> <em>Lipschitz Stability of Travel Time Data</em>. 2024 preprint／2025 journal. <a href="https://arxiv.org/html/2410.16224v1">本文</a>、<a href="https://doi.org/10.1007/s12220-025-02084-3">出版版</a>。定義1・3・4、注意11、命題13・17・23、定理6・9の対象と結論を本文照合。出版版追加部分の全面照合は未完。</p>
+</li>
+<li>
+<p><strong>Samir Khuller, Balaji Raghavachari, Azriel Rosenfeld.</strong> <em>Localization in Graphs</em>, UMIACS-TR-94-92 (1994)／<em>Landmarks in graphs</em>, Discrete Applied Mathematics 70(3), 217–229 (1996). <a href="https://drum.lib.umd.edu/bitstreams/fc568aaf-1954-4721-9884-854431b48e67/download">技術報告</a>、<a href="https://doi.org/10.1016/0166-218X(95)00106-2">出版版</a>。報告§2.1、補題2.1–2.3、定理2.4と証明を照合。出版版に同じ定理番号を当てていない。</p>
+</li>
+<li>
+<p><strong>Andrew V. Goldberg, Chris Harrelson.</strong> <em>Computing the Shortest Path: A* Search Meets Graph Theory</em>. MSR-TR-2004-24／SODA 2005. <a href="https://www.microsoft.com/en-us/research/publication/computing-the-shortest-path-a-search-meets-graph-theory/">研究機関の書誌</a>、<a href="https://faculty.cc.gatech.edu/~thad/6601-gradAI-fall2012/02-search-Goldberg03tr.pdf">報告本文</a>。§6–7の距離差による下界とランドマーク選択、§10の関連結論を照合。無向グラフの同じsup型下界と周辺配置の先例。</p>
+</li>
+<li>
+<p><strong>Asuman Güven Aksoy, Timur Oikhberg.</strong> <em>Some results on Metric Trees</em>. 2010 preprint. <a href="https://arxiv.org/html/1007.2207v1">本文</a>。定義2.1、定理2.3、定義6.1、定理6.2と証明、注意6.4を照合。非凸な整合集合にも使える半直径の中心原理。</p>
+</li>
+<li>
+<p><strong>Iztok Peterin, Jelena Sedlar, Riste Škrekovski, Ismael G. Yero.</strong> <em>Resolving vertices of graphs with differences</em>. 2023 preprint. <a href="https://arxiv.org/html/2309.00922v1">本文</a>。§1–3の定義・木、§4.1定理19の定式化・構成を照合。距離差のℓ1合計によるweak k-metric dimension。全証明の独立再検証は未実施。</p>
+</li>
+<li>
+<p><strong>Paula Mürmann, Robin Jaccard, Maximilien Dreveton, Aryan Alavi Razavi Ravari, Patrick Thiran.</strong> <em>Reducing Sensor Requirements by Relaxing the Network Metric Dimension</em>. 2025. <a href="https://arxiv.org/html/2505.11193v2">本文</a>、<a href="https://doi.org/10.1145/3727130">出版版</a>。定義2.2、定理3.1–3.2、§6.1の証明構造を照合。等しい署名の空間的曖昧さとstemming。</p>
+</li>
+<li>
+<p><strong>Urs Lang, Maël Pavón, Roger Züst.</strong> <em>Metric stability of trees and tight spans</em>. 2013. <a href="https://arxiv.org/pdf/1303.6826">本文</a>、<a href="https://doi.org/10.1007/s00013-013-0535-y">出版版</a>。§2のspanningの定義、補題2.4、主定理3.2の対象を照合。S1.5の短い別証明の幾何学的背景。</p>
+</li>
+<li>
+<p><strong>David Bryant, Katharina T. Huber, Vincent Moulton, Andreas Spillner.</strong> <em>Subtree Distances, Tight Spans and Diversities</em>. 2025 preprint v2. <a href="https://arxiv.org/pdf/2501.13202v2">本文</a>。§2.1定理2.1–2.2、§2.2定理2.4の関連性質と証明を照合。Dressに由来するtight-span固定点性を確認。Dressの1984年原典全文は未照合。</p>
+</li>
+<li>
+<p><strong>Sheng Bau, Alan F. Beardon.</strong> <em>The Metric Dimension of Metric Spaces</em>. Computational Methods and Function Theory 13, 295–305 (2013). <a href="https://doi.org/10.1007/s40315-013-0024-0">出版版</a>、<a href="https://www.academia.edu/143475517/The_Metric_Dimension_of_Metric_Spaces">読めた論文本文の転載</a>。§1–3、§5の対象、§7定理7.1–7.2と証明を照合。前段の要旨のみの確認から、本文確認へ更新。</p>
+</li>
+<li>
+<p><strong>Craig Gotsman, Kai Hormann.</strong> <em>On Landmark Distances in Polygons</em>. Computer Graphics Forum 40(5), 275–287 (2021). <a href="https://doi.org/10.1111/cgf.14373">出版版</a>、<a href="https://www.inf.usi.ch/hormann/papers/Gotsman.2021.OLD.pdf">著者PDF</a>。出版社提供の冒頭1頁プレビューで§1の式(1)(2)と要旨を確認。<strong>全文未照合</strong>。未読の補題の有無は判断していない。</p>
+</li>
+<li>
+<p><strong>Alejandro Estrada-Moreno, Carlos García-Gómez, Yunior Ramírez-Cruz, Juan Alberto Rodríguez-Velázquez.</strong> <em>The Simultaneous Strong Metric Dimension of Graph Families</em>. 2015 preprint. <a href="https://arxiv.org/html/1504.04820v1">本文</a>。導入と§5冒頭の、木のstrong metric basisが葉数−1となる既知結果の再掲を確認。原典Sebő–Tannier (2004) 全文は未照合。</p>
+</li>
+<li>
+<p><strong>Le, Ruiz, Dhara.</strong> <em>Landmark-Based Node Representations for Shortest Path Distance Approximations in Random Graphs</em>. 2025, v2. <a href="https://arxiv.org/html/2504.08216v2">本文</a>。Algorithm 1、定理4.1などの前段の本文照合を継承。ランダムグラフの定量的歪みという既知内容に帰属する。</p>
+</li>
+<li>
+<p><strong>Albert Cohen, Wolfgang Dahmen, Ronald DeVore.</strong> <em>State Estimation — The Role of Reduced Models</em>. 2020 preprint. <a href="https://arxiv.org/pdf/2002.00220">本文</a>。§2.3、式(2.20)–(2.22)を照合。整合集合のChebyshev中心と半径による最適回復。論文の設定はHilbert空間・線形観測であり、本稿の非線形な木の観測全体をそのまま同じ定理とはしない。</p>
+</li>
+</ol>
+<h3>S2：不確実位置・ボトルネック・区間構造</h3>
+<ol start="14">
+<li>
+<p><strong>Erin Chambers, Alejandro Erickson, Sándor P. Fekete, Jonathan Lenchner, Jeff Sember, Venkatesh Srinivasan, Ulrike Stege, Svetlana Stolpner, Christophe Weibel, Sue Whitesides.</strong> <em>Connectivity Graphs of Uncertainty Regions</em>. ISAAC 2010／Algorithmica 78, 990–1019 (2017). <a href="https://arxiv.org/html/1009.3469v4">本文v4</a>、<a href="https://doi.org/10.1007/s00453-016-0191-2">出版版</a>。定義、§1.1–1.2、§5の定理5.1–5.3と証明、結論・引用先を照合。会議版は書誌と要旨まで。</p>
+</li>
+<li>
+<p><strong>Adam Kasperski, Paweł Zieliński.</strong> <em>Bottleneck combinatorial optimization problems with uncertain costs and the OWA criterion</em>. Operations Research Letters 41(6), 639–643 (2013). <a href="https://arxiv.org/pdf/1307.4521">本文</a>。§1–2と§3冒頭を照合。最悪のitem costに置換する一般原理を明示する。</p>
+</li>
+<li>
+<p><strong>Jack Edmonds, D. R. Fulkerson.</strong> <em>Bottleneck Extrema</em>. Journal of Combinatorial Theory 8(3), 299–306 (1970). <a href="https://web.vu.lt/mif/s.jukna/EC_Book_2nd/Edmonds-Fulkerson.pdf">大学公開の原著PDF</a>、<a href="https://doi.org/10.1016/S0021-9800(70)80083-7">出版版</a>。§2の無番号Theorem、補題A–Cと証明、pp.300–303を照合。clutter／blockerのmin–max双対。</p>
+</li>
+<li>
+<p><strong>Sergio Cabello, David Gajser.</strong> <em>Connectivity with Uncertainty Regions Given as Line Segments</em>. Algorithmica 86, 1512–1544 (2024). <a href="https://arxiv.org/html/2303.10028v2">本文</a>、<a href="https://doi.org/10.1007/s00453-023-01200-5">出版版</a>。導入の定義・関連研究・結果と引用先を照合。best-caseのFPT結果。全FPT証明の逐行監査ではない。</p>
+</li>
+<li>
+<p><strong>Abolfazl Poureidi, Mohammad Farshi.</strong> <em>On algorithmic complexity of imprecise spanners</em>. Computational Geometry 117, 102051 (2024). <a href="https://doi.org/10.1016/j.comgeo.2023.102051">出版版</a>。2024版は公開された要旨・導入の定義まで。関連する同著者の2017原稿 <em>The well-separated pair decomposition for balls</em> の <a href="https://arxiv.org/pdf/1706.06287">§1–2・補題1</a> は本文確認。両版の完全な同一性は仮定しない。</p>
+</li>
+<li>
+<p><strong>Magnús M. Halldórsson, Murilo Santos de Lima.</strong> <em>Query-Competitive Sorting with Uncertainty</em>. Theoretical Computer Science (2021). <a href="https://arxiv.org/html/2012.09475v2">本文</a>、<a href="https://doi.org/10.1016/j.tcs.2021.03.021">出版版</a>。§2定義1・定理3と証明・補題4、§9 Facts 31–33を照合。co-TT／符号付き区間の構造は既知だが、最適化対象は問い合わせ費用。</p>
+</li>
+<li>
+<p><strong>Marin Bougeret, Jérémy Omer, Michael Poss.</strong> <em>Optimization problems in graphs with locational uncertainty</em>. INFORMS Journal on Computing (2023). <a href="https://arxiv.org/html/2109.00389v4">本文</a>。定義、§2、§4、結論の前段の本文照合を継承。独立な位置不確実性の下で、固定グラフの辺長の<strong>合計</strong>を評価する。</p>
+</li>
+<li>
+<p><strong>Marin Bougeret, Jérémy Omer, Michael Poss.</strong> <em>Approximating optimization problems in graphs with locational uncertainty</em>. Discrete Mathematics &amp; Theoretical Computer Science 26:3 (2024). <a href="https://arxiv.org/html/2206.08187v3">本文</a>。目的、§2.1–2.2、表1などの前段の本文照合を継承。「和の最大」と「最大の和」の比較であり、本稿の木選択の量化交換とは違う。</p>
+</li>
+<li>
+<p><strong>Gui Citovsky, Tyler Mayer, Joseph S. B. Mitchell.</strong> <em>TSP With Locational Uncertainty: The Adversarial Model</em>. SoCG 2017. <a href="https://arxiv.org/html/1705.06180v1">本文</a>、<a href="https://doi.org/10.4230/LIPIcs.SoCG.2017.32">出版版</a>。§1の定義・関連研究、§2の対象と結果を本文確認。前段の要旨のみの確認から更新。巡回順序の先決めの先例で、目的は総延長。</p>
+</li>
+<li>
+<p><strong>Maarten Löffler, Benjamin Raichel.</strong> <em>Preprocessing Uncertain Data into Supersequences for Sorting and Gaps</em>. 2026 01 27, arXiv:2601.19453v1. <a href="https://arxiv.org/html/2601.19453v1">本文</a>。§1.1–1.4、§2、§5.2、定義18–19を照合。与えられた実現の最大隙間の復元と、その前処理。arXiv本文中の会議テンプレート表記は刊行情報に使わない。</p>
+</li>
+<li>
+<p><strong>Ankush Acharyya, Vahideh Keikha, Maria Saumell, Rodrigo I. Silveira.</strong> <em>Computing Largest Minimum Color-Spanning Intervals of Imprecise Points</em>. Theory of Computing Systems 70, article 31 (2026 04 30). <a href="https://link.springer.com/article/10.1007/s00224-026-10270-1">本文</a>。導入、§1.1、§2の定理1・2と系1、§3の補題3・分離条件を照合。色が与えられた区間のmin color-spanning intervalを最大化する。</p>
+</li>
+<li>
+<p><strong>Mario E. Consuegra, Giri Narasimhan.</strong> <em>Geometric Avatar Problems</em>. 2013. <a href="https://users.cs.fiu.edu/~giri/papers/Avatar_FSTTCS2013.pdf">著者公開PDF</a>。§1–2、定理1–2を照合。最大化する最小隙間と、最小化する最大隙間。全文の全節を照合したという意味ではない。</p>
+</li>
+<li>
+<p><strong>Pranjal Awasthi, Vineet Goyal, Brian Y. Lu.</strong> <em>On the adaptivity gap in two-stage robust linear optimization under uncertain packing constraints</em>. Mathematical Programming 173, 313–352 (2019). <a href="https://doi.org/10.1007/s10107-017-1222-8">出版版</a>、<a href="https://www.columbia.edu/~vg2277/column-wise.pdf">著者公開稿</a>。著者公開稿の§1、式(1.1)–(1.2)、§6・式(6.1)・定理9、列独立の場合の定理6–7・系1を照合。連続packingモデルの静的／可変比。全証明の逐行監査ではない。定理番号は出版版と混同しない。</p>
+</li>
+<li>
+<p><strong>Dimitris Bertsimas, Vineet Goyal, Brian Y. Lu.</strong> <em>A tight characterization of the performance of static solutions in two-stage adjustable robust linear optimization</em>. Mathematical Programming 150, 281–319 (2015). <a href="https://doi.org/10.1007/s10107-014-0768-y">出版版</a>、<a href="https://www.columbia.edu/~vg2277/static-ar-paper.pdf">著者公開稿</a>。著者公開稿の§2・式(2.3)–(2.6)、§3、§4定理3–4を照合。一般の凸集合に関する <a href="https://www.columbia.edu/~vg2277/static_reformulation_cvx_sets.pdf">2015年の著者補足ノート</a> は冒頭と修正証明の構成を確認。全証明の独立再検証ではない。</p>
+</li>
+<li>
+<p><strong>Robert Sedgewick, Kevin Wayne.</strong> <em>BoruvkaMST.java</em>, Algorithms, 4th edition の著者公開実装。<a href="https://algs4.cs.princeton.edu/43mst/BoruvkaMST.java.html">本文</a>。各成分の最小外向き辺を選ぶ標準Borůvka法と、その反復を確認。本稿の中心順2走査は、標準枠組みの一次元への具体化として証明する。</p>
+</li>
+</ol>
+<h3>新規性の判定に残る限界</h3>
+<p>照合対象は、metric dimension、strong metric dimension、landmark distortion、travel-time representation、ALT、tight span、spanning、optimal recovery、information radius、WCU、robust bottleneck、adaptivity gap、static versus adjustable robust optimization、two-stage adjustable robust optimization、a priori optimization、price of nonadaptivity、locational uncertainty、imprecise spanner、co-TT、every transversal、maximum gapとその引用先・後続研究である。<strong>数式の文字列が見つからないことだけで新規性を判断していない。</strong> 目的関数、量化順序、空間、辺内部の扱い、測定誤差の種類、短い既知帰結かどうかを比較した。</p>
+<p>未解消の重要な照合先は次の通りである。</p>
+<ul>
+<li>Gotsman–Hormann の全文、travel-time論文の出版版追加部分、Dress (1984)・Sebő–Tannier (2004) の原典全文。基礎性質の一部は、読めた後続の一次論文による明確な再掲から確認している。</li>
+<li>Gitik–Bartal–Joskowicz, <em>Euclidean minimum spanning trees with independent and dependent geometric uncertainties</em> (2021). <a href="https://doi.org/10.1016/j.comgeo.2020.101744">出版情報</a>。本文未取得のため、内部のボトルネック補題の有無は判断していない。</li>
+<li>BIRS 2026 <em>Uncertainty in Combinatorial and Computational Geometry</em> の <a href="https://www.birs.ca/workshops/2026/26w5662/report26w5662.pdf">研究会報告</a>。本文未取得で、進行中の問題・未公刊結果は確認できていない。</li>
+</ul>
+<p>MathSciNet／zbMATHの網羅検索、全学位論文・非英語文献・全被引用文献の追跡、著者への照会は未実施である。主要な差分を説明できる段階にはあるが、専門家による独立照合を終えた優先権確認ではない。次の確認では、S2の正確なcore条件と最良係数、S1の非単射を含む A_S の式を、そのまま比較可能な短い命題として提示する必要がある。</p>
+<h3>公開する場合の主張</h3>
+<blockquote>
+<p>有限実木の固定距離観測について、有限誤差の曖昧さ直径を明示した。また、独立した直線上の位置不確実性について、全配置連結性を短い区間の構造で特徴付け、固定／可変接続の最良係数を導いた。距離座標、情報半径、spanning、WCU、robust bottleneck、符号付き区間グラフは既知の道具である。2026 09 14までに照合した一次資料では、主結果それぞれと同一の定理を特定できていない。数学的な一般証明は本稿に収録し、学術的新規性は独立確認を待つ。</p>
+</blockquote></section><section id="review-updates"><h2>レビュー対応記録</h2>
+<p>HTML版1.0への提供レビュー <code>review_spatial_novelty_2026-09-14.html</code> を踏まえ、版1.1で次の変更を行った。指摘番号は提供レビューに対応する。</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+<th>指摘</th>
+<th>判断と対応</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01：射影恒等式の両極値</td>
+<td>採用。葉の場合と、点を除いた成分に基準点がある場合を分け、差 ±D の達成を明示した</td>
+</tr>
+<tr>
+<td>02：半直径中心の証明</td>
+<td>採用。ただし提案の a≤t だけでは説明が足りないため、a≤min(t,D−t) を導いて両側を処理した</td>
+</tr>
+<tr>
+<td>03：幅 r の境界</td>
+<td>明確化を採用。削除可能な条件≥rは保ち、実際に削除するのは&gt;r、幅=rは短い群に残すと明記した</td>
+</tr>
+<tr>
+<td>04：道の中央頂点</td>
+<td>採用。2≤L≤m+1 と、添字⌊L/2⌋が内部頂点となることを補った</td>
+</tr>
+<tr>
+<td>05：高速公式と実装の違い</td>
+<td>採用。j=n の項が prefix の k=n−1 に含まれることを明記し、全体の最大値の同値性を説明した</td>
+</tr>
+<tr>
+<td>06：adaptivity gap の文献</td>
+<td>追加照合を採用。過去にも同語で検索していたが本文への反映が不足していた。指定された2論文系列の定義・主要定理を照合し、位置独立と辺費用独立の違いを追加。英語の命題は「全区間族にわたる最悪比」と明確にした</td>
+</tr>
+<tr>
+<td>07：他の空間への拡張</td>
+<td>未解決の問いとして採用。木距離・ℝᵈへの拡張を追加し、成立は未証明とした</td>
+</tr>
+<tr>
+<td>08：固定接続の計算量</td>
+<td>改善を実施。中心順の2走査を用いるBorůvka法で、R_Fと最適固定木を O(n log n) 操作・O(n)領域で計算する証明と実装を追加した</td>
+</tr>
+<tr>
+<td>09：コード結合の残骸</td>
+<td>採用。途中のshebang・docstring・古い実行ファイル名を除き、実行案内を先頭に統合した</td>
+</tr>
+<tr>
+<td>10：付録の言語属性</td>
+<td>採用。日本語の見出し・説明を除き、英語本文だけに lang="en" を適用した</td>
+</tr>
+<tr>
+<td>11：数式の代替テキスト</td>
+<td>表示式には既にaria-labelがあった。alttextを追加し、番号付きの主要式には日本語の読み下しも付けた。付録の主要定義・主不等式をMathMLに統一した</td>
+</tr>
+<tr>
+<td>12：分冊・著者・ライセンス</td>
+<td>分冊化は採用せず、単一HTMLとして維持した。英語命題とS1/S2別の証明区画で焦点を明確化。プロジェクト表記を保ち、新たな著者名・ライセンスは指定していない</td>
+</tr>
+</tbody>
+</table></div>
+<p>提供レビューに記載された独立検査は、検証コードが同梱されていないため、本稿で再実行済みの検査件数には加算していない。特に、分母4の有理格子で点を選ぶ検査を、辺内部の全連続領域を調べた検査とは扱わない。レビューの評価を、専門家による査読完了や形式検証完了の認定には用いない。</p>
+<p>新たに追加した固定木アルゴリズムは、本稿の更新コードで再現できる。整数の全列挙35,931族、Prüfer全木との直接比較3,860族（部分重複）、整数乱数2,500族、有理数乱数200族、退化例4族で不一致はなかった。これはアルゴリズムの検証記録であり、主定理の新規性を補強する件数ではない。</p></section><div class="metadata"><p>研究記録・文献照合日：2026 09 14 ／ HTML版 1.1<br>「探索的な数学的発見」プロジェクト。識別子 S1・S2 は本研究ノート内のものであり、既存の成果台帳の E01・E02 とは別に扱う。</p><p>本文、数式、図解、検証コードはこの1ファイルに収録。出典への外部リンクの閲覧には通信が必要。数学的状態：一般証明を記録。新規性の状態：正確な主候補の同一先行結果は未特定、独立確認を待つ。</p></div></main>
+<script>
+(()=>{const blocks=()=>Array.from(document.querySelectorAll('details.proof-block'));document.getElementById('expand-all').addEventListener('click',()=>blocks().forEach(d=>d.open=true));document.getElementById('collapse-all').addEventListener('click',()=>blocks().forEach(d=>d.open=false));document.getElementById('print-report').addEventListener('click',()=>window.print());let prior=[];window.addEventListener('beforeprint',()=>{prior=blocks().map(d=>d.open);blocks().forEach(d=>d.open=true)});window.addEventListener('afterprint',()=>blocks().forEach((d,i)=>d.open=!!prior[i]));function reveal(){const id=decodeURIComponent(location.hash.slice(1));const el=document.getElementById(id);if(el){let p=el;while(p){if(p.tagName==='DETAILS')p.open=true;p=p.parentElement}}}window.addEventListener('hashchange',reveal);reveal();})();
+</script></body></html>

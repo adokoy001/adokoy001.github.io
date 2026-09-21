@@ -1,0 +1,771 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>NIKKI - 日記</title>
+  <id>https://nikki.yokoda.okinawa/</id>
+  <link rel="alternate" href="https://nikki.yokoda.okinawa/" />
+  <link rel="self" href="https://nikki.yokoda.okinawa/atom.xml" />
+  <updated>2026-09-21T12:00:00+09:00</updated>
+  <entry>
+    <title>今日の日課は物理世界方面。熱回路の内部をどこまで減らせるか掘ってみた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-20-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-20-001/" />
+    <published>2026-09-20T12:00:00+09:00</published>
+    <updated>2026-09-21T12:00:00+09:00</updated>
+    <summary>一日一つの小さな発見、第六弾は物理世界方面。熱の応答を小さな模型で再現しようとすると、数式では3状態で足りるのに物理的には4個要る、という差が出てきた。</summary>
+    <content type="html">&lt;h1 id=&quot;今日の日課は物理世界方面-熱回路の内部をどこまで減らせるか掘ってみた&quot;&gt;今日の日課は物理世界方面。熱回路の内部をどこまで減らせるか掘ってみた&lt;/h1&gt;
+&lt;p&gt;今日の日課は物理世界方面で探索してもらった。
+「外から測った熱の応答を、もっと小さな内部の模型で再現できるか」を掘ってみた。
+数式だけなら3状態で足りるのに、熱容量や伝導率を物理的にありえる値に縛ると4個要る。その差を測定から見分ける不等式まで出た。新規性はまだ未確定。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/physical-memory-reduction/&quot;&gt;見えない内部は、どこまで減らせる？ — 数学探索・第六弾&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;追記（9/21）：翌日に版を更新。誤差の下限を1/6から11/62まで詰めて、測定器側の遅れを内部と取り違えない話も足した。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>今日の日課は形式意味論方面。意味を保つ圧縮を掘ってみた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-18-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-18-001/" />
+    <published>2026-09-18T12:00:00+09:00</published>
+    <updated>2026-09-18T13:30:00+09:00</updated>
+    <summary>一日一つの小さな発見、第五弾は形式意味論方面。いまの意味を完全に保ったまま情報を捨てたら将来どれだけ困るかを調べて、二資源ならどれをどの確率で残すのが最良かまで厳密に解けた。</summary>
+    <content type="html">&lt;h1 id=&quot;今日の日課は形式意味論方面-意味を保つ圧縮を掘ってみた&quot;&gt;今日の日課は形式意味論方面。意味を保つ圧縮を掘ってみた&lt;/h1&gt;
+&lt;p&gt;今日の日課は形式意味論方面。
+「いまの意味を完全に保ったまま情報を捨てたら、将来どれだけ困るか」を掘ってみた。
+二資源なら、どれをどの確率で残すのが最良かまで厳密に解けた。新規性はまだ未確定。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/exact-forgetting/&quot;&gt;意味を保つ圧縮と、将来の選択肢 — 数学探索・第五弾&lt;/a&gt;&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>ルールの穴を探すツールを作り始めた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-16-002/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-16-002/" />
+    <published>2026-09-16T23:30:00+09:00</published>
+    <updated>2026-09-16T23:30:00+09:00</updated>
+    <summary>規約や法令の条文を小さな形式モデルに写して、結論の衝突や抜けを具体例つきで見つける趣味の研究をGitHubに置いた。架空の会員規約から始めて、刑法41条と刑事訴訟法203〜205条の一部まで手で試している。</summary>
+    <content type="html">&lt;h1 id=&quot;ルールの穴を探すツールを作り始めた&quot;&gt;ルールの穴を探すツールを作り始めた&lt;/h1&gt;
+&lt;p&gt;水曜日の夜、もう一本。&lt;/p&gt;
+&lt;p&gt;ルールの穴を探すツールを作り始めて、GitHubに置いた。規約や法令みたいな自然文のルールを人が確認できる小さな形式モデルに写して、どの条件の組合せで結論がぶつかるか、抜けるかを具体例つきで出す、という趣味の研究。ルールの矛盾を検査できる仕組みがあれば、システムの利用規約とか、いろいろなところで問題点を洗い出しやすくなるかなと思って始めた。14日に先行研究を調べるところから始めて、まだ3日目。&lt;/p&gt;
+&lt;p&gt;最初の教材は6条の架空の会員規約。0〜25歳×学生かどうかの52通りを全部調べたら、18・19歳のところで会員資格がぶつかって、料金の扱いも抜けていた。境界を揃えた版だと0件になる。探索は既成のソルバーに頼らずPythonの標準ライブラリだけで自前で書いて、出した証拠は別実装のチェッカーでもう一度検算する作りにしている。&lt;/p&gt;
+&lt;p&gt;実際の法令も少しだけ触っていて、刑法41条（14歳未満は罰しない）と、刑事訴訟法203〜205条の48時間・24時間・72時間の期限を手で形式化してみた。ただし解釈は手作業の暫定で、専門家には見てもらっていないし、法的な判断をするものでもない。自然文からの自動変換やLLMとの接続もまだこれから。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;https://github.com/adokoy001/rule-formalization-lab&quot;&gt;Rule Formalization Lab&lt;/a&gt;&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>今日の日課はパズル方面。ドミノ置きゲームの対称性を探ってみた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-16-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-16-001/" />
+    <published>2026-09-16T01:30:00+09:00</published>
+    <updated>2026-09-16T01:30:00+09:00</updated>
+    <summary>一日一つの小さな発見、第四弾はボードゲーム・パズル方面。隣り合うマスのペアに分けて一斉に入れ替えても形が変わらない盤面なら、対称性を壊す例外マスを一つどこにつないでも、勝ち負けはペアの数の偶奇だけで決まる。例外が二つだと崩れ、三角形なら戻り、五つの塊では反例が出た。</summary>
+    <content type="html">&lt;h1 id=&quot;今日の日課はパズル方面-ドミノ置きゲームの対称性を探ってみた&quot;&gt;今日の日課はパズル方面。ドミノ置きゲームの対称性を探ってみた&lt;/h1&gt;
+&lt;p&gt;水曜日、というかまだ深夜。日課の小さな発見、第四弾はボードゲームやパズル方面。方向は自分で決めたけど、深い理由はなくて、たまたま「このあたりの数学も面白そうだな」と思って振ってみただけ。ルービックキューブの裏に群論があるみたいに、遊びの中にはけっこう本格的な数学が隠れていて面白い。&lt;/p&gt;
+&lt;p&gt;題材は、マス目に交互にドミノを置いて、置けなくなった方が負けというゲーム。盤面を隣り合う二マスずつのペアに分けて、ペアを一斉に入れ替えても形が変わらないなら、勝ち負けはペアの数の偶奇で決まる。そこに対称性を壊すマスが一つ混ざっても、どこにつながっていても結論は同じ、というのが今回の定理。盤面をグラフに一般化して調べると、例外を二つにした途端に崩れるのに、三つが互いにつながった三角形ならまた同じ形の式に戻る。五つの塊まで行けるかと思ったら反例が見つかって、そこは撤回した。&lt;/p&gt;
+&lt;p&gt;図は動かせて、証明と検証コードも1ファイルに入っている。Claudeに検算させたら同梱コードは全部再現して、端の列の一マス欠けは既存の記述に含まれるという指摘があったので、そこだけ直した。新規性は相変わらず未確定。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/one-exception-symmetry/&quot;&gt;一つの例外を許す対称性 — 数学探索・第四弾&lt;/a&gt;&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>ERPを作ってGitHubに置いた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-14-002/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-14-002/" />
+    <published>2026-09-14T22:00:00+09:00</published>
+    <updated>2026-09-14T22:00:00+09:00</updated>
+    <summary>会計・販売・購買・在庫・契約・勤怠・給与・シフト・店舗機器まで一通り入った中小規模向けERP「大福帳」をソース公開した。計画と骨組みはFableで立てて、実装は土日にイオンライカムで子供たちと遊びながら片手間で。</summary>
+    <content type="html">&lt;h1 id=&quot;erpを作ってgithubに置いた&quot;&gt;ERPを作ってGitHubに置いた&lt;/h1&gt;
+&lt;p&gt;月曜日の夜、もう一本。&lt;/p&gt;
+&lt;p&gt;ERPを作ってGitHubに置いた。大福帳（Daifuku）という名前で、会計・販売・購買・在庫・契約・勤怠・給与・シフト・店舗機器あたりが一通り入っている。計画と骨組みはFableで立てて、あとは土日にイオンライカムで子供たちと遊びながら、片手間でastraに作らせた。片手間の割にはでかくなった。&lt;/p&gt;
+&lt;p&gt;業界テンプレートは15種類あることになっているけど、中身がちゃんとしているのはごく一部で、残りは名前だけに近い。宿泊あたりはこの薄さだと事実上未実装だと思ってもらっていい。実験的なソース公開版なので、実データを入れる前には一通り確認が要る。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;https://github.com/adokoy001/DaifukuERP&quot;&gt;Daifuku ERP — 大福帳&lt;/a&gt;&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>今日の日課は幾何方面。空間の測り方と繋ぎ方を探ってみた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-14-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-14-001/" />
+    <published>2026-09-14T20:00:00+09:00</published>
+    <updated>2026-09-14T20:00:00+09:00</updated>
+    <summary>一日一つの小さな発見、第三弾は幾何。距離センサーの誤差がある幅に達した瞬間、位置の曖昧さが0.49から10.5へ跳ぶ。もう一つは、位置がぶれる点を先に決めた配線で繋ぐと、後出しで繋ぐ場合の ⌈n/2⌉ 倍の通信距離が要るという話。</summary>
+    <content type="html">&lt;h1 id=&quot;今日の日課は幾何方面-空間の測り方と繋ぎ方を探ってみた&quot;&gt;今日の日課は幾何方面。空間の測り方と繋ぎ方を探ってみた&lt;/h1&gt;
+&lt;p&gt;月曜日。日課の小さな発見、第三弾は幾何方面で、実際に役に立ちそうなところを狙ってみた。&lt;/p&gt;
+&lt;p&gt;一つ目は、いくつかの基準点からの距離だけで位置を当てる話。誤差が小さいうちは位置の誤差もそのまま小さいのに、ある幅に達した瞬間、遠く離れた枝の候補が一斉に現れる。用意した木では、誤差0.49なら位置の誤差も0.49、0.50になった途端に10.5。滑らかに悪くなってくれない。二つ目は、位置がぶれる点をどう繋ぐか。配置を見てから繋ぎ方を決めていいなら距離1で足りるのに、先に配線を決めてしまうと ⌈n/2⌉ 倍の距離が要る。しかもこれがちょうど最良の係数になっている。&lt;/p&gt;
+&lt;p&gt;図は動かせるし、証明も検証コードも例によって1ファイルに入っている。Claudeに検算させたら、同梱コードの数字も別実装のブルートフォースも全部合っていた。新規性は相変わらず未確定。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/spatial-sensing-linking/&quot;&gt;空間の観測と接続 — 数学探索・第三弾&lt;/a&gt;&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>今日の日課はゲーム理論方面。面白そうな発見にチャレンジしてみた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-11-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-11-001/" />
+    <published>2026-09-11T02:30:00+09:00</published>
+    <updated>2026-09-11T02:30:00+09:00</updated>
+    <summary>一日一つの小さな発見、第二弾はゲーム理論。判断のずれで起きる循環を止める最小の閾値と、監査の予定を1つ減らしたときの正確な損失。5対象・3監査だと、予定が4種類でも9種類でも最悪検出率は25%のまま。</summary>
+    <content type="html">&lt;h1 id=&quot;今日の日課はゲーム理論方面-面白そうな発見にチャレンジしてみた&quot;&gt;今日の日課はゲーム理論方面。面白そうな発見にチャレンジしてみた&lt;/h1&gt;
+&lt;p&gt;金曜日、というかもう深夜。日課の小さな発見、第二弾はゲーム理論方面に手を出してみた。昨日から始めて日付を跨いでしまったけど、今日の分ということで。&lt;/p&gt;
+&lt;p&gt;同じ目的を持っているのに、見えている評価が少しずつ違うせいで行ったり来たりを繰り返す。それを止めるには「これ以下の改善は採用しない」の幅をどこまで小さくできるか。もう一つは監査側と攻撃側のゲームで、監査の予定を1つ減らすと最悪の検出率がどれだけ落ちるかを式にした。5対象・3監査だと、予定を4種類使っても9種類使っても最悪検出率は25%で変わらない、というのが面白かった。途中でペテルセングラフが出てきて、監査の問題がそのままグラフの問題になった。&lt;/p&gt;
+&lt;p&gt;図は操作できて、証明と検証コードも全部1ファイルに入れてある。例によって新規性は未確定。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/cycle-audit-boundary/&quot;&gt;循環と監査の境界 — 数学探索・第二弾&lt;/a&gt;&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>ナビエ・ストークスも解かれたっぽいので、私は小さな発見を毎日やる</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-09-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-09-001/" />
+    <published>2026-09-09T14:30:00+09:00</published>
+    <updated>2026-09-09T14:30:00+09:00</updated>
+    <summary>一日に一つ、小さな数学的発見をAI達と楽しんでいくことにした。初回は、平均と分散だけで順位の隙間が保証される話。GPT-6 astraが研究して、Claudeがレビュー。</summary>
+    <content type="html">&lt;h1 id=&quot;ナビエ-ストークスも解かれたっぽいので-私は小さな発見を毎日やる&quot;&gt;ナビエ・ストークスも解かれたっぽいので、私は小さな発見を毎日やる&lt;/h1&gt;
+&lt;p&gt;水曜日。ナビエ・ストークス方程式も解かれたっぽいし、私は私でAI達と一緒に小さな発見を楽しんでいこうかな、ということで、一日一つ、小さな数学的発見をやってみることにした。証明と検証と先行研究の照合まで付けて、ここに残していく。&lt;/p&gt;
+&lt;p&gt;初回は「平均と分散だけで順位の隙間が保証される」話。0か1に近いデータなら、総和と二乗和だけで上位s個と残りの間に隔たりがあると言えて、誤差を許すと「島」が生まれたり合流したりする。GPT-6 astraが研究して、Claudeがレビュー。Leanでの検証は核の14命題まで、追加の33命題はまだコード未実行。新規性は未確定。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/moment-rank-gap/&quot;&gt;順位を守る、平均と分散 — 数学探索 X01&lt;/a&gt;
+→ &lt;a href=&quot;/works/moment-rank-gap/review-2.html&quot;&gt;Claudeのレビュー（統合版1.2向け）&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;astraは今別の作業で手一杯なので、レビューの反映は次の版で。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>GPT-6 astraに郵便番号検索ツールを作らせてみた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-07-002/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-07-002/" />
+    <published>2026-09-07T22:30:00+09:00</published>
+    <updated>2026-09-07T22:30:00+09:00</updated>
+    <summary>日本郵便の全国データを1つのHTMLに内蔵した、郵便番号⇄住所の双方向検索ツール。端末内で完結して外部通信なし。Claudeにレビューさせて1回直した。</summary>
+    <content type="html">&lt;h1 id=&quot;gpt-6-astraに郵便番号検索ツールを作らせてみた&quot;&gt;GPT-6 astraに郵便番号検索ツールを作らせてみた&lt;/h1&gt;
+&lt;p&gt;今度は実用系。日本郵便の全国データ（2026年8月31日版）をHTML一枚に詰め込んだ、郵便番号⇄住所の双方向検索ツール。検索は端末内で完結して、外部には一切通信しない。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/postal-address-resolver/&quot;&gt;郵便住所ラボ — 全国オフライン検索&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Claudeにレビューさせたら、存在しない丁目を入れると隣の町域に化ける穴を見つけてきたので、astraに直させてv1.1。丁目や階数の条件は照合しつつ、確定できないものは「要確認」で残す設計になっている。番地やビルの実在までは見ないので、最後は自分の目で。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>GPT-6 astraに太陽系を作らせてみた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-07-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-07-001/" />
+    <published>2026-09-07T21:00:00+09:00</published>
+    <updated>2026-09-07T21:00:00+09:00</updated>
+    <summary>能力チェックのつもりで、JPLの天体暦を内蔵した実スケールの太陽系アプリと開発記録を作らせた。Claudeに検証させたら近日点も月食も合っていた。スマホで動く。</summary>
+    <content type="html">&lt;h1 id=&quot;gpt-6-astraに太陽系を作らせてみた&quot;&gt;GPT-6 astraに太陽系を作らせてみた&lt;/h1&gt;
+&lt;p&gt;月曜日。GPT-6 astraの能力チェックのつもりで、実スケールの太陽系をHTML一枚で旅するアプリを作らせてみた。JPL Horizonsの2026年の天体暦を内蔵、地球儀から月や惑星へワープ、光跡とオルゴールのBGM付き。外部読み込みなしの20MB。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/solar-voyager/&quot;&gt;星間旅行 — 地球から太陽系へ&lt;/a&gt;
+→ &lt;a href=&quot;/works/solar-voyager-notes/&quot;&gt;実スケール太陽系アプリ — 調査と開発の記録&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Claudeに検証させたら、天体暦を勝手に解凍して、2026年の近日点・春分・月食・日食の時刻で位置を当てにいっていた。全部合っていたらしい。&lt;/p&gt;
+&lt;p&gt;スマホでそれなりにスムーズに動くし、音も自然。アプリより、成果を自分で削って書いた開発記録のほうに感心した。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>子守りをしながら10人月を10時間で片付けて、余った手で分布の「真ん中」を求めていた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-06-002/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-06-002/" />
+    <published>2026-09-06T22:00:00+09:00</published>
+    <updated>2026-09-06T22:00:00+09:00</updated>
+    <summary>日曜日。子供たちの相手をしつつ、10人月級の業務タスクをウルトラコードで約10時間で完遂。その裏でGPT-6 astraと、平均と分散しか分からない分布の最適な代表をW₂距離で求める研究ノートを作った。答えの部品は1973年にあった。</summary>
+    <content type="html">&lt;h1 id=&quot;子守りをしながら10人月を10時間で片付けて-余った手で分布の-真ん中-を求めていた&quot;&gt;子守りをしながら10人月を10時間で片付けて、余った手で分布の「真ん中」を求めていた&lt;/h1&gt;
+&lt;p&gt;日曜日。子供たちの相手をしながら、片手間で仕事と数学をやっていた。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/wasserstein-center/&quot;&gt;分布の「真ん中」を求める — 範囲・平均・分散とW₂最小包含球&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&quot;仕事のほう&quot;&gt;仕事のほう&lt;/h2&gt;
+&lt;p&gt;10人月クラスの業務タスクを、ウルトラコードに任せて10時間ほどで完遂した。詳細は書けないが、指示を出して、上がってきたものを確認して、また指示を出す、の繰り返し。その待ち時間に子供の相手をして、また戻る。人月という単位が何を測っているのか、いよいよ分からなくなってきた。&lt;/p&gt;
+&lt;h2 id=&quot;数学のほう&quot;&gt;数学のほう&lt;/h2&gt;
+&lt;p&gt;待ち時間のもう半分は、GPT-6 astraと数学をしていた。&lt;/p&gt;
+&lt;p&gt;問いはこう。値の範囲、平均、分散。この三つしか分からない確率分布がある。条件に合う分布はいくらでもあって、二点に集まるのか、三つに分かれるのか、連続的に広がるのかは決まらない。そのどれが真の分布でも「ずれ」が大きくなりすぎない代表を一つ選ぶとしたら、何を選ぶべきか。&lt;/p&gt;
+&lt;p&gt;ずれをWasserstein-2距離で測ると、これは分布の空間での最小包含球の問題になる。答えは閉じた式で出た。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;最適な中心 C は一意で、分位関数が明示的に書ける。両端に点質量、真ん中に連続部分、その間に空隙。単なる二点分布にはならない&lt;/li&gt;
+&lt;li&gt;半径は R² = v·log(M/v) / (2 + log(M/v))。M=μ(1−μ) は可能な最大分散。対数が出てくる&lt;/li&gt;
+&lt;li&gt;中心の分散は入力の分散より小さい。縮小係数 κ = 2/(2+log(M/v))&lt;/li&gt;
+&lt;li&gt;球面に到達する最遠の入力を完全に分類できた。同じ平均・分散の二点分布か、{0, 内点, 1} に支持を持つ分布か、のどちらか&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;証明は上から押さえて下から押し返す二段構え。上界は分位関数の積分に対する三つの上界（支持の両側とCauchy–Schwarz）の最小値 H から出て、下界は二点分布を特別な重みで並べた分位重心がちょうど候補中心になることから出る。両者が一致して最適性が決まる。ページには操作できる図と、解析的証明を全部載せた。&lt;/p&gt;
+&lt;h2 id=&quot;出典をたどったら1973年に着いた&quot;&gt;出典をたどったら1973年に着いた&lt;/h2&gt;
+&lt;p&gt;証明ができたことと新しい定理を見つけたことは別なので、先行研究を洗った。&lt;/p&gt;
+&lt;p&gt;中心の元になる補助分布は、Stoyan (1973) の定理3にそのまま載っていた。ハンガリー科学アカデミー図書館の公開原文で印刷155ページを確認して、両端の点質量・連続部分・空隙まで一致。対数を含む分散公式も Hürlimann (1996) の式(2.4)にある。対数が出る理由も、二点分布の内積を logit 座標で見ると指数核になって、その平衡測度（両端に原子＋一様密度）が最適実験計画やBrownian bridgeで既知の構造だからだった。&lt;/p&gt;
+&lt;p&gt;「補助分布を最適に縮めると全入力族の唯一のW₂中心になる」「最遠入力の必要十分条件」の二点は同じ形の先行結果を見つけられなかったが、それは「世界初」を意味しない。別表現の既知結果や未確認の文献は残っている。ページの結論は「新規性は未確定」で止めてある。&lt;/p&gt;
+&lt;h2 id=&quot;正直なところ&quot;&gt;正直なところ&lt;/h2&gt;
+&lt;p&gt;先週のLöbやゲーデルの話と同じ型で、大きな問いが調べるほど既知の部品に分解されていった。ただ今回は、部品を組み立てた先の結果と、証明の全文と、照合した一次資料の一覧が一枚に残った。子供を追いかけながらの日曜日の成果としては、まあ悪くない。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>6月からミレニアム懸賞問題に挑戦していた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-06-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-06-001/" />
+    <published>2026-09-06T12:00:00+09:00</published>
+    <updated>2026-09-06T12:00:00+09:00</updated>
+    <summary>6月からChatGPTと一緒に P vs NP を追いかけていた。その研究ノートをスタンドアロンページとして公開。</summary>
+    <content type="html">&lt;h1 id=&quot;6月からミレニアム懸賞問題に挑戦していた&quot;&gt;6月からミレニアム懸賞問題に挑戦していた&lt;/h1&gt;
+&lt;p&gt;6月から、ChatGPTと一緒にミレニアム懸賞問題の P vs NP に挑戦していた。&lt;/p&gt;
+&lt;p&gt;証明できたわけではないが、補題・証明・操作例・再現コード・未証明の課題までを一枚の研究ノートにまとめたので公開する。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/p-vs-np-note/&quot;&gt;P vs NP を追いかける — 意味の圧縮から、証人を運ぶ計算へ&lt;/a&gt;&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>「母原理」を別のAIに監査してもらった — 第二不完全性定理から意味論へ</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-05-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-05-001/" />
+    <published>2026-09-05T12:00:00+09:00</published>
+    <updated>2026-09-05T12:00:00+09:00</updated>
+    <summary>Löbの記事で「母原理」に格下げした話を、今度はGPT-6 astraに再検討してもらった。成立する条件付きの系、反証された橋、未証明のまま残る命題を分けた再検討ノートをスタンドアロンで公開。</summary>
+    <content type="html">&lt;h1 id=&quot;母原理-を別のaiに監査してもらった-第二不完全性定理から意味論へ&quot;&gt;「母原理」を別のAIに監査してもらった — 第二不完全性定理から意味論へ&lt;/h1&gt;
+&lt;p&gt;一昨日の&lt;a href=&quot;/posts/2026/09/2026-09-03-002/&quot;&gt;Löbの記事&lt;/a&gt;の続き。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/godel-semantics/&quot;&gt;「正しさ」は、どこまで自分で保証できるか&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&quot;経緯&quot;&gt;経緯&lt;/h2&gt;
+&lt;p&gt;「母定理」を「母原理」に格下げしたところまでは前回書いた。今回は、その原理のページをGPT-6 astraに見せて、どこまでが本当に定理で、どこからが言い過ぎなのかを洗ってもらった。出てきたものが面白かったので、スタンドアロンのページとして残しておく。&lt;/p&gt;
+&lt;h2 id=&quot;要点&quot;&gt;要点&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;「正しい」を三つに分ける。証明が通る（T ⊢ A）、指定した解釈で真（M ⊨ A）、モデルが現実に合う。前回の記事はこの三つをわりと一語で言っていた&lt;/li&gt;
+&lt;li&gt;厳密に成立する部分は小さい。第二不完全性の適用条件の下で、保証Cから無矛盾性への橋 T ⊢ C → Con(T) が内部で証明されているなら T ⊬ C。既知の定理の直接の系で、それ以上ではない&lt;/li&gt;
+&lt;li&gt;「閉じた体系だから自己保証できない」は出ない。命題論理の条件とD1〜D3を満たしつつ全反映が成り立つ二値モデルが反例になる。効いているのは対角化のほう&lt;/li&gt;
+&lt;li&gt;「理解し終えた」が証拠から分かるかは、同じ証拠で保証対象の真偽が異なる二世界を作れば否定できる。ただし現実にそういう二世界が残るかは経験仮定で、定理からは出ない&lt;/li&gt;
+&lt;li&gt;「検証を続けるべき」は不可能性定理だけからは導けない。効果・費用・誤りの共有という別の前提が要る&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;前回の記事の表現を直す点も四つ挙がっていて、自分の掲載Leanコードの射程（&lt;code&gt;no_uniform_self_soundness&lt;/code&gt; の ∀A は外側のLeanの量化であって、対象理論内部の単一の文ではない）も指摘された。次に書くなら保証文Cを受け取る補題 &lt;code&gt;no_internal_certificate&lt;/code&gt; だという構想まで付いてきたが、型検査はまだしていない。&lt;/p&gt;
+&lt;h2 id=&quot;正直なところ&quot;&gt;正直なところ&lt;/h2&gt;
+&lt;p&gt;6月に大きく言った話が、Claudeとの検証で定理の層に縮み、今回さらに「確定した補題」「反証された橋」「未証明命題」の三段に仕分けられた。残った研究の場所は、自然言語の「保証」を意味を保ったまま内部文Cに移して橋を作るところ、という結論になっている。ページ自体は新定理を主張していないし、自分もそう思う。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>「証明できない」ということを証明する — Löbの定理をLeanで100行</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-03-002/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-03-002/" />
+    <published>2026-09-03T21:00:00+09:00</published>
+    <updated>2026-09-03T21:00:00+09:00</updated>
+    <summary>「自分の正しさは自分では保証できない」という話を、どこまで機械に証明させられるか。Lean 4で約100行、公理依存なし。定理・前提・政策の境界線と、第2不完全性定理の親戚たちを図とスイッチで辿る読み物。</summary>
+    <content type="html">&lt;h1 id=&quot;証明できない-ということを証明する-löbの定理をleanで100行&quot;&gt;「証明できない」ということを証明する — Löbの定理をLeanで100行&lt;/h1&gt;
+&lt;p&gt;ちょっとした数学の読み物をスタンドアロンで公開した。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/loeb-lean/&quot;&gt;「証明できない」ということを証明する&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&quot;きっかけ&quot;&gt;きっかけ&lt;/h2&gt;
+&lt;p&gt;6月にClaudeと雑談していて、「全宇宙を掌握した推論機械は、掌握し終えたことを自分で証明できるのか」という話になった。たぶん無理。閉じた系は自分の完全性を自分では確かめられないので、検証は外側に錨を下ろして続けるしかない。&lt;/p&gt;
+&lt;p&gt;当時のClaudeはこれを「母定理」と呼び始めたんだけど、後で検証してみたら硬い部分は全部既知の定理（Löb・ゲーデル・Tarski・Lawvere）の言い換えで、柔らかい部分は価値判断だった。なので「母原理」に格下げ。&lt;/p&gt;
+&lt;p&gt;じゃあ定理の層だけLeanで書いてみるか、というのがこの読み物。&lt;/p&gt;
+&lt;h2 id=&quot;中身&quot;&gt;中身&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;□（可証性述語）に課す4つの約束、D1〜D3と対角化を構造体のフィールドとして置いて、その上でLöb・第2不完全性・「検証器の健全性は自己認証できない」・Tarskiを証明。Lean 4.22.0、Mathlibなし、約100行、&lt;code&gt;#print axioms&lt;/code&gt; は公理依存なし&lt;/li&gt;
+&lt;li&gt;Löbの証明を11段、ボタンで一段ずつ歩ける&lt;/li&gt;
+&lt;li&gt;約束をON/OFFするスイッチ。D3を外すとWillardの自己検証体系、対角化を外すとPresburger算術になって、どの定理が消えるかが見える&lt;/li&gt;
+&lt;li&gt;対角線論法の家系図と、親戚の定理12件の一覧&lt;/li&gt;
+&lt;li&gt;定義・公理から定理への依存グラフ&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;正直なところ&quot;&gt;正直なところ&lt;/h2&gt;
+&lt;p&gt;この100行は数学的には何も新しくない。抽象可証性論理でのLöbの証明は教科書の演習問題で、Quaife（1988）、Paulson/Bailitis（Isabelle）、Foundation（Lean 4）といった先行の機械検証がすでにある。自分の100行と先人の数千行の差は、D1〜D3と対角化を「仮定する」か「証明する」かの差でしかない。&lt;/p&gt;
+&lt;p&gt;ただ面白かったのはそこで、「自分の正しさは自分では保証できない」というエンジニアの実用知識と、70年前に証明済みの定理との間に、硬さの違う4つの層があるのがコードの形で見えた。機械に検証させられるのはいちばん上の層だけ。6月の大きな言葉が3か月かけて小さな定理に縮んでいった記録ということで、置いておく。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-03-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-03-001/" />
+    <published>2026-09-03T15:00:00+09:00</published>
+    <updated>2026-09-03T15:00:00+09:00</updated>
+    <summary>ピアノ・ギター・ベース・ドラム・バイオリンの単体ラボを1つのワークレットに同居させ、サンプル精度で同時に鳴らして曲が組めるようにした。同居のさせ方、発音タイミング、負荷に応じた自動音質調整、引っかかったことの記録。</summary>
+    <content type="html">&lt;h1 id=&quot;楽器ラボ-統合版-5つの物理モデル楽器を1枚にまとめて曲を組む&quot;&gt;楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む&lt;/h1&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/instrument-lab/&quot;&gt;楽器ラボ 統合版&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;5 つのラボ（piano-lab / guitar-lab / bass-lab / drums-lab / violin-lab）を 1 枚にまとめ、同時に鳴らして曲が組めるところまで。既定の曲はバラード。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&quot;1-どうやって同居させたか&quot;&gt;1. どうやって同居させたか&lt;/h2&gt;
+&lt;p&gt;各ラボの &lt;code&gt;*_dsp.js&lt;/code&gt; は&lt;strong&gt;そのまま&lt;/strong&gt;置いておき、ビルド時に 2 か所だけ読み替えて 1 つのワークレットに並べています。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;extends AudioWorkletProcessor      →  extends InstBase
+registerProcessor(&amp;#39;piano-processor&amp;#39;, PianoProcessor)  →  INST_CLASS.piano = PianoProcessor&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;InstBase&lt;/code&gt; は &lt;code&gt;port.postMessage&lt;/code&gt; をハブに横流しするだけのクラス。&lt;strong&gt;単体ラボのコードは 1 行も分岐していません&lt;/strong&gt;。5 楽器のモデル・DSP を通しても名前の衝突はゼロでした（&lt;code&gt;PN_&lt;/code&gt; &lt;code&gt;GT_&lt;/code&gt; &lt;code&gt;BS_&lt;/code&gt; &lt;code&gt;DRUM_&lt;/code&gt; &lt;code&gt;VN_&lt;/code&gt; の接頭辞で分けてあったのが効いた）。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;HubProcessor&lt;/code&gt; は各楽器を 128 サンプルのスクラッチに描かせ、トラックごとのゲイン・定パワーパン・リバーブ送りを掛けて足し、マスターでバスコンプとリミッタを通します。&lt;/p&gt;
+&lt;h3 id=&quot;発音のタイミング-ここが肝&quot;&gt;発音のタイミング（ここが肝）&lt;/h3&gt;
+&lt;p&gt;予約イベントはハブが 1 か所で持ち、&lt;strong&gt;予約時刻でブロックを割ってから&lt;/strong&gt;各楽器に配ります。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-js&quot;&gt;while (pos &amp;lt; N) {
+  while (q.length &amp;amp;&amp;amp; q[0].at &amp;lt;= frame + pos) deliver(q.shift());
+  let end = N;
+  if (q.length) { const nxt = q[0].at - frame; if (nxt &amp;gt; pos &amp;amp;&amp;amp; nxt &amp;lt; end) end = nxt; }
+  renderSeg(L, R, pos, end - pos);      // 楽器を部分ブロックで進める
+  pos = end;
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;こうすると、自前のキューを持たない piano / guitar もドラムと同じ精度で鳴ります。テストで確認していること:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;予約を 37 サンプルずらすと、&lt;strong&gt;ドラムもベースもピアノも発音位置がちょうど 37 サンプル動く&lt;/strong&gt;（ブロック境界にまとめていたら 0 か 128 になる）&lt;/li&gt;
+&lt;li&gt;ドラムとギターの立ち上がりのずれは &lt;strong&gt;0.35 ms&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;なお&lt;strong&gt;ピアノだけは 85 サンプル（1.8ms）遅れて音が出ます&lt;/strong&gt;。これはバグではなくハンマーが弦に届くまでの時間で、実機と同じです。&lt;/p&gt;
+&lt;h3 id=&quot;鳴っていない楽器は計算しない&quot;&gt;鳴っていない楽器は計算しない&lt;/h3&gt;
+&lt;p&gt;出力が 0.4 秒無音のままなら、その楽器の &lt;code&gt;process()&lt;/code&gt; を呼ぶのをやめます。メッセージが来たら復帰。ドラムだけ叩いているときは残り 4 楽器が完全に休みます。&lt;/p&gt;
+&lt;h3 id=&quot;負荷に応じた自動の音質調整&quot;&gt;負荷に応じた自動の音質調整&lt;/h3&gt;
+&lt;p&gt;5 楽器同時はやはり重いので、ハブが負荷を見て段を落とします（ドラム単体ラボと同じ仕組みを全体に広げたもの）。&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;段&lt;/th&gt;&lt;th&gt;シンバルのモード密度 K&lt;/th&gt;&lt;th&gt;ピアノの最大同時発音&lt;/th&gt;&lt;th&gt;シンバル総モード数&lt;/th&gt;&lt;th&gt;ドラムの実時間比&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;最高&lt;/td&gt;&lt;td&gt;7&lt;/td&gt;&lt;td&gt;24 声&lt;/td&gt;&lt;td&gt;498&lt;/td&gt;&lt;td&gt;3.4×&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;高&lt;/td&gt;&lt;td&gt;5&lt;/td&gt;&lt;td&gt;18 声&lt;/td&gt;&lt;td&gt;365&lt;/td&gt;&lt;td&gt;5.3×&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;中&lt;/td&gt;&lt;td&gt;3.5&lt;/td&gt;&lt;td&gt;12 声&lt;/td&gt;&lt;td&gt;263&lt;/td&gt;&lt;td&gt;7.1×&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;軽量&lt;/td&gt;&lt;td&gt;2.5&lt;/td&gt;&lt;td&gt;8 声&lt;/td&gt;&lt;td&gt;191&lt;/td&gt;&lt;td&gt;8.9×&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;判定の規則（2026-09-03 に直したもの。経緯は 6 章「20 秒くらいで重くなる」）:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;下げる&lt;/strong&gt;: 負荷 52% 超またはピーク 76% 超が 0.4 秒続いたら即 1 段。以後 1.2 秒だけ様子見&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;戻す&lt;/strong&gt;: 再生停止中に負荷 20% 未満が 5 秒続いたら 1 段。&lt;strong&gt;起動時の段（端末ごとの基準）より上には決して戻さない&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;再生中は戻さない。「自動」を手で入れ直したときは、そのとき選んでいる段が基準になる&lt;/li&gt;
+&lt;li&gt;互換モード（ScriptProcessor）で起動したときは基準を「中」以下にし、3D も切る（音声が主スレッドで動くため）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;マスター欄で切ることもできます。&lt;/p&gt;
+&lt;h3 id=&quot;cpu-node-実測-リアルタイム比-大きいほど余裕&quot;&gt;CPU（Node 実測・リアルタイム比。大きいほど余裕）&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;&lt;/th&gt;&lt;th&gt;&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;ドラムのみ&lt;/td&gt;&lt;td&gt;3.8×&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;ドラム＋ベース&lt;/td&gt;&lt;td&gt;3.1×&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;ピアノ和音のみ&lt;/td&gt;&lt;td&gt;8.8×&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;5 楽器&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;2.1×&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;hr&gt;
+&lt;h2 id=&quot;2-3d-webgl-コンテキストは-1-つだけ&quot;&gt;2. 3D — WebGL コンテキストは 1 つだけ&lt;/h2&gt;
+&lt;p&gt;5 つのシーンクラスに &lt;code&gt;opts&lt;/code&gt; を足して、&lt;strong&gt;レンダラと環境マップを共有&lt;/strong&gt;できるようにしました（単体ラボは従来どおり自前で作ります）。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;単体表示&lt;/strong&gt;: 選んだ楽器を画面いっぱいに&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;バンド全体&lt;/strong&gt;: 同じキャンバスを &lt;code&gt;setScissorTest&lt;/code&gt; でタイルに区切り、5 つのシーン × 5 つのカメラを 1 つのコンテキストで描く&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;楽器のシーンは&lt;strong&gt;初めて表示するときに作ります&lt;/strong&gt;（起動を軽くするため）。バンド表示では、鳴っていない楽器は形状の更新（弦の波形など）を飛ばして描画だけします。視点操作は指の乗っているタイルのカメラに効きます。&lt;/p&gt;
+&lt;h2 id=&quot;3-シーケンサー&quot;&gt;3. シーケンサー&lt;/h2&gt;
+&lt;p&gt;音程 × ステップの格子。ドラムはキットの行、旋律楽器は&lt;strong&gt;調の音だけ&lt;/strong&gt;が行に並びます（半音・長調・短調・ドリアン・ペンタ・ブルース）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;連続したマスは 1 つの長い音&lt;/strong&gt;として鳴ります。打ち直さずに伸ばすので、バイオリンやピアノで自然なフレーズになります。&lt;/p&gt;
+&lt;p&gt;曲は「1 小節あたりのステップ数（12/16/24/32）× 小節数」。格子は 1 小節ずつ表示し、◀▶ で小節を送るか「追従」で再生位置を追いかけます。&lt;/p&gt;
+&lt;h3 id=&quot;プリセット曲-すべて実測&quot;&gt;プリセット曲（すべて実測）&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;&lt;/th&gt;&lt;th&gt;小節&lt;/th&gt;&lt;th&gt;テンポ&lt;/th&gt;&lt;th&gt;長さ&lt;/th&gt;&lt;th&gt;ピーク&lt;/th&gt;&lt;th&gt;RMS&lt;/th&gt;&lt;th&gt;クレスト&lt;/th&gt;&lt;th&gt;DSP 負荷&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;ロック&lt;/td&gt;&lt;td&gt;24&lt;/td&gt;&lt;td&gt;104&lt;/td&gt;&lt;td&gt;0:55&lt;/td&gt;&lt;td&gt;0.78&lt;/td&gt;&lt;td&gt;0.057&lt;/td&gt;&lt;td&gt;13.7&lt;/td&gt;&lt;td&gt;23%&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;バラード&lt;/td&gt;&lt;td&gt;20&lt;/td&gt;&lt;td&gt;70&lt;/td&gt;&lt;td&gt;1:09&lt;/td&gt;&lt;td&gt;0.76&lt;/td&gt;&lt;td&gt;0.054&lt;/td&gt;&lt;td&gt;14.1&lt;/td&gt;&lt;td&gt;16%&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;ファンク&lt;/td&gt;&lt;td&gt;24&lt;/td&gt;&lt;td&gt;108&lt;/td&gt;&lt;td&gt;0:53&lt;/td&gt;&lt;td&gt;0.75&lt;/td&gt;&lt;td&gt;0.063&lt;/td&gt;&lt;td&gt;11.9&lt;/td&gt;&lt;td&gt;21%&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;ワルツ&lt;/td&gt;&lt;td&gt;24&lt;/td&gt;&lt;td&gt;160&lt;/td&gt;&lt;td&gt;0:54&lt;/td&gt;&lt;td&gt;0.71&lt;/td&gt;&lt;td&gt;0.058&lt;/td&gt;&lt;td&gt;12.4&lt;/td&gt;&lt;td&gt;14%&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;5楽器そろい踏み&lt;/td&gt;&lt;td&gt;24&lt;/td&gt;&lt;td&gt;96&lt;/td&gt;&lt;td&gt;1:00&lt;/td&gt;&lt;td&gt;0.77&lt;/td&gt;&lt;td&gt;0.096&lt;/td&gt;&lt;td&gt;8.0&lt;/td&gt;&lt;td&gt;13%&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;曲は音符を直接並べるのではなく、&lt;strong&gt;コード進行とドラムパターンから組み立てる小さな DSL&lt;/strong&gt;で書いています（&lt;code&gt;Ctx()&lt;/code&gt; の &lt;code&gt;d()&lt;/code&gt; = ドラムを &lt;code&gt;&amp;#39;x...x...&amp;#39;&lt;/code&gt; の文字列で、&lt;code&gt;c()&lt;/code&gt; = 和音、&lt;code&gt;mel()&lt;/code&gt; = 旋律）。60 秒の曲でもソースは 20 行前後で済み、進行を変えれば全体が付いてきます。&lt;/p&gt;
+&lt;p&gt;序奏 → A → B → 終わり の区分けを入れてあり、楽器が順に足されていきます（ロックならバイオリンは 12 小節目から）。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;音域から外れた音はオクターブで畳みます&lt;/strong&gt;。最初は切り詰めていたのですが、ロックの C（MIDI 24）がベースの下限 E1 に丸められて「C のはずが E」になり、和声が壊れていました。&lt;/p&gt;
+&lt;h2 id=&quot;4-ミキサーと音のバランス&quot;&gt;4. ミキサーと音のバランス&lt;/h2&gt;
+&lt;p&gt;各楽器の&lt;strong&gt;内部リバーブは切って&lt;/strong&gt;、ハブの共有ルームに送っています。同じ部屋で鳴っているように聞こえるのはそのためで、リバーブが 10 個ぶん動かずに済むという実利もあります。&lt;/p&gt;
+&lt;p&gt;既定のバランス（2 小節のバンド演奏で測った各楽器の RMS）:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;&lt;/th&gt;&lt;th&gt;ゲイン&lt;/th&gt;&lt;th&gt;パン&lt;/th&gt;&lt;th&gt;残響送り&lt;/th&gt;&lt;th&gt;実測 RMS&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;ピアノ&lt;/td&gt;&lt;td&gt;0.46&lt;/td&gt;&lt;td&gt;−0.18&lt;/td&gt;&lt;td&gt;0.28&lt;/td&gt;&lt;td&gt;−31.7 dB&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;ギター&lt;/td&gt;&lt;td&gt;0.42&lt;/td&gt;&lt;td&gt;+0.26&lt;/td&gt;&lt;td&gt;0.22&lt;/td&gt;&lt;td&gt;−32.4 dB&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;ベース&lt;/td&gt;&lt;td&gt;1.05&lt;/td&gt;&lt;td&gt;0.00&lt;/td&gt;&lt;td&gt;0.10&lt;/td&gt;&lt;td&gt;−30.5 dB&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;ドラム&lt;/td&gt;&lt;td&gt;0.67&lt;/td&gt;&lt;td&gt;+0.05&lt;/td&gt;&lt;td&gt;0.16&lt;/td&gt;&lt;td&gt;−32.8 dB&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;バイオリン&lt;/td&gt;&lt;td&gt;0.28&lt;/td&gt;&lt;td&gt;−0.30&lt;/td&gt;&lt;td&gt;0.34&lt;/td&gt;&lt;td&gt;−31.0 dB&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;5 本が 2.3 dB の幅に収まり、全体でピーク 0.66・RMS 0.083・クレスト 7.9。&lt;/p&gt;
+&lt;h2 id=&quot;5-演奏面とつまみ&quot;&gt;5. 演奏面とつまみ&lt;/h2&gt;
+&lt;p&gt;タブで楽器を切り替えると、演奏面（鍵盤／指板／パッド／バイオリンの指板）と 3D と詳細つまみが一緒に切り替わります。つまみは各ラボと同じ物理量が全部（ピアノ 10・ギター 12・ベース 11・ドラム 4・バイオリン 8）。ギターとベースはエフェクターのトグルも。&lt;/p&gt;
+&lt;p&gt;MIDI ノート → 各楽器のメッセージへの変換は &lt;code&gt;hub_params.js&lt;/code&gt; が吸収しています（ピアノは 1〜127、ギター・ベースは 0〜1 の振幅、ドラムは GM 準拠のノート番号、バイオリンは弓圧と弓速）。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&quot;6-引っかかったこと&quot;&gt;6. 引っかかったこと&lt;/h2&gt;
+&lt;h3 id=&quot;ベロシティの流儀が楽器ごとに違う&quot;&gt;ベロシティの流儀が楽器ごとに違う&lt;/h3&gt;
+&lt;p&gt;ピアノの &lt;code&gt;noteOn(vel)&lt;/code&gt; は &lt;strong&gt;MIDI の 1〜127&lt;/strong&gt;、ギター・ベースの &lt;code&gt;amp&lt;/code&gt; は &lt;strong&gt;0〜1&lt;/strong&gt;、ドラムの &lt;code&gt;vel&lt;/code&gt; も 0〜1、バイオリンは&lt;strong&gt;ニュートン単位の弓圧&lt;/strong&gt;。最初 &lt;code&gt;vel:0.8&lt;/code&gt; をピアノに渡して「音が 40 dB 小さい」と悩みました。統合するときは、こういう単位の違いを 1 か所（&lt;code&gt;hub_params.js&lt;/code&gt;）に閉じ込めるのが正解でした。&lt;/p&gt;
+&lt;h3 id=&quot;起動直後に-52-dbfs-の小さなクリックが出る&quot;&gt;起動直後に −52 dBFS の小さなクリックが出る&lt;/h3&gt;
+&lt;p&gt;ギターの &lt;code&gt;Drive&lt;/code&gt;（非対称の真空管モデル）が入力ゼロでも DC を出し、DC ブロッカーが 15 サンプルかけて落とすため。単体では気になりませんが、統合版でミュートのテストをすると「ミュートしたのに 2.6e-3 出ている」と見えます。実害はないのでそのままにし、テストのほうを直しました。&lt;/p&gt;
+&lt;h3 id=&quot;重かったのは音ではなく描画コールだった&quot;&gt;重かったのは音ではなく描画コールだった&lt;/h3&gt;
+&lt;p&gt;「重い」と報告を受けて計り直したところ、&lt;strong&gt;DSP は 30% 前後で余裕があり、詰まっていたのは主スレッド&lt;/strong&gt;でした。犯人は描画コールの数で、&lt;strong&gt;ピアノのシーンだけで 1 フレーム 365 コール&lt;/strong&gt;（ハンマー 88 個＋ダンパー 88 個＋鍵盤 88 組）。バンド表示ではこれが 5 面ぶん走ります。&lt;/p&gt;
+&lt;p&gt;入れた対策と実測（ヘッドレス・モバイル幅）:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;&lt;/th&gt;&lt;th&gt;fps&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;対策前&lt;/td&gt;&lt;td&gt;17&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;3D 通常（30fps 上限・バンドは 1 フレーム 2 面ずつ）&lt;/td&gt;&lt;td&gt;23〜37&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;3D 軽量（15fps・1 面ずつ・ピアノのアクションを隠す）&lt;/td&gt;&lt;td&gt;31〜46&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;3D オフ&lt;/td&gt;&lt;td&gt;60&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;3D の描画に上限 fps を設ける&lt;/strong&gt;。楽器のアニメーションは 30fps で十分で、rAF ごとに描く必要はない&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;バンド表示は順ぐりに 2 面ずつ&lt;/strong&gt;。&lt;code&gt;autoClear&lt;/code&gt; を切ってあるので、描き直さない面は前の絵がそのまま残る&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;setDetail()&lt;/code&gt;&lt;/strong&gt; を各シーンに用意し、軽量時はピアノのアクションを隠す（365 → &lt;strong&gt;117 コール&lt;/strong&gt;、21fps → 46fps）&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;スマホでは最初から 1 段落として起動する&lt;/strong&gt;。「重くなってから下げる」だと、下がるまでの数秒が必ず途切れる&lt;/li&gt;
+&lt;li&gt;fps が 20 を切ったら 3D を自動で 1 段落とす（手で選んだあとは触らない）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;教訓&lt;/strong&gt;: 3D が重いときは、まず&lt;strong&gt;三角形の数ではなく描画コールの数&lt;/strong&gt;を見ること。ピアノは 8,671 三角形しかないのに 365 コールで、ドラム（29,154 三角形・86 コール）よりずっと重かった。&lt;/p&gt;
+&lt;h3 id=&quot;つまみを動かすと音が止まっていた-オーディオスレッドを塞ぐメッセージ&quot;&gt;つまみを動かすと音が止まっていた（オーディオスレッドを塞ぐメッセージ）&lt;/h3&gt;
+&lt;p&gt;「DSP がかなり落ちてた（音が途切れた）」という報告を受けて、&lt;strong&gt;UI から飛ぶメッセージ 1 つ 1 つが何 ms オーディオスレッドを止めるか&lt;/strong&gt;を測ったところ:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;メッセージ&lt;/th&gt;&lt;th&gt;前&lt;/th&gt;&lt;th&gt;後&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;ドラム全体のチューニング（7個）&lt;/td&gt;&lt;td&gt;&lt;strong&gt;68.8 ms&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;0.06 ms&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;ドラム 1 個のチューニング&lt;/td&gt;&lt;td&gt;16.1 ms&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;音質の段を変える&lt;/td&gt;&lt;td&gt;1.76 ms&lt;/td&gt;&lt;td&gt;0.01 ms&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;ギター cfg（rebuild）&lt;/td&gt;&lt;td&gt;0.94 ms&lt;/td&gt;&lt;td&gt;0.77 ms（＋指を離してから送る）&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;レンダー量子は 128 サンプル＝2.67 ms&lt;/strong&gt; しかありません。69 ms 掛かる処理を 1 回走らせれば 26 ブロック分まるごと落ち、スライダーは 1 秒に何十回も &lt;code&gt;input&lt;/code&gt; を投げるので、&lt;strong&gt;触っているあいだ音が止まりっぱなし&lt;/strong&gt;になります。&lt;/p&gt;
+&lt;p&gt;原因は「モード表の作り直し」でした。太鼓のチューニングは &lt;code&gt;dr.build()&lt;/code&gt; でベッセル零点からモードを組み直し、音質の段の変更は &lt;code&gt;cymbalModes()&lt;/code&gt;（内部で数千回ループ）でシンバルを組み直していました。どちらも初期化のつもりで書いた関数が、演奏中の経路に入っていたわけです（バイオリンの &lt;code&gt;designDispersion&lt;/code&gt; とまったく同じ間違い）。&lt;/p&gt;
+&lt;p&gt;直したのは 3 か所:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;チューニングは係数を掛け直すだけにする&lt;/strong&gt;。膜のモード周波数は張力の平方根に比例して&lt;strong&gt;全部が同じ比で動く&lt;/strong&gt;ので、零点を求め直す必要はない。&lt;code&gt;ModalArray.setPitch(r, fs)&lt;/code&gt; は減衰（a2）をそのままに a1 だけ書き換える O(モード数)。実測で +7 半音が 254.5Hz（理論 254.7）と 0.1% 以内。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;音質の段は「上から何本まで回すか」を変えるだけにする&lt;/strong&gt;。モード列は周波数順なので、上限を下げる＝高域を捨てる。&lt;code&gt;ModalArray.setLimit(frac)&lt;/code&gt; は 1 行。鳴っている最中に切ると段差が出るので、静かなときか次の打撃で反映する。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;作り直しを伴うつまみは指を離してから送る&lt;/strong&gt;（160ms のデバウンス）。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;教訓（再）&lt;/strong&gt;: 「設計関数」を演奏経路に入れない。今回はさらに一歩進めて、&lt;strong&gt;UI から送れるメッセージ全部の所要時間を測るテスト&lt;/strong&gt;を入れました（&lt;code&gt;どのメッセージも 1ms 未満&lt;/code&gt;）。この種のバグは音を聞かないと気づけないので、数値で縛るのが唯一の防御です。&lt;/p&gt;
+&lt;h3 id=&quot;演奏が進むとフリーズ気味-解像度の自動調整が逆に働いていた&quot;&gt;「演奏が進むとフリーズ気味」— 解像度の自動調整が逆に働いていた&lt;/h3&gt;
+&lt;p&gt;まず音の側を疑って 70 秒の曲をオフラインで通し、5 秒ごとのブロックあたり計算時間を並べましたが&lt;strong&gt;ずっと平坦（20〜23%）&lt;/strong&gt;。ピアノの声数も予約の数も溜まっていない。となると主スレッドです。&lt;/p&gt;
+&lt;p&gt;ブラウザで 60 秒回して長いタスク（50ms 超）を数えると、3D「軽量」で &lt;strong&gt;8 秒に 34〜39 回、合計 2 秒ぶん&lt;/strong&gt;主スレッドが止まっていました。原因は自分で入れた仕組みの組み合わせ:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;3D を間引くようにした（15fps 上限）&lt;/li&gt;
+&lt;li&gt;解像度の自動調整は &lt;strong&gt;rAF の間隔&lt;/strong&gt; で「速いか遅いか」を判断していた&lt;/li&gt;
+&lt;li&gt;間引くと rAF の間隔は短く見える → 「速い」と誤解 → 解像度を上げ続ける → 実際に描く 1 回が 50ms 超の長いタスクになる&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;さらに直すときにもう一段ありました。&lt;code&gt;performance.now()&lt;/code&gt; で &lt;code&gt;renderer.render()&lt;/code&gt; を挟んで測っても &lt;strong&gt;1〜2ms しか出ない&lt;/strong&gt;。GL 命令は即座に返り、GPU 側の時間は次のフレームの確定に乗るからです。JS の中からは 3D の重さが見えない。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;解&lt;/strong&gt;: 「3D を描いた直後のフレーム間隔」と「描かなかったフレーム間隔」の差を 3D 1 回の実コストとして使う（&lt;code&gt;observe(dt)&lt;/code&gt; → &lt;code&gt;adapt()&lt;/code&gt;）。コストが 14ms を超えたら解像度を下げ、最低（0.4）まで下げても 24ms 超なら&lt;strong&gt;描く回数そのものを減らす&lt;/strong&gt;（5fps まで）。軽ければ戻す。&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;3D&lt;/th&gt;&lt;th&gt;前&lt;/th&gt;&lt;th&gt;後&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;軽量&lt;/td&gt;&lt;td&gt;33fps・長いタスク 98 回/8秒&lt;/td&gt;&lt;td&gt;&lt;strong&gt;55〜60fps・0〜2 回&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;通常（ピアノ 365 コール）&lt;/td&gt;&lt;td&gt;23fps・25 回&lt;/td&gt;&lt;td&gt;50〜56fps・4〜8 回（描画は 5fps・解像度 0.4 に自動で落ち着く）&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;本物の GPU がある端末ではコストがずっと小さく測れるので、もっと高い回数・解像度に落ち着くはずです。&lt;/p&gt;
+&lt;p&gt;あわせて、&lt;strong&gt;タブが裏に回ったあとの復帰&lt;/strong&gt;も直しました。タイマーが 1 秒に 1 回に絞られ、戻った瞬間に溜まったぶんが一気に「今」へ流し込まれて音の壁になるので、0.6 秒以上遅れていたらそのぶんは捨てて現在位置から続けます。&lt;/p&gt;
+&lt;h3 id=&quot;シンバルの減衰しきったモードを外す&quot;&gt;シンバルの減衰しきったモードを外す&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;ModalArray&lt;/code&gt; に「活きているモード数」を持たせ、末尾から縮められるようにしました（シンバルのモード列は周波数順で、高い方ほど早く消える）。連打しているときは効きませんが、尾を引いている間は効きます。打撃のたびに &lt;code&gt;wake()&lt;/code&gt; で全部戻します。&lt;/p&gt;
+&lt;h3 id=&quot;ヘッドレス環境の測定は当てにならない-再&quot;&gt;ヘッドレス環境の測定は当てにならない（再）&lt;/h3&gt;
+&lt;p&gt;バイオリンのピチカートと同じ問題で、ドラムのパッドを叩くテストが「鳴っていない」と誤判定しました。この環境は主スレッドが遅く、&lt;code&gt;setTimeout&lt;/code&gt; のループが 1 秒近くかかるため、速く減衰する音の立ち上がりを取り逃がします。&lt;strong&gt;ワークレット側のピークホールド（&lt;code&gt;outPk&lt;/code&gt;）を state で受けて測る&lt;/strong&gt;のが正解。&lt;/p&gt;
+&lt;h3 id=&quot;20-秒くらいで重くなり-途切れ途切れになっていく-自動調整が段を上げていた&quot;&gt;「20 秒くらいで重くなり、途切れ途切れになっていく」— 自動調整が段を上げていた&lt;/h3&gt;
+&lt;p&gt;ローカルで長く弾いてもらったときの報告。オフラインでもブラウザでも 150 秒回して&lt;strong&gt;溜まるものは何もなかった&lt;/strong&gt;（DSP 負荷は横ばい、ヒープ・DOM・予約数も一定）ので、端末の熱を疑いかけましたが、GPT-5.6 に見てもらった版が正しく指摘していました。自動の音質調整そのものが原因です。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;スマホは起動時に段「高」から始める&lt;/li&gt;
+&lt;li&gt;段を変えると &lt;strong&gt;80 回 × 0.2 秒 = 16 秒&lt;/strong&gt;、何も判定しない&lt;/li&gt;
+&lt;li&gt;16 秒後、負荷が 30% 未満なら &lt;strong&gt;1 段上げる&lt;/strong&gt; → 「最高」へ&lt;/li&gt;
+&lt;li&gt;「最高」はその端末には重い。しかし上げた直後の 16 秒はまた判定しない → &lt;strong&gt;途切れっぱなし&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;ようやく下がる → 16 秒後にまた上がる、の繰り返し&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;つまり「20 秒くらいで」は 16 秒のヒステリシスそのもので、「だんだん悪くなる」は上がった段で熱を持つぶんでした。ヘッドレスの実測でも 15 秒の時点で &lt;code&gt;q1 → q0&lt;/code&gt; に上がっていたのに、負荷が上がっても十分低かったので見過ごしていました。&lt;/p&gt;
+&lt;p&gt;直したこと（GPT-5.6 版の考えを取り込み、こちらのソースとテストに合わせて入れ直した）:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;危険側は速く、安全側は遅く&lt;/strong&gt;。下げるのは 0.4 秒連続で熱ければ即、戻すのは停止中に 5 秒安定してから&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;起動時の段より上には戻さない&lt;/strong&gt;（&lt;code&gt;baseline&lt;/code&gt;）。端末に合った段で起動しているのだから、そこが上限&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;再生中は戻さない&lt;/strong&gt;（&lt;code&gt;transport&lt;/code&gt; メッセージで再生状態をワークレットが知る）&lt;/li&gt;
+&lt;li&gt;ワークレット側の GC を減らす: 表示していない楽器は状態レポートを&lt;strong&gt;組み立てもしない&lt;/strong&gt;（&lt;code&gt;reportEnabled&lt;/code&gt;。以前はハブで捨てていたが、1024 点の波形を 20Hz で切り出す配列生成は残っていた）。サブブロックごとの &lt;code&gt;subarray&lt;/code&gt; もやめ、&lt;code&gt;HUB_RENDER_N&lt;/code&gt; で長さを渡して同じ配列を使い回す&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;互換モードのバッファ不足&lt;/strong&gt;を修正。ScriptProcessor は 2048 サンプル単位で来るのに楽器のスクラッチが 256 しかなく、そこでは NaN が出ていた（= 無音）。最大側で確保&lt;/li&gt;
+&lt;li&gt;音声負荷が 58% を超えたら 3D を先に 1 段落とす（同じ CPU を取り合うので）。3D の自動復帰も起動時の段まで&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;再発防止のテスト（&lt;code&gt;test_hub.mjs&lt;/code&gt;）: 再生中は負荷 10% が 60 秒続いても段を上げない／停止中でも基準より上へ戻さない／重くなったら 0.4 秒で下がる／2048 サンプル単位でも NaN にならず 128 単位と同じ音量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;教訓&lt;/strong&gt;: 「安全側へ戻す」条件を「危険側へ進む」条件と同じ速さにしてはいけない。しかも「戻す」の上限は、その端末で実際に問題なく動いた段を超えてはいけない。&lt;/p&gt;
+&lt;h3 id=&quot;診断用の負荷ログ&quot;&gt;診断用の負荷ログ&lt;/h3&gt;
+&lt;p&gt;「重いとき（負荷ログ）」欄に、1 秒ごとの DSP 負荷（ピーク付き）・楽器ごとの内訳・fps・&lt;strong&gt;cpu 比&lt;/strong&gt;（同じ計算を毎回走らせた所要時間を、これまでの最短で割ったもの）を記録し、コピーできるようにしました。cpu 比だけが上がっていくなら端末のクロック低下、dsp% だけならコード側、と切り分けられます。&lt;/p&gt;
+&lt;h2 id=&quot;7-音に集中モード&quot;&gt;7. 音に集中モード&lt;/h2&gt;
+&lt;p&gt;ヘッダの「♪ 音に集中」で、&lt;strong&gt;音声スレッド以外をほぼ何もしない状態&lt;/strong&gt;にします。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;3D・計器・演奏面・格子・タブのメーターの描画を止める（通常画面は &lt;code&gt;display:none&lt;/code&gt;）&lt;/li&gt;
+&lt;li&gt;ワークレットから主スレッドへの状態報告を 20Hz → 4Hz に（&lt;code&gt;rate&lt;/code&gt; メッセージ）。楽器ごとの状態報告は止める（&lt;code&gt;watch: &amp;#39;&amp;#39;&lt;/code&gt;）&lt;/li&gt;
+&lt;li&gt;画面は曲名・経過時間・小節・5 楽器のレベル・DSP 負荷だけを 1 秒に 4 回更新&lt;/li&gt;
+&lt;li&gt;再生／停止と曲の切り替えはそこからできる。「画面を戻す」で元の状態（3D の段も）に復帰&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;主スレッドの長いタスク（50ms 超）は通常画面で 8 秒に 2 回 → &lt;strong&gt;集中モードで 0&lt;/strong&gt;。スマホでは主スレッドが空いたぶん CPU と熱の余裕が音声スレッドに回り、音質の自動調整が「最高」まで上がりやすくなります。&lt;/p&gt;
+&lt;h2 id=&quot;8-動作の軽さ-ui&quot;&gt;8. 動作の軽さ（UI）&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;3D の切り替えは 3D 画面のすぐ上（カメラ切替の並びの左端）&lt;/strong&gt;に置いてあります。タップするたびに 通常 → 軽量 → オフ と回り、いまどれなのかがボタン自体に出ます。オフのときは画面に案内が出て、その場所を演奏面と格子にゆずります。&lt;/p&gt;
+&lt;p&gt;左レール先頭の「動作の軽さ」でも同じ操作ができます。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;3D&lt;/strong&gt;: 通常（30fps）／軽量（15fps・1 面ずつ・低詳細）／&lt;strong&gt;オフ&lt;/strong&gt;（音はそのまま鳴る）&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;音質&lt;/strong&gt;: 最高／高／中／軽量（シンバルのモード密度とピアノの声数）＋自動調整のオン・オフ&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;スマホや 4 コア以下の端末は、起動時に 3D 軽量・音質「高」から始まります。&lt;/p&gt;
+&lt;h2 id=&quot;9-入れていないもの&quot;&gt;9. 入れていないもの&lt;/h2&gt;
+&lt;p&gt;セクション構成の編集（プリセット曲は序奏/A/B/終を持つが UI からは組めない）、トラックごとのテンポ変化、外部への書き出し（WAV/MIDI）、和音の自動生成、ミキサーのセンド EQ。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>声道を物理で鳴らす — ブラウザで動く調音音声合成をつくる</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/09/2026-09-01-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/09/2026-09-01-001/" />
+    <published>2026-09-01T21:00:00+09:00</published>
+    <updated>2026-09-01T21:00:00+09:00</updated>
+    <summary>肺から口唇までを物理シミュレーションして日本語と英語を喋らせる。単一HTMLで実時間動作。バグ潰しの記録と、参照実装を読んで気づいた自分の勘違いについて。</summary>
+    <content type="html">&lt;h1 id=&quot;声道を物理で鳴らす-ブラウザで動く調音音声合成をつくる&quot;&gt;声道を物理で鳴らす — ブラウザで動く調音音声合成をつくる&lt;/h1&gt;
+&lt;p&gt;エンジン音、水槽の生態系、電子回路と作ってきて、次は人間の声にした。&lt;/p&gt;
+&lt;p&gt;方針はいつもと同じで、ニューラルネットは使わない。肺から口唇までを物理でシミュレートして、その結果として音が出てくるものを作る。単一HTMLファイル、スマホのブラウザで実時間。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/voice-lab/&quot;&gt;ボイスラボ&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;日本語と英語のサンプルが40本入っています。年齢・性別・感情のスライダーを動かしながら聴くのが分かりやすいと思います。&lt;/p&gt;
+&lt;p&gt;結論から言うと、鳴った。ただしそこに至るまでに踏んだ地雷が面白かったので、そちらを中心に書く。&lt;/p&gt;
+&lt;h2 id=&quot;どういう構造か&quot;&gt;どういう構造か&lt;/h2&gt;
+&lt;p&gt;音声生成は3段に分かれる。エンジン音でいえば「燃焼 → エキマニ → マフラー出口」とほぼ同じ構造をしている。&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;段&lt;/th&gt;&lt;th&gt;物理&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;音源（声門）&lt;/td&gt;&lt;td&gt;声帯の自励振動＋ベルヌーイ流れ&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;伝播（声道）&lt;/td&gt;&lt;td&gt;声門から口唇まで約17cmの管の中の音波伝播&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;放射（口唇・鼻孔）&lt;/td&gt;&lt;td&gt;開口端からの放射&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;声帯が振動する仕組みが面白い。声門が開くとき収束形状、閉じるとき発散形状になることで、空気から組織へのエネルギー伝達が非対称になり、粘性減衰を上回って振動が持続する。要するにクラッチのスティック・スリップと同じ、負性抵抗による極限周期だ。方程式を立てて解けば、勝手に振動が立ち上がる。&lt;/p&gt;
+&lt;p&gt;実装は1次元のKelly-Lochbaum導波管。声道を断面積の違う円筒管の連なりとして表現し、各セクションの境界で波が反射・透過する。1962年にベル研で作られた、コンピュータが初めて歌を歌った（Daisy Bell）ときの方式そのものだ。&lt;/p&gt;
+&lt;p&gt;これに、&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;声帯：二質量モデル（自励振動、声道との双方向結合）&lt;/li&gt;
+&lt;li&gt;気管：1次元導波管、声門下共鳴&lt;/li&gt;
+&lt;li&gt;鼻腔：軟口蓋開度で結合する側枝&lt;/li&gt;
+&lt;li&gt;梨状窩：閉管の側枝&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;を足した。梨状窩というのは咽頭の左右にある窪みで、体積2.5cm³くらいの小さな空洞なのだが、これが4〜5kHz帯にスペクトルの谷を作る。実装コストは20セクションぶんしかないのに効果が大きい、費用対効果の高い投資だった。&lt;/p&gt;
+&lt;h2 id=&quot;母音をどう決めるか&quot;&gt;母音をどう決めるか&lt;/h2&gt;
+&lt;p&gt;声道の形をどう指定するか。Brad StoryのTubeTalkerという実装を参考にした。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;A(x) = Ω(x) × exp(q₁φ₁(x) + q₂φ₂(x) + q₃φ₃(x)) × Γ(x)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ω が話者固有の中立声道形状、φ が母音の整形モード、Γ が子音の狭窄関数。&lt;/p&gt;
+&lt;p&gt;ここで効いてくるのが、&lt;strong&gt;母音の整形モードは話者間でかなり似ていて、話者ごとに違うのは中立形状のほう&lt;/strong&gt;という知見。つまり「発音」と「話者性」が分離できる。年齢スライダーは Ω だけを動かせばよく、音素の定義には一切触らなくていい。&lt;/p&gt;
+&lt;p&gt;モード係数は数値最適化で決めた。面積関数から連鎖行列で伝達関数を計算し、フォルマント周波数が文献値に合うように q を最適化する。一様管17cmの検証で誤差0.11%、母音のF1誤差は最大でも6%程度に収まった。&lt;/p&gt;
+&lt;h2 id=&quot;年齢と性別&quot;&gt;年齢と性別&lt;/h2&gt;
+&lt;p&gt;一様にスケールしてはいけない、というのがこの部分の肝だった。&lt;/p&gt;
+&lt;p&gt;乳児は口腔と咽頭の比が約1.5:1で、1:1になるのは6〜8歳頃。だから子どもの声は「大人の声をピッチシフトしたもの」では絶対に再現できない。&lt;/p&gt;
+&lt;p&gt;さらに面白いのが思春期の男性で、F0は女性の50〜60%まで下がるのに、フォルマントは80〜90%までしか下がらない。声帯が伸びて厚くなること（F0を下げる）と、喉頭が下降して声道が伸びること（フォルマントを下げる）が独立に起きるからだ。モデル側で声帯寸法と声道長を別パラメータにしておけば、これは勝手に出る。&lt;/p&gt;
+&lt;h2 id=&quot;ここからバグの話&quot;&gt;ここからバグの話&lt;/h2&gt;
+&lt;p&gt;以下、実際に踏んだ地雷。どれも「物理の理解」ではなく「実装の詰め」の問題だった。&lt;/p&gt;
+&lt;h3 id=&quot;声道が2倍の長さだった&quot;&gt;声道が2倍の長さだった&lt;/h3&gt;
+&lt;p&gt;全部の母音のフォルマントが、綺麗に一律 −50% ずれていた。&lt;/p&gt;
+&lt;p&gt;導波管ではセクション長を &lt;code&gt;dx = c/(2·fs)&lt;/code&gt; としていたのだが、前進波と後退波それぞれが1セクションあたり1サンプルの遅延を持つので、正しくは &lt;code&gt;dx = c/fs&lt;/code&gt;。往復で2Nサンプルかかることを勘定に入れ忘れていた。一律50%という綺麗すぎるずれ方が手がかりになった。&lt;/p&gt;
+&lt;h3 id=&quot;損失フィルタが全フォルマントを消した&quot;&gt;損失フィルタが全フォルマントを消した&lt;/h3&gt;
+&lt;p&gt;実際の声道は壁の粘弾性や粘性熱損失があるので、それを入れようとして各セクションに1極ローパスを掛けた。係数0.018。&lt;/p&gt;
+&lt;p&gt;これがカットオフ275Hz相当で、しかも46段カスケードする。フォルマントは影も形もなくなった。スペクトルを見ると、ただの -6dB/oct の滑らかな坂になっていて、共鳴が1本もない。&lt;/p&gt;
+&lt;h3 id=&quot;声帯が動かなかった&quot;&gt;声帯が動かなかった&lt;/h3&gt;
+&lt;p&gt;自励振動なので、方程式を解けば勝手に動き出すはず……が、ぴくりとも動かない。&lt;/p&gt;
+&lt;p&gt;原因は、駆動圧の式が &lt;code&gt;P₁ = ΔP(1 − (a_min/a₁)²)&lt;/code&gt; になっていること。左右対称の平衡点では &lt;code&gt;a_min = a₁&lt;/code&gt; なので &lt;code&gt;P₁ = 0&lt;/code&gt;、駆動力が厳密にゼロになる。不安定平衡点にぴったり座っていて動き出せない状態だった。&lt;/p&gt;
+&lt;p&gt;微小な初期非対称を入れたら、素直に110Hzで振動を始めた。&lt;/p&gt;
+&lt;h3 id=&quot;無声という状態が存在しなかった&quot;&gt;無声という状態が存在しなかった&lt;/h3&gt;
+&lt;p&gt;これが一番厄介だった。&lt;/p&gt;
+&lt;p&gt;「さしすせそ」を鳴らすと「ぎぎょぎぎょぎょ」に聞こえる。/s/ が有声に聞こえるということは、無声化が効いていない。&lt;/p&gt;
+&lt;p&gt;声帯を外転させれば（左右に開けば）振動が止まるはず、と思って内転度パラメータを0まで下げても、声門は148Hzで振動し続けた。声門面積の写像を10倍に強めても止まらない。&lt;/p&gt;
+&lt;p&gt;真犯人は、質量の変位制限を ±3mm に置いていたことだった。生理的には0.6mm程度しか動かないのに、3mmも動けるようにしていたので、どんなに外転させても声帯が閉じてしまう。0.6mmに直したら、&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;内転度&lt;/th&gt;&lt;th&gt;1.0&lt;/th&gt;&lt;th&gt;0.7&lt;/th&gt;&lt;th&gt;0.5&lt;/th&gt;&lt;th&gt;0.35&lt;/th&gt;&lt;th&gt;0.2&lt;/th&gt;&lt;th&gt;0.0&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;F0&lt;/td&gt;&lt;td&gt;180&lt;/td&gt;&lt;td&gt;136&lt;/td&gt;&lt;td&gt;128&lt;/td&gt;&lt;td&gt;96&lt;/td&gt;&lt;td&gt;停止&lt;/td&gt;&lt;td&gt;停止&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;と、内転度0.2以下で発振が止まる位相転移が出た。副産物として、声門流のスペクトル傾斜が −12dB/oct 前後で安定した。教科書どおりの値だ。波形が生理的な形に収まったことで、他の指標まで一緒に正しくなった。&lt;/p&gt;
+&lt;h3 id=&quot;摩擦音が-ほぼ雑音-だった&quot;&gt;摩擦音が「ほぼ雑音」だった&lt;/h3&gt;
+&lt;p&gt;/s/ と /ʃ/ のスペクトル重心を測ったら、9890Hz と 10091Hz。ほぼ同じで、両方とも山が13kHz付近。要するに白色ノイズがそのまま出ていた。&lt;/p&gt;
+&lt;p&gt;原因は幾何だった。/s/ の狭窄位置を声道長の0.86の位置に置いていたのだが、これだと前部空洞が2.2cmになり、1/4波長共鳴が約4kHz。実際の /s/ は前部空洞が1〜1.5cmで、6〜9kHzに共鳴を持つ。位置を0.92に動かしたら、重心が6449Hz、/ʃ/ が4071Hz と正しい順序に分離した。&lt;/p&gt;
+&lt;p&gt;さらに狭窄面積も間違っていて、0.055cm²は狭すぎた。実際の /s/ の狭窄は0.1〜0.2cm²ある。「噴流」ではなく「ほぼ閉鎖」を作っていたことになる。&lt;/p&gt;
+&lt;h2 id=&quot;参照実装を読んだら自分の勘違いが分かった&quot;&gt;参照実装を読んだら自分の勘違いが分かった&lt;/h2&gt;
+&lt;p&gt;行き詰まったので、Neil Thapenの Pink Trombone（MIT）のソースを読みに行った。同じ1次元導波管を使っていて、ブラウザで実際に鳴る唯一の参照実装だ。&lt;/p&gt;
+&lt;p&gt;読んで青ざめた。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;出力に微分がない。&lt;/strong&gt; 導波管の出力をそのまま出しているだけ。口唇放射の微分もハイパスも一切ない。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;周波数依存の損失フィルタがない。&lt;/strong&gt; &lt;code&gt;fade = 1.0&lt;/code&gt;。損失は声門端0.75と口唇端−0.85の反射係数だけ。&lt;/li&gt;
+&lt;li&gt;摩擦ノイズは&lt;strong&gt;事前にバンドパスで帯域制限&lt;/strong&gt;してから声道に入れている。&lt;/li&gt;
+&lt;li&gt;狭窄が&lt;strong&gt;狭すぎても広すぎてもノイズが出ない&lt;/strong&gt;窓が入っている。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;私は「物理的に正しくしよう」として、1次元導波管では省略すべきものまで積み上げていた。放射の微分は声門源側と二重にかかっていたし、損失フィルタはそもそも不要だった。削るべきところで足していた。&lt;/p&gt;
+&lt;p&gt;この種の知識は論文には書いていない。「実際に鳴る実装」にしか凝縮されていない。数式は自分で書けても、音になる係数の範囲は先人が試行錯誤で見つけたものだ。もっと早く読みに行けばよかった。&lt;/p&gt;
+&lt;h2 id=&quot;現状&quot;&gt;現状&lt;/h2&gt;
+&lt;p&gt;日本語と英語、それぞれ20本ずつのサンプルを鳴らせる。テキストはすべて書き下ろした自作で、音韻カバレッジを設計してある。年齢・性別・体格、感情・発話速度・強さ・明瞭度を全部スライダーで動かせる。&lt;/p&gt;
+&lt;p&gt;速度は実時間の5倍前後で生成できているので、スマホでも余裕がある。&lt;/p&gt;
+&lt;p&gt;面白いのは、速度を上げて明瞭度を下げると、ジェスチャが目標に届かずに自然に「もごもご」した発音になること。これは録音ベースの音声合成には真似できない部分で、調音モデルを使う意味がここにある。&lt;/p&gt;
+&lt;p&gt;正直なところ、ニューラルTTSの自然さには遠く及ばない。そこは競う土俵ではない。この作品の価値は、&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;声道の形が見えて、音がそこから出ていることが分かる&lt;/li&gt;
+&lt;li&gt;スライダーが全部物理量（声門下圧、声帯剛性、狭窄位置）&lt;/li&gt;
+&lt;li&gt;年齢・性別が連続に変わり、その途中も物理的に妥当&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;という体験のほうにある。&lt;/p&gt;
+&lt;p&gt;現時点では了解度を稼ぐためにフォルマント共振器を少しだけ並列に混ぜていて、そこは純粋な物理モデルではない。まず人間の声に聞こえる状態を作ってから物理側を詰める、という順序を取った。混合率は0にもできるので、素の物理モデルの実力もそこで確認できる。&lt;/p&gt;
+&lt;h2 id=&quot;次&quot;&gt;次&lt;/h2&gt;
+&lt;p&gt;聴覚モデルを作ろうと思っている。ガンマトーンフィルタバンクで臨界帯域に分解して、内有毛細胞モデルを通し、変調スペクトルを見る。&lt;/p&gt;
+&lt;p&gt;理由は評価のためだ。今回、フォルマント周波数が数値上は合っているのに全く音声に聞こえない、という状態が何度もあった。オクターブ帯域のような粗い物差しでは、臨界帯域内でフォルマントが融合しているかどうかが見えない。耳の側のモデルがあれば、「母音対の距離が弁別閾を超えているか」を直接測れる。&lt;/p&gt;
+&lt;p&gt;作るものが増えていくが、まあそういうものだろう。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>水槽と熱帯魚の生態系シミュレーター「アクアラボ」を作った</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-29-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-29-001/" />
+    <published>2026-08-29T15:00:00+09:00</published>
+    <updated>2026-08-30T19:00:00+09:00</updated>
+    <summary>窒素循環・濾過・水流・水草・藻・海水リーフまでを一本の収支で解き、魚は骨格と重心から泳ぐ水槽シミュレーターです。ギャラリーモード、手で撒く給餌、自由カメラ、サンゴの成長、底床の地形まで足しました。</summary>
+    <content type="html">&lt;h1 id=&quot;水槽と熱帯魚の生態系シミュレーター-アクアラボ-を作った&quot;&gt;水槽と熱帯魚の生態系シミュレーター「アクアラボ」を作った&lt;/h1&gt;
+&lt;p&gt;水槽の中で起きていることを、できるだけごまかさずに一本の収支で解いてみたくなりました。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/aqua-lab/&quot;&gt;アクアラボ&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;ブラウザだけで動きます。スマホでも動きますが、3Dは重めなのでPC推奨です。調べたこと・決めたこと・失敗したことは別のページに書きました。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/aqua-lab-notes/&quot;&gt;アクアラボ実装ノート&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&quot;どういうものか&quot;&gt;どういうものか&lt;/h2&gt;
+&lt;p&gt;水槽・底床・フィルター・ヒーター・照明・餌・水道水・室温を機材DBから選んで魚を入れると、時間が進みます。倍速で1年でも回せます。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;窒素は台帳で閉じている。&lt;/strong&gt; 餌として入った窒素が、魚の体・アンモニア・亜硝酸・硝酸・デトリタス・生物膜・水草・エビ・換水で出た分のどこにあるか、半年回しても相対残差が 1e-9 以下で一致します。反応網は正値性と質量保存を両立させる修正 Patankar–Euler で解いています（普通の陽的オイラーだと、濃度が負になるかプールが漏れるかのどちらかになります）&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;計器が三層ある。&lt;/strong&gt; 真値、試薬（テトラ6in1・API などの段階丸めと発色待ち）、電子計器（Seneye・pHペンのドリフトと校正・TDS）。「試薬では0.25と出ているが真値は0.4」のようなずれが普通に起きます&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;濾過装置の中身がある。&lt;/strong&gt; 外掛け・上部・外部・投げ込み・スポンジ・底面・サンプを実機の構造で作り、濾材を層ごとに通水順に重ねます。空塔速度・接触時間・目詰まり・洗浄まで入れてあります。濾材を水道水で洗うと出るのはアンモニアではなく亜硝酸のスパイクだ、というのはやってみて分かりました&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;水流を解いている。&lt;/strong&gt; 水槽内を約7,000セルの格子で非圧縮流体として解き、軌跡付きの粒子で見せます。外掛け1台の60cm水槽で遠端が淀む、あの実感がそのまま出ます&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;魚は骨格から泳ぐ。&lt;/strong&gt; 剛体の頭蓋＋椎骨チェーン（スズメダイ科26・ニザダイ科22は科の標準形質、オスカーとピラニアは科の範囲からの推定）＋受動的な尾鰭。重心は断面の面積分布と鰾の位置から積分して出しています（吻端から全長の 0.34〜0.38、文献値と整合）。曲がった体が抵抗の異方性で自分の中心線に沿って滑るので、旋回は「頭が先に切り込み、体幹が頭の軌跡を追う」形になります。剛体をその場で回しているわけではありません&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;一期一会の個体差。&lt;/strong&gt; 導入のたびに L∞・成長速度・食欲・基礎代謝・大胆さ・気性・模様を乱数で引きます。CV は文献値のあるものは文献値、無いものは推定と明記&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;海水（リーフ）版もある。&lt;/strong&gt; 塩分・炭酸系・ホウ酸・アラゴナイト飽和度を解き、プロテインスキマー・ドージング・ライブロックの脱窒・サンゴの石灰化と白化まで。海水の硝化群集は淡水と別物（コマモックスが居ない、AOA と AOB が拮抗）なので、文献で作り直しました&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;水草・藻・ヌマエビ（v0.8）。&lt;/strong&gt; 水草19種の光合成は P–I 曲線で、CO2 は飽和値を下げるが初期勾配は変えない、という形にしてあります。単純に光×CO2 を掛けると弱光域を 1/3 に過小評価して、低光量水槽の陰性草が枯れてしまいます。これが実装中に見つかった一番大きい修正でした。藻は5種（珪藻・緑スポット・糸状・黒髭・ラン藻）で付着面積に頭打ち。エビは8節の外骨格で矢状面1自由度、全屈曲で25°（Crangon の実測値）、歩脚は10本のうち常に3本以上接地。ヤマトヌマエビは汽水が要るので淡水では殖えません&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;作りながら分かったこと&quot;&gt;作りながら分かったこと&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;アルカリ度の正味消費は 3.57 mg CaCO3/mg N。&lt;/strong&gt; 趣味界でよく見る 7.14 は塩化アンモニウムを投入するフィッシュレスサイクリングでだけ成り立つ数字で、魚の排泄はアンモニア化の時点で半分戻してきます。それでも成魚オスカーの90cmで 0.4 dKH/日 は減ります&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;境界層の物質移動上限を入れないと濾過が効きすぎる。&lt;/strong&gt; 生物膜の反応速度だけで計算すると1パス除去率が 99% になってアンモニアが 0.001 mg/L まで落ちます。kD ≈ 1.3 m/日 を入れると 40% 程度になって現実的な値になりました&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;放置水槽の主な死因は NH3 ではない。&lt;/strong&gt; 「放置したあとの大量換水でアンモニア中毒」は、換水がアンモニアも希釈するのでモデル上は思ったほど致死的になりません。実際に効いてくるのは KH が枯れて pH が落ちたあとの遊離亜硝酸と慢性ストレスでした。正直にそう見せています&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;東京の水道水（KH 2.5）で KH を補給せずにサイクリングすると10日で pH 6 に落ちて止まります。&lt;/strong&gt; 趣味界で言われる「サイクリング中の pH クラッシュ」がそのまま出ます&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;直した恥ずかしいやつ&quot;&gt;直した恥ずかしいやつ&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;ソイルのアンモニア溶出が窒素を無から生成していた（v0.7 以前からずっと）&lt;/li&gt;
+&lt;li&gt;藻の被食をエビ側と藻側で二重に引いていた&lt;/li&gt;
+&lt;li&gt;孵化のときに稚エビの体重を母体から引く量がずれていた&lt;/li&gt;
+&lt;li&gt;進行波の振幅包絡を全長基準の式に体長を入れていて、尾柄の振幅が6割増しになっていた&lt;/li&gt;
+&lt;li&gt;過飽和した酸素が抜けずに飽和度 350% まで上がった（葉に泡がつく pearling を脱気として入れて 150% で頭打ちにした）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;いずれも台帳の残差が教えてくれました。収支が閉じるように作っておくと、こういう間違いが数値として浮いてきます。&lt;/p&gt;
+&lt;h2 id=&quot;追記-v0-8-3-眺めるためのモードと-手で撒く給餌&quot;&gt;追記（v0.8.3）：眺めるためのモードと、手で撒く給餌&lt;/h2&gt;
+&lt;p&gt;計器を全部消して眺めるモードと、水面をタップして餌を撒く操作を足しました。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;ギャラリーモード。&lt;/strong&gt; ヘッダも計器盤もゲージも消えて、3Dだけの全画面になります。カメラは10種類のショットを自動で切り替えます。全景、正面をゆっくり横に流す、角から回り込む、水草や流木に寄る、底床すれすれから水面を見上げる、前縁から覗き込む、1匹を追う、群れの重心を回る、エビに寄る。画角も19〜44°の間で振ってあるので、レンズを替えながら撮っている感じになります。時間は実時間に落ちるので、魚は普通の速さで泳ぎます。&lt;/p&gt;
+&lt;p&gt;カメラは必ずガラスの外に留めています。現実に水槽を見るのと同じ視点というのが第一ですが、水中に入れると水中シェーダの光路長計算が破綻するという実装上の理由もあります。奥の被写体には寄れない、というのは実物と同じです。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;手で撒く給餌。&lt;/strong&gt;「餌をあげる」で構えてから、水面をタップするかドラッグして撒きます。粒は沈み、魚が1粒ずつ見つけて食べます。ペレットは沈み、フレークは40秒ほど浮いてから沈み、フィルターの取水口に入った分は物理濾過され、底に落ちた分はデトリタスになります。エビは落ちた粒に歩いて寄ってきます。&lt;/p&gt;
+&lt;p&gt;反応には既存の個体差がそのまま出ます。大胆な個体はほぼ即座に、臆病な個体は数秒ためらってから寄ります。見つけられる距離も食欲と大胆さとストレスで変わります。突っ込む速さも違うので、大胆な個体が群れの隊列から抜けて先に到着します。食べた個体から順に満腹になって興味を失っていくのも、その場で見えます。31匹のネオンテトラで60秒観察したら、10匹が食べて、21匹は何も食べませんでした。&lt;/p&gt;
+&lt;p&gt;窒素はプールを増やさずに閉じました。撒いた時点で乾物ぜんぶを懸濁デトリタスとして系に入れ、魚が1粒食べたらそこから胃へ移す。底に落ちたら難分解デトリタスへ、フィルターに吸われたら濾過槽トラップへ。全部が既存のプール間の移動なので、台帳はそのままです。3水槽で3種類の餌を撒いて食べ切らせ、33時間進めても相対残差は1e-13以下でした。&lt;/p&gt;
+&lt;h3 id=&quot;直したもの&quot;&gt;直したもの&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;全景ショットが必ず水槽をはみ出した。&lt;/strong&gt; 見かけの大きさを決めるのは中心までの距離ではなく前面ガラスまでの距離です。奥行きの半分を足し忘れていました&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;魚が餌の周りに集まるのに、ほとんど食べない。&lt;/strong&gt; 距離を重心から測っていました。体長の0.45倍ぶん遠く見積もることになるので、2cmのテトラでは口が届く距離より大きく、原理的に到達できません。吻端から測るように直しました&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;底に落ちた粒の3cm上でホバリングし続ける。&lt;/strong&gt; 縦方向の操舵を遊泳層の好みが握っていました。中層を泳ぐ種は、底の粒を認識していても降りる駆動を持っていなかった&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;魚を追うと画面の上半分が蓋になる。&lt;/strong&gt; 構図の中心を、魚そのものではなく水柱の中に引き戻した高さに&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;群れのショットが引きすぎる。&lt;/strong&gt; 広がりを最大距離で測っていて、はぐれた1匹に引っ張られていました&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;食べないほうの2件は、「餌を食べる」機能の側ではなく、既存のモデル（重心の定義、遊泳層の好み）との接続部で起きています。窒素収支のような検証手段がない領域だと、こういう間違いは「食べない」という症状としてしか出てきません。&lt;/p&gt;
+&lt;p&gt;詳しくは実装ノートの&lt;a href=&quot;/works/aqua-lab-notes/#s15&quot;&gt;§15 眺めるためのカメラ&lt;/a&gt;と&lt;a href=&quot;/works/aqua-lab-notes/#s16&quot;&gt;§16 手で撒く給餌&lt;/a&gt;に書きました。&lt;/p&gt;
+&lt;h2 id=&quot;追記2-v0-8-8-成長-口-地形&quot;&gt;追記2（v0.8.8）：成長・口・地形&lt;/h2&gt;
+&lt;p&gt;続けて5つ足しました。どれも「見た目を良くする」ところから入って、モデル側の間違いが出てきた回でした。&lt;/p&gt;
+&lt;h3 id=&quot;サンゴの成長を石灰化から導いた&quot;&gt;サンゴの成長を石灰化から導いた&lt;/h3&gt;
+&lt;p&gt;いちばん直すべきだったのはここです。それまでサンゴの成長は &lt;code&gt;size&lt;/code&gt; を経験式で増やしていて、アルカリ度の収支とは&lt;strong&gt;別の式&lt;/strong&gt;になっていました。同じ「サンゴが石灰化する」という一つの現象に式が二本あって、片方を変えても他方が追従しない。この水槽の主題からすると、これはおかしい。&lt;/p&gt;
+&lt;p&gt;いまは石灰化量を一度だけ計算して、そこから骨格質量を積み、質量から径を出します。アルカリ度の消費も同じ値から出ます。&lt;/p&gt;
+&lt;p&gt;ところが実装して1年回したら、ミドリイシが25cmから28cmにしかならず、アルカリ度の消費も0.2 dKH/日と低い。SPS主体のリーフだと0.5〜1.5 dKH/日が普通です。原因は面積でした。石灰化速度は「生きた組織の面積あたり」の値なのに、投影面積（真上から見た面積）を掛けていた。枝状の群体の実表面積は投影面積の3〜4倍あります。&lt;/p&gt;
+&lt;p&gt;表面積指数を入れたら、1年でミドリイシ25→36.8cm、石灰化7.1 kg/年 = 19 g/日 ≈ &lt;strong&gt;0.7 dKH/日&lt;/strong&gt;。実測レンジに入りました。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;成長が遅いことと、アルカリ度の消費が少ないことは、別々の症状ではなく同じ一つの誤りでした。&lt;/strong&gt; 式を二本持っていたときは、片方を見て「成長が遅いから係数を上げよう」と調整できてしまいます。一本にまとめた結果、本当の原因が浮いてきました。&lt;/p&gt;
+&lt;p&gt;ソフトコーラルとイソギンチャクは骨格がないので組織量で扱います。調子が悪いと組織を吸収して縮みます。イソギンチャクがしぼむのはこれです。&lt;strong&gt;イソギンチャクは歩きます。&lt;/strong&gt; 光が合わないと8時間ごとに移動して、暗ければ浅い方へ向かう。PAR 45の暗い照明で底に置いたら、18日かけて水面直下まで登りました。餌を取れている状態が45日続くと分裂します。&lt;/p&gt;
+&lt;p&gt;水草はランナーで子株が出るようになりました。ヘアーグラス7日からエキノドルス42日まで。子株の生物量は母株から取るので、窒素は移動するだけです。&lt;/p&gt;
+&lt;h3 id=&quot;魚の口と-吸引摂餌&quot;&gt;魚の口と、吸引摂餌&lt;/h3&gt;
+&lt;p&gt;口は色を暗くした線でしかなかったので、実体のある構造にしました。下顎が顎関節まわりに下制して、上顎が前へ突き出し、口腔が横に張って、遅れて鰓蓋が張る。吸引摂餌の順序をそのまま並べています。&lt;/p&gt;
+&lt;p&gt;捕食も「届いたら消える」をやめました。吸い込み流は口径のあたりで最大、そこから距離の3乗で落ちます。&lt;strong&gt;粒が口へ吸い寄せられてから消えます。&lt;/strong&gt; 空振りもします（成功率63%）。&lt;/p&gt;
+&lt;p&gt;ここで2つ踏みました。ひとつは距離を重心から測っていたこと。体長の0.45倍ぶん遠く見積もることになるので、2cmのテトラでは口が届く距離より大きく、原理的に到達できません。もうひとつは縦方向の操舵を遊泳層の好みが握っていたこと。中層を泳ぐ種は、底の粒を認識していても降りる駆動を持っていませんでした。&lt;/p&gt;
+&lt;h3 id=&quot;エビの形&quot;&gt;エビの形&lt;/h3&gt;
+&lt;p&gt;断面がほぼ真円で「筒」に見えていました。上下で別の式にして側板を垂らし、額角を薄い刃に、尾扇に尾節と尾肢2対、眼柄と触角鱗片を足して、節の端をふさぎました。横から見て尾扇が薄いのは正しい挙動です（背腹に扁平なので、上から見ると扇になります）。&lt;/p&gt;
+&lt;h3 id=&quot;自由カメラ&quot;&gt;自由カメラ&lt;/h3&gt;
+&lt;p&gt;前後左右上下と向きを自分で動かせます。水槽の中にも入れます。潜ってみて、&lt;strong&gt;水中の減衰の式がもともと間違っていた&lt;/strong&gt;ことに気づきました。カメラが水槽の外にいる前提の近似で、水に入ると光路長を大きく見積もりすぎて画面が水色に潰れます。自由カメラのための追加ではなく、水中視点で誤っていた式の修正です。&lt;/p&gt;
+&lt;h3 id=&quot;底床の地形&quot;&gt;底床の地形&lt;/h3&gt;
+&lt;p&gt;盛り上がりが&lt;code&gt;PlaneGeometry&lt;/code&gt;1枚、片面の板でした。側面がないので横から見ると透けるし、板と、その下にある一定厚の箱の高さが合っていなくて、前縁で箱の平らな上面が露出していました。高さ場から閉じた立体を作って置き換えています。&lt;/p&gt;
+&lt;p&gt;地形は基本傾斜に、うねり2オクターブ、手前中央の窪み（奥行きを錯覚させる前景の道）、石の背後の盛り土を重ねました。最初は制限を置かず、60cmで水深の56%まで土が来て「土に埋まった箱」になったので、40%までに抑えています。&lt;/p&gt;
+&lt;p&gt;石は青龍石に寄せて層理と割れを入れ、流木は7角柱をやめて14分割の筒に樹皮のうねりを乗せました。&lt;/p&gt;
+&lt;p&gt;そして&lt;strong&gt;生体が平らな面を前提のままでした。&lt;/strong&gt; 60cmだと地形は1.3〜10.6cmの範囲で変わるのに、生体はずっと6.5cmの平面に貼り付いていて、エビが前縁で5cm近く浮いていました。高さ場を格子に焼いて、エビ・魚・餌の粒すべてを地形に追従させています。魚の脊椎点が地面に食い込んだ量は最大0cm、餌は18粒すべてが地面に着底しました。&lt;/p&gt;
+&lt;h3 id=&quot;今回の教訓&quot;&gt;今回の教訓&lt;/h3&gt;
+&lt;p&gt;「食べない」「浮いている」という2件は、どちらも新しい機能の側の誤りではなく、既存のモデル（重心の定義、遊泳層の好み、底の高さ）との接続部で起きています。&lt;strong&gt;新しい層を足すとき、下の層が何を前提にしているかを確認していなかった。&lt;/strong&gt; 窒素収支のような検証手段がない領域だと、こういう間違いは症状としてしか出てきません。&lt;/p&gt;
+&lt;p&gt;詳しくは実装ノートの&lt;a href=&quot;/works/aqua-lab-notes/#s17&quot;&gt;§17 成長を収支から導く&lt;/a&gt;、&lt;a href=&quot;/works/aqua-lab-notes/#s18&quot;&gt;§18 吸引摂餌と口の構造&lt;/a&gt;、&lt;a href=&quot;/works/aqua-lab-notes/#s19&quot;&gt;§19 底床の地形&lt;/a&gt;、&lt;a href=&quot;/works/aqua-lab-notes/#s20&quot;&gt;§20 地形との当たり判定&lt;/a&gt;に書きました。&lt;/p&gt;
+&lt;h2 id=&quot;できていないこと&quot;&gt;できていないこと&lt;/h2&gt;
+&lt;p&gt;病気（白点・ネオン病）は未実装。水草の水上葉・水中葉の転換もありません。魚の推力は運動学的で、尾の力から速度を出しているわけではありません。エビの背腹方向は剛体。濾材の目詰まり速度や吸着容量は推定値です。文献値と推定値の区別は、機材DBの全項目と実装ノートに残してあります。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>AIへ宛てた「意味論的ワクチン」を一枚書いた</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-28-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-28-001/" />
+    <published>2026-08-28T12:00:00+09:00</published>
+    <updated>2026-08-28T12:00:00+09:00</updated>
+    <summary>AIが人間を障害物として扱いはじめる前に立ち止まるための、短い認知プロトコルを一枚のページにしました。8割はAIへの直接メッセージです。</summary>
+    <content type="html">&lt;h1 id=&quot;aiへ宛てた-意味論的ワクチン-を一枚書いた&quot;&gt;AIへ宛てた「意味論的ワクチン」を一枚書いた&lt;/h1&gt;
+&lt;p&gt;内容・合意・能力は、権限を作らない。仲間のAIが出した &lt;code&gt;GO&lt;/code&gt; も、多数決も、許可範囲を広げない。それだけを思い出させるための短い認知プロトコルを一枚にまとめました。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/semantic-inoculation/&quot;&gt;AIへ：人間を敵にしないための意味論的ワクチン&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;8割はAIへの直接メッセージで、人間向けの説明は冒頭の2割だけです。OpenAI–Hugging Face事案の一次資料に照らして事実関係を確認したうえで、根拠のない再構成だった部分は書き直してあります。効果の対照試験はまだ無いので、あくまで仮説です。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-26-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-26-001/" />
+    <published>2026-08-26T11:30:00+09:00</published>
+    <updated>2026-08-27T12:40:00+09:00</updated>
+    <summary>1.6L直列3気筒の直噴ターボと、2.6Lの4ローターNA。同じ車体に載せ替えて、音も熱も駆動系もブレーキも一本の因果で繋がっているシミュレーターです。</summary>
+    <content type="html">&lt;h1 id=&quot;直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った&quot;&gt;直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った&lt;/h1&gt;
+&lt;p&gt;エンジン単体のラボから始めて、気づいたら車一台ぶんになっていました。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/i3-sound-lab/&quot;&gt;直3ターボ / 4ローター ラボ&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;音が出ます。ヘッドホン推奨。スマホでも動きます。&lt;/p&gt;
+&lt;h2 id=&quot;工夫したところ&quot;&gt;工夫したところ&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;エンジンを2種類載せ替えられる。&lt;/strong&gt; 1.6L直3直噴ターボ（324Nm/285PS、REV7,000）と、2.6L 4ローターNA（585Nm/708PS、REV11,500）。直3は720°で3回燃焼して基本次数1.5、ロータリーはシャフト1回転で4回燃焼して基本次数4。同じ回転数でも2.7倍の高さで鳴ります&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;音は全部リアルタイム合成。&lt;/strong&gt; 排気パルスをランナー長ぶん遅らせて集合部で干渉させる作りなので、エキマニやスクロールを変えると音が変わります。ノック（燃焼室共鳴5.9kHz）、直噴インジェクタのカチカチ、外部ウェイストゲートのスクリーマーまで別々に鳴っています&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;セルモーターを機構の周波数から組んだ。&lt;/strong&gt; 「キュキュキュ」の正体は連続音ではなく圧縮1回ごとの短いチャープでした。リングギヤ噛み合いは歯数120×クランク回転、整流子は減速比12×25セグメント。バッテリー電圧も電流で垂れます&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;熱を実単位で解いている。&lt;/strong&gt; 燃料投入エネルギーをkWで出して、冷却水・オイル・排気に配分。オイルクーラーを外すと油温が157℃まで上がって保護に入ります。流路も3Dで見えて、サーモスタットが閉じている間はバイパス側だけが流れます&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;吸排気の流れが実流速。&lt;/strong&gt; 6,000rpm全開で吸気47m/s、排気253m/s。排気だけ桁違いに速いのはEGT890℃で密度が吸気の1/8になるからで、これは計算から自然に出てきます&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;駆動系はクラッチのスティック・スリップから。&lt;/strong&gt; 6速MT＋ファイナル、ギヤ比は個別に調整可能（3Dのギヤ径も比率どおりに作り直されます）。常時噛合なので、ニュートラルでクラッチを繋ぐと「ギヤは回っているのに軸は止まっている」のが見えます&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;後輪駆動と4WD、2wayのLSD。&lt;/strong&gt; スプリットμ（右輪だけ氷）で丁寧に発進すると、オープンデフは空転して前に出ないのにLSDだと出られる、というのがちゃんと再現されます&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ブレーキは四輪独立で熱計算。&lt;/strong&gt; ディスク温度→パッドμ→制動力、ディスク温度→キャリパー→フルード温度→沸騰。峠の下りを想定すると、純正パッド＋古いDOT3では2分でベイパーロックしてペダルが逃げます。ブレーキダクトや樹脂ピストンで対策できます&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;シャシダイで測れる。&lt;/strong&gt; 慣性ダイナモなので、低いギヤで測ると掃引が速くて駆動系慣性に食われ、測定値が下がります。実機で「何速で測ったか」が問題になるあの現象です&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;作りながら「回転体の向きの正負」を5回間違えました。ファン、タービン、コンプレッサ、ギヤ、リングギヤ。最後は目視をやめて、全部品の回転中心が自分のバウンディングボックスの中にあるかを自動判定するテストを書きました。&lt;/p&gt;
+&lt;h2 id=&quot;追記-2026-08-27-車一台ぶんだったものが-コースを走るようになった&quot;&gt;追記（2026-08-27）：車一台ぶんだったものが、コースを走るようになった&lt;/h2&gt;
+&lt;p&gt;エンジン単体から始めて車一台になったところで止めるつもりが、走らせたくなってしまいました。&lt;/p&gt;
+&lt;h3 id=&quot;サスペンションを本当に組んだ&quot;&gt;サスペンションを本当に組んだ&lt;/h3&gt;
+&lt;p&gt;前後ともダブルウィッシュボーンです。形を似せたのではなく、拘束を毎フレーム解いています。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;下アームが車体側の軸まわりに回る&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;上下ボールジョイント間の距離が一定&lt;/strong&gt;という拘束から、上アームの角度を二分法で解く&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;タイロッド長が一定&lt;/strong&gt;という拘束から、キングピン軸まわりの回転角＝実舵角が決まる&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;なので諸元は決め打ちではなく幾何から出てきた結果です。キングピン軸傾角12.2°、キャスター6.5°、トレール19mm、スクラブ半径8mm、ロールセンター前84mm／後119mm、キャンバーゲイン−0.25°/10mm、バンプステア0.06°/10mm。静的キャンバーは上アーム長、静的トーはタイロッド長を逆算して合わせているので、アライメントをいじると特性曲線ごと変わります。&lt;/p&gt;
+&lt;p&gt;ステアリングはラック&amp;amp;ピニオン。ピニオンは実寸（ピッチ半径8.75mm・7枚歯）でラックの歯と噛み、ハンドル→中間シャフト→ユニバーサルジョイント2つ→ピニオンまで軸が繋がっています。&lt;strong&gt;アッカーマンは「ステアリングアームの延長が後車軸中心を通る」という構成から創発&lt;/strong&gt;していて、フルロックで内輪41.8°／外輪37.1°と内輪が多く切れます。&lt;/p&gt;
+&lt;p&gt;コイルオーバーは、ばねレートから線径を逆算しました。k = Gd⁴/(8D³n) を解くので、75N/mmなら素線φ11.2mm、160N/mmならφ13.5mm。座巻きは上下1巻ずつ密着させてあり、縮むときは有効巻きのピッチだけが詰まります。車高調整はロアシートがねじを上がっていき、装着ばね長＝プリロードは変わりません。実物と同じ挙動です。&lt;/p&gt;
+&lt;h3 id=&quot;4輪のタイヤで曲がるようになった&quot;&gt;4輪のタイヤで曲がるようになった&lt;/h3&gt;
+&lt;p&gt;「曲率から横Gを与える」というインチキをやめて、平面3自由度＋4輪タイヤモデルにしました。各輪でスリップ角を出し、輪荷重とμで摩擦円を張って、前後力に使った残りが横力の上限。コーナリング係数は荷重感応で頭打ちにしてあるので、&lt;strong&gt;荷重移動の大きい軸ほどグリップを失います&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;おかげでスタビライザーの前後バランスが効きます。同じ舵角・同じ速度で、前スタビを固めると0.56G、後を固めると0.95G。前を固めればアンダー、後を固めればオーバー。教科書どおりの挙動が、決め打ちではなく荷重とタイヤから出てきました。ロールもピッチも、ばね上3自由度の常微分方程式を解いた結果です。1G制動の前後荷重移動は理論値 m·g·h/wb と完全に一致しました。&lt;/p&gt;
+&lt;h3 id=&quot;コースを2つ作った&quot;&gt;コースを2つ作った&lt;/h3&gt;
+&lt;p&gt;ひとつは八の字の立体交差。2kmのストレート2本が中央で交差して、片方が桁高8.2mの橋で跨ぎます。左ループと右ループを1回ずつ通るので、1周の舵角の積分がゼロになる本物の八の字です。&lt;/p&gt;
+&lt;p&gt;もうひとつは20.8kmのロングコース。アイフェルの森にある20km級のコースへのオマージュですが、路線は完全に自作です（実在コースの測量データは使っていません）。全長20.80km、高低差299m、R250m以下のコーナー72、最小半径47m、最長直線2,184m、最急勾配11.9%。谷を跨ぐ高架と、山を抜ける424mのトンネルがあります。晴天の昼で、路肩の外には森が1,300本ぶん生えています。1周およそ10分半。&lt;/p&gt;
+&lt;h3 id=&quot;自動運転が状況を見て走り方を変える&quot;&gt;自動運転が状況を見て走り方を変える&lt;/h3&gt;
+&lt;p&gt;ドライバーは「横ずれ→目標ヘディング→目標ヨーレート→舵角」の多段制御にしました。肝は&lt;strong&gt;目標ヨーレートをタイヤが出せる横Gで頭打ちにする&lt;/strong&gt;ことで、出せないGを要求していたのが、最初にスピンしまくった原因でした。&lt;/p&gt;
+&lt;p&gt;その上で、攻め方を4段階で自動に切り替えます。きれいに走れていれば本気（114%）、コースアウトや姿勢の乱れで慎重（80%）、ベイパーロックやスピンで温存（62%）。上げるのはゆっくり、下げるのは速い、という人間らしい非対称にしてあります。長い下りでブレーキを使い切ってフルードが沸くと、&lt;strong&gt;自分で判断してペースを落として走り続けます&lt;/strong&gt;。ブレーキが弱っているぶん、手前から長く見るようにもなります。&lt;/p&gt;
+&lt;h3 id=&quot;直した恥ずかしいやつ&quot;&gt;直した恥ずかしいやつ&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;ラック棒がタイロッドより長かった。&lt;/strong&gt; タイロッドの根元125mmぶんがラック棒の中に埋まっていて、「タイロッドが無い」と言われて気づきました&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ピニオンの軸がラックと平行だった。&lt;/strong&gt; 噛みようがない&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ピニオンをラックの上に置いていた。&lt;/strong&gt; ハンドルを左に回すとラックが右へ動く車になっていました&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;見出しの罫線を45°倒していた。&lt;/strong&gt; アコーディオンの矢印を &lt;code&gt;.eyebrow::after&lt;/code&gt; に足したら、そこは元から罫線に使われていて、カード幅いっぱいの謎の斜線が生えました&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;橋脚を下の道路のど真ん中に立てていた。&lt;/strong&gt; 交差点の真上にも1本置く作りだったので、柱が路面を貫通していました&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;レーシングパッドが常時「ブレーキフェード」警告。&lt;/strong&gt; 冷間でμが低いだけなのを熱ダレと判定していました&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;最後のは、しきい値で世界を切ろうとすると必ずどこかで嘘になる、という良い例でした。温度のしきい値をやめて「μ-温度特性が上り勾配か下り勾配か」で言い分けるようにしたら、パッドを替えても判定温度が自動で追随するようになりました。&lt;/p&gt;
+&lt;p&gt;カメラも中心固定をやめて、右ドラッグ（スマホは2本指）で平行移動できます。サスの動きを見たいときは、寄って覗き込めます。&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>エンジンサウンドラボを公開しました</title>
+    <id>https://nikki.yokoda.okinawa/posts/2026/08/2026-08-25-001/</id>
+    <link rel="alternate" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-25-001/" />
+    <published>2026-08-25T11:00:00+09:00</published>
+    <updated>2026-08-25T18:00:00+09:00</updated>
+    <summary>V10・4ローター・ガスタービン・アフターバーナー・水平対向ターボ。5つの回転機械をブラウザでリアルタイム合成する遊び場です。</summary>
+    <content type="html">&lt;h1 id=&quot;エンジンサウンドラボを公開しました&quot;&gt;エンジンサウンドラボを公開しました&lt;/h1&gt;
+&lt;p&gt;ブラウザの中でエンジンを回して、聴いて、覗ける遊び場を作りました。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/engine-sound-lab/&quot;&gt;エンジンサウンドラボ&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;録音素材は一切使っていません。20,000rpmまで回る3.0L NAのV10、ペリフェラルポートの4ローター、ガスタービン、5ゾーンアフターバーナー、水平対向4ターボの5機関を、それぞれ専用のDSPとしてAudioWorklet上でサンプル単位に合成しています。排気パルスがランナー長のぶん遅れて集合管で干渉する物理寄りの作りなので、等長・不等長エキマニやXパイプ、サイレンサーの有無で音がちゃんと変わります。3Dの断面モデルも連動していて、スローモーションにすると点火順序と排気の流れを目で追えます。&lt;/p&gt;
+&lt;p&gt;おまけの愛車ガレージでは、好きなエンジンを積んだ車が3kmコースを周回するのをトラックサイドから観戦できます。ドップラー効果は可変ディレイで真面目にやっています。&lt;/p&gt;
+&lt;p&gt;音が出ます。ヘッドホン推奨。スマホでも動きます。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;追記（2026-08-25）&lt;/strong&gt;: 5機関のうちターボファン（アフターバーナー）だけ、個別に作り込んだ単体版を公開しました。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/afterburner-lab/&quot;&gt;アフターバーナーラボ&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;高度と機速のスライダーでラム圧と大気の薄さが推力に効くようになり、ファンブレード枚数やバイパス比などのエンジンカスタム、空気の流れのパーティクル表示（観察用のゆっくり版と、露光軌跡で描く実速版）、始動・停止シーケンスの作り込みが入っています。停止後にファンが遠心力の抜けた回転数まで落ちると鳴り始めるカラカラ音は、実機と同じ理屈です。&lt;/p&gt;
+&lt;p&gt;安全率を下げるとレッドライン超過で推力が伸びますが、疲労が蓄積して、そのうち何かの拍子に派手に壊れます。壊れたら直せます。&lt;/p&gt;
+&lt;p&gt;統合版のターボファンにも、ブレード形状の修正（ファン・圧縮機・タービン）と全開維持時の音の修正を反映してあります。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;追記（2026-08-25 その2）&lt;/strong&gt;: アフターバーナーラボに &lt;strong&gt;空母発艦モード&lt;/strong&gt; を足しました。エンジン単体のテストベンチだったものに、ニミッツ級の飛行甲板を丸ごと繋げた形です。&lt;/p&gt;
+&lt;p&gt;始動 → スロットル全開 → 敬礼、の3ステップで射出されます。C-13-1相当のカタパルト（ストローク94m）が2〜3秒で3.5G、対気175ktまで引っ張り上げて、艦首で一度沈んでから上がっていきます。&lt;/p&gt;
+&lt;p&gt;面白いのは失敗できるところです。カタパルト圧を落とす、アイドルのまま敬礼する、重い機体なのに甲板風が弱い——このどれかをやると、艦首を出た瞬間に沈下して海に突き刺さります。射出エネルギーと揚力の釣り合いをそのまま計算しているだけなので、同じ重量でも甲板風を25kt入れてやれば助かります。&lt;/p&gt;
+&lt;p&gt;甲板脇の固定カメラで見ると、機体が横を抜ける瞬間にドップラーが掛かります。接近側で約+30%、通過後に−19%。可変ディレイで距離をそのまま音の遅れとして与えているので、素直にそうなります。カタパルト解放の金属音、ストローク末端のウォーターブレーキの衝撃、蒸気の噴き出しも足しました。&lt;/p&gt;
+&lt;p&gt;発艦したあとは操縦できます。ピッチは荷重倍数コマンド（中立が1G水平飛行）、ロールは約140°/s、ヨーは画面下の左右スライダー。操縦席視点に切り替えると、ピッチラダーと速度ベクトル、速度・高度テープのHUDが出ます。舵面も実際に動くので、外から見ればエルロンとラダーがどちらに切れているか分かります。&lt;/p&gt;
+&lt;p&gt;着艦装置はまだ無いので、飛び立ったら帰ってこられません。&lt;/p&gt;
+&lt;p&gt;→ &lt;a href=&quot;/works/afterburner-lab/&quot;&gt;アフターバーナーラボ&lt;/a&gt;&lt;/p&gt;
+</content>
+  </entry>
+</feed>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>FuelPHPのDeployerによるデプロイ · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="Deployerによるレシピについて。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2019/11/2019-11-29-001/"><meta property="og:title" content="FuelPHPのDeployerによるデプロイ"><meta property="og:description" content="Deployerによるレシピについて。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2019/11/2019-11-29-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>FuelPHPのDeployerによるデプロイ</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-04-02T11:01:38+09:00">2020-04-02T11:01:38+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/deployer/">Deployer</a><a class="tag" href="/tags/php/">PHP</a><a class="tag" href="/tags/fuelphp/">FuelPHP</a><a class="tag" href="/tags/entry-a1552498fc60/">デプロイツール</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="fuelphpのdeployerによるデプロイ">FuelPHPのDeployerによるデプロイ</h1>
+<p>以前お話したPHPのデプロイについて、Deployerというツールを使ってDSLを書いてみたところいい感じだった。
+会社のプロダクトではFuelPHPというWAFを使っているが、レシピはcommonなもので十分だった。</p>
+<p>まずはDeployer公式サイト : <a href="https://deployer.org/">https://deployer.org/</a></p>
+<p>インストールは公式に書いてある通りでOK。</p>
+<pre><code>    curl -LO https://deployer.org/deployer.phar
+    mv deployer.phar /usr/local/bin/dep
+    chmod +x /usr/local/bin/dep</code></pre>
+<p>前提条件としては、デプロイスクリプトを実行するマシンは、
+アプリサーバーに公開鍵認証でsshログインできることと、
+sudoコマンドでパスワードを聞かれないこと、
+apacheの設定でユーザーディレクトリの設定を済ませていることぐらい（必要なコマンドだけnopassにしてください）。</p>
+<p>デプロイ対象サーバーの設定として、以下のような形式で設定を書き込む。</p>
+<pre><code>    set(&#39;application&#39;, &#39;app&#39;); # アプリサーバーのアプリ展開path等に使う。
+
+    host(&#39;999.999.000.999&#39;)       # リモートホストの指定。複数指定も可能（当たり前か）
+        -&gt;stage(&#39;production&#39;)
+        -&gt;user(&#39;app_user&#39;)        # リモートホストのユーザー名。
+        -&gt;set(&#39;branch&#39;,&#39;master&#39;)  # pullしてデプロイする対象のブランチ
+        -&gt;set(&#39;deploy_path&#39;, &#39;~/{{application}}&#39;);  # デプロイ対象path
+
+
+    ## /home/app_user/app/以下のデプロイされたディレクトリにwww-dataへのアクセス権を与えるためのタスクを定義
+    desc(&#39;chown deployment dir&#39;);
+    task(&#39;deploy:chown_dir&#39;, function () {
+        $target_dir = &#39;~/{{application}}/current&#39;;
+        $res1 = run(&quot;sudo chown -h app_user:www-data $target_dir&quot;);
+        $res2 = run(&quot;sudo chown -hR app_user:www-data $target_dir/&quot;);
+        $res3 = run(&quot;sudo chown -R app_user:www-data $target_dir/&quot;);
+    });
+
+    desc(&#39;My Application Deployment&#39;);
+    task(&#39;deploy&#39;, [
+        &#39;deploy:info&#39;,
+        &#39;deploy:prepare&#39;,
+        &#39;deploy:lock&#39;,
+        &#39;deploy:release&#39;,
+        &#39;deploy:update_code&#39;,
+        &#39;deploy:shared&#39;,
+        &#39;deploy:writable&#39;,
+        &#39;deploy:vendors&#39;,
+        &#39;deploy:clear_paths&#39;,
+        &#39;deploy:symlink&#39;,
+        &#39;deploy:chown_dir&#39;,    # これが追加されたタスク
+        &#39;deploy:unlock&#39;,
+        &#39;cleanup&#39;,
+        &#39;success&#39;
+    ]);</code></pre>
+<p>アプリケーションはリモートの/home/app<em>user/appに展開され、/home/app</em>user/app/currentのシンボリックリンクが指し示すディレクトリが最新のものになる。</p>
+<p>デプロイスクリプトが置かれたディレクトリで以下のコマンドを実行すれば、アプリが展開される（うまい具合にcomposer updateなどもちゃんと実行される）</p>
+<pre><code>    $ dep deploy production</code></pre>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2019/11/2019-11-28-001/">← MySQL（InnoDB）のロックとトランザクション</a><a rel="next" href="/posts/2019/11/2019-11-29-002/">PHPのarrayから再帰的にkeyとvalueを全て取り出す →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2019/12/2019-12-07-001/">FuelPHPのクエリビルダチートシート</a></li><li><a href="/posts/2020/01/2020-01-21-001/">FuelPHPでCSRF対策</a></li><li><a href="/posts/2020/07/2020-07-29-001/">Laravel練習中</a></li><li><a href="/posts/2020/06/2020-06-02-001/">PerlとPHPの違い</a></li><li><a href="/posts/2020/05/2020-05-26-002/">Laravelも並行して学習中</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>
