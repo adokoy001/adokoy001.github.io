@@ -13,12 +13,12 @@
 .review-history{margin:26px 0;padding:18px 22px;border:1px solid var(--line);border-radius:8px;background:#fffdf8}.review-history h3{margin:0 0 12px;font-size:18px}.review-history td:first-child{white-space:nowrap}.log-sha{overflow-wrap:anywhere}@media(max-width:650px){.review-history{padding:16px 12px}.review-history table{font-size:12px}.review-history th,.review-history td{padding:9px 6px}}
 .positive-comparison{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}.positive-comparison>div{border-left:2px solid #95b4a2;padding-left:14px}.positive-comparison span{display:block;font-size:12px}.positive-comparison strong{display:block;font-size:32px;color:var(--teal)}#full-noise-verdict{font-size:15px}.revision-note{padding:12px 16px;background:#e9f0e8;border-left:3px solid var(--teal);font-size:14px}.proof-route{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}.proof-route>div{padding:16px;background:#edf3ec;border-radius:6px;font-size:13px}.proof-route b{display:block;margin-bottom:7px}@media(max-width:650px){.proof-route{grid-template-columns:1fr}.positive-comparison{gap:10px}.positive-comparison span{font-size:11px}.positive-comparison strong{font-size:29px}#round6 .table-wrap td{overflow-wrap:anywhere}}
 </style></head><body><noscript><p class="noscript-note">図の操作にはJavaScriptを有効にしてください。説明・証明・文献はそのまま読めます。</p></noscript><header class="reader-hero" id="start">
-<div class="eyebrow">横田さん × AI · 数学探索ノート · 2026 09 20 ／ 更新 2026 09 21</div>
+<div class="eyebrow">横田さん × AI · 数学探索ノート · 2026 09 20 ／ 更新 2026 10 03</div>
 <h1>見えない内部は、<br>どこまで減らせる？</h1>
 <p class="hero-lead">同じ熱の応答を、もっと小さな模型で再現したい。<br>そのとき「数式では3状態、物理的には4個必要」という差が現れる。</p>
 <p>熱の動きを観察し、測定を行列へ変え、減らせない理由をたどる。図を操作しながら読める研究ノートです。</p>
-<div class="hero-actions"><a class="action" href="#lesson-1">最初から読む <span aria-hidden="true">↓</span></a><a href="#lesson-8">成果と新規性を先に見る</a></div>
-<div class="hero-foot">本文の目安：10〜15分 <span>／</span> 証明・文献67件・再現コードまで、この1ページに収録</div>
+<div class="hero-actions"><a class="action" href="#lesson-1">最初から読む <span aria-hidden="true">↓</span></a><a href="#lesson-8">成果と新規性を先に見る</a><a href="#round8-sharp">新成果：最少85状態の理由へ</a></div>
+<div class="hero-foot">本文の目安：15〜20分 <span>／</span> 証明・文献73件・再現コードまで、この1ページに収録</div>
 </header>
 <nav class="reader-nav" aria-label="読む順番"><a href="#lesson-1">1 熱の記憶</a><a href="#lesson-2">2 測定</a><a href="#lesson-3">3 行列</a><a href="#lesson-4">4 状態数</a><a href="#lesson-5">5 限界</a><a href="#lesson-6">6 誤差</a><a href="#lesson-7">7 応用</a><a href="#lesson-8">8 到達点</a></nav>
 <main class="reader-main">
@@ -142,16 +142,775 @@
 <section class="lesson" id="lesson-8">
 <div class="step-kicker">08 / TAKE STOCK</div><h2>分かったことと、まだ分からないこと。</h2>
 <p>到達点は、<strong>既知の幾何定理から、状態数を判定する鋭い数式を導き、誤差のある有限時間測定へつないだ</strong>ことです。証明の有無と、学術的に初めてかどうかは別に評価しています。</p>
-<div class="status-table"><table><thead><tr><th>内容</th><th>現在の位置づけ</th></tr></thead><tbody><tr><td>H₀の「通常ランク3／CPランク4」、Hρの境界、基礎の幾何定理</td><td><span class="status-label known">既知</span>先行研究へ帰属。</td></tr><tr><td>三集約値の最良境界、五値による11/62下界、有限時間の熱流下限</td><td><span class="status-label derived">証明を記録</span>今回導出・独立監査。同じ式の先取性は未確定。</td></tr><tr><td>ρ=0.4で既存SDPの一つは下界3に留まり、今回の式は3状態を排除</td><td><span class="status-label derived">厳密比較</span>有理数の証明書を検算。既存手法全体より強いとは言わない。</td></tr><tr><td>ゼロ結合を許すかで異なる最少数：境界では3と4</td><td><span class="status-label known">既知結果の具体化</span>CP-plusランクで説明。近似誤差下限とは区別。</td></tr><tr><td>一次遅れの補正、一定ゲインの相殺、測定誤差の区間伝播</td><td><span class="status-label derived">証明を記録</span>モデル条件を明示した代数的な拡張。実機検証は未実施。</td></tr><tr><td>最小近似誤差そのもの、実機での有効性、未読文献との重複</td><td><span class="status-label open">未解決・未確認</span>次の検証対象。</td></tr></tbody></table></div>
+<div class="status-table"><table><thead><tr><th>内容</th><th>現在の位置づけ</th></tr></thead><tbody><tr><td>H₀の「通常ランク3／CPランク4」、Hρの境界、基礎の幾何定理</td><td><span class="status-label known">既知</span>先行研究へ帰属。</td></tr><tr><td>三集約値の最良境界、五値による11/62下界、有限時間の熱流下限</td><td><span class="status-label derived">証明を記録</span>今回導出・独立監査。同じ式の先取性は未確定。</td></tr><tr><td>ρ=0.4で既存SDPの一つは下界3に留まり、今回の式は3状態を排除</td><td><span class="status-label derived">厳密比較</span>有理数の証明書を検算。既存手法全体より強いとは言わない。</td></tr><tr><td>ゼロ結合を許すかで異なる最少数：境界では3と4</td><td><span class="status-label known">既知結果の具体化</span>CP-plusランクで説明。近似誤差下限とは区別。</td></tr><tr><td>一次遅れの補正、一定ゲインの相殺、測定誤差の区間伝播</td><td><span class="status-label derived">証明を記録</span>モデル条件を明示した代数的な拡張。実機検証は未実施。</td></tr><tr><td>定常結合を厳密に保つ二窓の集団測定での最少内部容量数（例：n=10、ε/c₀=0.05で85個）</td><td><span class="status-label derived">証明を記録</span>下限と構成が一致。指定したT・τの測定条件に限る。<a href="#round8-protocol-scope">適用範囲</a></td></tr><tr><td>最小近似誤差そのもの、実機での有効性、未読文献との重複</td><td><span class="status-label open">未解決・未確認</span>次の検証対象。</td></tr></tbody></table></div>
 <h3>最小の誤差は、まだこの間にある。</h3><p>H₀から3行以下の非負因子で作れる行列までの、最大成分誤差の最小値をD₃とします。</p><div class="formula">11/62 ≤ D₃ &lt; 0.196676467057347</div><div class="plot" id="distance-plot" role="img" aria-label="最小誤差の下限が62分の11、厳密上界が約0.1966765で、その間の値は未決定"></div>
 <p>上側は具体的な近似行列の構成から、下側は<strong>各成分の上下限を使った新しい評価</strong>から得ています。以前の1/6から約6.45%強まりましたが、元の行列へ最も近い3状態模型まで決定したわけではありません。</p>
-<p>本ノートの局所探索では約0.196676467を得ており、追加査読でも同じ値が繰り返し得られたと報告されています。<strong>下界をこの値へ近づける方向が有望</strong>という数値的な手掛かりです。ただし、よりよい近似が存在しないことの証明ではありません。</p>
+<p>本ノートの局所探索では約0.196676467を得ており、追加査読でも同じ値が繰り返し得られたと報告されています。<strong>この値へ下界を近づけることは残る数学的課題</strong>という数値的な手掛かりです。ただし、よりよい近似が存在しないことの証明ではありません。</p>
 <p>新たにBomze–Dickinson–Stillの公開著者稿を本文照合し、正距離の存在や正因子化の一般論を既知結果へ帰属しました。追加リストの古典回路論文・2026年公開の角度条件論文・書籍の中心本文は未取得です。具体的な式と手順の先取性は未確定です。<a href="#round6-literature">照合の詳細</a></p>
 <div class="takeaway">役立つ問いは、「小さくできたか」だけでなく、<strong>「その制約と精度のままで、これ以上小さくできるのか」</strong>。このページは、その限界を確かめる方法と、検証可能な証拠をまとめたものです。</div>
-<div class="end-links"><a href="#technical-notes">証明・研究履歴・文献へ ↓</a><a href="#start">先頭へ ↑</a></div>
+<div class="end-links"><a href="#theory-path">次へ：大きな目的と理論化 →</a><a href="#technical-notes">証明・研究履歴・文献へ ↓</a><a href="#start">先頭へ ↑</a></div>
 </section>
 
-<section class="appendix-intro" id="technical-notes"><div class="step-kicker">VERIFY / 詳細を検証する</div><h2>証明、出典、再現コード。</h2><p>ここからは専門的な記録です。本文の説明に対応する詳細を開けます。探索途中の数値と判断は、当時の記録として保持しています。<strong>現在の到達点は第8章と「最新の証明」を優先</strong>してください。</p><div class="review-history" id="bound-history"><h3>数値の変遷 — 現在の下限は1/6</h3>
+<section class="lesson" id="theory-path">
+<div class="step-kicker">RESEARCH DIRECTION / 2026 09 22</div><h2>何を保存するかが、減らせる限界を変える。</h2>
+<p class="intro">最初の目的は、現実の複雑な物体を、どこまで小さな模型に置き換えられるかを知ることでした。ここからは、4境界の数値を改善する段階を進め、<strong>境界の数・許容誤差・保存する物理条件の関係</strong>を調べます。</p>
+<p>今回の中心命題は、<strong>定常応答を厳密に保存する場合には、誤差を許した過渡応答にも二乗規模の内部状態が必要になる例がある</strong>ことです。定常応答にも誤差を許すと、既知の疎化定理によって大幅に減らせます。これは一般の物体すべてに二乗の下限があるという主張ではありません。</p>
+<div class="status-table"><table><thead><tr><th>同じ対象に課す条件</th><th>この族での結論</th></tr></thead><tbody>
+<tr><td>符号を自由に使い、全応答を厳密再現</td><td>通常の最小次数は <b>2n−1</b></td></tr>
+<tr><td>熱回路として全応答を厳密再現</td><td>最少内部容量数は <b>n²</b></td></tr>
+<tr><td>定常応答を厳密保存し、集団加熱の過渡応答には一定の誤差を許す</td><td>必要数はなお <b>少なくとも定数×n²</b></td></tr>
+<tr><td>定常・過渡の両方に相対尺度 δ の誤差を許す</td><td>既知の構成で <b>O(n/δ²)</b> 個にできる</td></tr>
+</tbody></table></div>
+<p class="small-note">nは左右それぞれの境界数で、合計2n境界。第3行は今回の下界、第4行はBSS疎化定理の応用です。第3行の集団測定の誤差と、第4行の全周波数の作用素誤差は異なる定義です。以下で両方を固定します。<a href="#round7-proof">命題と証明</a></p>
+
+<p class="callout small-note"><strong>2026 09 29の追記：</strong>下の図は従来の一般下界です。定常応答を厳密に保つ場合には、<a href="#round8-sharp">次節で下界と構成が一致し、最少個数まで決まりました</a>。</p><div class="lab" id="round7-lab"><div class="lab-title">境界を増やすと、下限はどう変わる？</div>
+<p>左右それぞれnか所。右側をすべて同じ温度だけ上げ、左側の<strong>熱流の平均</strong>を測ります。必要な定常結合の情報は、設計仕様などで別に与えられているものとします。各境界の温度振幅は固定ですが、全体の加熱資源まで固定した比較ではありません。</p>
+<label class="range-label" for="theory-n">各側の境界数 n <output id="theory-n-out">10</output></label><input id="theory-n" type="range" min="2" max="60" step="1" value="10">
+<label class="range-label" for="theory-eps">二窓の集団応答に許す誤差 ε/c₀ <output id="theory-eps-out">0.050</output></label><input id="theory-eps" type="range" min="0" max="0.4" step="0.005" value="0.05">
+<label class="range-label" for="theory-static">各交差結合の定常上限に追加する幅 β <output id="theory-static-out">0.000</output></label><input id="theory-static" type="range" min="0" max="0.1" step="0.001" value="0">
+<p class="small-note">β=0は定常結合の元の上限。β&gt;0では交差結合の上限をλc₀(1/n+β)へ緩めます。<strong>同じ側の定常結合のゼロは保つ</strong>比較です。そこにも誤差を許す場合は、後述の漏れを含む評価が必要です。</p>
+<div class="bounds-row"><div><span>全応答の通常最小次数</span><b id="theory-linear">19</b></div><div><span>全応答の厳密な物理最小数</span><b id="theory-exact">100</b></div><div><span>現在の条件での物理下限</span><b id="theory-lower">28個以上</b></div></div>
+<div class="plot" id="theory-plot" role="img" aria-label="境界数に対して一次で増える通常次数と二次で増える物理的必要数の比較"></div>
+<div class="legend"><span style="color:#a98a47">破線：厳密な物理最小数 n²</span><span style="color:#0a7166">緑：現在の条件の下界</span><span style="color:#ab4f2e">橙：通常次数 2n−1</span></div><p class="live-note" id="theory-note" aria-live="polite"></p><p class="small-note">この緑の線は従来の一般下界です。定常応答を厳密に保つ場合の最少個数は、<a href="#round8-sharp">次節のラボ</a>で計算できます（n=10、0.05では28ではなく85）。</p>
+<p class="small-note">合成例。容量尺度c₀、緩和率λ。温度の時間微分が三角形になる立上りを0.2/λ秒かけて行い、0.1/λ秒待機、各窓1/λ秒。α=e<sup>−0.1</sup>[(1−e<sup>−0.1</sup>)/0.1]²(1−e<sup>−1</sup>)²。表示は必要数の下限で、最適近似模型の個数ではありません。誤差には測定・積分・補正・許容近似を含めます。</p></div>
+
+<div class="takeaway">使い道は、模型が小さくならない原因を見分けることです。<strong>設計で保存したい定常結合が、削減を妨げているのか。それを少し変えれば、小さな模型を作れるのか。</strong>この二つを同じ対象について比較できます。</div>
+<h3>新理論へ進むための、次の中心問題。</h3>
+<p>候補となる研究の軸は、<strong>「指定した物理条件と実験精度の下での最少状態数」</strong>です。誤差εだけでなく、入力の組み合わせ、観測時間、定常結合の許容幅も引数に持たせます。名前を付けたこと自体を新規性とは数えません。</p>
+<p>今回、一般グラフでの下界と、ゼロ結合に漏れがある場合の補正まで証明を記録しました。この時点での課題だった<strong>下界に近い模型の構成</strong>と有限精度への補正は、<a href="#round8-sharp">次節で進展しました</a>。熱伝導データで既存の削減法と比較する実証は残っています。小信号の範囲では非線形熱回路にも橋を架けられますが、カオスの予測限界を得たわけではありません。</p>
+<p class="small-note">数学的状態：証明を記録し、独立に監査。学術的新規性：未確定。既知のCPランク・Kron縮約・BSS疎化を使い、今回の差分候補を「定常結合の上限＋有限時間の集団測定による近似次数下界」に絞っています。<a href="#round7-prior">先行研究との対応</a></p>
+
+<details class="aside" id="round7-proof"><summary>中心命題の正確な条件と証明を読む</summary>
+<h3>1. 対象と、数えるもの</h3>
+<p>正の対角内部容量C、非負の相反伝導、r個の内部状態、境界から到達できる安定な内部部分を持つ熱回路を考える。Q=C⁻¹ᐟ²L<sub>II</sub>C⁻¹ᐟ²は正定値Stieltjes行列、B=C⁻¹ᐟ²(−L<sub>IB</sub>)≥0。定常応答をK=L<sub>BB</sub>−BᵀQ⁻¹Bとする。境界容量は数えず、立上り完了後の窓でその直接微分項を除く。</p>
+<p>c₀&gt;0、λ&gt;0、n≥2とし、Jはn×n全1行列、</p>
+<div class="eq small">H̄ = [ I　J/n ; J/n　I ]<br>L = [ I　−J/n ; −J/n　I ]<br>K = λc₀L,　Y(s) = K + sλc₀H̄/(s+λ).</div>
+<p>各交差辺に1個、容量4c₀/n、両端への伝導率2λc₀/nの星を置けば、この応答を実現する。総容量は4nc₀、各境界の伝導率の合計は2λc₀で、境界当たりの資源をnとともに増やしてはいない。ただし個々の部品値は1/nで小さくなり、製造できる最小部品値は仮定していない。H̄は通常ランク2n−1。非負因子の各行は左右各1点までしか同時に支えられず、n²交差辺があるのでCPランクn²。このCPランクは既知の例でもある。<a href="#ref70">[70]</a> 従来の単一緩和率の実現命題から、厳密な物理最小数もn²である。</p>
+<h3>2. 任意の緩和率を持つ候補に対する下界</h3>
+<p>候補模型の緩和率や内部接続は、目標と一致させなくてよい。理想ステップの過渡行列をM(t)=BᵀQ⁻¹e<sup>−Qt</sup>Bと置くと、成分ごとに</p>
+<div class="eq small">M(t)≥0,　M′(t)=−Bᵀe<sup>−Qt</sup>B≤0,<br>0≤Mᵢⱼ(t)≤Mᵢⱼ(0)≤−Kᵢⱼ　(i≠j).</div>
+<p>最後の不等式はM(0)=L<sub>BB</sub>−KとL<sub>BB,ij</sub>≤0による。Kを保存すると、同じ側の非対角成分は0、交差成分はλc₀/n以下である。</p>
+<p>理想ステップ後t&gt;0の二窓差DはFᵀFで、F=e<sup>−Qt/2</sup>[∫₀ʰe<sup>−Qs</sup>ds]B≥0。従ってcp-rank(D)≤r。また0≤Dᵢⱼ≤h(−Kᵢⱼ)。自己畳み込みによる有限立上りにも、<a href="#round3">既述の非負因子分解</a>と、M(0)以下の正の平均であることから同じ結論が成立する。</p>
+<p>同じ側の非対角が0なので、Fの各行は交差辺を高々1つしか担当できない。正の交差成分の数をmとするとm≤cp-rank(D)≤r。集団応答d=(1/n)Σ<sub>i∈左,j∈右</sub>Dᵢⱼについて、</p>
+<div class="eq small">d ≤ r hλc₀/n².</div>
+<p>これは右側すべてに単位温度を入力し、左側の熱流を平均して二窓差を取った値である。n²成分の平均ではなく、交差成分の総和をnで割っている。定常Kの情報が別に必要であり、これだけの実験で全定常結合まで分かるとは主張しない。</p>
+<p>目標ではD*=c₀αH̄、d*=c₀α。|d−d*|≤εを要求するすべての候補は、</p>
+<div class="eq">r ≥ n²(α−ε/c₀)₊/(λh).</div>
+<p>ここでx₊=max(x,0)。理想ステップならα=e<sup>−λt</sup>(1−e<sup>−λh</sup>)²。長さTの一様分布と自身の畳み込みを温度微分に使い、2Tで立上りを完了、τ待機する場合はα=e<sup>−λτ</sup>[(1−e<sup>−λT</sup>)/(λT)]²(1−e<sup>−λh</sup>)²。αとλhを固定しε/c₀&lt;αなら、下界はn²に比例する。□</p>
+<h3>3. 定常結合の許容幅を変える</h3>
+<p>同じ側のゼロを保ち、交差成分について−K̃ᵢⱼ≤λc₀(1/n+β)だけを要求する場合は、同じ証明で</p>
+<div class="eq small">r ≥ n²(α−ε/c₀)₊ / [λh(1+nβ)].</div>
+<p>固定したβ&gt;0では、この下界は大きなnに対して一次の規模へ弱まる。これは下界の変化であり、同じ個数で構成できるという十分条件ではない。</p>
+<h3>4. 定常応答も近似してよければ、小さい構成がある</h3>
+<p>S=diag(I,−I)と置くとH̄=SLS。既知のBSS定理から、0&lt;δ&lt;1に対し、元の交差辺を重み付きで選んだL̃が存在し、(1−δ)L≼L̃≼(1+δ)L、辺数≤⌈4(2n−1)/δ²⌉となる。H̃=SL̃S、K̃=λc₀L̃を同じ星構成へ戻す。</p>
+<div class="eq small">r ≤ min{ n², ⌈4(2n−1)/δ²⌉ },<br>‖K̃−K‖₂ ≤ 2λc₀δ,<br>sup<sub>ω∈ℝ</sub> ‖Ỹ(iω)−Y(iω)‖₂ ≤ 4λc₀δ.</div>
+<p>‖L‖₂=‖H̄‖₂=2と|iωλ/(iω+λ)|≤λから最後の式が従う。選ばれた辺の重みは元より大きくなり得るため、K厳密保存の場合の下界とは矛盾しない。固定δに対してO(n/δ²)個だが、有限nでは表示した上界がn²を下回るとは限らない。BSSを新しい結果とは扱わず、この物理族への応用として帰属する。<a href="#ref68">[68]</a></p>
+</details>
+
+<details class="aside" id="round7-general"><summary>一般の結合グラフと、小さな漏れまで拡張する</summary>
+<h3>一般の定常結合グラフ</h3>
+<p>κᵢⱼ=−Kᵢⱼ&gt;0の辺からなるグラフGを考える。二窓行列Dの非負因子1行の支持はGのクリーク（全頂点対が辺で結ばれた集合）である。よってr状態の動的応答が使える辺は、高々r個のクリークの和集合に含まれる。</p>
+<p>辺ごとの非負重みwₑを指定し、Γᵣを「高々r個のクリークの和集合に入る辺のΣwₑκₑの最大値」と定めると、</p><div class="eq small">Σₑ wₑDₑ ≤ h Γᵣ.</div>
+<p>各辺のDₑ≤hκₑを、因子が使う辺の和集合で足せばよい。三角形のないグラフでは、Γᵣはwₑκₑの大きい順r辺の和になる。一般グラフでのΓᵣの計算が効率的とは主張しない。クリーク制約の基礎は既知の非負因子・Kron縮約の構造である。<a href="#ref69">[69]</a></p>
+<h3>同じ側のゼロにも漏れがある場合</h3>
+<p>DがCPで、二群U,Vに分かれるとする。S<sub>UV</sub>=Σ交差成分、T<sub>U</sub>,T<sub>V</sub>=各群の対角総和、W<sub>U</sub>,W<sub>V</sub>=各群の非対角総和とする。Wは順序付きの和で、対称な一つの辺を2回数える。b&gt;0が交差成分の共通上限なら、</p>
+<div class="eq small">S<sub>UV</sub> ≤ rb + √(T<sub>U</sub>W<sub>V</sub>)<br>+ √(T<sub>V</sub>W<sub>U</sub>) + √(W<sub>U</sub>W<sub>V</sub>).</div>
+<p>証明：因子1行のU部分をu≥0、m=max uᵢ、a=Σuᵢ−mとすると、wᵤ=(Σuᵢ)²−‖u‖²≥(Σuᵢ)a≥a²。V側も同様。行ごとの交差総和を、最大座標同士の積と残り3項へ展開する。最大同士の積はb以下、残りを行方向にCauchy–Schwarzで合計すれば上式を得る。□</p>
+<p>従って左辺の下限から平方根3項の上限を引き、bの上限で割れば状態数下界になる。b=0なら交差総和も0であり、交差信号からは下界を出せない。正の信号とb=0が同時に保証されるなら、模型クラスとの不整合である。実測で使うには対角総和の上限など追加情報が必要で、集団加熱1回だけでは全てそろわない。</p>
+<h3>非線形模型への限定的な橋</h3>
+<p>正の対角容量と、瞬時・相反・受動的な辺の熱流則を持つ滑らかな非線形回路を、一様平衡の周りで線形化すると同じ構造を得る。そのため、r状態で上の一次応答を再現できない場合、非線形化だけで誤差をo(a)へ消すことはできない（aは入力振幅）。有限振幅の保証aγ−Ma²には二階変動の上界Mが必要で、全模型へ共通に言うなら共通のMを仮定する。これは標準的な線形化の系で、一般受動モデルや非線形カオス全体への下界ではない。</p>
+</details>
+
+<details class="aside" id="round7-prior"><summary>何が既知で、どこが今回の差分候補か</summary>
+<p><strong>既知：</strong>非負実現で通常次数より多い状態が必要になること、二部グラフのCPランク、時間Hankel因子からの次数下界、Kron縮約後のクリーク構造、BSSによる疎化。Kordaらの§4.2 Lemma 13・式(51)はCP支持の被覆による下界を既に扱い、Example 14は完全二部グラフのn²を示す。重み付き被覆という整理も既存の因子数下界の自然な具体化であり、独立した新理論とは数えない。<a href="#ref70">[70]</a></p>
+<p><strong>今回の差分候補：</strong>固定した定常結合の成分別上限から、有限立上り・有限二窓の集団測定に対し、候補の緩和率を固定せずに得る近似次数の下界。一般グラフの重み付き評価と、同群成分への漏れを含む不等式も、今回導出した命題として記録する。数学的証明と学術的な初出の判定は別である。</p>
+<p>公開本文ではBSSのTheorem 1.1・3.1、Dörfler–BulloのarXiv v1 Theorem 6を照合した。既存の正値実現理論には、Hankel非負因子だけでは同じ次数の時間発展を実現できない例もある。時間データを増やすだけで実現の必要十分条件が得られる、という拡張は採用しなかった。</p>
+<p><strong>残る重要な検証：</strong>古典的な接地容量RC合成・最小性の未取得本文、制約付き近似次数に関する別表現の結果、現実の熱回路データとの比較。全ての近似ノルムや物理模型に対する一般理論が完成したとは主張しない。形式証明、外部の専門家による査読、実機実験は未実施。</p>
+</details>
+<details class="aside" id="round7-repro"><summary>独立数値検証と再現コード</summary><p>250個の物理ネットワークで、理想ステップと有限立上りの計500条件を確認。さらに一般CP因子750例と境界例5例で漏れの不等式を確認した。解析的証明が主であり、有限検査は証明や新規性の判定を代用しない。</p><p>Python 3、NumPy、SciPyを使用。コードを実行すると全例のJSONを生成する。</p><button data-round6-download="round7-code" data-filename="round7_verify.py">検証コードを保存</button><pre id="round7-code">#!/usr/bin/env python3
+&quot;&quot;&quot;Independent finite-dimensional checks for the Round 7 fixed-K certificate.
+
+These reproducible numerical checks are not proofs.  The physical generator
+builds conductances and diagonal capacities before forming Q and B.  No target
+CP factor is used to construct the physical cases.
+
+Definitions: U,V each contain n boundary ports; S = sum(D[U,V]); d = S/n is
+the average left output when all right inputs have amplitude one.  It is not
+the average over n**2 matrix entries.  W_U and W_V are ORDERED off-diagonal
+sums in their respective principal blocks.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import json
+import math
+from pathlib import Path
+
+import numpy as np
+from scipy.linalg import block_diag, eigh, expm, solve
+
+
+SEED = 20260922
+RNG = np.random.default_rng(SEED)
+TOL = 2e-8
+
+
+def laplacian_from_edges(size, edges):
+    out = np.zeros((size, size))
+    for i, j, g in edges:
+        out[i, i] += g
+        out[j, j] += g
+        out[i, j] -= g
+        out[j, i] -= g
+    return out
+
+
+def physical_case(index, approximate=False):
+    n = int(RNG.integers(1, 7))
+    lam = float(10 ** RNG.uniform(-1, 1))
+    kappa = lam / n
+    delta = float(kappa * RNG.uniform(0.001, 0.3)) if approximate else 0.0
+    kcross = (kappa + RNG.uniform(-delta, delta, (n, n))
+              if approximate else np.full((n, n), kappa))
+    num_components = 0 if index == 0 else int(RNG.integers(1, 13))
+    comps = []
+    for _ in range(num_components):
+        i, j = map(int, RNG.integers(0, n, 2))
+        size = int(RNG.integers(1, 5))
+        caps = 10 ** RNG.uniform(-1, 1, size)
+        internal = laplacian_from_edges(size, [
+            (a, a + 1, float(10 ** RNG.uniform(-1, 1)))
+            for a in range(size - 1)
+        ])
+        spokes = np.zeros((size, 2))
+        if RNG.random() &lt; 0.5:
+            spokes[0, 0] = 10 ** RNG.uniform(-1, 1)
+            spokes[-1, 1] = 10 ** RNG.uniform(-1, 1)
+        else:
+            spokes = 10 ** RNG.uniform(-1, 1, (size, 2))
+        lint = internal + np.diag(spokes.sum(axis=1))
+        cross0 = float((spokes.T @ solve(lint, spokes, assume_a=&quot;pos&quot;))[0, 1])
+        comps.append(dict(i=i, j=j, size=size, caps=caps, lint=lint,
+                          spokes=spokes, cross0=cross0))
+    for i in range(n):
+        for j in range(n):
+            chosen = [c for c in comps if c[&quot;i&quot;] == i and c[&quot;j&quot;] == j]
+            if not chosen:
+                continue
+            weights = RNG.dirichlet(np.ones(len(chosen)))
+            occupancy = 1.0 if index % 13 == 0 else float(RNG.uniform(0.02, 0.98))
+            for c, weight in zip(chosen, weights):
+                alpha = occupancy * kcross[i, j] * weight / c[&quot;cross0&quot;]
+                c[&quot;lint&quot;] *= alpha
+                c[&quot;spokes&quot;] *= alpha
+    r = sum(c[&quot;size&quot;] for c in comps)
+    if r:
+        lint = block_diag(*(c[&quot;lint&quot;] for c in comps))
+        caps = np.concatenate([c[&quot;caps&quot;] for c in comps])
+        spokes = np.zeros((r, 2 * n))
+        offset = 0
+        for c in comps:
+            sl = slice(offset, offset + c[&quot;size&quot;])
+            spokes[sl, c[&quot;i&quot;]] = c[&quot;spokes&quot;][:, 0]
+            spokes[sl, n + c[&quot;j&quot;]] = c[&quot;spokes&quot;][:, 1]
+            offset += c[&quot;size&quot;]
+        cinvhalf = 1 / np.sqrt(caps)
+        Q = cinvhalf[:, None] * lint * cinvhalf[None, :]
+        B = cinvhalf[:, None] * spokes
+        M0 = B.T @ solve(Q, B, assume_a=&quot;pos&quot;)
+        poles, eigenvectors = eigh(Q)
+        assert poles[0] &gt; 0
+    else:
+        Q, B = np.empty((0, 0)), np.empty((0, 2 * n))
+        M0 = np.zeros((2 * n, 2 * n))
+        spokes = np.zeros((0, 2 * n))
+        poles, eigenvectors = np.array([]), np.empty((0, 0))
+    direct_cross = kcross - M0[:n, n:]
+    assert direct_cross.min() &gt;= -TOL * max(1., kappa)
+    direct = laplacian_from_edges(2 * n, [
+        (i, n + j, max(0., direct_cross[i, j]))
+        for i in range(n) for j in range(n)
+    ])
+    Lbb = direct + np.diag(spokes.sum(axis=0))
+    K = Lbb - M0
+    expected_K = laplacian_from_edges(2 * n, [
+        (i, n + j, kcross[i, j]) for i in range(n) for j in range(n)
+    ])
+    assert np.max(np.abs(K - expected_K)) &lt;= TOL * max(1., np.max(np.abs(K)))
+    h = float(10 ** RNG.uniform(-1, 1) / lam)
+    wait = 0.0 if index % 11 == 0 else float(RNG.uniform(0.01, 1) / lam)
+    duration = 0.1 / lam  # each uniform factor; total ramp duration = 2*duration
+    results = []
+    for protocol in (&quot;ideal_step&quot;, &quot;triangular_derivative_ramp&quot;):
+        if r:
+            ah = -np.expm1(-poles * h) / poles
+            ph = np.ones(r) if protocol == &quot;ideal_step&quot; else (
+                -np.expm1(-poles * duration) / (poles * duration))
+            f = np.exp(-poles * wait) * ph**2 * ah**2
+            VtB = eigenvectors.T @ B
+            D = VtB.T @ (f[:, None] * VtB)
+            # Independent matrix-exponential factor computation, without the
+            # eigenvectors used for D. A_h(Q)=Q^-1(I-exp(-Q*h)).
+            ah_matrix = solve(Q, np.eye(r) - expm(-Q * h), assume_a=&quot;pos&quot;)
+            ramp_matrix = (np.eye(r) if protocol == &quot;ideal_step&quot; else
+                           solve(Q, np.eye(r) - expm(-Q * duration),
+                                 assume_a=&quot;pos&quot;) / duration)
+            F = expm(-Q * wait / 2) @ ramp_matrix @ ah_matrix @ B
+            factor_error = float(np.max(np.abs(D - F.T @ F)))
+            factor_min = float(F.min())
+            assert factor_error &lt;= TOL * max(1., float(np.max(np.abs(D))))
+            assert factor_min &gt;= -TOL * max(1., float(np.max(np.abs(F))))
+        else:
+            D = np.zeros((2 * n, 2 * n))
+            factor_error, factor_min = 0.0, 0.0
+        within_u = D[:n, :n] - np.diag(np.diag(D[:n, :n]))
+        within_v = D[n:, n:] - np.diag(np.diag(D[n:, n:]))
+        within_max = float(max(np.max(np.abs(within_u)), np.max(np.abs(within_v))))
+        S = float(D[:n, n:].sum())
+        d = S / n
+        b = float(D[:n, n:].max())
+        cap = h * (kappa + delta)
+        psd_kernel_min = float(np.linalg.eigvalsh(h * M0 - D).min())
+        entrywise_kernel_min = float((h * M0 - D).min())
+        assert within_max &lt;= TOL * max(1., float(np.max(np.abs(D))))
+        assert entrywise_kernel_min &gt;= -TOL * max(1., float(np.max(np.abs(h * M0))))
+        assert psd_kernel_min &gt;= -TOL * max(1., float(np.max(np.abs(h * M0))))
+        assert S &lt;= r * b + TOL * max(1., S)
+        assert b &lt;= cap + TOL * max(1., cap)
+        assert d &lt;= r * cap / n + TOL * max(1., d)
+        # An observation a with known error epsilon can be above the true d;
+        # the conservative lower endpoint remains d in this constructed case.
+        epsilon = float(RNG.uniform(0, 0.1) * max(1., d))
+        a = d + epsilon
+        inferred_lower = n * max(0., a - epsilon) / cap
+        assert inferred_lower &lt;= r + TOL * max(1., r)
+        results.append(dict(
+            index=index, protocol=protocol, n=n, hidden_states=r,
+            components=num_components, approximate_K=approximate,
+            lambda_reference=lam, kappa=kappa, delta=delta, h=h, wait=wait,
+            ramp_factor_duration=(0.0 if protocol == &quot;ideal_step&quot; else duration),
+            S=S, d_average_cross_row_sum=d, mean_cross_entry=S/(n*n),
+            b=b, cross_entry_cap=cap, row_mean_bound=r*cap/n,
+            inferred_state_lower=inferred_lower,
+            bound_ratio=(d/(r*cap/n) if r else 0.0),
+            within_offdiag_max_abs=within_max,
+            entrywise_hM0_minus_D_min=entrywise_kernel_min,
+            psd_hM0_minus_D_min=psd_kernel_min,
+            nonnegative_factor_min=factor_min,
+            independent_factor_error=factor_error,
+            min_pole=(float(poles[0]) if r else None),
+            max_pole=(float(poles[-1]) if r else None)))
+    return results
+
+
+def check_root_leak(F, n, label):
+    D = F.T @ F
+    r = len(F)
+    du, dv, cross = D[:n, :n], D[n:, n:], D[:n, n:]
+    TU, TV = float(np.trace(du)), float(np.trace(dv))
+    # Explicit off-diagonal extraction avoids cancellation at tiny leakage.
+    WU = float(du[~np.eye(n, dtype=bool)].sum())
+    nv = len(dv)
+    WV = float(dv[~np.eye(nv, dtype=bool)].sum())
+    S, b = float(cross.sum()), float(cross.max())
+    penalty = math.sqrt(TU * WV) + math.sqrt(TV * WU) + math.sqrt(WU * WV)
+    bound = r * b + penalty
+    assert S &lt;= bound + TOL * max(1., S, bound)
+    lower = max(0., S - penalty) / b if b else 0.0
+    assert lower &lt;= r + TOL * max(1., r)
+    return dict(label=label, rows=r, nU=n, nV=nv, S=S, b=b,
+                TU=TU, TV=TV, WU=WU, WV=WV, penalty=penalty,
+                upper_bound=bound, bound_ratio=(S/bound if bound else 0.0),
+                inferred_factor_rows_lower=lower)
+
+
+def random_cp_case(index):
+    n = int(RNG.integers(1, 10))
+    nv = int(RNG.integers(1, 10))
+    r = int(RNG.integers(1, 25))
+    if index % 3 == 0:
+        F = 10 ** RNG.uniform(-7, -2, (r, n + nv))
+        for row in F:
+            row[int(RNG.integers(n))] = 10 ** RNG.uniform(-2, 2)
+            row[n + int(RNG.integers(nv))] = 10 ** RNG.uniform(-2, 2)
+    else:
+        F = 10 ** RNG.uniform(-3, 3, (r, n + nv))
+        F[RNG.random(F.shape) &lt; RNG.uniform(0, 0.95)] = 0
+    return check_root_leak(F, n, f&quot;random_{index}&quot;)
+
+
+def main():
+    physical = []
+    for i in range(250):
+        physical.extend(physical_case(i, approximate=(i &gt;= 200)))
+    cp = [random_cp_case(i) for i in range(750)]
+    cp.extend([
+        check_root_leak(np.zeros((3, 4)), 2, &quot;zero&quot;),
+        check_root_leak(np.array([[1., 0, 0, 0], [0, 2., 0, 0]]), 2, &quot;only_U&quot;),
+        check_root_leak(np.ones((1, 7)), 3, &quot;rank_one_dense&quot;),
+        check_root_leak(np.array([[1., 0, 1, 0], [0, 1., 0, 1.]]), 2,
+                        &quot;zero_leak_equality&quot;),
+        check_root_leak(np.array([[1., 0, 1, 0], [1., 0, 1, 0.]]), 2,
+                        &quot;repeated_pair_strict&quot;),
+    ])
+    report = dict(
+        seed=SEED,
+        status=&quot;all_assertions_passed&quot;,
+        caveat=&quot;Numerical validation only; not a proof or novelty claim.&quot;,
+        conventions=dict(
+            n=&quot;boundary ports per partition in physical cases&quot;,
+            S=&quot;sum over U x V block, each cross entry counted once&quot;,
+            d=&quot;S/n, average output on U under equal unit inputs on V&quot;,
+            within_leak=&quot;ordered off-diagonal sums, not unordered edge sums&quot;,
+            K_budget=&quot;-K_ij &lt;= kappa + delta on cross entries&quot;,
+            exact_bound=&quot;d &lt;= r*h*lambda/n^2 when kappa=lambda/n and delta=0&quot;,
+            approximate_bound=&quot;r &gt;= n*max(a-epsilon,0)/(h*(kappa+delta))&quot;,
+            ramp=&quot;derivative is convolution of two uniform probability densities&quot;),
+        summary=dict(
+            physical_networks=250,
+            physical_protocol_checks=len(physical),
+            exact_K_networks=200,
+            approximate_K_networks=50,
+            random_CP_cases=750,
+            deterministic_CP_edge_cases=5,
+            max_physical_bound_ratio=max(x[&quot;bound_ratio&quot;] for x in physical),
+            max_CP_leak_bound_ratio=max(x[&quot;bound_ratio&quot;] for x in cp),
+            max_within_zero_error=max(x[&quot;within_offdiag_max_abs&quot;] for x in physical),
+            max_independent_factor_error=max(x[&quot;independent_factor_error&quot;] for x in physical),
+            min_nonnegative_factor_entry=min(x[&quot;nonnegative_factor_min&quot;] for x in physical),
+            min_entrywise_hM0_minus_D=min(x[&quot;entrywise_hM0_minus_D_min&quot;] for x in physical),
+            min_psd_hM0_minus_D=min(x[&quot;psd_hM0_minus_D_min&quot;] for x in physical)),
+        physical_cases=physical,
+        CP_leak_cases=cp)
+    output = Path(__file__).with_suffix(&quot;.json&quot;)
+    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + &quot;\n&quot;)
+    print(json.dumps(report[&quot;summary&quot;], indent=2))
+    print(f&quot;Saved {output}&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</pre><pre>{
+  &quot;seed&quot;: 20260922,
+  &quot;status&quot;: &quot;all_assertions_passed&quot;,
+  &quot;caveat&quot;: &quot;Numerical validation only; not a proof or novelty claim.&quot;,
+  &quot;conventions&quot;: {
+    &quot;n&quot;: &quot;boundary ports per partition in physical cases&quot;,
+    &quot;S&quot;: &quot;sum over U x V block, each cross entry counted once&quot;,
+    &quot;d&quot;: &quot;S/n, average output on U under equal unit inputs on V&quot;,
+    &quot;within_leak&quot;: &quot;ordered off-diagonal sums, not unordered edge sums&quot;,
+    &quot;K_budget&quot;: &quot;-K_ij &lt;= kappa + delta on cross entries&quot;,
+    &quot;exact_bound&quot;: &quot;d &lt;= r*h*lambda/n^2 when kappa=lambda/n and delta=0&quot;,
+    &quot;approximate_bound&quot;: &quot;r &gt;= n*max(a-epsilon,0)/(h*(kappa+delta))&quot;,
+    &quot;ramp&quot;: &quot;derivative is convolution of two uniform probability densities&quot;
+  },
+  &quot;summary&quot;: {
+    &quot;physical_networks&quot;: 250,
+    &quot;physical_protocol_checks&quot;: 500,
+    &quot;exact_K_networks&quot;: 200,
+    &quot;approximate_K_networks&quot;: 50,
+    &quot;random_CP_cases&quot;: 750,
+    &quot;deterministic_CP_edge_cases&quot;: 5,
+    &quot;max_physical_bound_ratio&quot;: 0.24741946707742124,
+    &quot;max_CP_leak_bound_ratio&quot;: 1.0,
+    &quot;max_within_zero_error&quot;: 0.0,
+    &quot;max_independent_factor_error&quot;: 9.28812582401406e-13,
+    &quot;min_nonnegative_factor_entry&quot;: 0.0,
+    &quot;min_entrywise_hM0_minus_D&quot;: 0.0,
+    &quot;min_psd_hM0_minus_D&quot;: -6.243044435269559e-15
+  }
+}</pre></details>
+</section>
+
+<style>
+#round8-sharp .round8-lead{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;margin:26px 0;padding:24px;background:#163e3e;color:#fffdf2;border-radius:10px}#round8-sharp .round8-lead b{font:56px/1.2 Georgia,serif;white-space:nowrap}#round8-sharp .round8-lead p{margin:0;font-size:14px;line-height:1.85}#round8-sharp .round8-lead small{font-size:19px;color:#bcd0c1}#round8-sharp .round8-proof-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:26px;align-items:center}#round8-sharp .round8-grid{display:block;width:100%;max-width:330px;margin:12px auto;aspect-ratio:1}#round8-sharp .round8-bar{display:block;width:100%;height:auto;margin:20px 0 4px}#round8-sharp .round8-chart-note{margin:0;font-size:12px;color:var(--muted)}#round8-sharp .round8-status{min-height:58px}#round8-sharp .round8-scope{border-top:1px solid var(--line);padding-top:15px;font-size:13px}#round8-sharp .round8-proof-svg{display:block;width:100%;max-width:370px;margin:auto}#round8-sharp .round8-proof-svg text{font-family:system-ui,sans-serif;fill:var(--ink)}#round8-sharp .round8-control-group{min-width:0}#round8-sharp .round8-meta{font-size:12px;letter-spacing:.05em;color:var(--muted)}#round8-sharp .round8-note{font-size:13px;background:#fff6e6;border-left:3px solid #b17c3e;padding:12px 16px}#round8-sharp .round8-table td:first-child{white-space:normal}#round8-sharp .round8-steps li{margin:10px 0}@media(max-width:650px){#round8-sharp .round8-lead{grid-template-columns:1fr;gap:12px;padding:22px}#round8-sharp .round8-lead b{font-size:clamp(34px,8vw,48px)}#round8-sharp .round8-proof-grid{grid-template-columns:1fr;gap:18px}#round8-sharp .round8-grid{max-width:285px}}
+</style>
+<section class="lesson" id="round8-sharp">
+<div class="step-kicker">SHARP RESULT / 2026 09 29</div>
+<h2>「少なくとも何個」から、<br>「ちょうど何個あれば足りる」へ。</h2>
+<p class="intro">前節の下限を、実際に作れる模型と突き合わせました。すると、この実験条件では<strong>必要な内部容量の最少個数を、式で決められます。</strong>個数の下限と、その個数で作る方法が一致しました。</p>
+<div class="round8-lead"><b><small>下限 28 →</small> 最少 85</b><p>左右10か所ずつ、定常応答を厳密に保存。集団応答の許容誤差を ε/c₀=0.05 とした合成例です。84個以下では不可能で、85個なら条件を満たす模型を構成できます。</p></div>
+<p>ここで合わせるのは、右側をまとめて加熱し、左側の熱流を平均して得る<strong>二つの時間窓の差、一つの数値</strong>です。全時刻・全境界の応答を合わせる問題とは、区別して読んでください。目標全体を厳密に再現する最少個数100は、そのままです。</p>
+
+<h3>1. 一つの容量には、受け持てる信号の上限がある。</h3>
+<p>定常結合を保つと、各左右ペアに使える伝導率の予算が決まります。さらに、二窓の差が最も大きくなる緩和の速さを選んでも、一つの容量が作れる信号には上限があります。遅すぎると二窓の差が小さく、速すぎると測定前に変化が終わるからです。</p>
+<div class="formula">r<sub>min</sub> = ⌈ n² (α − ε/c₀)<sub>＋</sub> / γ ⌉<span class="formula-sub">α ≈ 0.32741820 ／ γ ≈ 0.32764159 ／ (x)₊ = max(x,0)<br>⌈ ⌉ は端数の切上げ。αは目標の信号、γは一つの容量を最適化した効率です。</span></div>
+<p class="small-note">対象は前節の均一な完全二部グラフ。基準緩和率を λ₀、窓幅を h=1/λ₀ とし、温度微分が三角形になる立上りを2T=0.2h、待機をτ=0.1hと固定します。定常応答Kを厳密に保存し、正の内部容量・非負の相反伝導を許します。候補模型の緩和率や内部接続は自由です。</p>
+
+<div class="lab" id="round8-lab">
+<div class="lab-title">容量を減らして、信号が届くか確かめる</div>
+<div class="split">
+<div class="round8-control-group">
+<label class="range-label" for="round8-n">各側の境界数 n <output id="round8-n-out">10</output></label><input id="round8-n" type="range" min="2" max="40" step="1" value="10">
+<label class="range-label" for="round8-eps">許容誤差 ε/c₀ <output id="round8-eps-out">0.0500</output></label><input id="round8-eps" type="range" min="0" max="1" step="any" value="0.152710">
+<div class="choice-row"><button type="button" data-round8-eps="0">誤差なし</button><button type="button" data-round8-eps="0.05">0.05</button><button type="button" data-round8-eps="signal">信号全体まで許す</button></div>
+<label class="range-label" for="round8-r">置いてみる容量の数 r <output id="round8-r-out">85</output></label><input id="round8-r" type="range" min="0" max="100" step="1" value="85">
+<div class="choice-row"><button type="button" id="round8-min-button">最少個数に合わせる</button><button type="button" id="round8-below-button">一つ減らす</button></div>
+<div class="bounds-row"><div><span>前節の下限</span><b id="round8-old">28</b></div><div><span>今回の最少個数</span><b id="round8-min">85</b></div><div><span>全応答の厳密再現</span><b id="round8-full">100</b></div></div>
+</div>
+<div>
+<svg id="round8-edge-grid" class="round8-grid" viewBox="0 0 320 320" role="img" aria-label="100の左右ペアのうち85ペアに一つずつ容量を配置"></svg>
+<div class="legend"><span><i class="key" style="background:#0a7166"></i>容量を置けるペア</span><span><i class="key" style="background:#dce4da"></i>伝導だけのペア</span></div>
+<p class="round8-chart-note">1マス＝左右の境界1ペア。緑の各マスに1容量を置き、必要なら最後の1個の容量と伝導率を調整します。</p>
+</div>
+</div>
+<svg id="round8-signal-bar" class="round8-bar" viewBox="0 0 700 155" role="img" aria-label="許容される信号の範囲と容量の個数による到達上限"></svg>
+<div class="verdict round8-status" id="round8-verdict" aria-live="polite">85個で条件を満たす模型を作れます。</div>
+<p class="small-note" id="round8-live-note">定常応答はすべて同じに保ちます。</p>
+<p class="round8-chart-note">表示は式の浮動小数点近似です。整数が切り替わる境界付近の厳密な判定には、係数の区間評価が必要です。緑の到達範囲は、この個数の星型構成で実際に作れる信号です。</p>
+</div>
+
+<h3>2. 複雑な内部構造で、抜け道を作れないのか？</h3>
+<div class="round8-proof-grid">
+<svg class="round8-proof-svg" viewBox="0 0 370 300" role="img" aria-label="定常応答のゼロが内部成分の接続先を二境界に制限し、一成分の信号上限を足して全体の下限を得る証明の流れ">
+<rect x="14" y="6" width="342" height="76" rx="8" fill="#e2ebe0"/><text x="185" y="33" text-anchor="middle" font-size="16" font-weight="650">同じ側の定常結合はゼロ</text><text x="185" y="57" text-anchor="middle" font-size="13">内部成分の接続先は、左右1境界ずつまで</text>
+<path d="M185 84V108m-6-7 6 7 6-7" fill="none" stroke="#6a8e7d" stroke-width="2"/>
+<rect x="14" y="114" width="342" height="76" rx="8" fill="#eef2e7"/><text x="185" y="141" text-anchor="middle" font-size="16" font-weight="650">各成分の信号 ≤ k a q*</text><text x="185" y="165" text-anchor="middle" font-size="13">k：内部状態数 ／ a：その成分の定常予算</text>
+<path d="M185 192V216m-6-7 6 7 6-7" fill="none" stroke="#6a8e7d" stroke-width="2"/>
+<rect x="14" y="222" width="342" height="70" rx="8" fill="#cfe4d7"/><text x="185" y="250" text-anchor="middle" font-size="16" font-weight="650">足し合わせると d/c₀ ≤ r γ/n²</text><text x="185" y="274" text-anchor="middle" font-size="13">目標の下端 α−ε/c₀ に届く個数が必要</text>
+</svg>
+<div><p>定常応答に三角形がないと、一つにつながった内部部分は、三つ以上の境界にまたがれません。この接続の制約は既知のKron縮約の性質です。<a href="#ref69">[69]</a></p><p>残る核心は、内部に2個、3個……と容量をつなげても、<strong>容量1個当たりの信号が上限を超えない</strong>こと。2状態は指数分布の和を使って評価し、3状態以上は測定窓の高さだけで一括評価できます。この二つをつなぐことで、任意の内部構造に対する下限になります。</p></div>
+</div>
+
+<h3>3. 下限と同じ個数で、実際に作る。</h3>
+<p>選んだ各左右ペアの間に、容量を一つ置き、両側へ同じ伝導率でつなぎます。最適な緩和率は λ*h≈0.9609333。容量のないペアは、伝導だけでつなぎます。最後の1ペアを部分的に使えば、許容範囲の下端へ正確に合わせられます。</p>
+<div class="takeaway">この族では、許容誤差がε/c₀=0.05なら、必要な容量数は約<strong>0.8467 n²</strong>の切上げです。測る数値は一つでも、n²個の定常結合を全部保つという条件と組み合わさることで、多数の内部容量が必要になります。必要数の大部分は、測定値ではなく定常結合の保存から来ています。</div>
+<p>現実での使い道は、熱模型の設計仕様を点検することです。「容量数をここまで削る」と「この定常結合と測定値を保つ」が両立するか、模型を最適化する前に判断できます。現物への適用には、定常結合・測定誤差・センサー補正を別に確かめる必要があります。ここで示した数値は合成例です。</p>
+<p class="round8-scope"><strong>この結果の範囲：</strong>均一な定常予算、厳密なゼロ結合、指定した立上りと窓、集約された一つの観測値。部品値を任意に小さくできる理想化も含みます。定常ゼロへの漏れ、不均一な辺の予算、全応答の近似、一般の観測窓は、同じ式では扱っていません。</p>
+<div class="callout caution" id="round8-protocol-scope"><strong>2026 10 03の補強：この証明が成り立つ測定条件。</strong>
+<p>3状態以上の連結成分を抑える段（下の証明C）は、<strong>3q* ≥ w*</strong>という不等式に依存します。これは立上り時間Tと待機τに左右され、本文の条件 T=τ=0.1h ではぎりぎり成立しています。窓幅h=1として 3q*/w* を計算した値は次のとおりで、1以上なら現在の証明がそのまま使えます。</p>
+<div class="table-wrap"><table><thead><tr><th>T ＼ τ</th><th>0</th><th>0.1</th><th>0.3</th><th>0.5</th></tr></thead><tbody>
+<tr><td>0（理想ステップ）</td><td>1.22</td><td>1.09</td><td>0.90</td><td>0.77</td></tr>
+<tr><td>0.1</td><td>1.13</td><td><strong>1.017（本文）</strong></td><td>0.86</td><td>0.74</td></tr>
+<tr><td>0.3</td><td>1.00</td><td>0.92</td><td>0.80</td><td>0.70</td></tr>
+</tbody></table></div>
+<p class="small-note">数値計算による値で、本文の条件以外は有理数による証明をしていません。待機を0.2h程度に延ばすだけで条件が崩れるため、<strong>別の測定条件にr<sub>min</sub>の式をそのまま当てはめないでください。</strong></p>
+<p>一方、これは証明の手法の限界であって、結論の限界ではない可能性が高いと見ています（推測）。独立に作った乱数の連結RC成分（各4,000個）では、D/(a q*) の最大値は2状態で1.34、3状態で1.43、4状態で1.46、6状態で1.33でした。どれも1状態の星2個分にも届いていません。2状態の補題 D≤2aq* は測定条件に依存しない証明なので、<strong>「k状態の連結成分でも D≤2aq*」を窓の高さを使わずに示せれば、85個型の公式を任意のT、τ、hへ広げられます。</strong>相型分布の凸結合分解を多状態へ一般化するのが自然な道筋で、次の課題として残します。</p></div>
+<p class="round8-note"><strong>数学的主張と学術的新規性は別です。</strong>以下は下限と構成が一致する解析的な命題です。今回の文献照合の範囲と判定は、<a href="#round8-literature">この節の後半</a>に記録しました。「新理論が確立した」とはまだ扱いません。</p>
+
+<details class="aside" id="round8-proof"><summary>最少個数が決まる理由を、式で順に検証する</summary>
+<h3>A. 温度応答を、非負の分布と測定窓に分ける</h3>
+<p>正の対角容量と非負の相反伝導を持つ、安定で境界から到達できる模型を考える。一つの内部連結成分の状態数をk、容量で正規化した行列をQ、左右への非負結合ベクトルをu,vとする。Qは対称正定値Stieltjes行列。</p>
+<div class="eq small">M(t)=uᵀQ⁻¹e<sup>−Qt</sup>v,　a=M(0),<br>f(t)=uᵀe<sup>−Qt</sup>v/a ≥ 0,　∫₀<sup>∞</sup>f(t)dt=1.</div>
+<p>a=0の成分は交差信号に寄与しないので除く。fは確率密度として扱え、M(t)/aはその生存関数になる。U₁,U₂を[0,T]の独立一様分布、V=U₁+U₂と置く。温度微分をVの密度とし、立上り完了2Tからτ待った二つの幅hの窓を使うと、</p>
+<div class="eq small">ψ<sub>h</sub>(t)=max{0,h−|t−h|},<br>w(t)=E[ψ<sub>h</sub>(t+V−2T−τ)],<br>D=a∫₀<sup>∞</sup>w(t)f(t)dt.</div>
+<p>指数密度f(t)=μe<sup>−μt</sup>に対する信号をq(μ)と置く。</p>
+<div class="eq small">q(μ)=e<sup>−μτ</sup> [(1−e<sup>−μT</sup>)/(μT)]² (1−e<sup>−μh</sup>)²/μ,<br>q*=max<sub>μ&gt;0</sub>q(μ),　w*=sup<sub>t≥0</sub>w(t).</div>
+<p>以下の十分条件は<strong>3q*≥w*</strong>。これが満たされれば、どの状態数kでもD≤kaq*が成り立つ。</p>
+<h3>B. 2状態だけを、少し丁寧に扱う</h3>
+<p>k=1なら定義からD≤aq*。k=2で固有値が等しい場合はQがスカラー行列なので同じ評価になる。異なる固有値0&lt;a₁&lt;a₂の場合、生存関数は</p>
+<div class="eq small">M(t)/a=c₁e<sup>−a₁t</sup>+(1−c₁)e<sup>−a₂t</sup>.</div>
+<p>長時間の非負性からc₁≥0、t=0での密度の非負性からc₁≤a₂/(a₂−a₁)。従ってこれは、Exp(a₂)と、独立なExp(a₁)+Exp(a₂)の生存関数との凸結合になる。二つ目の指数係数が負でもよく、Mの完全単調性は仮定していない。</p>
+<p>0&lt;a≤bとし、二つの指数分布の和の密度をp<sub>a,b</sub>、率cの指数密度をg<sub>c</sub>と書く。全t≥0で</p>
+<div class="eq small">p<sub>a,b</sub>(t) ≤ 2g<sub>a/2</sub>(t).</div>
+<p>a&lt;bではp=2b/a−1&gt;1、z=at/2と置くと、左辺と右辺の比の最大値は</p>
+<div class="eq small">max<sub>z≥0</sub> [(p+1)/(p−1)](e<sup>−z</sup>−e<sup>−pz</sup>)<br>= [(p+1)/p] p<sup>−1/(p−1)</sup> ≤ 1.</div>
+<p>最後は log p≥(p−1)/p≥(p−1)log(1+1/p)による。a=bでは比が2ze<sup>−z</sup>≤2/e。非負のwを掛けて積分すれば、指数分布の和の信号は2q*以下。凸結合も2q*以下だから、k=2ではD≤2aq*。</p>
+<h3>C. 3状態以上と、十分条件の厳密な確認</h3>
+<p>k≥3なら、fが確率密度なのでD/a≤w*≤3q*≤kq*。今回のT=τ=h/10では、wは二つの対称単峰な三角形の畳み込みを平行移動したものなので、中心t=h+T+τで最大になる。T≤hを使うと</p>
+<div class="eq small">w*=h−E|V−T|=h−T/3=29h/30.</div>
+<p>一方、μ=1/hを一度代入するだけで、数値最適化に頼らず条件を証明できる。e<sup>−0.1</sup>&gt;0.9、e<sup>−0.1</sup>&lt;0.905、e<sup>−1</sup>&lt;0.37より、</p>
+<div class="eq small">q*/h ≥ q(1/h)/h &gt; (9/10)(19/20)²(63/100)²<br>=12895281/40000000,<br>3q*/h−29/30 &gt; 57529/120000000 &gt; 0.</div>
+<p>指数の有理数評価も、e<sup>−x</sup>&gt;1−x、e<sup>0.1</sup>&gt;1+0.1+0.1²/2=221/200&gt;200/181、e&gt;1+1+1/2+1/6+1/24=65/24&gt;100/37から従う。</p>
+<h3>D. 各成分の上限を、模型全体に足す</h3>
+<p>定常Kのグラフが三角形を持たないとする。内部連結成分の逆Stieltjes行列は成分ごとに正なので、その成分が接続する境界はK上のクリークになる。従って各成分の接続先は高々2境界である。<a href="#ref69">[69]</a></p>
+<p>各辺の定常伝導率が共通のκで、辺eに接続する成分の予算をa<sub>c</sub>とするとΣ<sub>c→e</sub>a<sub>c</sub>≤κ。特にa<sub>c</sub>≤κなので、全辺の二窓差の総和Sについて</p>
+<div class="eq small">S ≤ Σ<sub>c</sub>k<sub>c</sub>a<sub>c</sub>q* ≤ rκq*.</div>
+<p>内部成分の極は共通でなくてよい。この証明は、指定した自己畳み込み立上りのCP分解に依存せず、定常Kのゼロと応答の非負性から進んでいる。</p>
+<h3>E. 同じ値を達成する構成</h3>
+<p>定常伝導率σ∈(0,κ]を担当する1状態の星を作る。両側の伝導率を2σ、内部容量を4σ/μ*に取れば、定常伝導率はσ、緩和率はqの最大化点μ*、二窓差はσq*。その辺に直結伝導κ−σを加えてKを保つ。</p>
+<p>m辺のうちr≤m辺でσ=κを使うとS=rκq*。最後の辺だけσを調整すれば、0≤S≤mκq*の任意の目標に対し、必要最少数は⌈S/(κq*)⌉。0を作る場合は容量を置かない。</p>
+<p>前節の族ではm=n²、κ=λ₀c₀/n、h=1/λ₀、d=S/n。dの許容誤差をεとすると、許される下端S=n(c₀α−ε)₊に合わせられる。よって</p>
+<div class="eq small">r<sub>min</sub>=⌈n²(α−ε/c₀)₊/γ⌉,　γ=q*/h.</div>
+<p>α&lt;γなので常にr<sub>min</sub>≤n²。非均一な予算では、強い辺へ複数状態を使う選択が弱い辺の1状態に勝つ可能性があり、この単純な最少個数の式は主張しない。</p>
+<h3>F. 最適な緩和率の求め方</h3>
+<p>x=μh、A=T/h、B=τ/h、F(x)=x/(eˣ−1)と置くと、</p>
+<div class="eq small">x d[log(q/h)]/dx=−Bx+2F(Ax)+2F(x)−3.</div>
+<p>Fはx&gt;0で厳密に減少する。右辺は1から負の値へ厳密に減少するため零点は一つで、qの最大点も一つ。二分法でμ*h≈0.9609333068、γ≈0.32764158599を得る。係数の小数表示と、Cで示した十分条件の証明は分けて扱う。</p>
+</details>
+<h3 id="round8-practical">現実の測定へ近づける：小さな漏れを、まとめて評価する。</h3>
+<p>85という最小数は、定常結合を厳密に保存する条件で得られました。実機では「結合が完全にゼロ」を測定だけで保証するのは難しいため、<strong>漏れを許したまま使える、別の下限</strong>も導きました。こちらは必要数の認証で、最適模型との一致までは主張しません。</p>
+<div class="measurement-flow"><div><b>交差信号 S</b><span>右側をまとめて加熱し、左側の熱流を合計する。</span></div><div class="flow-core"><b>同じ側の漏れ W</b><span>左同士・右同士の交差応答を合計して上限を付ける。</span></div><div><b>不均衡 I</b><span>左右へ逆符号の温度変化を加え、同じ符号で熱流を集計する。</span></div></div>
+<p>すべて同じ二窓測定を使います。交差成分それぞれの上限が b と分かっているとき、r状態の模型には次が必要です。</p>
+<div class="eq">S ≤ rb + W + √(IW).</div>
+<p>目標のように左右が釣り合っていれば I=0で、漏れの補正は<strong>Wそのもの</strong>になります。従来の補正は小さな漏れの平方根を含んでいました。新しい式は釣り合いのよい領域で有利ですが、すべてのデータで旧式より強いわけではありません。</p>
+<div class="callout"><strong>実験で使う形</strong><br>信号の下限 S<sub>lo</sub>、漏れ・不均衡の上限 W<sub>up</sub>, I<sub>up</sub>、各交差成分の共通上限 b<sub>up</sub>&gt;0 があれば、<br><span class="num">r ≥ ⌈[S<sub>lo</sub>−W<sub>up</sub>−√(I<sub>up</sub>W<sub>up</sub>)]₊ / b<sub>up</sub>⌉。</span><br><span class="small-note">交差上限は独立の校正や設計情報から与えます。一度の実験で全ての結合が判明するという意味ではありません。整数境界では区間演算が必要です。</span></div>
+<details class="aside" id="round8-leak-proof"><summary>漏れの命題、その証明と反例を確認する</summary>
+<p>D=FᵀF、F≥0、Fの行数r。群をU,Vとし、S=Σ<sub>i∈U,j∈V</sub>Dᵢⱼ、W=W<sub>U</sub>+W<sub>V</sub>、W<sub>U</sub>=Σ<sub>i≠j∈U</sub>Dᵢⱼ（順序付きの和）、I=(1<sub>U</sub>−1<sub>V</sub>)ᵀD(1<sub>U</sub>−1<sub>V</sub>)≥0と定める。非一様な上限Dᵢⱼ≤bᵢⱼがあれば、rbを、交差上限の大きい順min(r,|U||V|)個の和B<sub>r</sub>へ置き換えられる。</p>
+<div class="eq small">S ≤ B<sub>r</sub> + W + √(IW).</div>
+<p>Fの一行をu,vに分け、成分和をa,b、最大成分をm,ℓ、w<sub>u</sub>=a²−‖u‖²、w<sub>v</sub>=b²−‖v‖²とする。ab=0は自明。ab&gt;0ならm≥a−w<sub>u</sub>/a、ℓ≥b−w<sub>v</sub>/bなので、</p>
+<div class="eq small">ab−mℓ ≤ (b/a)w<sub>u</sub>+(a/b)w<sub>v</sub>−w<sub>u</sub>w<sub>v</sub>/(ab)<br>≤ w<sub>u</sub>+w<sub>v</sub>+(a−b)₊√w<sub>v</sub>+(b−a)₊√w<sub>u</sub>.</div>
+<p>最後の不等式はa≥bとa&lt;bを分け、w<sub>v</sub>≤b²などを使う。各行の最大成分対を一つ選ぶと、選ばれた異なる対は高々r個。同じ対へ割り当てたmℓの合計は、そのD成分以下なので、全行の合計はB<sub>r</sub>以下。残りをCauchy–Schwarzで足せば√(IW)が得られる。□</p>
+<p>u=(1,0,…), v=(1/k,…,1/k)の一行ではI=0、S=1、B₁=1/k、W=1−1/kとなり等号。Wの係数1は一律に小さくできない。正の群倍率θを使えば、WをθW<sub>U</sub>+θ⁻¹W<sub>V</sub>へ、Iを(√θ1<sub>U</sub>−θ⁻¹ᐟ²1<sub>V</sub>)ᵀD(√θ1<sub>U</sub>−θ⁻¹ᐟ²1<sub>V</sub>)へ変えても成立する。</p>
+<h4>「一対では小さい漏れ」に注意する理由</h4>
+<p>n個の内部節点を置き、節点iを左iへ伝導率2λc₀で、全ての右境界へ各2λc₀/nで接続し、容量を各4c₀とする。この模型は、元のn²状態の例と<strong>交差ブロックの全周波数応答が一致</strong>する。一方、右同士には各λc₀/nの定常結合が生まれる。</p>
+<div class="eq small">H=c₀[ I　J/n ; J/n　J/n ],<br>K=λc₀[ I　−J/n ; −J/n　2I−J/n ].</div>
+<p>D=αHではS=nc₀α、W=(n−1)c₀α、I=0、B<sub>n</sub>=c₀αとなり、新不等式は等号になる。一対の漏れは1/nでも、合計はnに比例して増える。<strong>この模型は定常Kを厳密保存せず、右側の対角応答も変わる</strong>ため、85の定理への反例ではない。対角定常誤差λc₀(1−1/n)は小さくならず、全体の作用素誤差が消えるという主張でもない。</p>
+<p class="small-note">正負の入力は動作温度のまわりの微小な上下変化を意味する。対象の初期化・センサー補正・誤差上限の妥当性は従来と同じく必要。今回の確認は証明と合成データに限り、実機実験は未実施。</p>
+</details>
+<h3 id="round8-literature">先行研究と比べて、何が成果として残るか。</h3>
+<p>新規性の中心候補を、<strong>「指定した有限時間の測定値と、厳密な定常応答を両立させる最少状態数を、物理的な構成と一致させたこと」</strong>へ絞りました。正値性による次数増大や、定常応答を保つ削減法そのものは以前からあります。</p>
+<div class="table-wrap"><table class="round8-table"><thead><tr><th>照合した分野・資料</th><th>既知として扱う部分</th><th>今回の命題との差</th></tr></thead><tbody>
+<tr><td>Kron縮約・CPランク<br><a href="#ref69">[69]</a> <a href="#ref70">[70]</a></td><td>内部成分が境界にクリークを作る性質。完全二部支持のCPランクn²。</td><td>有限時間の信号上限q*と達成構成を合わせ、近似する単一観測値の最小数を決める。</td></tr>
+<tr><td>正値実現<br><a href="#ref35">[35]</a> <a href="#ref36">[36]</a></td><td>正値制約による次数増大。正値構造を保つ低次元化。</td><td>相反伝導・正の対角容量・厳密K・二窓の集団観測という組合せを固定する。</td></tr>
+<tr><td>SparseRC<br><a href="#ref71">[71]</a></td><td>DCの最初の二モーメントを保つ削減と受動性。</td><td>本文§III-C2では合成後の負容量を許す。今回の正素子だけの模型とは許容クラスが異なる。</td></tr>
+<tr><td>有限時間balanced truncation<br><a href="#ref29">[29]</a></td><td>指定した方法による有限時間L²誤差の上界。</td><td>今回の指標は一つの集団観測。全許容模型の必要数と達成数を一致させる問題であり、誤差指標も異なる。</td></tr>
+<tr><td>Phase-type分布<br><a href="#ref72">[72]</a> <a href="#ref73">[73]</a></td><td>固定相数でのErlangの最小変動性。三モーメントからの必要相数・近最小構成。</td><td>今回の三角形状の測定核は全域凸でも単調でもない。その既知の極値原理をそのまま使わず、二状態の密度と核の高さを評価する。</td></tr>
+<tr><td>近似非負ランク下界<br><a href="#ref41">[41]</a> <a href="#ref44">[44]</a></td><td>誤差があっても因子の必要数を下から評価する一般的手法。</td><td>漏れW・不均衡I・交差上限B<sub>r</sub>だけの明示式と、平衡時の一次補正を今回の差分候補とする。</td></tr>
+</tbody></table></div>
+<div class="takeaway"><strong>現時点の判定：</strong>限定された条件での最小状態数の定理と、測定誤差へ接続する補助命題が得られました。本文を比較した一次資料では同じ主張を確認できていません。<strong>歴史的な新規性は未確定</strong>であり、一般的な新理論が完成したという段階ではありません。</div>
+<details class="aside"><summary>文献の取得範囲と、残っている照合を読む</summary>
+<p>2026 09 29時点で、RC/熱回路の最少実現、DC保存、有限時間削減、正値実現、phase-typeの相数、CP/近似非負ランクを検索し、該当する一次資料の設定・定理を照合した。検索結果の不在だけでは新規性を結論しない。</p>
+<p>今回追加した公開資料は、SparseRCの本文（DCモーメント・受動性・素子の符号）、Aldous–Sheppの公開スキャン冒頭p.467（主張を画像で確認、証明全体は未精読）、Osogami–Harchol-Balterの著者稿§§1–3（三モーメント一致の定義と必要相数）。関連する公開資料は引き続き<a href="#references">文献表</a>で確認できる。</p>
+<p>未取得の本文として、Sheehanの<a href="https://doi.org/10.1109/TCAD.2007.891374">Realizable Reduction of RC Networks（2007）</a>、O’Cinneideの<a href="https://doi.org/10.1214/aoap/1177005935">Phase-Type Distributions and Majorization（1991）</a>、Heらの<a href="https://doi.org/10.1017/apr.2019.7">Moment bounds of PH distributions…（2019）</a>、Duffin–Knowlesの<a href="https://doi.org/10.1016/0196-8858(83)90010-6">Optimal thermal phase shift filters（1983）</a>が残る。要旨から同じ定理の有無は断定していない。古い多端子RC合成論も含め、引用をたどる照合が必要。<strong>2026 10 03の見直し：</strong>2状態の評価は指数分布の凸結合と最小変動性の議論に近いので、照合の優先度はO’Cinneide（1991）を最上位にする（推測による優先付け）。</p>
+<p class="small-note">数学的確認：解析的証明・独立監査・有理数での整数閾値確認まで実施。形式証明・人間の専門家による査読・実機検証は未実施。「独立監査」は別のAIによる確認を指す。</p>
+</details>
+
+
+
+<details class="aside" id="round8-full-response"><summary>全応答の誤差を保証する、別の構成もある</summary><p>元のn²辺からk個の完全マッチングを残し、そのnk辺に元の容量と緩和率λ₀を保つ。残りは同じ定常伝導率の直結伝導へ置き換える。Kを厳密保存し、内部状態数r=nkで、</p><div class="eq small">sup<sub>ω∈ℝ</sub>‖Y(iω)−Ỹ(iω)‖₂ = 2λ₀c₀(1−k/n).</div><p>消した辺は(n−k)正則な二部グラフ。その符号なしLaplacianの最大固有値が2(n−k)であることから従う。これは全伝達関数について使える構成上界で、全模型の最小数と一致するという定理ではない。初等的な既知の道具による構成として扱う。</p></details><details class="aside" id="round8-repro"><summary>有理数での85の確認・数値検査・再現資料を開く</summary><p>独立の有理数演算で最大点を区間に挟み、「84状態では不足、85状態で足りる」を小数丸めに依存せず確認した。3,200個の物理的な連結RC成分、63個の全応答構成、最適85状態の構成、5,000個の非負因子を検査。全て通過した。有限の検査は解析的証明や新規性の証明の代わりにはしない。</p><div class="eq small">84状態の信号上限/c₀ &lt; 0.275219<br>必要な信号/c₀ &gt; 0.277418<br>85状態で作れる最大信号/c₀ &gt; 0.278495</div><p>Python 3、NumPy、SciPyを使用。各スクリプトを実行すると、同じ場所へJSONの検証結果を書き出す。上の数値は表示用に外向きに丸め、判定自体は整数比で計算している。</p><details><summary>有理数による閾値の証明と、連結RC成分の独立検査</summary><button type="button" data-round6-download="round8-global-audit-check-code" data-filename="round8_global_audit_check.py">コードを保存</button><pre id="round8-global-audit-check-code">&quot;&quot;&quot;Independent exact-rational scalar threshold and randomized RC-component checks.
+
+Requires Python 3, numpy, scipy. Example: python -m pip install numpy scipy
+Writes a JSON result beside this script; no project-directory layout is needed.
+&quot;&quot;&quot;
+from fractions import Fraction as F
+from pathlib import Path
+import json
+import numpy as np
+from scipy.optimize import brentq
+
+# Alternating series, exact rationals, 0 &lt;= x &lt;= 1.
+def expneg(x, n=32):
+    term=F(1); even=term
+    for k in range(1,n+1):
+        term *= -x/k
+        even += term
+    odd=even + term*(-x)/(n+1)
+    return odd, even
+
+def G_bounds(x):
+    xl,xh=expneg(x)
+    yl,yh=expneg(x/10)
+    return (2*x*xl/(1-xl)+2*(x/10)*yl/(1-yl)-3-x/10,
+            2*x*xh/(1-xh)+2*(x/10)*yh/(1-yh)-3-x/10)
+
+lo=F(&#x27;0.96093330677944&#x27;); hi=F(&#x27;0.96093330677945&#x27;)
+assert G_bounds(lo)[0]&gt;0 and G_bounds(hi)[1]&lt;0
+el,eh=expneg(lo/10); fl,fh=expneg(hi/10)
+gl,gh=expneg(lo); hl,hh=expneg(hi)
+qlo=fl*(1-eh)**2*(1-gh)**2*100/hi**3
+qhi=eh*(1-fl)**2*(1-hl)**2*100/lo**3
+al,ah=expneg(F(1,10)); bl,bh=expneg(F(1))
+alpha_lo=al*(1-ah)**2*100*(1-bh)**2
+alpha_hi=ah*(1-al)**2*100*(1-bl)**2
+assert F(84,100)*qhi &lt; alpha_lo-F(1,20)
+assert F(85,100)*qlo &gt; alpha_hi-F(1,20)
+# The finite-ramp k&gt;=3 certificate also verified by exact rational arithmetic.
+assert 3*alpha_lo&gt;F(29,30)
+
+def q(x):
+    return np.exp(-x*.1)*(-np.expm1(-x*.1)/(x*.1))**2*(-np.expm1(-x))**2/x
+xstar=brentq(lambda x:2*x/np.expm1(x)+.2*x/np.expm1(.1*x)-3-.1*x,.8,1.1)
+qstar=q(xstar)
+rng=np.random.default_rng(902913)
+rows=[]
+for k in range(1,9):
+    maximum=0.; max_budget_ratio=0.; negative_residue=0
+    for trial in range(400):
+        edges=rng.uniform(.02,1.,(k,k)); edges=np.triu(edges,1); edges=edges+edges.T
+        # Include sparse port attachment to give negative spectral residues.
+        left=rng.uniform(.02,1.,k); right=rng.uniform(.02,1.,k)
+        if k&gt;1 and trial%2==0:
+            left[1:]=0.; right[:-1]=0.
+        cap=10**rng.uniform(-.6,.6,k)
+        lap=np.diag(edges.sum(axis=1)+left+right)-edges
+        inv=np.diag(cap**-.5); Q=inv@lap@inv
+        u=inv@left; v=inv@right
+        rates,V=np.linalg.eigh(Q)
+        residues=(V.T@u)*(V.T@v)
+        negative_residue += int(np.any(residues&lt; -1e-12))
+        budget=u@np.linalg.solve(Q,v)
+        response=np.sum(residues*np.exp(-rates*.1)*(-np.expm1(-rates*.1)/(rates*.1))**2*(-np.expm1(-rates))**2/rates**2)
+        assert response &gt;= -1e-11 and response &lt;= k*budget*qstar+1e-10
+        maximum=max(maximum,response/(k*budget*qstar))
+        max_budget_ratio=max(max_budget_ratio,response/(budget*qstar))
+    rows.append({&#x27;states&#x27;:k,&#x27;trials&#x27;:400,&#x27;max_D_over_k_a_qstar&#x27;:maximum,&#x27;max_D_over_a_qstar&#x27;:max_budget_ratio,&#x27;negative_spectral_residue_cases&#x27;:negative_residue})
+result={&#x27;root_bracket&#x27;:[float(lo),float(hi)],&#x27;qstar_bounds&#x27;:[float(qlo),float(qhi)],&#x27;alpha_bounds&#x27;:[float(alpha_lo),float(alpha_hi)],&#x27;84_upper&#x27;:float(F(84,100)*qhi),&#x27;required_lower&#x27;:float(alpha_lo-F(1,20)),&#x27;85_lower&#x27;:float(F(85,100)*qlo),&#x27;required_upper&#x27;:float(alpha_hi-F(1,20)),&#x27;threshold_85_certified_by_rational_arithmetic&#x27;:True,&#x27;kernel_height_condition_certified_by_rational_arithmetic&#x27;:True,&#x27;random_checks&#x27;:rows}
+Path(__file__).with_suffix(&#x27;.json&#x27;).write_text(json.dumps(result,indent=2), encoding=&#x27;utf-8&#x27;)
+print(json.dumps(result,indent=2))
+</pre></details><details><summary>物理部品から組み立てる、85状態と全応答の構成</summary><button type="button" data-round6-download="round8-construction-check-code" data-filename="round8_construction_check.py">コードを保存</button><pre id="round8-construction-check-code">#!/usr/bin/env python3
+&quot;&quot;&quot;Finite checks of the edge-star construction; not a proof of optimality.&quot;&quot;&quot;
+import json, math
+from pathlib import Path
+import numpy as np
+
+def stable_r(x):
+    return x/math.expm1(x) if x &lt; 700 else 0.0
+
+def kernel(mu,t,h,T):
+    return math.exp(-mu*t)*(-math.expm1(-mu*h))**2/mu*((-math.expm1(-mu*T)/(mu*T))**2 if T else 1.0)
+
+def optimum(t,h,T):
+    a,b=t/h,T/h
+    def g(x):return 2*stable_r(x)+(2*stable_r(b*x) if b else 2)-3-a*x
+    lo,hi=0.0,1.0
+    while g(hi)&gt;0:hi*=2
+    for _ in range(100):
+        mid=(lo+hi)/2
+        if g(mid)&gt;0:lo=mid
+        else:hi=mid
+    mu=(lo+hi)/(2*h)
+    return mu,kernel(mu,t,h,T)
+
+def build(n,lam,c0,budgets,rates):
+    ports=2*n; kappa=lam*c0/n
+    active=[(i,j,float(budgets[i,j]),float(rates[i,j])) for i in range(n) for j in range(n) if budgets[i,j]&gt;0]
+    r=len(active);spokes=np.zeros((r,ports));diag=np.zeros(r);caps=np.zeros(r)
+    for z,(i,j,a,mu) in enumerate(active):
+        spokes[z,i]=spokes[z,n+j]=2*a;diag[z]=4*a;caps[z]=4*a/mu
+    direct=np.zeros((ports,ports))
+    for i in range(n):
+        for j in range(n):
+            v=np.zeros(ports);v[i]=1;v[n+j]=-1
+            direct+=(kappa-budgets[i,j])*np.outer(v,v)
+    Lbb=direct+np.diag(spokes.sum(axis=0))
+    K=Lbb-(spokes.T/diag)@spokes if r else Lbb.copy()
+    B=spokes/np.sqrt(caps)[:,None] if r else spokes
+    return K,Lbb,B,np.array([mu for _,_,_,mu in active])
+
+def target(n,lam,c0):
+    I=np.eye(n);J=np.ones((n,n))/n
+    H=c0*np.block([[I,J],[J,I]])
+    K=lam*c0*np.block([[I,-J],[-J,I]])
+    return K,H
+
+out={&#x27;checks&#x27;:[]}
+for n in range(2,11):
+    for k in range(n+1):
+        lam,c0=1.7,.8;kappa=lam*c0/n
+        budgets=np.zeros((n,n));rates=np.full((n,n),lam)
+        for i in range(n):
+            for shift in range(k):budgets[i,(i+shift)%n]=kappa
+        K,Lbb,B,poles=build(n,lam,c0,budgets,rates)
+        Kstar,H=target(n,lam,c0)
+        static=float(np.max(np.abs(K-Kstar)))
+        HF=Kstar+lam*H
+        actual=float(np.linalg.norm(HF-Lbb,2));expected=2*lam*c0*(1-k/n)
+        assert static&lt;1e-12 and abs(actual-expected)&lt;1e-12
+        for omega in [.2,1,20]:
+            if len(poles):Y=Lbb-B.T@((1/(poles+1j*omega))[:,None]*B)
+            else:Y=Lbb.astype(complex)
+            Ys=Kstar+(1j*omega*lam/(1j*omega+lam))*H
+            got=float(np.linalg.norm(Ys-Y,2))
+            want=expected*abs(1j*omega/(1j*omega+lam))
+            assert abs(got-want)&lt;1e-12
+        out[&#x27;checks&#x27;].append({&#x27;n&#x27;:n,&#x27;k&#x27;:k,&#x27;states&#x27;:n*k,&#x27;static_error&#x27;:static,&#x27;high_frequency_norm&#x27;:actual,&#x27;exact_formula&#x27;:expected})
+n=10;lam=c0=h=1.;t=T=.1;eps=.05
+mu,qmax=optimum(t,h,T);alpha=lam*kernel(lam,t,h,T)
+quotient=n*n*(alpha-eps)/(lam*qmax);r=math.ceil(quotient);kappa=lam*c0/n
+budgets=np.zeros((n,n));budgets.flat[:r-1]=kappa;budgets.flat[r-1]=(quotient-r+1)*kappa
+rates=np.full((n,n),mu)
+K,Lbb,B,poles=build(n,lam,c0,budgets,rates)
+Kstar,H=target(n,lam,c0)
+# D=B.T f(Q) B, with f(mu)=q(mu)/mu because B.T B coefficients are a*mu.
+D=B.T@((np.array([kernel(p,t,h,T)/p for p in poles]))[:,None]*B)
+d=float(D[:n,n:].sum()/n)
+assert np.max(np.abs(K-Kstar))&lt;1e-12
+assert abs(d-(alpha-eps))&lt;1e-12
+assert abs(r-85)==0
+out[&#x27;scalar_case&#x27;]={&#x27;states&#x27;:r,&#x27;real_quotient&#x27;:quotient,&#x27;mu&#x27;:mu,&#x27;qmax&#x27;:qmax,&#x27;alpha&#x27;:alpha,&#x27;actual_d&#x27;:d,&#x27;target_lower_endpoint&#x27;:alpha-eps,&#x27;partial_budget_fraction&#x27;:quotient-r+1,&#x27;static_error&#x27;:float(np.max(np.abs(K-Kstar)))}
+path=Path(__file__).with_suffix(&#x27;.json&#x27;);path.write_text(json.dumps(out,indent=2))
+print(json.dumps({&#x27;cases&#x27;:len(out[&#x27;checks&#x27;]),&#x27;scalar&#x27;:out[&#x27;scalar_case&#x27;],&#x27;all_passed&#x27;:True},indent=2))
+</pre></details><details><summary>漏れの不等式と、その等号・物理例</summary><button type="button" data-round6-download="round8-leak-verify-code" data-filename="round8_leak_verify.py">コードを保存</button><pre id="round8-leak-verify-code">import json
+from pathlib import Path
+import numpy as np
+rng=np.random.default_rng(829)
+
+def check(F,n,theta=1.0):
+    D=F.T@F; m=F.shape[1]-n; r=F.shape[0]
+    S=D[:n,n:].sum(); AU=D[:n,:n].sum(); AV=D[n:,n:].sum()
+    WU=D[:n,:n].sum()-np.trace(D[:n,:n]); WV=D[n:,n:].sum()-np.trace(D[n:,n:])
+    # Explicit nonnegative sums avoid cancellation for sparse limiting tests.
+    WU=sum(D[i,j] for i in range(n) for j in range(n) if i!=j)
+    WV=sum(D[i,j] for i in range(n,n+m) for j in range(n,n+m) if i!=j)
+    W=theta*WU+WV/theta
+    a=np.sqrt(theta)*F[:,:n].sum(axis=1); b=F[:,n:].sum(axis=1)/np.sqrt(theta)
+    I=np.square(a-b).sum()
+    B=np.sort(D[:n,n:].ravel())[::-1][:r].sum()
+    rhs=B+W+np.sqrt(I*W)
+    error=(S-rhs)/max(1,S)
+    assert error&lt;2e-12,(F,n,theta,error)
+    old=np.sqrt(np.trace(D[:n,:n])*WV)+np.sqrt(np.trace(D[n:,n:])*WU)+np.sqrt(WU*WV)
+    return {&#x27;S&#x27;:float(S),&#x27;B_r&#x27;:float(B),&#x27;W&#x27;:float(W),&#x27;I&#x27;:float(I),&#x27;new_penalty&#x27;:float(W+np.sqrt(I*W)),&#x27;old_penalty&#x27;:float(old),&#x27;relative_violation&#x27;:float(error)}
+
+maxviol=-1.;count=0
+for trial in range(5000):
+    n=int(rng.integers(1,10));m=int(rng.integers(1,10));r=int(rng.integers(1,15))
+    F=np.exp(rng.uniform(-7,7,(r,n+m)))*(rng.random((r,n+m))&lt;rng.uniform(.05,1))
+    theta=float(np.exp(rng.uniform(-7,7)))
+    x=check(F,n,theta);maxviol=max(maxviol,x[&#x27;relative_violation&#x27;]);count+=1
+
+sharp=[]
+for n in [2,3,5,10,20]:
+    # n factors; U is coordinate-aligned, V is uniform. Every row is balanced.
+    F=np.column_stack((np.eye(n),np.ones((n,n))/n))
+    x=check(F,n);x[&#x27;n&#x27;]=n;assert abs(x[&#x27;S&#x27;]-x[&#x27;B_r&#x27;]-x[&#x27;W&#x27;])&lt;1e-10
+    sharp.append(x)
+
+physical=[]
+for n in [2,3,5,10]:
+    lam=.7;c0=1.3;h=.9;t=.2
+    F=np.column_stack((np.sqrt(c0)*np.eye(n),np.sqrt(c0)*np.ones((n,n))/n))
+    v=F.sum(axis=1);C=np.diag(v*v);g=lam*v[:,None]*F
+    LII=np.diag(g.sum(axis=1));LBB=np.diag(g.sum(axis=0));LIB=-g
+    K=LBB-LIB.T@np.linalg.solve(LII,LIB)
+    H=F.T@F
+    Htarget=c0*np.block([[np.eye(n),np.ones((n,n))/n],[np.ones((n,n))/n,np.eye(n)]])
+    Ktarget=lam*c0*np.block([[np.eye(n),-np.ones((n,n))/n],[-np.ones((n,n))/n,np.eye(n)]])
+    max_cross=0.
+    for omega in [0,.1,.7,2,100]:
+        s=1j*omega
+        Y=LBB-LIB.T@np.linalg.solve(s*C+LII,LIB)
+        Ytar=Ktarget+s*lam/(s+lam)*Htarget
+        max_cross=max(max_cross,float(np.max(np.abs(Y[:n,n:]-Ytar[:n,n:]))))
+    assert max_cross&lt;1e-12
+    kV=-K[n:,n:]+np.diag(np.diag(K[n:,n:]))
+    assert np.max(np.abs(kV-(np.ones((n,n))-np.eye(n))*lam*c0/n))&lt;1e-12
+    physical.append({&#x27;n&#x27;:n,&#x27;r&#x27;:n,&#x27;cross_transfer_max_error&#x27;:max_cross,&#x27;within_V_steady_leak&#x27;:float(lam*c0/n),&#x27;total_capacity&#x27;:float(np.trace(C))})
+
+out={&#x27;cases&#x27;:count,&#x27;max_relative_violation&#x27;:maxviol,&#x27;sharp_family&#x27;:sharp,&#x27;physical_family&#x27;:physical,&#x27;interpretation&#x27;:&#x27;Finite checks support implementation; analytic proof is primary. Not a novelty certificate.&#x27;}
+Path(__file__).with_suffix(&#x27;.json&#x27;).write_text(json.dumps(out,indent=2))
+print(json.dumps(out,indent=2))
+</pre></details><p><button type="button" id="round8-bundle-download">証明・監査・文献照合・コードをZIPで保存</button></p><p class="small-note">ZIPのSHA-256：<code style="overflow-wrap:anywhere">2eb5071d3ae3068fc22583f5d7049da1bd7b45210d2b6a583bb3faa6a4a39cee</code>。資料はこのHTMLに埋め込まれており、ダウンロードに外部通信は不要です。</p><script type="application/octet-stream" id="round8-bundle">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</script></details><script>document.getElementById('round8-bundle-download').addEventListener('click',()=>{const raw=atob(document.getElementById('round8-bundle').textContent.trim());const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));const url=URL.createObjectURL(new Blob([bytes],{type:'application/zip'}));const a=document.createElement('a');a.href=url;a.download='physical-memory-round8-research.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});</script>
+<div class="end-links"><a href="#theory-path">前節の一般的な下限へ ↑</a><a href="#technical-notes">証明・研究履歴・文献へ ↓</a></div>
+</section>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),alpha=Math.exp(-.1)*(-Math.expm1(-.1)/.1)**2*(-Math.expm1(-1))**2;
+const F=x=>x/Math.expm1(x),deriv=x=>-.1*x+2*F(.1*x)+2*F(x)-3;
+let lo=.01,hi=10;for(let i=0;i<90;i++){const mid=(lo+hi)/2;if(deriv(mid)>0)lo=mid;else hi=mid;}
+const xstar=(lo+hi)/2,gamma=Math.exp(-.1*xstar)*(-Math.expm1(-.1*xstar)/(.1*xstar))**2*(-Math.expm1(-xstar))**2/xstar;
+const minCount=(n,e)=>Math.ceil(n*n*Math.max(0,alpha-e)/gamma);
+function values(){return {n:+$('round8-n').value,e:alpha*Number($('round8-eps').value),r:+$('round8-r').value};}
+function update(reset=false){let {n,e,r}=values();const m=n*n,need=minCount(n,e);$('round8-r').max=m;if(reset)r=need;r=Math.max(0,Math.min(m,r));$('round8-r').value=r;
+$('round8-n-out').textContent=n;$('round8-eps-out').textContent=e.toFixed(4);$('round8-r-out').textContent=r;$('round8-old').textContent=Math.ceil(m*Math.max(0,alpha-e));$('round8-min').textContent=need;$('round8-full').textContent=m;
+const cell=300/n,gap=Math.min(2,cell*.14);let squares='';for(let i=0;i<m;i++){const x=10+(i%n)*cell,y=10+Math.floor(i/n)*cell;squares+=`<rect x="${x}" y="${y}" width="${cell-gap}" height="${cell-gap}" rx="${Math.min(2,cell*.1)}" fill="${i<r?'#0a7166':'#dce4da'}"/>`;}
+$('round8-edge-grid').innerHTML=squares;$('round8-edge-grid').setAttribute('aria-label',`${m}の左右ペアのうち${r}ペアに一つずつ容量を配置`);
+const capacity=r*gamma/m,lower=Math.max(0,alpha-e),axisMax=Math.max(gamma,alpha+e)+.025,chartWidth=window.innerWidth<=650?340:700,plotRight=chartWidth-30,plotWidth=plotRight-85,X=v=>85+v/axisMax*plotWidth,ok=r>=need;
+$('round8-signal-bar').setAttribute('viewBox',`0 0 ${chartWidth} 155`);
+$('round8-signal-bar').innerHTML=`<rect x="85" y="31" width="${plotWidth}" height="87" rx="5" fill="#e5eadf"/><rect x="${X(lower)}" y="31" width="${X(alpha+e)-X(lower)}" height="87" fill="#d4c296" opacity=".55"/><text x="12" y="55" font-size="13" fill="#183b40">許容範囲</text><path d="M${X(lower)} 62V39H${X(alpha+e)}V62" stroke="#9a7740" stroke-width="2" fill="none"/><text x="12" y="100" font-size="13" fill="#183b40">作れる範囲</text><rect x="85" y="81" width="${Math.max(0,X(capacity)-85)}" height="25" fill="${ok?'#0a7166':'#ab4f2e'}"/><path d="M${X(alpha)} 26V122" stroke="#183b40" stroke-width="1.5" stroke-dasharray="4 3"/><text x="${X(alpha)}" y="18" text-anchor="middle" font-size="12" fill="#183b40">目標 α</text><text x="85" y="141" font-size="12" fill="#596e6c">0</text><text x="${plotRight}" y="141" text-anchor="end" font-size="12" fill="#596e6c">信号 d/c₀</text>`;
+$('round8-signal-bar').setAttribute('aria-label',`信号の許容範囲は${lower.toFixed(5)}から${(alpha+e).toFixed(5)}。${r}容量で作れる範囲は0から${capacity.toFixed(5)}。`);
+$('round8-verdict').classList.toggle('inconclusive',!ok);$('round8-verdict').textContent=ok?(need===0?'容量0個でも、許容範囲に入ります。':`${r}個の予算で条件を満たす模型を作れます。最少は${need}個です。`):`${r}個では届きません。少なくともあと${need-r}個必要です。`;
+$('round8-live-note').textContent=`許容範囲の下端は ${lower.toFixed(6)}。${r}個での到達上限は ${capacity.toFixed(6)}。${ok?'必要なペアだけに容量を置き、最後のペアを調整して下端に合わせます。':'内部接続や緩和率を変えても、この到達上限を超えられません。'} 定常応答Kはすべて厳密に保存します。`;
+}
+['round8-n','round8-eps'].forEach(id=>$(id).addEventListener('input',()=>update(true)));$('round8-r').addEventListener('input',()=>update(false));$('round8-min-button').addEventListener('click',()=>update(true));$('round8-below-button').addEventListener('click',()=>{const {n,e}=values();$('round8-r').value=Math.max(0,minCount(n,e)-1);update();});
+document.querySelectorAll('[data-round8-eps]').forEach(button=>button.addEventListener('click',()=>{$('round8-eps').value=button.dataset.round8Eps==='signal'?1:Number(button.dataset.round8Eps)/alpha;update(true);}));
+$('round8-eps').value=String(.05/alpha);
+window.addEventListener('resize',()=>update(false));
+window.Round8Lab={alpha,gamma,xstar,minCount,update};update(true);
+})();
+</script>
+
+<section class="appendix-intro" id="technical-notes"><div class="step-kicker">VERIFY / 詳細を検証する</div><h2>証明、出典、再現コード。</h2><p>ここからは専門的な記録です。本文の説明に対応する詳細を開けます。探索途中の数値と判断は、当時の記録として保持しています。<strong>現在の到達点は「<a href="#round8-sharp">最少状態数が決まる節</a>」・理論化の節と「最新の証明」を優先</strong>してください。</p><div class="review-history" id="bound-history"><h3>数値の変遷 — 現在の下限は11/62</h3>
 <p class="small-note">以下は同じH₀に対する最大成分誤差の下限の推移です。上界0.196676467…は別の具体的な近似構成から得た値で、下限の更新と混同しません。</p>
 <div class="table-wrap"><table><thead><tr><th>記録</th><th>係数誤差の下限</th><th>指定実験での熱流下限</th></tr></thead><tbody>
 <tr><td>初期の結果</td><td>約0.049038</td><td>この段階では同じ二窓実験の値を提示していない</td></tr>
@@ -3011,7 +3770,7 @@ z
 <tr><td>スカラーの上下界を行列へ</td><td>作用素凸性、block求積、resolventの順序 <a href="#ref14">[14–16]</a></td><td>成分別順序・半正定値順序・時間域を区別した条件。</td></tr>
 </tbody></table></div>
 <p>特に、Lang–LuはFDT整合雑音の変更を将来課題としているが、一般SVEの研究はドリフト核・雑音フィルタの同時近似を既に扱う。「ある論文が未解決と書いている」だけを、分野全体の空白と見なさなかった。<a href="#ref20">[20]</a> <a href="#ref22">[22]</a></p>
-<p>当初の文献台帳には主要59件を掲載した。追加査読と取得候補を加えた現在の台帳は67件である。「本文確認」は関連箇所を読んだことを指し、論文全体の全証明の独立検証を意味しない。要旨のみの文献を本文確認済みとして数えていない。</p>
+<p>当初の文献台帳には主要59件を掲載した。追加査読と取得候補を加えた現在の台帳は73件である。「本文確認」は関連箇所を読んだことを指し、論文全体の全証明の独立検証を意味しない。要旨のみの文献を本文確認済みとして数えていない。</p>
 </section><section id="outcome"><span class="tag">証明草案を収録・独立監査</span><span class="tag amber">学術的新規性は未確定</span>
 <h2>測定から、これ以上小さくできない物理模型を見分ける</h2><p class="muted">追究4を追加：原論文照合から強化式を証明。誤差下限1/6、最良集約境界、既存SDPと分離する有理数例。<a href="#round4">今回の調査結果へ</a>。</p>
 <p><strong>同じ外部応答を、何個の「本物の熱容量」で再現できるか。</strong>単なる数式の状態数と、正の熱容量・非負の熱伝導率だけで作る物理模型の状態数は一致しないことがある。この差を、特定の熱ネットワーク群について厳密に特徴づける命題を導いた。</p>
@@ -5240,11 +5999,11 @@ here=Path(__file__).resolve().parent
 np.savez(here/&#x27;pulse-data.npz&#x27;,times=times,q3=q3,q4=q4)
 print(json.dumps(results,indent=2))
 </pre></details>
-</section></details><details class="archive" id="bibliography"><summary>E. 文献67件：確認した範囲と未取得資料</summary><p class="archive-note">本文を確認した資料と、要旨・書誌のみの資料を区別しています。67件全てを全文精読したという意味ではありません。BDSは公開著者稿を新たに本文照合し、追加6件は取得範囲を明記しています。</p><section id="references"><h2>11. 主要文献67件と確認範囲</h2><p class="muted">本文確認済み＝関連する定理・設定・導出を点検。要旨のみ＝その範囲を超えた同値性判断には使用しない。プレプリント年と刊行年が異なる場合は併記。解説論文はその旨を記載。</p><div class="table-wrap"><table class="refs"><thead><tr><th>番号・年</th><th>文献</th><th>確認範囲</th><th>今回への意味</th></tr></thead><tbody><tr id="ref1"><td>[1]<br>1973</td><td><a href="https://link.springer.com/article/10.1007/BF01008729">Zwanzig — Nonlinear generalized Langevin equations</a></td><td>要旨</td><td>非線形系からの厳密GLEという出発点は既知。</td></tr><tr id="ref2"><td>[2]<br>2009</td><td><a href="https://www.pnas.org/doi/10.1073/pnas.0902633106">Darve, Solomon &amp; Kia — Computing generalized Langevin equations and generalized Fokker–Planck equations</a></td><td>要旨</td><td>射影と記憶項を計算する先行研究。</td></tr><tr id="ref3"><td>[3]<br>2018</td><td><a href="https://arxiv.org/abs/1708.02235">Zhu, Dominy &amp; Venturi — On the estimation of the Mori–Zwanzig memory integral</a></td><td>本文・定理3.1–3.5</td><td>短記憶・t-model・階層近似の誤差と収束条件。</td></tr><tr id="ref4"><td>[4]<br>2017</td><td><a href="https://arxiv.org/abs/1611.06277">Gouasmi, Parish &amp; Duraisamy — A priori estimation of memory effects</a></td><td>要旨</td><td>非線形系の記憶推定。近似直交力学と真の核を区別。</td></tr><tr id="ref5"><td>[5]<br>2017</td><td><a href="https://arxiv.org/abs/1409.5748">Kelly &amp; Melbourne — Deterministic homogenization for fast–slow systems with chaotic noise</a></td><td>本文・定理1.1/2.3</td><td>高速カオスから拡散極限。弱収束と同一軌道誤差は別。</td></tr><tr id="ref6"><td>[6]<br>2022</td><td><a href="https://arxiv.org/abs/1903.10418">Chevyrev et al. — Deterministic homogenization under optimal moment assumptions, Part 2</a></td><td>要旨</td><td>モーメント条件と確率極限の精密化。</td></tr><tr id="ref7"><td>[7]<br>2021</td><td><a href="https://arxiv.org/abs/2010.13768">Chandramoorthy &amp; Wang — On the probability of finding nonphysical solutions through shadowing</a></td><td>要旨</td><td>近い真軌道の存在だけから物理統計の正しさは出ない。</td></tr><tr id="ref8"><td>[8]<br>2026</td><td><a href="https://doi.org/10.1073/pnas.2525390123">de Wit et al. — Data-driven Mori–Zwanzig modeling of Lagrangian particle dynamics in turbulent flows</a></td><td>著者稿本文</td><td>乱流粒子の短期精度と長期統計の実験的再現。</td></tr><tr id="ref9"><td>[9]<br>2026</td><td><a href="https://arxiv.org/abs/2601.00015">Stauffer, Gorji &amp; Lunati — Surrogate Trajectories Along Probability Flows</a></td><td>本文・§5/7.2</td><td>一時刻周辺分布の保存と経路統計の保存を区別。</td></tr><tr id="ref10"><td>[10]<br>2016/17</td><td><a href="https://arxiv.org/abs/1605.04886">Ma, Li &amp; Liu — The Derivation and Approximation of Coarse-grained Dynamics from Langevin Dynamics</a></td><td>本文・定理1/2</td><td>有理近似と補助雑音によるFDT保持。</td></tr><tr id="ref11"><td>[11]<br>2016</td><td><a href="https://arxiv.org/abs/1606.02596">Lei, Baker &amp; Li — Data-driven parameterization of the generalized Langevin equation</a></td><td>本文・式3–18</td><td>短時間モーメント・積分核・補助状態を合わせる方法。</td></tr><tr id="ref12"><td>[12]<br>2021</td><td><a href="https://arxiv.org/abs/2101.02657">Bockius et al. — Model reduction techniques for extended Markov parameterizations for GLE</a></td><td>本文・正実性と実現</td><td>相関からProny/正実補題でモデル化。実現できないフィットも扱う。</td></tr><tr id="ref13"><td>[13]<br>2023</td><td><a href="https://arxiv.org/abs/2301.08931">Koyama — Exponential sum approximations of finite completely monotonic functions</a></td><td>本文・定理2.14等</td><td>正測度の指数和近似と幾何収束。</td></tr><tr id="ref14"><td>[14]<br>2025</td><td><a href="https://doi.org/10.1007/s10915-025-02799-z">Zimmerling, Druskin &amp; Simoncini — Monotonicity, Bounds and Acceleration of Block Gauss and Gauss–Radau Quadrature</a></td><td>著者稿本文・定理</td><td>実Laplace変数のresolvent順序。時間域の行列順序と区別。</td></tr><tr id="ref15"><td>[15]<br>2013</td><td><a href="https://www.math.kent.edu/~reichel/publications/blkagauss.pdf">Fenu et al. — Block Gauss and anti-Gauss quadrature with application to networks</a></td><td>本文・序論と方法</td><td>条件付きの成分別行列関数評価。</td></tr><tr id="ref16"><td>[16]<br>2003</td><td><a href="https://arxiv.org/abs/math/0204049">Hansen &amp; Pedersen — Jensen’s Operator Inequality</a></td><td>本文・特徴付け</td><td>作用素凸性は通常の凸性より強い。</td></tr><tr id="ref17"><td>[17]<br>2024</td><td><a href="https://arxiv.org/abs/2102.13505">Alfonsi &amp; Kebaier — Approximation of stochastic Volterra equations with kernels of completely monotone type</a></td><td>要旨・後続定理との照合</td><td>核が異なるSVEのL2誤差。原定理全体は未精読。</td></tr><tr id="ref18"><td>[18]<br>2023</td><td><a href="https://arxiv.org/abs/2108.05048">Bayer &amp; Breneis — Markovian approximations of stochastic Volterra equations with the fractional kernel</a></td><td>要旨</td><td>Gaussian求積による多因子化と強収束。</td></tr><tr id="ref19"><td>[19]<br>2024–26</td><td><a href="https://arxiv.org/abs/2402.11705">Lang &amp; Lu — Learning Memory Kernels in Generalized Langevin Equations</a></td><td>本文・§1–4</td><td>相関推定誤差から重み付き核誤差への保証。</td></tr><tr id="ref20"><td>[20]<br>2025/26</td><td><a href="https://arxiv.org/abs/2512.10256">Lang &amp; Lu — Error Analysis of GLE with Approximated Memory Kernels</a></td><td>本文・序論、比較定理、§3/6</td><td>同期した加法白色雑音で核摂動を評価。FDT雑音の変更は対象外。</td></tr><tr id="ref21"><td>[21]<br>2026 07</td><td><a href="https://arxiv.org/abs/2607.05151">Braun, Hanke &amp; Wolf — On data-driven parameterizations of multidimensional generalized Langevin dynamics</a></td><td>要旨のみ</td><td>二次ポテンシャル・多次元のMarkov実現。本文取得未了。</td></tr><tr id="ref22"><td>[22]<br>2026 09</td><td><a href="https://arxiv.org/abs/2609.17472">Corneille et al. — Convergence in Hölder norms for Markovian approximations of stochastic Volterra equations</a></td><td>本文・設定、定理3.15周辺</td><td>ドリフト核と雑音フィルタをともに変更する経路誤差。</td></tr><tr id="ref23"><td>[23]<br>2025</td><td><a href="https://doi.org/10.1103/PhysRevE.111.034105">Giona, Procopio &amp; Pezzotti — Dynamic fluctuation-dissipation theory for GLE</a></td><td>著者稿本文・前半と結論</td><td>安定性、Markov実現、確率実現を区別。</td></tr><tr id="ref24"><td>[24]<br>2013</td><td><a href="https://arxiv.org/abs/1102.2950">Dörfler &amp; Bullo — Kron Reduction of Graphs with Applications to Electrical Networks</a></td><td>著者本文・主要定理</td><td>Schur補完、符号保存、内部経路による境界辺生成。</td></tr><tr id="ref25"><td>[25]<br>2022/23</td><td><a href="https://arxiv.org/abs/2203.12084">Singh et al. — Time-Domain Generalization of Kron Reduction</a></td><td>本文・定理1</td><td>不均一R/Lでも時間域の縮約。対象素子が熱/RCとは異なる。</td></tr><tr id="ref26"><td>[26]<br>2015</td><td><a href="https://arxiv.org/abs/1507.00219">Oyaro &amp; Triverio — TurboMOR</a></td><td>本文・Appendix A</td><td>多端子RCの受動性と高次モーメント保存。</td></tr><tr id="ref27"><td>[27]<br>2020</td><td><a href="https://arxiv.org/abs/2003.03559">Cheng et al. — Reduced Order Modeling of Diffusively Coupled Network Systems</a></td><td>本文・最適辺重み</td><td>グラフ構造を保つ拡散系の縮約。</td></tr><tr id="ref28"><td>[28]<br>2022</td><td><a href="https://arxiv.org/abs/2211.15301">Min &amp; Mallada — Learning Coherent Clusters in Weakly-Connected Network Systems</a></td><td>本文・集約条件</td><td>クラスター化による低次元化。</td></tr><tr id="ref29"><td>[29]<br>2020</td><td><a href="https://arxiv.org/abs/1907.05478">Redmann — An L2_T-error bound for time-limited balanced truncation</a></td><td>本文・誤差定理</td><td>有限時間のL2保証そのものは既知。</td></tr><tr id="ref30"><td>[30]<br>2020</td><td><a href="https://arxiv.org/abs/2006.09170">Dorschky, Reis &amp; Voigt — Balanced truncation for symmetric second order systems</a></td><td>本文・受動性条件</td><td>二階系・受動性を保つ縮約。</td></tr><tr id="ref31"><td>[31]<br>2026 07</td><td><a href="https://arxiv.org/abs/2607.05934">Xu et al. — FlexRC</a></td><td>要旨のみ</td><td>多端子RCの多点モーメント整合。</td></tr><tr id="ref32"><td>[32]<br>2025</td><td><a href="https://arxiv.org/abs/2510.16550">Yin et al. — SMP-RCR</a></td><td>本文・§I–III</td><td>疎RC、モーメント一致、負素子を避ける課題。</td></tr><tr id="ref33"><td>[33]<br>1982</td><td><a href="https://ieeexplore.ieee.org/document/1085084/">Matsumoto — RC admittance matrix realization by linear transformation</a></td><td>要旨・書誌のみ</td><td>最重要未比較。transformerless grounded RC合成の定理5。</td></tr><tr id="ref34"><td>[34]<br>2016</td><td><a href="https://arxiv.org/abs/1604.06197">Brandts &amp; Křížek — Factorization of CP-rank-3 completely positive matrices</a></td><td>本文・§1.2/3、Corollary 3.6・式(6)</td><td>基礎例・閾値1/2は既知定理の系。追究4の鋭い集約境界も同定理から導出。刊行版pp959,965–967を追加照合。</td></tr><tr id="ref35"><td>[35]<br>2004</td><td><a href="https://sites.math.rutgers.edu/~sussmann/papers/res-farina-tutorial-positive-realization.pdf">Benvenuti &amp; Farina — A Tutorial on the Positive Realization Problem</a></td><td>本文・錐と最少実現</td><td>正値性による次数増大という一般現象は既知。解説論文。</td></tr><tr id="ref36"><td>[36]<br>2021/22</td><td><a href="https://arxiv.org/abs/2006.13333">Grussler, Damm &amp; Sepulchre — Balanced truncation of k-positive systems</a></td><td>本文</td><td>内部正値性・対称性と低次数化の関係。</td></tr><tr id="ref37"><td>[37]<br>2001</td><td><a href="https://ieeexplore.ieee.org/document/955077/">Ganesh &amp; Chen — RC-in RC-out model order reduction accurate up to second order moments</a></td><td>要旨・書誌のみ</td><td>RC素子へ戻しながら初期モーメントを合わせる方法。本文未読。</td></tr><tr id="ref38"><td>[38]<br>2024</td><td><a href="https://re.public.polimi.it/handle/11311/1287338">Codecasa et al. — Fast Error-Bounded MOR-Based Approximation of Heat Conduction Problems in Electronics</a></td><td>機関公開要旨</td><td>熱伝導の実用的誤差保証。本文比較は未了。</td></tr><tr id="ref39"><td>[39]<br>2023</td><td><a href="https://arxiv.org/abs/2301.01052">Liljegren-Sailer — A time domain a posteriori error bound for balancing-related model order reduction</a></td><td>要旨</td><td>有限時間・非零初期値も扱う。</td></tr><tr id="ref40"><td>[40]<br>2020</td><td><a href="https://arxiv.org/abs/2006.02495">Schröder &amp; Voigt — Balanced Truncation with A Priori Error Bounds for LTI Systems with Nonzero Initial Value</a></td><td>要旨</td><td>初期値を含めた先験誤差保証。</td></tr><tr id="ref41"><td>[41]<br>2014/16</td><td><a href="https://arxiv.org/html/1404.3240v1">Fawzi &amp; Parrilo — Self-scaled bounds for atomic cone ranks: applications to nonnegative rank and cp-rank</a></td><td>arXiv:1404.3240v1の本文・§1/4、特に§4.2の式(51)、§4.5</td><td>刊行版：Math. Programming 158(1):417–465（2016）。本ノートの式(51)・節番号とコードは<strong>arXiv:1404.3240v1</strong>に対応。閉性・CPランクSDP・K₂,₃例を確認し、同版のSDPを実装して厳密比較。</td></tr><tr id="ref42"><td>[42]<br>2019</td><td><a href="https://fscdn.rohm.com/en/products/databook/applinote/discrete/transistor/what_is_a_thermal_model_tr_an-e.pdf">ROHM — What is a Thermal Model?</a></td><td>メーカー資料本文・pp1–3</td><td>熱とRC回路の対応、測定からのCauer模型、各素子と材料層は1対1とは限らない。</td></tr><tr id="ref43"><td>[43]<br>2022</td><td><a href="https://doi.org/10.1016/j.automatica.2022.110422">Luca Benvenuti — Minimal positive realizations: A survey</a></td><td>著者稿の冒頭pp1–5を分担確認。§7/9の追加取得は403、未精読。</td><td>Automatica 143, 110422。非負Hankelランクによる次数下界と実験からの区画数推定。更新survey。</td></tr><tr id="ref44"><td>[44]<br>2012/15</td><td><a href="https://arxiv.org/pdf/1210.6970">Fawzi &amp; Parrilo — Lower bounds on nonnegative rank via nonnegative nuclear norms</a></td><td>本文・§2.1–2.3、Theorem 3</td><td>Math. Programming 153(1):41–66。近似非負ランクの定量的下界。誤差に頑健な次数認証の一般論は既知。</td></tr><tr id="ref45"><td>[45]<br>2017/18稿</td><td><a href="https://arxiv.org/pdf/1708.01573">Gribling, de Laat &amp; Laurent — Lower bounds on matrix factorization ranks via noncommutative polynomial optimization</a></td><td>本文・§3、§3.5.1 Lemma 11</td><td>既存SDPを強めるモーメント階層。収束先を整数CPランクそのものと取り違えない。</td></tr><tr id="ref46"><td>[46]<br>1973</td><td><a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/cta.4490010203">Richard A. Stein — RC admittance realization by grounded-capacitor structures</a></td><td>出版社要旨・参考文献のみ</td><td>IJCTA 1(2):119–126。接地容量の多端子回路と最少容量個数を明示。最小性の厳密な範囲は本文未読。</td></tr><tr id="ref47"><td>[47]<br>2009</td><td><a href="https://ieeexplore.ieee.org/document/5274986/">D. B. Kandić &amp; B. D. Reljin — On Synthesis of Immitance Matrices of Transformerless RLC Networks</a></td><td>公開要旨・書誌のみ</td><td>ECCTD:303–306、DOI 10.1109/ECCTD.2009.5274986。非最小の共通接地RC実現も扱う。本文比較未了。</td></tr><tr id="ref48"><td>[48]<br>2008</td><td><a href="https://onlinelibrary.wiley.com/doi/10.1155/2008/513582">Kandić &amp; Reljin — Explicit Solution of the Inverse Eigenvalue Problem of Real Symmetric Matrices and Its Application to Electrical Network Synthesis</a></td><td>本文・主要定理と§5。追究4で出版社PDFの式(5.3)–(5.4)も確認</td><td>対称行列・符号条件と回路合成。driving-pointの構成を固定多端子の最小性と同一視しない。</td></tr><tr id="ref49"><td>[49]<br>2008</td><td><a href="https://escholarship.org/content/qt18b40014/qt18b40014.pdf">de Callafon et al. — General Realization Algorithm for Modal Identification of Linear Dynamic Systems</a></td><td>本文・ERA/GRA、weighted Hankelの節</td><td>J. Engineering Mechanics 134(9):712–722。有限の任意入力を扱う実現は既存。通常次数と物理的次数を区別。</td></tr><tr id="ref50"><td>[50]<br>2020</td><td><a href="https://www.jstage.jst.go.jp/article/nolta/11/2/11_157/_pdf/-char/en">Fukunaga &amp; Funaki — Transient thermal network model identification for power module packages</a></td><td>本文・§2–5</td><td>NOLTA 11(2):157–169。熱入力→温度の実測、逆畳み込み、雑音処理。今回との入出力差を明示。</td></tr><tr id="ref51"><td>[51]<br>2007</td><td><a href="https://zbc.uz.zgora.pl/repozytorium/Content/78645/download/">Kaczorek — Positive partial realization problem for linear discrete-time systems</a></td><td>本文・定理と結論</td><td>有限Markov系列の正値実現と構成の十分条件。全低次数候補を排除する議論とは区別。</td></tr><tr id="ref52"><td>[52]<br>2010/11稿</td><td><a href="https://arxiv.org/html/1010.3566v3">Bocci, Carlini &amp; Rapallo — Perturbation of matrices and non-negative rank with a view toward statistical models</a></td><td>本文・Theorem 2</td><td>非負ランクが減らない近傍の存在。定性的な距離の存在を新規性にしない。</td></tr><tr id="ref53"><td>[53]<br>2026</td><td><a href="https://arxiv.org/html/2605.14058v1">Baeckelant, Vandaele &amp; Gillis — Computing Lower Bounds on the Nonnegative Rank via Non-Convex Optimization Solvers</a></td><td>v1本文・§2–4。v2の更新書誌も確認</td><td>古典的な下界を非凸最適化で計算する比較研究。今回の式の先取性を保証する資料ではない。</td></tr><tr id="ref54"><td>[54]<br>1981</td><td><a href="https://meiji.repo.nii.ac.jp/record/11803/files/kagakugijutsukiyo_19_11-1.pdf">松本直樹 — 線形変換によるRC回路網の構成 / Synthesis of RC Networks through Use of Linear Transformation</a></td><td>本文・式(6b)/(9)、§4–5、回路図と結語。主要頁は画像でも確認</td><td>明治大学科学技術研究所紀要19、11-1–11-15。共通帰線は全容量接地を意味しない。1982の代用にはしない。</td></tr><tr id="ref55"><td>[55]<br>1976</td><td><a href="https://mspace.lib.umanitoba.ca/bitstream/1993/13712/1/Ali_Some_new.pdf">Adel Ahmed Ali — Some new aspects of congruence transformation as applied to RC ladder networks</a></td><td>大学公開博士論文・§2.2、pp6–7の式(2.1)–(2.5)を画像確認</td><td>正則な平方のHowitt変換とSchur補の不変性。素子値の総和と素子個数の最小化も区別。</td></tr><tr id="ref56"><td>[56]<br>2001</td><td><a href="https://journals.uwyo.edu/index.php/ela/article/download/135/135/135">Naomi Shaked-Monderer — Minimal CP Rank</a></td><td>本文・序論、Theorem 1.6、Example 2.1 p143</td><td>ELA8:140–157。正成分化A+ε(A1)(A1)ᵀはHρの構成と一致。正確な閾値は同例にはない。</td></tr><tr id="ref57"><td>[57]<br>1998</td><td><a href="https://doi.org/10.1098/rspa.1998.0218">J. B. M. Melissen — How different can colours be? Maximum separation of points on a spherical octant</a></td><td>原論文の公開全文転載・§1/5、pp1501–1504、式(5.1)を分担確認</td><td>Proc. R. Soc. A454:1499–1508。4点の最適分離から既知の定量的CP3排除式。今回の三集約境界とは別の極値問題。</td></tr><tr id="ref58"><td>[58]<br>2017/18</td><td><a href="https://link.springer.com/article/10.1007/s10100-017-0499-2">I. M. Bomze — Building a completely positive factorization</a></td><td>本文・§2、§3.1–3.2、Theorem 3.1、§6</td><td>CEJOR26:287–305。正対角合同によるCPランク不変性と正規化は既知。非一様対角の利用自体は新規でない。</td></tr><tr id="ref59"><td>[59]<br>1968</td><td><a href="https://doi.org/10.14288/1.0104245">Richard Adolph Stein — On the synthesis of two-element-kind multiport networks</a></td><td>大学の書誌・原要旨の転載。本文は取得できず</td><td>UBC学位論文の新たな取得候補。1973著者との同一性・本文定理の連続性は未確定。impedanceの要旨をadmittance定理の代用にしない。</td></tr><tr id="ref60"><td>[60]<br>2003</td><td><a href="https://cris.technion.ac.il/en/publications/completely-positive-matrices/">Abraham Berman &amp; Naomi Shaked-Monderer — Completely Positive Matrices</a></td><td>著者所属機関の書誌を確認。対象本文は未取得</td><td>World Scientific、DOI 10.1142/5273。追加査読による照合候補。小サイズ行列・CPランクの関連節と、三集約境界との同値性は本文照合待ち。</td></tr>
-<tr id="ref61"><td>[61]<br>2014稿／2015刊行</td><td><a href="https://api.newton.ac.uk/website/v0/events/preprints/NI14088">Bomze, Dickinson &amp; Still — The structure of completely positive matrices according to their CP-rank and CP-plus-rank（公開著者稿）</a></td><td>2014 11 04の15頁稿を本文・文献表まで照合。Definition1.1、Theorems2.4/4.8/5.1、Lemma5.2、§6を重点確認。刊行版との番号は未照合</td><td>LAA482:191–206、DOI10.1016/j.laa.2015.05.021。下半連続性・正距離の存在・正因子化は既知。三集約式・今回の個別成分定数・二窓手順の同じ記載はこの稿では確認できず。</td></tr><tr id="ref62"><td>[62]<br>1965</td><td><a href="https://doi.org/10.1109/TCT.1965.1082411">Basson &amp; Halkias — The Realization of RC N-Ports</a></td><td>IEEE登録書誌・DOIを確認。本文未取得</td><td>IEEE Trans Circuit Theory12(2):247–256。共通帰線RC実現の古典候補。固定アドミタンス・対角内部容量・全次数最小性との同値性は未照合。</td></tr><tr id="ref63"><td>[63]<br>1971</td><td><a href="https://doi.org/10.1109/TCT.1971.1083258">Stein &amp; Moore — On the synthesis of RC multiport networks by linear transformations</a></td><td>IEEE登録書誌・DOIを確認。本文未取得</td><td>IEEE Trans Circuit Theory18(2):294–297。変換と最小性の正確な範囲は未照合。</td></tr><tr id="ref64"><td>[64]<br>1971</td><td><a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/cta.4490010203">Stein — Synthesis of grounded-capacitor multiport RC networks</a></td><td>リンク先1973論文の参考文献で書誌確認。会議稿本文未取得</td><td>London、IEEE Int Symp Electrical Network Theory、49–50。会議録71 C 53-CT。1973論文とは区別して扱う。</td></tr><tr id="ref65"><td>[65]<br>2026公開／2027巻号</td><td><a href="https://link.springer.com/article/10.1007/s40314-026-03906-y">Mathew &amp; Chandrashekaran — Sufficient conditions for a doubly non-negative matrix to be completely positive</a></td><td>出版社要旨・書誌・参考文献。購読限定、公開著者稿未取得</td><td>Comp. Appl. Math.46:51。公開2026 09 19。錐の最大角に基づく十分条件・CP因子・cp-rank=rankを要旨が述べる。具体的閾値との比較は未実施。</td></tr><tr id="ref66"><td>[66]<br>2014</td><td><a href="https://doi.org/10.1109/SAPIW.2014.6844531">De Tommasi, Magnani, d’Alessandro &amp; de Magistris — Time domain identification of passive multiport RC networks with convex optimization: An application to thermal impedance macromodeling</a></td><td>著者ページの要旨・Crossref書誌を確認。本文未取得</td><td>IEEE SPI2014:1–4。時間定数推定と受動制約下の留数同定。二窓による全低状態数候補の排除との本文比較は残る。</td></tr><tr id="ref67"><td>[67]<br>2021</td><td><a href="https://cris.technion.ac.il/en/publications/copositive-and-completely-positive-matrices/">Shaked-Monderer &amp; Berman — Copositive and Completely Positive Matrices</a></td><td>機関書誌・試し読み入口まで。関連章本文未取得</td><td>World Scientific、DOI10.1142/11386。2003年書の更新・増補版。小サイズ・CPランク・rank-revealing因子化の章を今後照合。</td></tr>
+</section></details><details class="archive" id="bibliography"><summary>E. 文献73件：確認した範囲と未取得資料</summary><p class="archive-note">本文を確認した資料と、要旨・書誌のみの資料を区別しています。73件全てを全文精読したという意味ではありません。BDSは公開著者稿を新たに本文照合し、追加6件は取得範囲を明記しています。</p><section id="references"><h2>11. 主要文献73件と確認範囲</h2><p class="muted">本文確認済み＝関連する定理・設定・導出を点検。要旨のみ＝その範囲を超えた同値性判断には使用しない。プレプリント年と刊行年が異なる場合は併記。解説論文はその旨を記載。</p><div class="table-wrap"><table class="refs"><thead><tr><th>番号・年</th><th>文献</th><th>確認範囲</th><th>今回への意味</th></tr></thead><tbody><tr id="ref1"><td>[1]<br>1973</td><td><a href="https://link.springer.com/article/10.1007/BF01008729">Zwanzig — Nonlinear generalized Langevin equations</a></td><td>要旨</td><td>非線形系からの厳密GLEという出発点は既知。</td></tr><tr id="ref2"><td>[2]<br>2009</td><td><a href="https://www.pnas.org/doi/10.1073/pnas.0902633106">Darve, Solomon &amp; Kia — Computing generalized Langevin equations and generalized Fokker–Planck equations</a></td><td>要旨</td><td>射影と記憶項を計算する先行研究。</td></tr><tr id="ref3"><td>[3]<br>2018</td><td><a href="https://arxiv.org/abs/1708.02235">Zhu, Dominy &amp; Venturi — On the estimation of the Mori–Zwanzig memory integral</a></td><td>本文・定理3.1–3.5</td><td>短記憶・t-model・階層近似の誤差と収束条件。</td></tr><tr id="ref4"><td>[4]<br>2017</td><td><a href="https://arxiv.org/abs/1611.06277">Gouasmi, Parish &amp; Duraisamy — A priori estimation of memory effects</a></td><td>要旨</td><td>非線形系の記憶推定。近似直交力学と真の核を区別。</td></tr><tr id="ref5"><td>[5]<br>2017</td><td><a href="https://arxiv.org/abs/1409.5748">Kelly &amp; Melbourne — Deterministic homogenization for fast–slow systems with chaotic noise</a></td><td>本文・定理1.1/2.3</td><td>高速カオスから拡散極限。弱収束と同一軌道誤差は別。</td></tr><tr id="ref6"><td>[6]<br>2022</td><td><a href="https://arxiv.org/abs/1903.10418">Chevyrev et al. — Deterministic homogenization under optimal moment assumptions, Part 2</a></td><td>要旨</td><td>モーメント条件と確率極限の精密化。</td></tr><tr id="ref7"><td>[7]<br>2021</td><td><a href="https://arxiv.org/abs/2010.13768">Chandramoorthy &amp; Wang — On the probability of finding nonphysical solutions through shadowing</a></td><td>要旨</td><td>近い真軌道の存在だけから物理統計の正しさは出ない。</td></tr><tr id="ref8"><td>[8]<br>2026</td><td><a href="https://doi.org/10.1073/pnas.2525390123">de Wit et al. — Data-driven Mori–Zwanzig modeling of Lagrangian particle dynamics in turbulent flows</a></td><td>著者稿本文</td><td>乱流粒子の短期精度と長期統計の実験的再現。</td></tr><tr id="ref9"><td>[9]<br>2026</td><td><a href="https://arxiv.org/abs/2601.00015">Stauffer, Gorji &amp; Lunati — Surrogate Trajectories Along Probability Flows</a></td><td>本文・§5/7.2</td><td>一時刻周辺分布の保存と経路統計の保存を区別。</td></tr><tr id="ref10"><td>[10]<br>2016/17</td><td><a href="https://arxiv.org/abs/1605.04886">Ma, Li &amp; Liu — The Derivation and Approximation of Coarse-grained Dynamics from Langevin Dynamics</a></td><td>本文・定理1/2</td><td>有理近似と補助雑音によるFDT保持。</td></tr><tr id="ref11"><td>[11]<br>2016</td><td><a href="https://arxiv.org/abs/1606.02596">Lei, Baker &amp; Li — Data-driven parameterization of the generalized Langevin equation</a></td><td>本文・式3–18</td><td>短時間モーメント・積分核・補助状態を合わせる方法。</td></tr><tr id="ref12"><td>[12]<br>2021</td><td><a href="https://arxiv.org/abs/2101.02657">Bockius et al. — Model reduction techniques for extended Markov parameterizations for GLE</a></td><td>本文・正実性と実現</td><td>相関からProny/正実補題でモデル化。実現できないフィットも扱う。</td></tr><tr id="ref13"><td>[13]<br>2023</td><td><a href="https://arxiv.org/abs/2301.08931">Koyama — Exponential sum approximations of finite completely monotonic functions</a></td><td>本文・定理2.14等</td><td>正測度の指数和近似と幾何収束。</td></tr><tr id="ref14"><td>[14]<br>2025</td><td><a href="https://doi.org/10.1007/s10915-025-02799-z">Zimmerling, Druskin &amp; Simoncini — Monotonicity, Bounds and Acceleration of Block Gauss and Gauss–Radau Quadrature</a></td><td>著者稿本文・定理</td><td>実Laplace変数のresolvent順序。時間域の行列順序と区別。</td></tr><tr id="ref15"><td>[15]<br>2013</td><td><a href="https://www.math.kent.edu/~reichel/publications/blkagauss.pdf">Fenu et al. — Block Gauss and anti-Gauss quadrature with application to networks</a></td><td>本文・序論と方法</td><td>条件付きの成分別行列関数評価。</td></tr><tr id="ref16"><td>[16]<br>2003</td><td><a href="https://arxiv.org/abs/math/0204049">Hansen &amp; Pedersen — Jensen’s Operator Inequality</a></td><td>本文・特徴付け</td><td>作用素凸性は通常の凸性より強い。</td></tr><tr id="ref17"><td>[17]<br>2024</td><td><a href="https://arxiv.org/abs/2102.13505">Alfonsi &amp; Kebaier — Approximation of stochastic Volterra equations with kernels of completely monotone type</a></td><td>要旨・後続定理との照合</td><td>核が異なるSVEのL2誤差。原定理全体は未精読。</td></tr><tr id="ref18"><td>[18]<br>2023</td><td><a href="https://arxiv.org/abs/2108.05048">Bayer &amp; Breneis — Markovian approximations of stochastic Volterra equations with the fractional kernel</a></td><td>要旨</td><td>Gaussian求積による多因子化と強収束。</td></tr><tr id="ref19"><td>[19]<br>2024–26</td><td><a href="https://arxiv.org/abs/2402.11705">Lang &amp; Lu — Learning Memory Kernels in Generalized Langevin Equations</a></td><td>本文・§1–4</td><td>相関推定誤差から重み付き核誤差への保証。</td></tr><tr id="ref20"><td>[20]<br>2025/26</td><td><a href="https://arxiv.org/abs/2512.10256">Lang &amp; Lu — Error Analysis of GLE with Approximated Memory Kernels</a></td><td>本文・序論、比較定理、§3/6</td><td>同期した加法白色雑音で核摂動を評価。FDT雑音の変更は対象外。</td></tr><tr id="ref21"><td>[21]<br>2026 07</td><td><a href="https://arxiv.org/abs/2607.05151">Braun, Hanke &amp; Wolf — On data-driven parameterizations of multidimensional generalized Langevin dynamics</a></td><td>要旨のみ</td><td>二次ポテンシャル・多次元のMarkov実現。本文取得未了。</td></tr><tr id="ref22"><td>[22]<br>2026 09</td><td><a href="https://arxiv.org/abs/2609.17472">Corneille et al. — Convergence in Hölder norms for Markovian approximations of stochastic Volterra equations</a></td><td>本文・設定、定理3.15周辺</td><td>ドリフト核と雑音フィルタをともに変更する経路誤差。</td></tr><tr id="ref23"><td>[23]<br>2025</td><td><a href="https://doi.org/10.1103/PhysRevE.111.034105">Giona, Procopio &amp; Pezzotti — Dynamic fluctuation-dissipation theory for GLE</a></td><td>著者稿本文・前半と結論</td><td>安定性、Markov実現、確率実現を区別。</td></tr><tr id="ref24"><td>[24]<br>2013</td><td><a href="https://arxiv.org/abs/1102.2950">Dörfler &amp; Bullo — Kron Reduction of Graphs with Applications to Electrical Networks</a></td><td>著者本文・主要定理</td><td>Schur補完、符号保存、内部経路による境界辺生成。</td></tr><tr id="ref25"><td>[25]<br>2022/23</td><td><a href="https://arxiv.org/abs/2203.12084">Singh et al. — Time-Domain Generalization of Kron Reduction</a></td><td>本文・定理1</td><td>不均一R/Lでも時間域の縮約。対象素子が熱/RCとは異なる。</td></tr><tr id="ref26"><td>[26]<br>2015</td><td><a href="https://arxiv.org/abs/1507.00219">Oyaro &amp; Triverio — TurboMOR</a></td><td>本文・Appendix A</td><td>多端子RCの受動性と高次モーメント保存。</td></tr><tr id="ref27"><td>[27]<br>2020</td><td><a href="https://arxiv.org/abs/2003.03559">Cheng et al. — Reduced Order Modeling of Diffusively Coupled Network Systems</a></td><td>本文・最適辺重み</td><td>グラフ構造を保つ拡散系の縮約。</td></tr><tr id="ref28"><td>[28]<br>2022</td><td><a href="https://arxiv.org/abs/2211.15301">Min &amp; Mallada — Learning Coherent Clusters in Weakly-Connected Network Systems</a></td><td>本文・集約条件</td><td>クラスター化による低次元化。</td></tr><tr id="ref29"><td>[29]<br>2020</td><td><a href="https://arxiv.org/abs/1907.05478">Redmann — An L2_T-error bound for time-limited balanced truncation</a></td><td>本文・誤差定理</td><td>有限時間のL2保証そのものは既知。</td></tr><tr id="ref30"><td>[30]<br>2020</td><td><a href="https://arxiv.org/abs/2006.09170">Dorschky, Reis &amp; Voigt — Balanced truncation for symmetric second order systems</a></td><td>本文・受動性条件</td><td>二階系・受動性を保つ縮約。</td></tr><tr id="ref31"><td>[31]<br>2026 07</td><td><a href="https://arxiv.org/abs/2607.05934">Xu et al. — FlexRC</a></td><td>要旨のみ</td><td>多端子RCの多点モーメント整合。</td></tr><tr id="ref32"><td>[32]<br>2025</td><td><a href="https://arxiv.org/abs/2510.16550">Yin et al. — SMP-RCR</a></td><td>本文・§I–III</td><td>疎RC、モーメント一致、負素子を避ける課題。</td></tr><tr id="ref33"><td>[33]<br>1982</td><td><a href="https://ieeexplore.ieee.org/document/1085084/">Matsumoto — RC admittance matrix realization by linear transformation</a></td><td>要旨・書誌のみ</td><td>最重要未比較。transformerless grounded RC合成の定理5。</td></tr><tr id="ref34"><td>[34]<br>2016</td><td><a href="https://arxiv.org/abs/1604.06197">Brandts &amp; Křížek — Factorization of CP-rank-3 completely positive matrices</a></td><td>本文・§1.2/3、Corollary 3.6・式(6)</td><td>基礎例・閾値1/2は既知定理の系。追究4の鋭い集約境界も同定理から導出。刊行版pp959,965–967を追加照合。</td></tr><tr id="ref35"><td>[35]<br>2004</td><td><a href="https://sites.math.rutgers.edu/~sussmann/papers/res-farina-tutorial-positive-realization.pdf">Benvenuti &amp; Farina — A Tutorial on the Positive Realization Problem</a></td><td>本文・錐と最少実現</td><td>正値性による次数増大という一般現象は既知。解説論文。</td></tr><tr id="ref36"><td>[36]<br>2021/22</td><td><a href="https://arxiv.org/abs/2006.13333">Grussler, Damm &amp; Sepulchre — Balanced truncation of k-positive systems</a></td><td>本文</td><td>内部正値性・対称性と低次数化の関係。</td></tr><tr id="ref37"><td>[37]<br>2001</td><td><a href="https://ieeexplore.ieee.org/document/955077/">Ganesh &amp; Chen — RC-in RC-out model order reduction accurate up to second order moments</a></td><td>要旨・書誌のみ</td><td>RC素子へ戻しながら初期モーメントを合わせる方法。本文未読。</td></tr><tr id="ref38"><td>[38]<br>2024</td><td><a href="https://re.public.polimi.it/handle/11311/1287338">Codecasa et al. — Fast Error-Bounded MOR-Based Approximation of Heat Conduction Problems in Electronics</a></td><td>機関公開要旨</td><td>熱伝導の実用的誤差保証。本文比較は未了。</td></tr><tr id="ref39"><td>[39]<br>2023</td><td><a href="https://arxiv.org/abs/2301.01052">Liljegren-Sailer — A time domain a posteriori error bound for balancing-related model order reduction</a></td><td>要旨</td><td>有限時間・非零初期値も扱う。</td></tr><tr id="ref40"><td>[40]<br>2020</td><td><a href="https://arxiv.org/abs/2006.02495">Schröder &amp; Voigt — Balanced Truncation with A Priori Error Bounds for LTI Systems with Nonzero Initial Value</a></td><td>要旨</td><td>初期値を含めた先験誤差保証。</td></tr><tr id="ref41"><td>[41]<br>2014/16</td><td><a href="https://arxiv.org/html/1404.3240v1">Fawzi &amp; Parrilo — Self-scaled bounds for atomic cone ranks: applications to nonnegative rank and cp-rank</a></td><td>arXiv:1404.3240v1の本文・§1/4、特に§4.2の式(51)、§4.5</td><td>刊行版：Math. Programming 158(1):417–465（2016）。本ノートの式(51)・節番号とコードは<strong>arXiv:1404.3240v1</strong>に対応。閉性・CPランクSDP・K₂,₃例を確認し、同版のSDPを実装して厳密比較。</td></tr><tr id="ref42"><td>[42]<br>2019</td><td><a href="https://fscdn.rohm.com/en/products/databook/applinote/discrete/transistor/what_is_a_thermal_model_tr_an-e.pdf">ROHM — What is a Thermal Model?</a></td><td>メーカー資料本文・pp1–3</td><td>熱とRC回路の対応、測定からのCauer模型、各素子と材料層は1対1とは限らない。</td></tr><tr id="ref43"><td>[43]<br>2022</td><td><a href="https://doi.org/10.1016/j.automatica.2022.110422">Luca Benvenuti — Minimal positive realizations: A survey</a></td><td>著者稿の冒頭pp1–5を分担確認。§7/9の追加取得は403、未精読。</td><td>Automatica 143, 110422。非負Hankelランクによる次数下界と実験からの区画数推定。更新survey。</td></tr><tr id="ref44"><td>[44]<br>2012/15</td><td><a href="https://arxiv.org/pdf/1210.6970">Fawzi &amp; Parrilo — Lower bounds on nonnegative rank via nonnegative nuclear norms</a></td><td>本文・§2.1–2.3、Theorem 3</td><td>Math. Programming 153(1):41–66。近似非負ランクの定量的下界。誤差に頑健な次数認証の一般論は既知。</td></tr><tr id="ref45"><td>[45]<br>2017/18稿</td><td><a href="https://arxiv.org/pdf/1708.01573">Gribling, de Laat &amp; Laurent — Lower bounds on matrix factorization ranks via noncommutative polynomial optimization</a></td><td>本文・§3、§3.5.1 Lemma 11</td><td>既存SDPを強めるモーメント階層。収束先を整数CPランクそのものと取り違えない。</td></tr><tr id="ref46"><td>[46]<br>1973</td><td><a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/cta.4490010203">Richard A. Stein — RC admittance realization by grounded-capacitor structures</a></td><td>出版社要旨・参考文献のみ</td><td>IJCTA 1(2):119–126。接地容量の多端子回路と最少容量個数を明示。最小性の厳密な範囲は本文未読。</td></tr><tr id="ref47"><td>[47]<br>2009</td><td><a href="https://ieeexplore.ieee.org/document/5274986/">D. B. Kandić &amp; B. D. Reljin — On Synthesis of Immitance Matrices of Transformerless RLC Networks</a></td><td>公開要旨・書誌のみ</td><td>ECCTD:303–306、DOI 10.1109/ECCTD.2009.5274986。非最小の共通接地RC実現も扱う。本文比較未了。</td></tr><tr id="ref48"><td>[48]<br>2008</td><td><a href="https://onlinelibrary.wiley.com/doi/10.1155/2008/513582">Kandić &amp; Reljin — Explicit Solution of the Inverse Eigenvalue Problem of Real Symmetric Matrices and Its Application to Electrical Network Synthesis</a></td><td>本文・主要定理と§5。追究4で出版社PDFの式(5.3)–(5.4)も確認</td><td>対称行列・符号条件と回路合成。driving-pointの構成を固定多端子の最小性と同一視しない。</td></tr><tr id="ref49"><td>[49]<br>2008</td><td><a href="https://escholarship.org/content/qt18b40014/qt18b40014.pdf">de Callafon et al. — General Realization Algorithm for Modal Identification of Linear Dynamic Systems</a></td><td>本文・ERA/GRA、weighted Hankelの節</td><td>J. Engineering Mechanics 134(9):712–722。有限の任意入力を扱う実現は既存。通常次数と物理的次数を区別。</td></tr><tr id="ref50"><td>[50]<br>2020</td><td><a href="https://www.jstage.jst.go.jp/article/nolta/11/2/11_157/_pdf/-char/en">Fukunaga &amp; Funaki — Transient thermal network model identification for power module packages</a></td><td>本文・§2–5</td><td>NOLTA 11(2):157–169。熱入力→温度の実測、逆畳み込み、雑音処理。今回との入出力差を明示。</td></tr><tr id="ref51"><td>[51]<br>2007</td><td><a href="https://zbc.uz.zgora.pl/repozytorium/Content/78645/download/">Kaczorek — Positive partial realization problem for linear discrete-time systems</a></td><td>本文・定理と結論</td><td>有限Markov系列の正値実現と構成の十分条件。全低次数候補を排除する議論とは区別。</td></tr><tr id="ref52"><td>[52]<br>2010/11稿</td><td><a href="https://arxiv.org/html/1010.3566v3">Bocci, Carlini &amp; Rapallo — Perturbation of matrices and non-negative rank with a view toward statistical models</a></td><td>本文・Theorem 2</td><td>非負ランクが減らない近傍の存在。定性的な距離の存在を新規性にしない。</td></tr><tr id="ref53"><td>[53]<br>2026</td><td><a href="https://arxiv.org/html/2605.14058v1">Baeckelant, Vandaele &amp; Gillis — Computing Lower Bounds on the Nonnegative Rank via Non-Convex Optimization Solvers</a></td><td>v1本文・§2–4。v2の更新書誌も確認</td><td>古典的な下界を非凸最適化で計算する比較研究。今回の式の先取性を保証する資料ではない。</td></tr><tr id="ref54"><td>[54]<br>1981</td><td><a href="https://meiji.repo.nii.ac.jp/record/11803/files/kagakugijutsukiyo_19_11-1.pdf">松本直樹 — 線形変換によるRC回路網の構成 / Synthesis of RC Networks through Use of Linear Transformation</a></td><td>本文・式(6b)/(9)、§4–5、回路図と結語。主要頁は画像でも確認</td><td>明治大学科学技術研究所紀要19、11-1–11-15。共通帰線は全容量接地を意味しない。1982の代用にはしない。</td></tr><tr id="ref55"><td>[55]<br>1976</td><td><a href="https://mspace.lib.umanitoba.ca/bitstream/1993/13712/1/Ali_Some_new.pdf">Adel Ahmed Ali — Some new aspects of congruence transformation as applied to RC ladder networks</a></td><td>大学公開博士論文・§2.2、pp6–7の式(2.1)–(2.5)を画像確認</td><td>正則な平方のHowitt変換とSchur補の不変性。素子値の総和と素子個数の最小化も区別。</td></tr><tr id="ref56"><td>[56]<br>2001</td><td><a href="https://journals.uwyo.edu/index.php/ela/article/download/135/135/135">Naomi Shaked-Monderer — Minimal CP Rank</a></td><td>本文・序論、Theorem 1.6、Example 2.1 p143</td><td>ELA8:140–157。正成分化A+ε(A1)(A1)ᵀはHρの構成と一致。正確な閾値は同例にはない。</td></tr><tr id="ref57"><td>[57]<br>1998</td><td><a href="https://doi.org/10.1098/rspa.1998.0218">J. B. M. Melissen — How different can colours be? Maximum separation of points on a spherical octant</a></td><td>原論文の公開全文転載・§1/5、pp1501–1504、式(5.1)を分担確認</td><td>Proc. R. Soc. A454:1499–1508。4点の最適分離から既知の定量的CP3排除式。今回の三集約境界とは別の極値問題。</td></tr><tr id="ref58"><td>[58]<br>2017/18</td><td><a href="https://link.springer.com/article/10.1007/s10100-017-0499-2">I. M. Bomze — Building a completely positive factorization</a></td><td>本文・§2、§3.1–3.2、Theorem 3.1、§6</td><td>CEJOR26:287–305。正対角合同によるCPランク不変性と正規化は既知。非一様対角の利用自体は新規でない。</td></tr><tr id="ref59"><td>[59]<br>1968</td><td><a href="https://doi.org/10.14288/1.0104245">Richard Adolph Stein — On the synthesis of two-element-kind multiport networks</a></td><td>大学の書誌・原要旨の転載。本文は取得できず</td><td>UBC学位論文の新たな取得候補。1973著者との同一性・本文定理の連続性は未確定。impedanceの要旨をadmittance定理の代用にしない。</td></tr><tr id="ref60"><td>[60]<br>2003</td><td><a href="https://cris.technion.ac.il/en/publications/completely-positive-matrices/">Abraham Berman &amp; Naomi Shaked-Monderer — Completely Positive Matrices</a></td><td>著者所属機関の書誌を確認。対象本文は未取得</td><td>World Scientific、DOI 10.1142/5273。追加査読による照合候補。小サイズ行列・CPランクの関連節と、三集約境界との同値性は本文照合待ち。</td></tr>
+<tr id="ref61"><td>[61]<br>2014稿／2015刊行</td><td><a href="https://api.newton.ac.uk/website/v0/events/preprints/NI14088">Bomze, Dickinson &amp; Still — The structure of completely positive matrices according to their CP-rank and CP-plus-rank（公開著者稿）</a></td><td>2014 11 04の15頁稿を本文・文献表まで照合。Definition1.1、Theorems2.4/4.8/5.1、Lemma5.2、§6を重点確認。刊行版との番号は未照合</td><td>LAA482:191–206、DOI10.1016/j.laa.2015.05.021。下半連続性・正距離の存在・正因子化は既知。三集約式・今回の個別成分定数・二窓手順の同じ記載はこの稿では確認できず。</td></tr><tr id="ref62"><td>[62]<br>1965</td><td><a href="https://doi.org/10.1109/TCT.1965.1082411">Basson &amp; Halkias — The Realization of RC N-Ports</a></td><td>IEEE登録書誌・DOIを確認。本文未取得</td><td>IEEE Trans Circuit Theory12(2):247–256。共通帰線RC実現の古典候補。固定アドミタンス・対角内部容量・全次数最小性との同値性は未照合。</td></tr><tr id="ref63"><td>[63]<br>1971</td><td><a href="https://doi.org/10.1109/TCT.1971.1083258">Stein &amp; Moore — On the synthesis of RC multiport networks by linear transformations</a></td><td>IEEE登録書誌・DOIを確認。本文未取得</td><td>IEEE Trans Circuit Theory18(2):294–297。変換と最小性の正確な範囲は未照合。</td></tr><tr id="ref64"><td>[64]<br>1971</td><td><a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/cta.4490010203">Stein — Synthesis of grounded-capacitor multiport RC networks</a></td><td>リンク先1973論文の参考文献で書誌確認。会議稿本文未取得</td><td>London、IEEE Int Symp Electrical Network Theory、49–50。会議録71 C 53-CT。1973論文とは区別して扱う。</td></tr><tr id="ref65"><td>[65]<br>2026公開／2027巻号</td><td><a href="https://link.springer.com/article/10.1007/s40314-026-03906-y">Mathew &amp; Chandrashekaran — Sufficient conditions for a doubly non-negative matrix to be completely positive</a></td><td>出版社要旨・書誌・参考文献。購読限定、公開著者稿未取得</td><td>Comp. Appl. Math.46:51。公開2026 09 19。錐の最大角に基づく十分条件・CP因子・cp-rank=rankを要旨が述べる。具体的閾値との比較は未実施。</td></tr><tr id="ref66"><td>[66]<br>2014</td><td><a href="https://doi.org/10.1109/SAPIW.2014.6844531">De Tommasi, Magnani, d’Alessandro &amp; de Magistris — Time domain identification of passive multiport RC networks with convex optimization: An application to thermal impedance macromodeling</a></td><td>著者ページの要旨・Crossref書誌を確認。本文未取得</td><td>IEEE SPI2014:1–4。時間定数推定と受動制約下の留数同定。二窓による全低状態数候補の排除との本文比較は残る。</td></tr><tr id="ref67"><td>[67]<br>2021</td><td><a href="https://cris.technion.ac.il/en/publications/copositive-and-completely-positive-matrices/">Shaked-Monderer &amp; Berman — Copositive and Completely Positive Matrices</a></td><td>機関書誌・試し読み入口まで。関連章本文未取得</td><td>World Scientific、DOI10.1142/11386。2003年書の更新・増補版。小サイズ・CPランク・rank-revealing因子化の章を今後照合。</td></tr><tr id="ref68"><td>[68]<br>2008/09稿</td><td><a href="https://arxiv.org/html/0808.0163v3">Batson, Spielman &amp; Srivastava — Twice-Ramanujan Sparsifiers</a></td><td>公開本文 Theorem 1.1・3.1</td><td>既知の重み付き疎化。CP近似と、定常応答を近似変更できる熱回路の構成上界へ使用。</td></tr><tr id="ref69"><td>[69]<br>2011稿／2013刊</td><td><a href="https://arxiv.org/html/1102.2950v1">Dörfler &amp; Bullo — Kron Reduction of Graphs with Applications to Electrical Networks</a></td><td>arXiv v1 §3.2 Theorem 6</td><td>内部経路と縮約後の辺・クリークの対応。静的構造の基礎は既知。</td></tr><tr id="ref70"><td>[70]<br>2023公開／2024巻</td><td><a href="https://link.springer.com/article/10.1007/s10107-023-01993-x">Korda, Laurent, Magron &amp; Steenkamp — Exploiting ideal-sparsity in the generalized moment problem with application to matrix factorization ranks</a></td><td>公開本文 §4.2 Lemma 13、式(51)、Example 14</td><td>CP支持の被覆下界と完全二部グラフのn²。今回の一般化の強い近接文献。</td></tr><tr id="ref71"><td>[71]<br>2011</td><td><a href="https://pure.tue.nl/ws/portalfiles/portal/3597559/904284768535061.pdf">Ionuțiu, Rommes &amp; Schilders — SparseRC: Sparsity Preserving Model Reduction for RC Circuits With Many Terminals</a><br><a href="https://doi.org/10.1109/TCAD.2011.2166075">DOI</a></td><td>公開本文・§II-B、§III、§III-C1/C2</td><td>DCの二モーメント・受動性を保存。合成後の負容量を許す点を確認。正の対角容量だけの今回の模型とは区別。</td></tr><tr id="ref72"><td>[72]<br>1987</td><td><a href="https://escholarship.org/content/qt7w51x4rb/qt7w51x4rb.pdf">Aldous &amp; Shepp — The least variable phase type distribution is Erlang</a><br><a href="https://doi.org/10.1080/15326348708807067">DOI</a></td><td>公開スキャンの原著p.467を画像で確認。主張と§1冒頭。証明全体は未精読</td><td>相数を固定した吸収時間の最小変動性。今回の非単調な二窓測定の最大化とは異なる。</td></tr><tr id="ref73"><td>[73]<br>2005 online／2006刊行</td><td><a href="https://www.cs.cmu.edu/~harchol/Papers/quasi-minimal-PH.pdf">Osogami &amp; Harchol-Balter — Closed form solutions for mapping general distributions to quasi-minimal PH distributions</a><br><a href="https://doi.org/10.1016/j.peva.2005.06.002">DOI</a></td><td>著者公開本文・§§1–3、Definitions 4/6、Theorems 1–2</td><td>三モーメント一致と相数の関係。固定多端子Kと有限窓の信号を同時に扱う今回の最少数との違いを確認。</td></tr>
 </tbody></table></div></section></details>
 </main>
-<footer class="reader-footer"><p>数学探索プロジェクト · 初版 2026 09 20 ／ 更新 2026 09 21<br>導出・数値実験・独立監査：AIとの協働。方向性と結論の監査：横田さん。形式証明・人間の専門家による査読・実機検証は未実施。証明の状態と新規性の状態を分けて記録しています。</p><p>このHTMLは外部通信なしで閲覧・操作できます。本文から証明へのリンクを開くと、対応する詳細が展開されます。</p></footer>
+<footer class="reader-footer"><p>数学探索プロジェクト · 初版 2026 09 20 ／ 更新 2026 10 03（85個の結果を検算し、適用範囲を補強）<br>導出・数値実験・独立監査：AIとの協働。方向性と結論の監査：横田さん。形式証明・人間の専門家による査読・実機検証は未実施。証明の状態と新規性の状態を分けて記録しています。</p><p>このHTMLは外部通信なしで閲覧・操作できます。本文から証明へのリンクを開くと、対応する詳細が展開されます。</p></footer>
 <script>const r=document.getElementById('rho');function update(){const x=Number(r.value);document.getElementById('rho-v').value=x.toFixed(2);document.getElementById('nodes').value=x<.5?'4':'3'}r.addEventListener('input',update);update();document.getElementById('download-code').addEventListener('click',()=>{const a=document.createElement('a');const url=URL.createObjectURL(new Blob([document.getElementById('code').textContent],{type:'text/x-python;charset=utf-8'}));a.href=url;a.download='verify_thermal.py';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)})</script>
 <script>
 function certificatePsi(d,z){d=Math.max(0,d);const u=Math.min(Math.max(0,z),d);return Math.min(u*(2*d-u),(d+u)**2/4)}
@@ -5420,4 +6179,20 @@ draw();noiseFull();window.FiveBoundsLab={certificate,preset,draw};
 
 document.querySelectorAll('[data-round6-download]').forEach(button=>button.addEventListener('click',()=>{const data=document.getElementById(button.dataset.round6Download).textContent;const url=URL.createObjectURL(new Blob([data],{type:'text/x-python;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=button.dataset.filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}));
 
+</script><script>(()=>{'use strict';
+ const $=id=>document.getElementById(id), alpha=Math.exp(-.1)*(-Math.expm1(-.1)/.1)**2*(-Math.expm1(-1))**2;
+ const bound=(n,e,b)=>n*n*Math.max(0,alpha-e)/(1+n*b);
+ function update(){
+  const n=+$('theory-n').value,e=+$('theory-eps').value,b=+$('theory-static').value,lower=bound(n,e,b);
+  $('theory-n-out').textContent=n;$('theory-eps-out').textContent=e.toFixed(3);$('theory-static-out').textContent=b.toFixed(3);
+  $('theory-linear').textContent=2*n-1;$('theory-exact').textContent=n*n;
+  $('theory-lower').textContent=lower>0?Math.ceil(lower-1e-10)+'個以上':'判定保留';
+  $('theory-note').textContent=lower>0?`α ≈ ${alpha.toFixed(6)}。この測定からの下界は ${lower.toFixed(3)}。${b===0?'定常応答を厳密保存すると、同じ条件のままn²に比例して増えます。':'定常の交差結合に追加の幅を許すと、この下界は弱まります。'}通常次数は全応答の厳密再現に対する値で、この集団測定だけから推定した次数ではありません。`:'許容誤差が集団信号以上になり、この測定から正の下界は出せません。';
+  const maxN=60,maxY=3600,X=k=>48+(k-2)/58*376,Y=v=>250-v/maxY*210;
+  const path=fn=>Array.from({length:59},(_,i)=>`${i?'L':'M'}${X(i+2).toFixed(2)},${Y(fn(i+2)).toFixed(2)}`).join(' ');
+  $('theory-plot').innerHTML=`<svg viewBox="0 0 460 294" aria-hidden="true"><text x="48" y="19" font-size="12">内部状態数</text>${[0,1200,2400,3600].map(v=>`<path d="M48 ${Y(v)}H424" stroke="#d5ded5"/><text x="40" y="${Y(v)+4}" text-anchor="end" font-size="11">${v}</text>`).join('')}<path d="${path(k=>k*k)}" fill="none" stroke="#a98a47" stroke-width="2" stroke-dasharray="5 4"/><path d="${path(k=>bound(k,e,b))}" fill="none" stroke="#0a7166" stroke-width="3"/><path d="${path(k=>2*k-1)}" fill="none" stroke="#ab4f2e" stroke-width="2"/><path d="M${X(n)} 35V250" stroke="#667c71" stroke-dasharray="2 4"/><circle cx="${X(n)}" cy="${Y(lower)}" r="4" fill="#0a7166"/>${[2,20,40,60].map(v=>`<text x="${X(v)}" y="269" text-anchor="middle" font-size="11">${v}</text>`).join('')}<text x="235" y="288" text-anchor="middle" font-size="12">各側の境界数 n</text></svg>`;
+ }
+ for(const id of ['theory-n','theory-eps','theory-static'])$(id).addEventListener('input',update);
+ window.Round7Lab={alpha,bound};update();
+})();
 </script></body></html>
