@@ -1,0 +1,8 @@
+{
+  "background_color": "#f7f6f2",
+  "display": "standalone",
+  "name": "NIKKI - 日記",
+  "short_name": "NIKKI - 日記",
+  "start_url": "/",
+  "theme_color": "#20332d"
+}
