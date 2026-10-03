@@ -125,6 +125,7 @@ button:focus-visible{outline:2px solid #ffd66b;outline-offset:2px}
 [hidden]{display:none!important}
 #fest .fui{transition:opacity .6s}#fest.dim .fui{opacity:0;pointer-events:none}
 .launchpad{position:absolute;left:0;right:0;bottom:44px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 10px}.lrow{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}.lb{padding:8px 11px;border-radius:12px;background:#0b1026c8;border:1px solid #ffffff2e;font-size:13px;color:#fff}.lb.giant{border-color:#ffd66b99;color:#ffd66b}.lb.mega{border-color:#ff6b6b;color:#ffb3b3;font-weight:700;background:#2a0b14d0}.lb.src{font-size:12px;padding:6px 10px;opacity:.75}.lb.src.on{background:#ffd66b;color:#2a1d00;opacity:1;border-color:#ffd66b}.lb:active{transform:scale(.95)}.festinfo{bottom:12px}
+#fest .sky-r{flex-wrap:wrap;justify-content:flex-end}#festGyro.on{background:#ffd66b;color:#2a1d00}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -183,7 +184,7 @@ button:focus-visible{outline:2px solid #ffd66b;outline-offset:2px}
   </section>
 
                 <section id="fest" class="screen">
-    <div class="sky-top pe fui"><button class="back" id="festBack">‹ もどる</button><div class="sky-r"><button class="back" id="festFS">⛶ 全画面</button><button class="back" id="festSnd">🔊</button></div></div>
+    <div class="sky-top pe fui"><button class="back" id="festBack">‹ もどる</button><div class="sky-r"><button class="back" id="festGyro" hidden>📱 傾きで見回す</button><button class="back" id="festCenter" hidden>⌖ 正面</button><button class="back" id="festFS">⛶ 全画面</button><button class="back" id="festSnd">🔊</button></div></div>
     <p class="skyhint fui">土手に座って見上げています。ドラッグで見回せます・タップでボタンを出し入れ</p>
     <div class="festcap" id="festCap"></div>
     <div class="launchpad fui pe" id="festPad"><div class="lrow"><button class="lb" data-sz="l">尺玉</button><button class="lb" data-sz="xl">三尺</button><button class="lb" data-sz="xxl">四尺</button><button class="lb" data-sz="go">五尺</button><button class="lb giant" data-sz="x10">十尺</button><button class="lb giant" data-sz="x20">二十尺</button><button class="lb mega" data-sz="x100">百尺</button></div><div class="lrow"><button class="lb src on" id="festOrig">あなたの花火</button><button class="lb src" id="festRand">おまかせの玉</button></div></div>
@@ -543,9 +544,25 @@ c=mix(c,max(c,b),uBlur)+b*uBlur*0.35;c=c*(1.0-0.3*r2*r2);c+=uDay*uDay*vec3(0.38,
   function defaultCam(){yaw=0;pitch=Math.asin(clamp((2.6-C0.y)/dist,-1,1));userMoved=false;}
   function place(){pitch=clamp(pitch,Math.asin(clamp((1.3-C0.y)/dist,-1,1)),0.5);const cp=Math.cos(pitch);
     camera.position.set(C0.x+Math.sin(yaw)*cp*dist,C0.y+Math.sin(pitch)*dist,C0.z+Math.cos(yaw)*cp*dist);camera.lookAt(C0);}
-  function placeFest(now){const sway=Math.sin(now*0.7)*0.012,sy=FC.yaw+shk*Math.sin(now*47.3)*Math.sin(now*13.1),sp=FC.pitch+shk*Math.sin(now*41.7+1.3)*Math.sin(now*9.7),cp=Math.cos(sp);fcam.position.set(FC.eye.x+shk*8*Math.sin(now*39),FC.eye.y+sway+shk*6*Math.sin(now*53),FC.eye.z);
+  /* スマホの傾きで見回す（ジャイロ）。端末の向き→カメラの向き。有効にした瞬間に向いていた方角が「正面＝打ち上げ場所」になる（方位は使わない） */
+  const GY={on:false,have:false,got:0,yawOff:0,q:new THREE.Quaternion(),qs:new THREE.Quaternion()};
+  const gyE=new THREE.Euler(),gyQ1=new THREE.Quaternion(-Math.SQRT1_2,0,0,Math.SQRT1_2),gyQz=new THREE.Quaternion(),gyQy=new THREE.Quaternion(),gyQs=new THREE.Quaternion(),gyF=new THREE.Vector3(),ZAX=new THREE.Vector3(0,0,1),YAX=new THREE.Vector3(0,1,0);
+  function scrAngle(){const o=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(typeof window.orientation==='number'?window.orientation:0);return o*Math.PI/180;}
+  function onGyro(e){if(e.alpha==null||e.beta==null||e.gamma==null)return;
+    gyE.set(e.beta*Math.PI/180,e.alpha*Math.PI/180,-e.gamma*Math.PI/180,'YXZ');/* 端末の向きを、画面の向きも込めてカメラの向きに */
+    GY.q.setFromEuler(gyE).multiply(gyQ1).multiply(gyQz.setFromAxisAngle(ZAX,-scrAngle()));
+    if(!GY.have){GY.have=true;GY.qs.copy(GY.q);gyroCenter();}GY.got++;}
+  function gyroYaw(q){gyF.set(0,0,-1).applyQuaternion(q);return Math.atan2(gyF.x,-gyF.z);}
+  function gyroCenter(){if(!GY.have)return;GY.yawOff=gyroYaw(GY.q)-FC.yaw;}
+  function gyroSet(on){if(on===GY.on)return;GY.on=on;GY.have=false;GY.got=0;
+    if(on)window.addEventListener('deviceorientation',onGyro);else window.removeEventListener('deviceorientation',onGyro);festFov();}
+  function placeFest(now){const sway=Math.sin(now*0.7)*0.012;fcam.position.set(FC.eye.x+shk*8*Math.sin(now*39),FC.eye.y+sway+shk*6*Math.sin(now*53),FC.eye.z);
+    if(GY.on&&GY.have){GY.qs.slerp(GY.q,1-Math.exp(-lastDt/0.045));gyQy.setFromAxisAngle(YAX,GY.yawOff);fcam.quaternion.copy(gyQy).multiply(GY.qs);
+      if(shk>0){gyE.set(shk*Math.sin(now*41.7+1.3)*Math.sin(now*9.7),shk*Math.sin(now*47.3)*Math.sin(now*13.1),0,'YXZ');fcam.quaternion.multiply(gyQs.setFromEuler(gyE));}return;}
+    const sy=FC.yaw+shk*Math.sin(now*47.3)*Math.sin(now*13.1),sp=FC.pitch+shk*Math.sin(now*41.7+1.3)*Math.sin(now*9.7),cp=Math.cos(sp);
     fcam.lookAt(FC.eye.x+Math.sin(sy)*cp,FC.eye.y+sway+Math.sin(sp),FC.eye.z-Math.cos(sy)*cp);}
-  function festFov(){const W=E.st.W,H=E.st.H,d=Math.hypot(W,H),dfov=120*Math.PI/180;fcam.fov=2*Math.atan(Math.tan(dfov/2)*H/d)*180/Math.PI;fcam.aspect=W/H;fcam.updateProjectionMatrix();postMat.uniforms.asp.value.set(W/d,H/d);}
+  /* 視野：ふつうは対角120°の魚眼。傾きで見回すときは対角92°・歪みひかえめ（体の向きと画面の動きが近くなる） */
+  function festFov(){const W=E.st.W,H=E.st.H,d=Math.hypot(W,H),dfov=(GY.on?92:120)*Math.PI/180;fcam.fov=2*Math.atan(Math.tan(dfov/2)*H/d)*180/Math.PI;fcam.aspect=W/H;fcam.updateProjectionMatrix();postMat.uniforms.asp.value.set(W/d,H/d);postMat.uniforms.k.value=GY.on?0.1:0.42;}
   function resize(){dist=clamp(E.fitDist(R0*1.35,camera.fov),48,78);if(!userMoved)defaultCam();festFov();}
 
   /* ---------- 星の生成：花火玉の配置から／種類ごとの手続きから ---------- */
@@ -720,7 +737,7 @@ c=mix(c,max(c,b),uBlur)+b*uBlur*0.35;c=c*(1.0-0.3*r2*r2);c+=uDay*uDay*vec3(0.38,
     renderer.setRenderTarget(rt);renderer.render(scene,fcam);
     accMat.uniforms.tScene.value=rt.texture;accMat.uniforms.tPrev.value=accB.texture;accMat.uniforms.uDecay.value=Math.exp(-lastDt/0.075);renderer.setRenderTarget(accA);renderer.render(accScene,postCam);
     postMat.uniforms.tDiffuse.value=accA.texture;postMat.uniforms.uBlur.value=0.28+0.5*Math.min(1,dayI)+Math.min(0.3,lightI*0.03);renderer.setRenderTarget(null);renderer.render(postScene,postCam);const tmp=accA;accA=accB;accB=tmp;}
-  function drag(dx,dy){if(F.on){FC.yaw-=dx*0.0042;FC.pitch=clamp(FC.pitch+dy*0.0042,-0.3,1.5);}else{yaw-=dx*0.006;pitch+=dy*0.004;userMoved=true;}}
+  function drag(dx,dy){if(F.on){if(GY.on&&GY.have){GY.yawOff+=dx*0.0042;return;}/* 傾きモード中のドラッグは正面の向きだけずらす */FC.yaw-=dx*0.0042;FC.pitch=clamp(FC.pitch+dy*0.0042,-0.3,1.5);}else{yaw-=dx*0.006;pitch+=dy*0.004;userMoved=true;}}
 
   /* ---------- 音：位置つきの声（見回すと定位と上下の色づけが追いかける）、軽い残響（山びこ5本＋4本のフィードバック網）、距離による遅れ ---------- */
   let ac=null,AK=null,lastBoom=0;const VOICES=[];
@@ -823,7 +840,12 @@ c=mix(c,max(c,b),uBlur)+b*uBlur*0.35;c=c*(1.0-0.3*r2*r2);c+=uDay*uDay*vec3(0.38,
   return {scene,camera,fullFrame:true,stageEl:()=>null,update,render,drag,resize,initAudio,tap(){if(F.on)window.dispatchEvent(new Event('festtap'));},
     launch(layout,o){shots.length=0;ambient=false;F.on=false;orbitSpin=!!o.orbit;const t0=performance.now()/1000;const sh=makeShot(fromLayout(layout),C0,{main:true,snap:!o.replay,t0});shots.push(sh);mainCb=o.done||null;whistle(1.5,sh,true);},
     setAmbient(on){ambient=on;F.on=false;if(on){shots.length=0;nextAmb=0;orbitSpin=false;mainCb=null;}},
-    stop(){shots.length=0;mainCb=null;orbitSpin=false;F.on=false;},
+    stop(){shots.length=0;mainCb=null;orbitSpin=false;F.on=false;gyroSet(false);},
+    /* 傾きで見回す：on にすると deviceorientation を聞き始め、最初の値が届いたら true。2秒届かなければ自動で off にして false */
+    gyro(on){if(!on){gyroSet(false);return Promise.resolve(false);}gyroSet(true);
+      return new Promise(res=>{const t0=performance.now();const chk=()=>{if(GY.have)return res(true);if(!GY.on)return res(false);if(performance.now()-t0>2000){gyroSet(false);return res(false);}setTimeout(chk,80);};chk();});},
+    gyroCenter(){gyroCenter();},
+    gyroOn:()=>GY.on,
     startFest(origs){F.on=true;F.orig=origs;F.oi=0;shots.length=0;ambient=false;orbitSpin=false;mainCb=null;const now=performance.now()/1000;F.next=now+0.4;F.bigNext=now+8;F.finNext=now+rnd(60,80);F.cap=null;FC.yaw=0;FC.pitch=0.72;initAudio();E.resize();},
     festNow(){if(!F.on)return;const now=performance.now()/1000;bigLaunch(now,true);F.bigNext=Math.max(F.bigNext,now+9);},
     fire(size,useOrig){if(!F.on)return;const now=performance.now()/1000;let sh,label;
@@ -913,7 +935,24 @@ function go(id){
   else if(id==='fest'){E.setMode(SKY);flash('#0b1026');festUI(true);}
 }
 function openFest(from){festFrom=from;const o=FWUI.originals();go('fest');SKY.startFest(o);festUseOrig=o.length>0;syncSrc();
-  $('#festInfo').textContent=o.length?`あなたの花火 ${o.length}発が混ざっています。ときどき五尺玉で上がります`:'まだあなたの花火がありません。お手本だけの花火大会です（花火づくりで作ると混ざります）';}
+  $('#festInfo').textContent=o.length?`あなたの花火 ${o.length}発が混ざっています。ときどき五尺玉で上がります`:'まだあなたの花火がありません。お手本だけの花火大会です（花火づくりで作ると混ざります）';
+  gyroUI();if(gyroWant&&gyroAble)gyroOn();}
+/* スマホの傾きで見回す（ジャイロ）。iPhoneは許可が要るので、ボタンのタップから始める */
+let gyroWant=false;
+const gyroAble=typeof DeviceOrientationEvent!=='undefined'&&(navigator.maxTouchPoints>0||'ontouchstart' in window);
+if(gyroAble){$('#festGyro').hidden=false;$('#fest .skyhint').textContent='土手に座って見上げています。ドラッグか「傾きで見回す」で見回せます・タップでボタンを出し入れ';}
+function gyroUI(){const on=SKY.gyroOn();$('#festGyro').classList.toggle('on',on);$('#festGyro').textContent=on?'📱 傾きON':'📱 傾きで見回す';$('#festCenter').hidden=!on;}
+async function gyroOn(){
+  let perm='granted';
+  try{if(typeof DeviceOrientationEvent.requestPermission==='function')perm=await DeviceOrientationEvent.requestPermission();}catch(e){perm='granted';}
+  if(perm!=='granted'){gyroWant=false;gyroUI();toast('傾きセンサーの使用が許可されませんでした。iPhoneは 設定 › Safari › 「モーションと画面の向きのアクセス」をONにしてください');return;}
+  const ok=await SKY.gyro(true);gyroUI();
+  if(ok){toast('スマホを動かすと見える方向が変わります。ずれたら「正面」で合わせ直せます');return;}
+  gyroWant=false;
+  const fp=document.featurePolicy,blocked=!!(fp&&fp.allowsFeature&&!fp.allowsFeature('gyroscope')),emb=window.self!==window.top;
+  toast(blocked||emb?'傾きセンサーの値が届きません。埋め込み表示だとセンサーが使えないことがあります。ブラウザで直接開くか、全画面で試してみてください':'傾きセンサーの値が届きません。この端末・ブラウザでは使えないようです');}
+$('#festGyro').onclick=()=>{if(SKY.gyroOn()){SKY.gyro(false);gyroWant=false;gyroUI();toast('ドラッグで見回す方式にもどしました');}else{gyroWant=true;gyroOn();}};
+$('#festCenter').onclick=()=>{SKY.gyroCenter();toast('いま向いている方向を正面（打ち上げ場所）にしました');};
 /* 花火大会のUI：しばらく触らないと消え、タップで戻る */
 function festUI(show){const f=$('#fest');clearTimeout(festT);if(show){f.classList.remove('dim');festT=setTimeout(()=>f.classList.add('dim'),6000);}else f.classList.add('dim');}
 window.addEventListener('festtap',()=>festUI($('#fest').classList.contains('dim')));
@@ -926,7 +965,7 @@ function toggleFS(){const el=document.documentElement;
 document.addEventListener('fullscreenchange',()=>{$('#festFS').textContent=isFS()?'⤢ 全画面をやめる':'⛶ 全画面';setTimeout(()=>E.resize(),100);});
 document.addEventListener('webkitfullscreenchange',()=>setTimeout(()=>E.resize(),100));
 $('#festFS').onclick=toggleFS;
-$('#festBack').onclick=()=>{SKY.stop();if(isFS())toggleFS();go(festFrom);};
+$('#festBack').onclick=()=>{SKY.stop();gyroUI();if(isFS())toggleFS();go(festFrom);};
 let festUseOrig=true;
 function syncSrc(){const has=FWUI.originals().length>0;if(!has)festUseOrig=false;$('#festOrig').classList.toggle('on',festUseOrig);$('#festRand').classList.toggle('on',!festUseOrig);$('#festOrig').disabled=!has;}
 $('#festOrig').onclick=()=>{festUseOrig=true;syncSrc();};$('#festRand').onclick=()=>{festUseOrig=false;syncSrc();};
