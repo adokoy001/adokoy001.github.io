@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>Mojo::UserAgentを使ってアクティブチェック（外部監視） · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="Mojo::UserAgentを使ってアクティブチェック（外部監視） 表題の通り、cron等で適当にアクティブチェックのプログラムを書き捨てるならMojo::UserAgentが便利ですよというお話。 MojoliciousはPerl標準モジュール以外に依存していないので、サクッとインストールして実行環境を用意することができる（まあディストロのパッケージマ…"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2019/12/2019-12-16-001/"><meta property="og:title" content="Mojo::UserAgentを使ってアクティブチェック（外部監視）"><meta property="og:description" content="Mojo::UserAgentを使ってアクティブチェック（外部監視） 表題の通り、cron等で適当にアクティブチェックのプログラムを書き捨てるならMojo::UserAgentが便利ですよというお話。 MojoliciousはPerl標準モジュール以外に依存していないので、サクッとインストールして実行環境を用意することができる（まあディストロのパッケージマ…"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2019/12/2019-12-16-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>Mojo::UserAgentを使ってアクティブチェック（外部監視）</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-04-02T11:01:38+09:00">2020-04-02T11:01:38+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/perl/">Perl</a><a class="tag" href="/tags/mojolicious/">Mojolicious</a><a class="tag" href="/tags/mojo/">Mojo</a><a class="tag" href="/tags/useragent/">UserAgent</a><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="mojo-useragentを使ってアクティブチェック-外部監視">Mojo::UserAgentを使ってアクティブチェック（外部監視）</h1>
+<p>表題の通り、cron等で適当にアクティブチェックのプログラムを書き捨てるならMojo::UserAgentが便利ですよというお話。</p>
+<p>MojoliciousはPerl標準モジュール以外に依存していないので、サクッとインストールして実行環境を用意することができる（まあディストロのパッケージマネージャでインストールすればたいていのものはストレスなくインストールできますが）</p>
+<h2 id="サンプルコード">サンプルコード</h2>
+<pre><code>以下コードは監視対象HTTPサーバへアクセスした後、ステータスコードが200,301以外を返された場合にSlackへ通知する例。
+
+    use strict;
+    use warnings;
+    use utf8;
+    use Encode;
+    use Mojo::UserAgent;
+
+    ### Slackで通知する場合のapi url
+    my $slack = &#39;https://your.slack.channel.example.com/services/A/B/C&#39;;
+    ### 監視対象の設定
+    my $external = [
+       {name =&gt; &#39;my site 1&#39;, url =&gt; &#39;https://your.site1.example.com/&#39;},
+       {name =&gt; &#39;my site 2&#39;, url =&gt; &#39;https://your.site2.example.com/&#39;},
+    ];
+
+    ### 実行
+    my $ext_ua = Mojo::UserAgent-&gt;new;
+    for(0 .. $#$external){
+        my $instance = $external-&gt;[$_];
+        my $con_error = &#39;&#39;;
+        my $code = 1000;
+        eval{
+            $code = $ext_ua-&gt;get($instance-&gt;{url})-&gt;result-&gt;code;
+        };
+        if($@){
+            $con_error = $@;
+        }
+        if($code != 200 and $code != 301){
+             my $message = $instance-&gt;{name} . &#39; : &#39; . $code . &#39; : &#39; . &quot;$con_error\n&quot;;
+             my $tmp_res = $ext_ua-&gt;post(
+                 $slack
+                 =&gt;
+                 { &#39;Content-type&#39; =&gt; &#39;application/json&#39; }
+                 =&gt;  json =&gt; { text =&gt; $message }
+                 )-&gt;result;
+        }
+    }
+</code></pre>
+<h2 id="障害の発生と継続">障害の発生と継続</h2>
+<p>例えばこのコードを10分間隔で実行した場合、監視対象の障害が継続していれば10分間隔でSlack通知が来てしまう。</p>
+<p>「新たに発生した時だけ通知」という動作にしたい場合は、例えば、
+SQLiteをDBにして障害の発生したURLと日時（エポックタイム）を記録するようにして、
+<code>最後に検知してからの経過秒数 + α &gt; 監視間隔</code> を満たした場合だけSlack通知するように書けば良い。</p>
+<p>SQLiteの簡単なCRUD操作を提供してくれるMojo::SQLiteというラッパーモジュールがあるので使うとよい。</p>
+<p>Mojo::SQLite : <a href="https://metacpan.org/pod/Mojo::SQLite">リンク</a></p>
+<p>が、こちらはMojoliciousと違って依存モジュール満載なので、それが嫌であればストイックにファイル操作でurlとエポック時間を保存するだけの適当なcsvやjsonをストレージにすればよい（と思います）</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2019/12/2019-12-12-001/">← ウェブサイトのセキュリティ：入力バリデーション、正規表現</a><a rel="next" href="/posts/2020/04/2020-04-02-001/">Rijiから記事を移行 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2020/09/2020-09-17-001/">perlでパスワードハッシュ</a></li><li><a href="/posts/2020/06/2020-06-08-002/">nikki.plの機能追加予定</a></li><li><a href="/posts/2020/06/2020-06-02-001/">PerlとPHPの違い</a></li><li><a href="/posts/2020/04/2020-04-16-001/">nikki.plに新機能を追加しました。</a></li><li><a href="/posts/2019/10/2019-10-28-001/">簡易認証基盤的なものを作った</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

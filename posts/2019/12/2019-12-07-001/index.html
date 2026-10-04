@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>FuelPHPのクエリビルダチートシート · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="FuelPHPのクエリビルダ忘れがちなので、自分用チートシートとして。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2019/12/2019-12-07-001/"><meta property="og:title" content="FuelPHPのクエリビルダチートシート"><meta property="og:description" content="FuelPHPのクエリビルダ忘れがちなので、自分用チートシートとして。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2019/12/2019-12-07-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>FuelPHPのクエリビルダチートシート</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-04-02T11:01:38+09:00">2020-04-02T11:01:38+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/php/">PHP</a><a class="tag" href="/tags/fuelphp/">FuelPHP</a><a class="tag" href="/tags/entry-e6731fe9de76/">クエリビルダ</a><a class="tag" href="/tags/select/">select系</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="fuelphpのクエリビルダチートシート">FuelPHPのクエリビルダチートシート</h1>
+<p>FuelPHPのquery builderのselect系についてのみ、実用的な例を示しておく。
+insert,update,delete系はORMを使ったほうが効果的な場合もあるだろうが、
+FuelPHPのModel自動生成機能はリレーションをまともに読んでくれない（リレーションを手作業で張る必要あり・・・）ので、
+DBの仕様を頻繁に変えるような開発初期段階ではかなり大変で、Modelの更新も慎重にやらなきゃなので、アンチパターンに入りがちかもしれない。
+PerlのDBIx::Classとスキーマローダーに慣れている身としては結構厳しい。</p>
+<p>（ということで、私としてはFuelPHP標準搭載のQuery Builderがコスパ的にかなり良いと思っています。）</p>
+<pre><code>    DB::query(&quot;LOCK TABLES table_01 WRITE, table_02 WRITE, table_03 WRITE, table_log WRITE, table_transaction WRITE&quot;);
+    DB::start_transaction();
+    $result = DB::select_array([
+        [&#39;table_01.field_01&#39;,&#39;field_alias_name01&#39;],
+        [&#39;table_02.field_02&#39;,&#39;field_alias_name02&#39;],
+        [&#39;table_03.field_03&#39;,&#39;field_alias_name03&#39;],
+      ])
+      -&gt;from(&#39;table_01&#39;)
+      -&gt;join(&#39;table_02&#39;,&#39;inner&#39;)
+      -&gt;on(&#39;table_01.primary_key_01&#39;,&#39;=&#39;,&#39;table_02.foreign_key_02&#39;)
+      -&gt;join(&#39;table_03&#39;,&#39;left outer&#39;)
+      -&gt;on(&#39;table_01.primary_key_01&#39;,&#39;=&#39;,&#39;table_03.foreign_key_03&#39;)
+      -&gt;where(&#39;table_01.field_04&#39;,&#39;=&#39;,$condition01)
+      -&gt;and_where_open()
+      -&gt;where(&#39;table_02.field_05&#39;,&#39;=&#39;,$condition02)
+      -&gt;or_where(&#39;table_02.field_06&#39;,&#39;=&#39;,$condition03)
+      -&gt;and_where_close()
+      -&gt;and_where(&#39;table_03.field_07&#39;,&#39;in&#39;,[$item01,$item02,$item03])
+      -&gt;order_by(&#39;field_alias_name01&#39;,&#39;desc&#39;)
+      -&gt;order_by(&#39;field_alias_name02&#39;,&#39;asc&#39;)
+      -&gt;limit($record_limitation)
+      -&gt;offset($offset_value)
+      -&gt;execute()
+      -&gt;as_array();
+    if(count($result) === 0){
+      DB::insert(&#39;table_log&#39;)
+        -&gt;set([&#39;field_01&#39; =&gt; &#39;Empty&#39;, &#39;field_02&#39; =&gt; $user_name])
+        -&gt;execute();
+    }else{
+      foreach($result as $result_item){
+        DB::insert(&#39;table_transaction&#39;)
+          -&gt;set([&#39;field_01&#39; =&gt; $result_item[&#39;field_alias_name02&#39;]])
+          -&gt;execute();
+      }
+    }
+    DB::commit_transaction();
+    DB::query(&quot;UNLOCK TABLES&quot;);</code></pre>
+<p>この例は「かなり強いLOCKを割と長い時間維持する」書き方なので、マネをするとしたら非機能要件に合っているかどうかを吟味してください。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2019/11/2019-11-29-002/">← PHPのarrayから再帰的にkeyとvalueを全て取り出す</a><a rel="next" href="/posts/2019/12/2019-12-10-001/">ウェブアプリケーションを攻撃者から守るためのロードマップ →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2019/11/2019-11-29-001/">FuelPHPのDeployerによるデプロイ</a></li><li><a href="/posts/2020/01/2020-01-21-001/">FuelPHPでCSRF対策</a></li><li><a href="/posts/2020/07/2020-07-29-001/">Laravel練習中</a></li><li><a href="/posts/2020/06/2020-06-02-001/">PerlとPHPの違い</a></li><li><a href="/posts/2020/05/2020-05-26-002/">Laravelも並行して学習中</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>
