@@ -1,0 +1,351 @@
+title 夏 Presto（ヴィヴァルディ「四季」より 第3楽章・ロック編曲）
+// アントニオ・ヴィヴァルディ「四季」の「夏」第3楽章 Presto「夏の嵐」（1725年）。G短調、3/4拍子、130小節。
+// 音符は Mutopia Project の LilyPond 譜（Mutopia-2010/02/08-336、Creative Commons 表示-継承 3.0）から機械的に変換。
+//   変換：トリル→ tr（G短調の音階の上の音）、スタッカートの8分→16分＋休符、小節線をまたぐ音はタイ（_）、
+//   第1バイオリン譜の Piano（41-48・109-110小節）→ ?。フェルマータは無視。弦の音は譜のまま。
+// 合奏の16分の同音連打（嵐のトレモロ）は、4つ以上続くところを別トラック（tutti1・tutti2…、trem=11.2 で音量を毎秒11.2回揺らす）の和音の伸ばしにまとめて軽くしている。
+// 軽くするために、チェロの合奏トラックは省き（ギターとベースが同じ線を弾く）、第2バイオリンとビオラが第1と同音で重なる音も省いた。
+// ロック編曲（原曲にないもの）：チェロの線を歪みギターが重ねる（1拍以上の音はパワーコード）、同じ線を1オクターブ下のベース、
+//   3拍子のロックビートのドラム（独奏の区間は軽く、各区間の頭でクラッシュ、直前の小節にフィル）。独奏＝violin、合奏＝violins。
+// テンポ 168（Presto）。tempo の行で変えられる。
+//   1 嵐の16分の連打（総奏）／40 独奏の走句／55 総奏／74 独奏（Es-C の往復）／85 総奏／97・109・116 独奏と総奏の掛け合い／120 終結の連打
+tempo 168
+meter 3
+reverb 2.4
+delay 0.75
+
+@solo violin len=1/4 vol=0.95 rev=0.3 dly=0.06 pan=0
+G4 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 | F4 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 | Eb4 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 | D4 G3 G3 G3 G3 G3 G3 G3 G3:1/2 -:1/2 | -:3 |
+D5 D4 D4 D4 D4 D4 D4 D4 D4 D4 D4 D4 | C5 D4 D4 D4 D4 D4 D4 D4 D4 D4 D4 D4 | Bb4 D4 D4 D4 D4 D4 D4 D4 D4 D4 D4 D4 | A4 D4 D4 D4 D4 D4 D4 D4 D4:1/2 -:1/2 | -:1/4 D5 C5 Bb4 A4 G4 Gb4 E4 D4 C4 Bb3 A3 |
+G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 | G3 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 Eb4 D4 | C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 | C4 Bb5 A5 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 | Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 |
+Eb4 D6 C6 Bb5 A5 G5 Gb5 E5 D5 C5 Bb4 A4 | G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 | G4 D6 C6 Bb5 A5 G5 Gb5 E5 D5 C5 Bb4 A4 | G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 | D5 G4 G4 G4 D5 G4 G4 G4 D5 G4 G4 G4 |
+D4 A4 Bb4 C5 D5 E5 Gb5 G5 A5:1/2 -:1/2 | -:1/4 A4 Bb4 C5 D5 E5 Gb5 G5 A5:1/2 -:1/2 | -:1/4 Bb4 C5 D5 Eb5 Gb5 G5 A5 Bb5:1/2 -:1/2 | -:1/4 D5 E5 Gb5 G5 A5 Bb5 C6 D6:1/2 -:1/2 | -:1/4 D5 E5 Gb5 G5 A5 Bb5 C6 D6:1/2 -:1/2 |
+-:1/4 A4 Bb4 C5 D5 E5 Gb5 G5 A5:1/2 -:1/2 | -:1/4 Bb4 C5 D5 Eb5 Gb5 G5 A5 Bb5:1/2 -:1/2 | -:1/4 D5 E5 Gb5 G5 A5 Bb5 C6 D6:1/2 -:1/2 | Bb5 G5 D5 Bb4 Bb5 G5 D5 Bb4 Bb5 G5 D5 Bb4 | D5 Bb4 G4 D4 D5 Bb4 G4 D4 D5 Bb4 G4 D4 |
+G4 D4 Bb3 G3 G4 D4 Bb3 G3 G4 D4 Bb3 G3 | G4 B4 G4 B4 G4 B4 G4 B4 G4 B4 G4 B4 | G4 C5 G4 C5 G4 C5 G4 C5 G4 C5 G4 C5 | G4 Db5 G4 Db5 G4 Db5 G4 Db5 G4 Db5 G4 Db5 | A4 D5 A4 D5 A4 D5 A4 D5 A4 D5 A4 D5 |
+A4 D5 A4 D5 A4 D5 A4 D5 A4 D5 A4 D5 | A4 Db5 A4 Db5 A4 Db5 A4 Db5 A4 Db5 A4 Db5 | D5 D4 E4 F4 G4 A4 B4 Db5 D5 A4 B4 Db5 | D5 E5 F5 G5 A5 D5 E5 F5 G5 A5 B5 Db6 | D6:1 -:1/4 A5 A5 Db6 Db6 E6 E6 A6 |
+A6? A5? D4? A5? G6? A5? D4? A5? F6? A5? D4? A5? | E6? A5? D4? A5? F6? A5? D4? A5? G6? A5? D4? A5? | A6? A5? D4? A5? G6? A5? D4? A5? F6? A5? D4? A5? | D4+A5+Eb6:1? -:1/4 D5? D5? F5? F5? A5? A5? D6? | D6? D5? D4? D5? C6? D5? D4? D5? Bb5? D5? D4? D5? |
+A5? D5? D4? D5? Bb5? D5? D4? D5? Db6? D5? D4? D5? | D6? D5? D4? D5? C6? D5? D4? D5? Bb5? D5? D4? D5? | D4+D5+A5:1? -:1/4 A6? A6? G6? G6? F6? F6? Eb6? | Eb6 D6 D6 C6 C6 Bb5 Bb5 A5 A5 G5 G5 F5 | F5 E5 E5 D5 D5 C5 C5 Bb4 Bb4 A4 A4 Ab4 |
+A4:1/2 Ab4:1/2 A4:1/2 Ab4:1/2 A4:1/2 F4:1/2 | G4:1/2 Eb4:1/2 F4:1/2 D4:1/2 Eb4:1/2 Db4:1/2 | D4:3 | _:1/2 Db4:1/2 D4:1/2 Db4:1/2 D4:1/2 Db4:1/2 | D4:1/2 D4:1/2 D4:1/2 D5:1/2 F5:1/2 A5:1/2 |
+Bb5:1/2 D4:1/2 D4:1/2 D5:1/2 G5:1/2 Bb5:1/2 | Bb5:1/2 E4:1/2 E4:1/2 E5:1/2 G5:1/2 Bb5:1/2 | A5:1/2 F4:1/2 F4:1/2 C5:1/2 F5:1/2 A5:1/2 | A5:1/2 D4:1/2 D4:1/2 D5:1/2 F5:1/2 A5:1/2 | G5:1/2 Eb4:1/2 Eb4:1/2 Bb4:1/2 Eb5:1/2 G5:1/2 |
+G5:1/2 C4:1/2 C4:1/2 C5:1/2 Eb5:1/2 G5:1/2 | G5:1/2 D4:1/2 D4:1/2 B4:1/2 D5:1/2 G5:1/2 | F5:1/2 D4:1/2 D4:1/2 B4:1/2 D5:1/2 F5:1/2 | Eb5 Eb4 F4 G4 Ab4 B4 C5 D5 Eb5:1/2 -:1/2 | -:1/4 Eb4 F4 G4 Ab4 B4 C5 D5 Eb5:1/2 -:1/2 |
+-:1/4 Eb4 F4 G4 Ab4 B4 C5 D5 Eb5:1/2 -:1/2 | Eb4 C5 Bb4 C5 Eb4 C5 Bb4 C5 Eb4 C5 Bb4 C5 | F4 C5 Bb4 C5 F4 C5 Bb4 C5 F4 C5 Bb4 C5 | G4 C5 B4 C5 G4 C5 B4 C5 G4 B4 A4 B4 | C5 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 |
+Bb4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 | Ab4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 | G4 C4 C4 C4 C4 C4 C4 C4 C4:1/2 -:1/2 | G5:3 | G5:3 |
+G5:3 | F5:3 | G5:3 | Eb5 G5 G5 Ab5 Ab5 Bb5 Bb5 C6 C6 D6 D6 Eb6 | Eb6 Bb5 G5 Eb5 Eb6 Bb5 G5 Eb5 Eb6 Bb5 G5 Eb5 |
+F5 Ab5 Ab5 Bb5 Bb5 C6 C6 D6 D6 Eb6 Eb6 F6 | F6 C6 A5 F5 F6 C6 A5 F5 F6 C6 A5 F5 | G5 Bb5 Bb5 C6 C6 D6 D6 Eb6 Eb6 F6 F6 G6 | G6 D6 B5 G5 G6 D6 B5 G5 G6 D6 B5 G5 | Eb6 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 |
+Ab4 C4 C4 C4 Ab4 C4 C4 C4 Ab4 C4 C4 C4 | B3 B3 B3 B3 B3 B3 B3 B3 B3 B3 B3 B3 | G4 Bb3 Bb3 Bb3 G4 Bb3 Bb3 Bb3 G4 Bb3 Bb3 Bb3 | A3 A3 A3 A3 A3 A3 A3 A3 A3 A3 A3 A3 | F4 Ab3 Ab3 Ab3 F4 Ab3 Ab3 Ab3 F4 Ab3 Ab3 Ab3 |
+G3 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 | Eb5 G4 G4 G4 Eb5 G4 G4 G4 Eb5 G4 G4 G4 | Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 | D5 F4 F4 F4 D5 F4 F4 F4 D5 F4 F4 F4 | E4 E4 E4 E4 E4 E4 E4 E4 E4 E4 E4 E4 |
+C5 Eb4 Eb4 Eb4 C5 Eb4 Eb4 Eb4 C5 Eb4 Eb4 Eb4 | D4 D4 D4 D4 Gb4 D4 D4 D4 A4 D4 D4 D4 | Bb4 D4 D4 D4 C5 D4 D4 D4 D5 D4 D4 D4 | Eb5 D4 D4 D4 Gb5 D4 D4 D4 G5 D4 D4 D4 | A5 D4 D4 D4 Bb5 D4 D4 D4 C6 D4 D4 D4 |
+D6 D5 C5 Bb4 A4 G4 Gb4 E4 D4 C4 Bb3 A3 | G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 | G3 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 Eb4 D4 | C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 | C4 Bb5 A5 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 |
+Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 Eb4 | Eb4 D6 C6 Bb5 A5 G5 Gb5 E5 D5 C5 Bb4 A4 | G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 | D5? G4? G3? G4? Eb5? G4? G3? G4? Gb5? G4? G3? G4? | G5? G4? G3? G4? F5? G4? G3? G4? Eb5? G4? G3? G4? |
+D5 G4 G3 G4 Eb5 G4 G3 G4 Gb5 G4 G3 G4 | G5 G4 G3 G4 F5 G4 G3 G4 Eb5 G4 G3 Eb5 | G3+G4+D5 G4 A4 Bb4 C5 D5 E5 Gb5 G5 A5 Bb5 A5 | G5 F5 Eb5 D5 C5 Bb4 A4 G4 Gb4 E4 D4 C4 | Bb3 G3 Bb3 G3 Bb3 G3 Bb3 G3 Bb3 G3 Bb3 G3 |
+Eb4 D4 Gb4 E4 G4 Gb4 A4 G4 Bb4 A4 C5 Bb4 | D5 C5 Eb5 D5 F5 E5 G5 Gb5 A5 G5 Bb5 A5 | Eb4 D4 Gb4 E4 G4 Gb4 A4 G4 Bb4 A4 C5 Bb4 | D5 C5 Eb5 D5 F5 E5 G5 Gb5 A5 G5 Bb5 A5 | D4 D4 D4 D4 D4 D4 D4 D4 D4 D4 D4 D4 |
+G4 D4 Bb3 G3 G4 D4 Bb3 G3 G4 D4 Bb3 G3 | G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 | Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 | G4 D4 Bb3 G3 G4 D4 Bb3 G3 G4 D4 Bb3 G3 | G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 G4 |
+Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 Gb4 | G4 G4 G4 G4 Bb4 Bb4 Bb4 Bb4 D5 D5 D5 D5 | G5 G5 G5 G5 Bb5 Bb5 Bb5 Bb5 G5 G5 G5 G5 | D5 D5 D5 D5 Bb4 Bb4 Bb4 Bb4 G4 G4 G4 G4 | G3:3 |
+
+@solo2 violin len=1/4 vol=0.8 rev=0.3 pan=0.1
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+D4:3 | _:3 | _:1/2 Db4:1/2 D4:1/2 Db4:1/2 D4:1/2 Db4:1/2 | D4:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | Eb5 C5 Eb5 C5 Eb5 C5 Eb5 C5 Eb5 C5 Eb5 C5 | D5 B4 D5 B4 D5 B4 D5 B4 D5 B4 D5 B4 |
+Eb5 C5 Eb5 C5 Eb5 C5 Eb5 C5 Eb5 C5 Eb5 C5 | D5 Bb4 D5 Bb4 D5 Bb4 D5 Bb4 D5 Bb4 D5 Bb4 | Eb5 Bb4 Eb5 Bb4 Eb5 Bb4 Eb5 Bb4 Eb5 Bb4 Eb5 Bb4 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+
+@vn1 violins len=1/4 vol=0.6 rev=0.32 pan=-0.4
+G4 -:11/4 | F4 -:11/4 | Eb4 -:11/4 | D4 -:7/4 G3:1/2 -:1/2 | -:3 |
+D5 -:11/4 | C5 -:11/4 | Bb4 -:11/4 | A4 -:7/4 D4:1/2 -:1/2 | -:1/4 D5 C5 Bb4 A4 G4 Gb4 E4 D4 C4 Bb3 A3 |
+-:3 | -:1/4 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 Eb4 D4 | -:3 | -:1/4 Bb5 A5 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 | -:3 |
+-:1/4 D6 C6 Bb5 A5 G5 Gb5 E5 D5 C5 Bb4 A4 | -:3 | -:1/4 D6 C6 Bb5 A5 G5 Gb5 E5 D5 C5 Bb4 A4 | -:3 | D5 G4 G4 G4 D5 G4 G4 G4 D5 G4 G4 G4 |
+D4 A4 Bb4 C5 D5 E5 Gb5 G5 A5:1/2 -:1/2 | -:1/4 A4 Bb4 C5 D5 E5 Gb5 G5 A5:1/2 -:1/2 | -:1/4 Bb4 C5 D5 Eb5 Gb5 G5 A5 Bb5:1/2 -:1/2 | -:1/4 D5 E5 Gb5 G5 A5 Bb5 C6 D6:1/2 -:1/2 | -:1/4 D5 E5 Gb5 G5 A5 Bb5 C6 D6:1/2 -:1/2 |
+-:1/4 A4 Bb4 C5 D5 E5 Gb5 G5 A5:1/2 -:1/2 | -:1/4 Bb4 C5 D5 Eb5 Gb5 G5 A5 Bb5:1/2 -:1/2 | -:1/4 D5 E5 Gb5 G5 A5 Bb5 C6 D6:1/2 -:1/2 | Bb5 G5 D5 Bb4 Bb5 G5 D5 Bb4 Bb5 G5 D5 Bb4 | D5 Bb4 G4 D4 D5 Bb4 G4 D4 D5 Bb4 G4 D4 |
+G4 D4 Bb3 G3 G4 D4 Bb3 G3 G4 D4 Bb3 G3 | G4 B4 G4 B4 G4 B4 G4 B4 G4 B4 G4 B4 | G4 C5 G4 C5 G4 C5 G4 C5 G4 C5 G4 C5 | G4 Db5 G4 Db5 G4 Db5 G4 Db5 G4 Db5 G4 Db5 | A4 D5 A4 D5 A4 D5 A4 D5 A4 D5 A4 D5 |
+A4 D5 A4 D5 A4 D5 A4 D5 A4 D5 A4 D5 | A4 Db5 A4 Db5 A4 Db5 A4 Db5 A4 Db5 A4 Db5 | D5 D4 E4 F4 G4 A4 B4 Db5 D5 A4 B4 Db5 | D5 E5 F5 G5 A5 D5 E5 F5 G5 A5 B5 Db6 | D6:1 -:2 |
+D4:1? D4:1? D4:1? | D4:1? D4:1? D4:1? | D4:1? D4:1? D4:1? | D4:1? -:2 | D4:1? D4:1? D4:1? |
+D4:1? D4:1? D4:1? | D4:1? D4:1? D4:1? | D4:1? -:2 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | A5:1/2 D4:1/2 D4:1/2 D5:1/2 F5:1/2 A5:1/2 |
+Bb5:1/2 D4:1/2 D4:1/2 D5:1/2 G5:1/2 Bb5:1/2 | Bb5:1/2 E4:1/2 E4:1/2 E5:1/2 G5:1/2 Bb5:1/2 | A5:1/2 F4:1/2 F4:1/2 C5:1/2 F5:1/2 A5:1/2 | A5:1/2 D4:1/2 D4:1/2 D5:1/2 F5:1/2 A5:1/2 | G5:1/2 Eb4:1/2 Eb4:1/2 Bb4:1/2 Eb5:1/2 G5:1/2 |
+G5:1/2 C4:1/2 C4:1/2 C5:1/2 Eb5:1/2 G5:1/2 | G5:1/2 D4:1/2 D4:1/2 B4:1/2 D5:1/2 G5:1/2 | F5:1/2 D4:1/2 D4:1/2 B4:1/2 D5:1/2 F5:1/2 | Eb5 Eb4 F4 G4 Ab4 B4 C5 D5 Eb5:1/2 -:1/2 | -:1/4 Eb4 F4 G4 Ab4 B4 C5 D5 Eb5:1/2 -:1/2 |
+-:1/4 Eb4 F4 G4 Ab4 B4 C5 D5 Eb5:1/2 -:1/2 | Eb4 C5 Bb4 C5 Eb4 C5 Bb4 C5 Eb4 C5 Bb4 C5 | F4 C5 Bb4 C5 F4 C5 Bb4 C5 F4 C5 Bb4 C5 | G4 C5 B4 C5 G4 C5 B4 C5 G4 B4 A4 B4 | C5 -:11/4 |
+Bb4 -:11/4 | Ab4 -:11/4 | G4 -:7/4 C4:1/2 -:1/2 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+Ab4 C4 C4 C4 Ab4 C4 C4 C4 Ab4 C4 C4 C4 | -:3 | G4 Bb3 Bb3 Bb3 G4 Bb3 Bb3 Bb3 G4 Bb3 Bb3 Bb3 | -:3 | F4 Ab3 Ab3 Ab3 F4 Ab3 Ab3 Ab3 F4 Ab3 Ab3 Ab3 |
+G3 -:11/4 | Eb5 G4 G4 G4 Eb5 G4 G4 G4 Eb5 G4 G4 G4 | -:3 | D5 F4 F4 F4 D5 F4 F4 F4 D5 F4 F4 F4 | -:3 |
+C5 Eb4 Eb4 Eb4 C5 Eb4 Eb4 Eb4 C5 Eb4 Eb4 Eb4 | D4:1 -:2 | -:3 | -:3 | -:3 |
+-:1/4 D5 C5 Bb4 A4 G4 Gb4 E4 D4 C4 Bb3 A3 | -:3 | -:1/4 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 Eb4 D4 | -:3 | -:1/4 Bb5 A5 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 |
+-:3 | -:1/4 D6 C6 Bb5 A5 G5 Gb5 E5 D5 C5 Bb4 A4 | -:3 | G4:1? G3:1? G3:1? | G3:1? G3:1? G3:1? |
+G3:1 G3:1 G3:1 | G3:1 G3:1 G3:1 | G3 G4 A4 Bb4 C5 D5 E5 Gb5 G5 A5 Bb5 A5 | G5 F5 Eb5 D5 C5 Bb4 A4 G4 Gb4 E4 D4 C4 | Bb3 G3 Bb3 G3 Bb3 G3 Bb3 G3 Bb3 G3 Bb3 G3 |
+D4:1 -:2 | -:3 | -:3 | -:3 | -:3 |
+G4 D4 Bb3 G3 G4 D4 Bb3 G3 G4 D4 Bb3 G3 | -:3 | -:3 | G4 D4 Bb3 G3 G4 D4 Bb3 G3 G4 D4 Bb3 G3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | G3:3 |
+
+@vn2 violins len=1/4 vol=0.55 rev=0.32 pan=0.4
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:1/4 D5 C5 Bb4 A4 G4 Gb4 E4 D4 C4 Bb3 A3 | -:3 | -:1/4 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 Eb4 D4 | -:3 | -:1/4 Bb5 A5 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 |
+-:3 | -:1/4 D6 C6 Bb5 A5 G5 Gb5 E5 D5 C5 Bb4 A4 | -:3 | -:1/4 D6 C6 Bb5 A5 G5 Gb5 E5 D5 C5 Bb4 A4 | -:3 |
+-:1/4 Gb4 G4 A4 Bb4 C5 D5 E5 Gb5:1/2 -:1/2 | -:1/4 Gb4 G4 A4 Bb4 C5 D5 E5 Gb5:1/2 -:1/2 | -:1/4 G4 A4 Bb4 C5 D5 Eb5 Gb5 G5:1/2 -:1/2 | -:1/4 Gb4 G4 A4 Bb4 C5 D5 E5 Gb5:1/2 -:1/2 | -:1/4 Gb4 G4 A4 Bb4 C5 D5 E5 Gb5:1/2 -:1/2 |
+-:1/4 Gb4 G4 A4 Bb4 C5 D5 E5 Gb5:1/2 -:1/2 | -:1/4 G4 A4 Bb4 C5 D5 Eb5 Gb5 G5:1/2 -:1/2 | -:1/4 Gb4 G4 A4 Bb4 C5 D5 E5 Gb5:1/2 -:1/2 | Bb4 D5 G5 Bb5 Bb4 D5 G5 Bb5 Bb4 D5 G5 Bb5 | D4 G4 Bb4 D5 D4 G4 Bb4 D5 D4 G4 Bb4 D5 |
+G3 Bb3 D4 G4 G3 Bb3 D4 G4 G3 Bb3 D4 G4 | D4 G4 D4 G4 D4 G4 D4 G4 D4 G4 D4 G4 | Eb4 G4 Eb4 G4 Eb4 G4 Eb4 G4 Eb4 C4 Eb4 C4 | E4 G4 E4 G4 E4 G4 E4 G4 E4 G4 E4 G4 | F4 A4 F4 A4 F4 A4 F4 A4 F4 D4 F4 D4 |
+E4 A4 E4 A4 E4 A4 E4 A4 E4 A4 E4 A4 | E4 A4 E4 A4 E4 A4 E4 A4 E4 A4 E4 A4 | F4 -:11/4 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | F5:1/2 A3:1/2 A3:1/2 A4:1/2 D5:1/2 F5:1/2 |
+G5:1/2 Bb3:1/2 Bb3:1/2 Bb4:1/2 D5:1/2 G5:1/2 | G5:1/2 C4:1/2 C4:1/2 C5:1/2 E5:1/2 G5:1/2 | F5:1/2 C4:1/2 C4:1/2 A4:1/2 C5:1/2 F5:1/2 | F5:1/2 Bb3:1/2 Bb3:1/2 Bb4:1/2 D5:1/2 F5:1/2 | Eb5:1/2 Bb3:1/2 Bb3:1/2 G4:1/2 Bb4:1/2 Eb5:1/2 |
+Eb5:1/2 Ab3:1/2 Ab3:1/2 Ab4:1/2 C5:1/2 Eb5:1/2 | D5:1/2 B3:1/2 B3:1/2 G4:1/2 B4:1/2 D5:1/2 | D5:1/2 B3:1/2 B3:1/2 G4:1/2 B4:1/2 D5:1/2 | C5 C4 D4 Eb4 F4 G4 Ab4 B4 C5:1/2 -:1/2 | -:1/4 C4 D4 Eb4 F4 G4 Ab4 B4 C5:1/2 -:1/2 |
+-:1/4 C4 D4 Eb4 F4 G4 Ab4 B4 C5:1/2 -:1/2 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:1/4 D5 C5 Bb4 A4 G4 Gb4 E4 D4 C4 Bb3 A3 | -:3 | -:1/4 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 Eb4 D4 | -:3 |
+-:1/4 Bb5 A5 G5 F5 Eb5 D5 C5 Bb4 A4 G4 F4 | -:3 | -:1/4 D6 C6 Bb5 A5 G5 Gb5 E5 D5 C5 Bb4 A4 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | Bb3 D4 D4 D4 -:2 | -:3 | -:3 | -:3 |
+
+@vla violins len=1/4 vol=0.5 rev=0.32 pan=0.2
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+Gb4:1 -:5/4 D5 A4 Gb4 | D4:1 -:5/4 D5 A4 Gb4 | G4:1 -:5/4 D5 Bb4 G4 | Gb4:1 -:5/4 D5 A4 Gb4 | D4:1 -:5/4 D5 A4 Gb4 |
+D4:1 -:5/4 D5 A4 Gb4 | G4:1 -:5/4 D5 Bb4 G4 | Gb4:1 -:5/4 D5 A4 Gb4 | D4:1/2 D4:1/2 D4:1/2 D4:1/2 D4:1/2 D4:1/2 | D4:1/2 D4:1/2 D4:1/2 D4:1/2 D4:1/2 D4:1/2 |
+D4:1/2 D4:1/2 D4:1/2 D4:1/2 D4:1/2 D4:1/2 | B3 D4 B3 D4 B3 D4 B3 D4 B3 D4 B3 D4 | C4 Eb4 C4 Eb4 C4 Eb4 C4 Eb4 C4 Eb4 C4 Eb4 | Db4 E4 Db4 E4 Db4 E4 Db4 E4 Db4 E4 Db4 E4 | D4 F4 D4 F4 D4 F4 D4 F4 D4 F4 D4 F4 |
+D4 E4 D4 E4 D4 E4 D4 E4 D4 E4 D4 E4 | Db4 E4 Db4 E4 Db4 E4 Db4 E4 Db4 E4 Db4 E4 | D4:1 -:2 | -:3 | F4:1 -:2 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | D4:1 -:1/2 A4:1/2 F4 G4 F4 E4 |
+D4:1 -:1 Bb4 A4 G4 F4 | E4:1 -:1/2 G4:1/2 E4 D4 C4 Bb3 | C4:1 -:1 A4 G4 F4 Eb4 | D4:1 -:1/2 F4:1/2 D4 C4 Bb3 A3 | Bb3:1 -:1 G4 F4 Eb4 D4 |
+C4:1 -:1/2 Eb4:1/2 C4 Bb3 Ab3 G3 | D4:1 -:1/2 F4:1/2 D4 C4 B3 A3 | B3:1 -:1/2 D4:1/2 B3 A3 G3 F3 | G3:1 -:1 C5 G4 Eb4 C4 | G3:1 -:1 C5 G4 Eb4 C4 |
+G3:1 -:1 C5 G4 Eb4 C4 | G3:1/2 G3:1/2 G3:1/2 G3:1/2 G3:1/2 G3:1/2 | Ab3:1/2 Ab3:1/2 Ab3:1/2 Ab3:1/2 Ab4:1/2 Ab4:1/2 | D4:1/2 D4:1/2 D4:1/2 D4:1/2 D4:1/2 D4:1/2 | Eb4 -:11/4 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | G3:1 -:2 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | D4:1 -:1/4 D5 C5 Bb4 A4 G4 Gb4 E4 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:1/4 Bb3 Bb3 Bb3 -:2 | -:3 | -:3 | -:3 |
+
+@tutti1 violins len=3 vol=0.55 rev=0.32 pan=-0.15 trem=11.2
+-:1/4 G2+G3+G3+G3:11/4 | -:1/4 G2+G3+G3+G3:11/4 | -:1/4 G2+G3+G3+G3:11/4 | -:1/4 G2+G3+G3+G3:7/4 -:1 | -:3 |
+-:1/4 D3+D4+D4+D4:11/4 | -:1/4 D3+D4+D4+D4:11/4 | -:1/4 D3+D4+D4+D4:11/4 | -:1/4 D3+D4+D4+D4:7/4 -:1 | -:3 |
+G3 | _:1/4 -:11/4 | C4 | _:1/4 -:11/4 | Eb4 |
+_:1/4 -:11/4 | G4 | _:1/4 -:11/4 | G4 | G3+G4:1 -:2 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | C3 |
+-:1/4 C3+C4+C4+C4:11/4 | -:1/4 C3+C4+C4+C4:11/4 | -:1/4 C3+C4+C4+C4:7/4 -:1 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | C3+C4+C4 |
+-:3 | B2+B3+B3+B3 | -:3 | A2+A3+A3+A3 | -:3 |
+-:1/4 G3+G4+G4+G4:11/4 | -:3 | Gb3+Gb4+Gb4+Gb4 | -:3 | E3+E4+E4+E4 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | G3 | _:1/4 -:11/4 | C4 | _:1/4 -:11/4 |
+Eb4 | _:1/4 -:11/4 | G4+G4 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | D4+D4 |
+Bb2+D4 | C3+Eb4+G4 | D3+D4+Gb4 | G2+Bb3:1 Bb2+D4:2 | C3+Eb4+G4 |
+D3+Gb4 | G4:1 D4+G4+Bb4:1 G4+Bb4+D5:1 | Bb4+D5+G5:1 D5+G5+Bb5:1 D4+G5+Bb5:1 | Bb3+D5+G5:1 G3+Bb4+D5:1 D4+G4+Bb4:1 | -:3 |
+
+@tutti2 violins len=6 vol=0.55 rev=0.32 pan=0.15 trem=11.2
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+G3:3 | _:3 | C4:3 | _:3 | Eb4:3 |
+_:3 | G4:3 | _:3 | _:3 | _:1 -:2 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:1/4 C4+C4+C4:11/4 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | A3:1 C4:2 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | G3:3 | _:3 | C4:3 | _:3 |
+Eb4:3 | _:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | A3:3 | _:3 | -:3 | A3:3 |
+_:3 | -:3 | -:3 | -:3 | -:3 |
+
+@tutti3 violins len=13/4 vol=0.55 rev=0.32 pan=-0.15 trem=11.2
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | G3:3 | _:1/4 -:11/4 | C4:3 | _:1/4 -:11/4 |
+Eb4:3 | _:1/4 -:11/4 | G4:3 | _:1/4 -:11/4 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | G3:3 | _:1/4 -:11/4 | C4:3 |
+_:1/4 -:11/4 | Eb4:3 | _:1/4 -:11/4 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+D4:3 | _:1/4 -:11/4 | -:3 | -:3 | -:3 |
+
+@gtr guitar len=1/4 drive=0.8 vol=0.62 cut=3400 rev=0.12 pan=-0.08
+G3 G2 G2 G2 G2 G2 G2 G2 G2 G2 G2 G2 | F3 G2 G2 G2 G2 G2 G2 G2 G2 G2 G2 G2 | Eb3 G2 G2 G2 G2 G2 G2 G2 G2 G2 G2 G2 | D3 G2 G2 G2 G2 G2 G2 G2 G2:1/2 -:1/2 | -:3 |
+D4 D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 | C4 D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 | Bb3 D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 | A3 D3 D3 D3 D3 D3 D3 D3 D3:1/2 -:1/2 | -:3 |
+G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 | G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 | C3:1/2 C3:1/2 C3:1/2 C3:1/2 C3:1/2 C3:1/2 | C3:1/2 C3:1/2 C3:1/2 C3:1/2 C3:1/2 C3:1/2 | Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 |
+Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 | G3:1/2 G3:1/2 G3:1/2 G3:1/2 G3:1/2 G3:1/2 | G3:1/2 G3:1/2 G3:1/2 G3:1/2 G3:1/2 G3:1/2 | G3:1/2 G3:1/2 G3:1/2 G3:1/2 G3:1/2 G3:1/2 | G3 G3 G3 G3 D4 G3 G3 G3 D4 G3 G3 G3 |
+D3 D4 D3 D4 D3 D4 D3 D4 D3 D4 D3 D4 | D3 C4 D3 C4 D3 C4 D3 C4 D3 C4 D3 C4 | D3 Bb3 D3 Bb3 D3 Bb3 D3 Bb3 D3 Bb3 D3 Bb3 | D3 A3 D3 A3 D3 A3 D3 A3 D3 A3 D3 A3 | D3 D4 D3 D4 D3 D4 D3 D4 D3 D4 D3 D4 |
+D3 C4 D3 C4 D3 C4 D3 C4 D3 C4 D3 C4 | D3 Bb3 D3 Bb3 D3 Bb3 D3 Bb3 D3 Bb3 D3 Bb3 | D3 A3 D3 A3 D3 A3 D3 A3 D3 A3 D3 A3 | G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 | G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 |
+G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 | G2 G3 G2 G3 G2 G3 G2 G3 G2 G3 G2 G3 | C3 C4 C3 C4 C3 C4 C3 C4 C3 C4 C3 C4 | A2 A3 A2 A3 A2 A3 A2 A3 A2 A3 A2 A3 | D3 D4 D3 D4 D3 D4 D3 D4 D3 D4 D3 D4 |
+A2 A3 A2 A3 A2 A3 A2 A3 A2 A3 A2 A3 | A2 A3 A2 A3 A2 A3 A2 A3 A2 A3 A2 A3 | D3+A3:1 -:2 | -:3 | D3+A3:1 -:2 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | D3:1/2 A2:1/2 D3:1/2 A2:1/2 D3:1/2 A2:1/2 | D3:1/2 A2:1/2 D3:1/2 A2:1/2 D3:1/2 A2:1/2 | D3 D4 C4 Bb3 A3 G3 F3 E3 D3:1/2 -:1/2 |
+G2 G3 F3 Eb3 D3 C3 Bb2 A2 G2:1/2 -:1/2 | C3 C4 Bb3 A3 G3 F3 E3 D3 C3:1/2 -:1/2 | F2 F3 E3 D3 C3 Bb2 A2 G2 F2:1/2 -:1/2 | Bb2 Bb3 A3 G3 F3 Eb3 D3 C3 Bb2:1/2 -:1/2 | Eb3 Eb3 D3 C3 Bb2 A2 G2 F2 Eb3:1/2 -:1/2 |
+Ab2 Ab3 G3 F3 Eb3 D3 C3 Bb2 Ab2:1/2 -:1/2 | B2 B3 A3 G3 F3 Eb3 D3 C3 B2:1/2 -:1/2 | G2 G3 F3 Eb3 D3 C3 B2 A2 G2:1/2 -:1/2 | C3 C4 B3 Ab3 G3 F3 Eb3 D3 C3:1/2 -:1/2 | -:1/4 C4 B3 Ab3 G3 F3 Eb3 D3 C3:1/2 -:1/2 |
+-:1/4 C4 B3 Ab3 G3 F3 Eb3 D3 C3:1/2 -:1/2 | Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 | F3:1/2 F3:1/2 F3:1/2 F3:1/2 F3:1/2 F3:1/2 | G3:1/2 G3:1/2 G3:1/2 G3:1/2 G2:1/2 G2:1/2 | C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 |
+Bb3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 | Ab3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 | G3 C3 C3 C3 C3 C3 C3 C3 C3:1/2 -:1/2 | C3:1/2 C4 B3 C4:1/2 C3:1/2 C3:1/2 C4:1/2 | G2+D3:1 -:2 |
+C3:1/2 C4 B3 C4:1/2 C3:1/2 C3:1/2 C4:1/2 | Bb2+F3:1 -:2 | Eb3:1/2 Eb3 D3 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 | G2+D3:1 -:2 | G2:1/2 G3 F3 G3:1/2 G2:1/2 G2:1/2 G3:1/2 |
+Ab2+Eb3:1 -:2 | A2:1/2 A3 G3 A3:1/2 A2:1/2 A2:1/2 A3:1/2 | Bb2+F3:1 -:2 | B2:1/2 B3 A3 B3:1/2 B2:1/2 B2:1/2 B3:1/2 | C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 |
+Ab3 C3 C3 C3 Ab3 C3 C3 C3 Ab3 C3 C3 C3 | B2 B2 B2 B2 B2 B2 B2 B2 B2 B2 B2 B2 | G3 Bb2 Bb2 Bb2 G3 Bb2 Bb2 Bb2 G3 Bb2 Bb2 Bb2 | A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 | F3 Ab2 Ab2 Ab2 F3 Ab2 Ab2 Ab2 F3 Ab2 Ab2 Ab2 |
+G2 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 G3 | Eb4 G3 G3 G3 Eb4 G3 G3 G3 Eb4 G3 G3 G3 | Gb3 Gb3 Gb3 Gb3 Gb3 Gb3 Gb3 Gb3 Gb3 Gb3 Gb3 Gb3 | D4 F3 F3 F3 D4 F3 F3 F3 D4 F3 F3 F3 | E3 E3 E3 E3 E3 E3 E3 E3 E3 E3 E3 E3 |
+C4 Eb3 Eb3 Eb3 C4 Eb3 Eb3 Eb3 C4 Eb3 Eb3 Eb3 | D3+A3:3 | _:3 | _:3 | _:3 |
+_:1 -:2 | G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 | G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 | C3:1/2 C3:1/2 C3:1/2 C3:1/2 C3:1/2 C3:1/2 | C3:1/2 C3:1/2 C3:1/2 C3:1/2 C3:1/2 C3:1/2 |
+Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 | Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 Eb3:1/2 | G3:1/2 G3:1/2 G3:1/2 G3:1/2 G3:1/2 G3:1/2 | G3+D4:1? G2+D3:1? G2+D3:1? | G2+D3:1? G2+D3:1? G2+D3:1? |
+G2+D3:1 G2+D3:1 G2+D3:1 | G2+D3:1 G2+D3:1 G2+D3:1 | G2+D3:1 -:2 | -:3 | Bb2 G2 Bb2 G2 Bb2 G2 Bb2 G2 Bb2 G2 Bb2 G2 |
+D3+A3:1 -:2 | -:3 | -:3 | -:3 | D3 D4 C4 Bb3 A3 Bb3 A3 G3 Gb3 E3 D3 C3 |
+Bb2 Bb2 Bb2 Bb2 Bb2 Bb2 Bb2 Bb2 Bb2 Bb2 Bb2 Bb2 | C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 | D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 | G2 G2 G2 G2 Bb2 Bb2 Bb2 Bb2 Bb2 Bb2 Bb2 Bb2 | C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 C3 |
+D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 | G2 G3 G2 G3 G2 G3 G2 G3 G2 G3 G2 G3 | G2 G3 G2 G3 G2 G3 G2 G3 G2 G3 G2 G3 | G2 G3 G2 G3 G2 G3 G2 G3 G2 G3 G2 G3 | G2+D3:3 |
+
+@bass bass len=1/4 vol=0.85 rev=0.05
+G2 G1 G1 G1 G1 G1 G1 G1 G1 G1 G1 G1 | F2 G1 G1 G1 G1 G1 G1 G1 G1 G1 G1 G1 | Eb2 G1 G1 G1 G1 G1 G1 G1 G1 G1 G1 G1 | D2 G1 G1 G1 G1 G1 G1 G1 G1:1/2 -:1/2 | -:3 |
+D3 D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 | C3 D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 | Bb2 D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 | A2 D2 D2 D2 D2 D2 D2 D2 D2:1/2 -:1/2 | -:3 |
+G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 | G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 | C2:1/2 C2:1/2 C2:1/2 C2:1/2 C2:1/2 C2:1/2 | C2:1/2 C2:1/2 C2:1/2 C2:1/2 C2:1/2 C2:1/2 | Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 |
+Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 | G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 | G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 | G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 | G2 G2 G2 G2 D3 G2 G2 G2 D3 G2 G2 G2 |
+D2 D3 D2 D3 D2 D3 D2 D3 D2 D3 D2 D3 | D2 C3 D2 C3 D2 C3 D2 C3 D2 C3 D2 C3 | D2 Bb2 D2 Bb2 D2 Bb2 D2 Bb2 D2 Bb2 D2 Bb2 | D2 A2 D2 A2 D2 A2 D2 A2 D2 A2 D2 A2 | D2 D3 D2 D3 D2 D3 D2 D3 D2 D3 D2 D3 |
+D2 C3 D2 C3 D2 C3 D2 C3 D2 C3 D2 C3 | D2 Bb2 D2 Bb2 D2 Bb2 D2 Bb2 D2 Bb2 D2 Bb2 | D2 A2 D2 A2 D2 A2 D2 A2 D2 A2 D2 A2 | G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 | G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 |
+G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 | G1 G2 G1 G2 G1 G2 G1 G2 G1 G2 G1 G2 | C2 C3 C2 C3 C2 C3 C2 C3 C2 C3 C2 C3 | A1 A2 A1 A2 A1 A2 A1 A2 A1 A2 A1 A2 | D2 D3 D2 D3 D2 D3 D2 D3 D2 D3 D2 D3 |
+A1 A2 A1 A2 A1 A2 A1 A2 A1 A2 A1 A2 | A1 A2 A1 A2 A1 A2 A1 A2 A1 A2 A1 A2 | D2:1 -:2 | -:3 | D2:1 -:2 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | D2:1/2 A1:1/2 D2:1/2 A1:1/2 D2:1/2 A1:1/2 | D2:1/2 A1:1/2 D2:1/2 A1:1/2 D2:1/2 A1:1/2 | D2 D3 C3 Bb2 A2 G2 F2 E2 D2:1/2 -:1/2 |
+G1 G2 F2 Eb2 D2 C2 Bb1 A1 G1:1/2 -:1/2 | C2 C3 Bb2 A2 G2 F2 E2 D2 C2:1/2 -:1/2 | F1 F2 E2 D2 C2 Bb1 A1 G1 F1:1/2 -:1/2 | Bb1 Bb2 A2 G2 F2 Eb2 D2 C2 Bb1:1/2 -:1/2 | Eb1 Eb2 D2 C2 Bb1 A1 G1 F1 Eb1:1/2 -:1/2 |
+Ab1 Ab2 G2 F2 Eb2 D2 C2 Bb1 Ab1:1/2 -:1/2 | B1 B2 A2 G2 F2 Eb2 D2 C2 B1:1/2 -:1/2 | G1 G2 F2 Eb2 D2 C2 B1 A1 G1:1/2 -:1/2 | C2 C3 B2 Ab2 G2 F2 Eb2 D2 C2:1/2 -:1/2 | -:1/4 C3 B2 Ab2 G2 F2 Eb2 D2 C2:1/2 -:1/2 |
+-:1/4 C3 B2 Ab2 G2 F2 Eb2 D2 C2:1/2 -:1/2 | Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 | F2:1/2 F2:1/2 F2:1/2 F2:1/2 F2:1/2 F2:1/2 | G2:1/2 G2:1/2 G2:1/2 G2:1/2 G1:1/2 G1:1/2 | C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 |
+Bb2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 | Ab2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 | G2 C2 C2 C2 C2 C2 C2 C2 C2:1/2 -:1/2 | C2:1/2 C3 B2 C3:1/2 C2:1/2 C2:1/2 C3:1/2 | G1:1 -:2 |
+C2:1/2 C3 B2 C3:1/2 C2:1/2 C2:1/2 C3:1/2 | Bb1:1 -:2 | Eb1:1/2 Eb2 D2 Eb2:1/2 Eb1:1/2 Eb1:1/2 Eb2:1/2 | G1:1 -:2 | G1:1/2 G2 F2 G2:1/2 G1:1/2 G1:1/2 G2:1/2 |
+Ab1:1 -:2 | A1:1/2 A2 G2 A2:1/2 A1:1/2 A1:1/2 A2:1/2 | Bb1:1 -:2 | B1:1/2 B2 A2 B2:1/2 B1:1/2 B1:1/2 B2:1/2 | C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 |
+Ab2 C2 C2 C2 Ab2 C2 C2 C2 Ab2 C2 C2 C2 | B1 B1 B1 B1 B1 B1 B1 B1 B1 B1 B1 B1 | G2 Bb1 Bb1 Bb1 G2 Bb1 Bb1 Bb1 G2 Bb1 Bb1 Bb1 | A1 A1 A1 A1 A1 A1 A1 A1 A1 A1 A1 A1 | F2 Ab1 Ab1 Ab1 F2 Ab1 Ab1 Ab1 F2 Ab1 Ab1 Ab1 |
+G1 G2 G2 G2 G2 G2 G2 G2 G2 G2 G2 G2 | Eb3 G2 G2 G2 Eb3 G2 G2 G2 Eb3 G2 G2 G2 | Gb2 Gb2 Gb2 Gb2 Gb2 Gb2 Gb2 Gb2 Gb2 Gb2 Gb2 Gb2 | D3 F2 F2 F2 D3 F2 F2 F2 D3 F2 F2 F2 | E2 E2 E2 E2 E2 E2 E2 E2 E2 E2 E2 E2 |
+C3 Eb2 Eb2 Eb2 C3 Eb2 Eb2 Eb2 C3 Eb2 Eb2 Eb2 | D2:3 | _:3 | _:3 | _:3 |
+_:1 -:2 | G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 | G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 G1:1/2 | C2:1/2 C2:1/2 C2:1/2 C2:1/2 C2:1/2 C2:1/2 | C2:1/2 C2:1/2 C2:1/2 C2:1/2 C2:1/2 C2:1/2 |
+Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 | Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 Eb2:1/2 | G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 G2:1/2 | G2:1? G1:1? G1:1? | G1:1? G1:1? G1:1? |
+G1:1 G1:1 G1:1 | G1:1 G1:1 G1:1 | G1:1 -:2 | -:3 | Bb1 G1 Bb1 G1 Bb1 G1 Bb1 G1 Bb1 G1 Bb1 G1 |
+D2:1 -:2 | -:3 | -:3 | -:3 | D2 D3 C3 Bb2 A2 Bb2 A2 G2 Gb2 E2 D2 C2 |
+Bb1 Bb1 Bb1 Bb1 Bb1 Bb1 Bb1 Bb1 Bb1 Bb1 Bb1 Bb1 | C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 | D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 | G1 G1 G1 G1 Bb1 Bb1 Bb1 Bb1 Bb1 Bb1 Bb1 Bb1 | C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 C2 |
+D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 D2 | G1 G2 G1 G2 G1 G2 G1 G2 G1 G2 G1 G2 | G1 G2 G1 G2 G1 G2 G1 G2 G1 G2 G1 G2 | G1 G2 G1 G2 G1 G2 G1 G2 G1 G2 G1 G2 | G1:3 |
+
+@drums drums len=1/2 vol=1.3 rev=0.15
+k h s h k h | k h s h k h | k h s h k h | k h s h k k | k h s h k h |
+k h s h k h | k h s h k h | k h s h k k | k h s h k h | k h s h k h |
+k h s h k h | k h s h k k | k h s h k h | k h s h k h | k h s h k h |
+k h s h k k | k h s h k h | k h s h k h | k h s h k h | k h s h k k |
+k h s h k h | k h s h k h | k h s h k h | k h s h k k | k h s h k h |
+k h s h k h | k h s h k h | k h s h k k | k h s h k h | k h s h k h |
+k h s h k h | k h s h k k | k h s h k h | k h s h k h | k h s h k h |
+k h s h k k | k h s h k h | k h s h k h | k h s:0.25 s:0.25 s!:0.25 s!:0.25 t:0.25 t:0.25 l:0.25 l:0.25 | k h s? h h? h |
+k? h? h? h? s? h? | k? h? h? h? s? h? | k? h? h? h? s? h? | k? h? h? h? s? h? | k? h? h? h? s? h? |
+k? h? h? h? s? h? | k? h? h? h? s? h? | k? h? h? h? s? h? | k h s? h k? h | k h s? h h? h |
+k h s? h k? h | k h s? h h? h | k h s? h k? h | k h s? h s:0.25 s:0.25 s!:0.25 s!:0.25 | k h s h k h |
+k h s h k k | k h s h k h | k h s h k h | k h s h k h | k h s h k k |
+k h s h k h | k h s h k h | k h s h k h | k h s h k k | k h s h k h |
+k h s h k h | k h s h k h | k h s h k k | k h s h k h | k h s h k h |
+k h s h k h | k h s h k k | k h s:0.25 s:0.25 s!:0.25 s!:0.25 t:0.25 t:0.25 l:0.25 l:0.25 | k h s? h h? h | k h s? h k? h |
+k h s? h h? h | k h s? h k? h | k h s? h h? h | k h s? h k? h | k h s? h h? h |
+k h s? h k? h | k h s? h h? h | k h s? h k? h | k h s? h s:0.25 s:0.25 s!:0.25 s!:0.25 | k h s h k h |
+k h s h k h | k h s h k h | k h s h k k | k h s h k h | k h s h k h |
+k h s h k h | k h s h k k | k h s h k h | k h s h k h | k h s h k h |
+k h s:0.25 s:0.25 s!:0.25 s!:0.25 t:0.25 t:0.25 l:0.25 l:0.25 | k h s? h k? h | k h s? h h? h | k h s? h k? h | k h s? h s:0.25 s:0.25 s!:0.25 s!:0.25 |
+k h s h k h | k h s h k h | k h s h k h | k h s h k k | k h s h k h |
+k h s h k h | k h s h k h | k h s:0.25 s:0.25 s!:0.25 s!:0.25 t:0.25 t:0.25 l:0.25 l:0.25 | k? h? h? h? s? h? | k? h? h? h? s? h? |
+k h s? h k? h | k h s? h s:0.25 s:0.25 s!:0.25 s!:0.25 | k h s h k h | k h s h k h | k h s:0.25 s:0.25 s!:0.25 s!:0.25 t:0.25 t:0.25 l:0.25 l:0.25 |
+k h s? h h? h | k h s? h k? h | k h s? h h? h | k h s? h s:0.25 s:0.25 s!:0.25 s!:0.25 | k h s h k k |
+k h s h k h | k h s h k h | k h s h k h | k h s h k k | k h s h k h |
+k h s h k h | k h s h k h | k h s h k k | k h s h k h | k+y:1 -:2 |
+
+@crash drums len=3 vol=0.6 rev=0.45
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | y:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | y:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | y:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | y:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | y:3 | -:3 | -:3 | -:3 |
+y:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | y:3 | -:3 |
+-:3 | -:3 | y:3 | -:3 | -:3 |
+y:3 | -:3 | -:3 | -:3 | y:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |
+-:3 | -:3 | -:3 | -:3 | -:3 |

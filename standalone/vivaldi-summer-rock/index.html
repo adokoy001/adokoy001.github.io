@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>夏の嵐、ロックで — ヴィヴァルディ「四季」より「夏」第3楽章</title>
+<meta name="description" content="ヴィヴァルディ「四季」の「夏」第3楽章 Presto を、独奏バイオリン＋歪みギター＋ドラムのロック編曲にして、ブラウザの合成音で鳴らしたもの。楽譜はテキストで、全部読める。">
+<style>
+:root{
+  --bg:#0b0a0f; --bg2:#121019; --panel:#17141f; --line:#2b2536; --line2:#201b2a;
+  --ink:#efe9f4; --dim:#a394b4; --faint:#6b5f7a;
+  --hot:#ff7a3d; --hot2:#ffb13d; --cool:#7ad0ff; --vio:#c58cff;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(1200px 600px at 20% -10%,#2a1230 0%,transparent 60%),radial-gradient(900px 500px at 100% 0%,#0f2a3a 0%,transparent 55%),var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;font-size:15.5px;line-height:1.75;min-height:100vh}
+a{color:var(--cool)}
+main{max-width:760px;margin:0 auto;padding:40px 18px 80px}
+header{margin-bottom:28px}
+.eyebrow{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--hot);font-weight:600}
+h1{font-size:30px;line-height:1.25;margin:8px 0 6px;letter-spacing:-.01em}
+h1 small{display:block;font-size:14px;color:var(--dim);font-weight:400;letter-spacing:0;margin-top:6px}
+.lead{color:var(--dim);margin-top:10px}
+h2{font-size:17px;margin:38px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line2);letter-spacing:.02em}
+p{margin:10px 0}
+ul{margin:8px 0 8px 22px}
+li{margin:4px 0}
+code{font-family:var(--mono);font-size:.9em;background:#1f1a2a;padding:1px 5px;border-radius:4px;color:#e9dcff}
+/* player */
+.player{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px;margin:18px 0 6px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.ctl{display:flex;align-items:center;gap:14px}
+.play{width:54px;height:54px;border-radius:50%;border:none;background:var(--hot);color:#1a0a05;font-size:22px;cursor:pointer;flex:none;display:grid;place-items:center;box-shadow:0 6px 20px rgba(255,122,61,.35);transition:transform .1s}
+.play:active{transform:scale(.95)}
+.play[disabled]{opacity:.5;cursor:default}
+.time{font-family:var(--mono);font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums;min-width:92px}
+.now{font-size:13px;color:var(--ink);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now b{color:var(--hot2);font-weight:600}
+.bar{position:relative;height:38px;margin-top:14px;border-radius:8px;overflow:hidden;background:#0d0b12;cursor:pointer;border:1px solid var(--line2)}
+.seg{position:absolute;top:0;bottom:0;border-right:1px solid rgba(255,255,255,.08)}
+.seg.t{background:linear-gradient(180deg,rgba(255,122,61,.28),rgba(255,122,61,.10))}
+.seg.s{background:linear-gradient(180deg,rgba(122,208,255,.22),rgba(122,208,255,.07))}
+.seg span{position:absolute;left:5px;top:3px;font-size:10px;letter-spacing:.08em;color:rgba(255,255,255,.55);white-space:nowrap}
+.fill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.12);pointer-events:none}
+.head{position:absolute;top:0;bottom:0;width:2px;background:var(--hot2);box-shadow:0 0 8px var(--hot2);left:0;pointer-events:none}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--dim);margin-top:8px;flex-wrap:wrap}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.legend .t i{background:rgba(255,122,61,.5)}.legend .s i{background:rgba(122,208,255,.45)}
+.dl{font-size:13px;color:var(--dim);margin-top:4px}
+/* score */
+details{border:1px solid var(--line2);border-radius:10px;background:var(--bg2);margin-top:12px}
+summary{cursor:pointer;padding:12px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary .hint{font-size:12px;color:var(--faint);font-weight:400}
+pre{font-family:var(--mono);font-size:11.5px;line-height:1.5;white-space:pre;overflow:auto;padding:12px 14px 16px;border-top:1px solid var(--line2);max-height:520px;color:#d9d0e6;-webkit-overflow-scrolling:touch}
+.tools{display:flex;gap:8px;padding:8px 12px;border-top:1px solid var(--line2)}
+.btn{font:inherit;font-size:13px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.btn:active{transform:translateY(1px)}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line2);vertical-align:top}
+th{color:var(--dim);font-weight:500;white-space:nowrap}
+.lic{font-size:13px;color:var(--dim);border-left:3px solid var(--vio);padding:4px 12px;margin-top:14px}
+footer{margin-top:48px;font-size:13px;color:var(--faint)}
+@media (max-width:480px){h1{font-size:25px}.time{min-width:80px}.now{display:none}}
+</style>
+<main>
+<header>
+  <div class="eyebrow">Vivaldi × Rock</div>
+  <h1>夏の嵐、ロックで<small>ヴィヴァルディ「四季」より「夏」第3楽章 Presto ── 独奏バイオリン、歪みギター、ドラム</small></h1>
+  <p class="lead">1725年の楽譜をそのまま読み込んで、チェロの線に歪みギターとベースを重ね、3拍子のロックビートを足した。音はすべてブラウザ用に自作した合成音（サンプル音源なし）で、楽譜はテキスト。下に全文を載せている。</p>
+</header>
+
+<div class="player" id="player">
+  <div class="ctl">
+    <button class="play" id="play" aria-label="再生">▶</button>
+    <div class="time"><span id="cur">0:00</span> / <span id="dur">–:––</span></div>
+    <div class="now" id="now">G短調・3/4・♩=168・130小節</div>
+  </div>
+  <div class="bar" id="bar" aria-label="再生位置"></div>
+  <div class="legend"><span class="t"><i></i>総奏（嵐の16分の連打）</span><span class="s"><i></i>独奏バイオリンの走句</span></div>
+  <p class="dl">音が出ないときは <a href="summer-presto-rock.mp3">MP3 を直接開く</a>（3.4MB・2分22秒）</p>
+  <audio id="audio" preload="metadata" src="summer-presto-rock.mp3"></audio>
+</div>
+
+<h2>何をしたか</h2>
+<p>弦楽の音符は Mutopia Project の LilyPond 楽譜から機械的に変換したもので、ヴィヴァルディが書いたとおり。そこに原曲にない3つを足している。</p>
+<ul>
+  <li><b>歪みギター</b>：チェロの線をそのまま弾く。1拍以上伸ばす音はパワーコード（ルート＋5度）。</li>
+  <li><b>ベース</b>：同じ線を1オクターブ下で。</li>
+  <li><b>ドラム</b>：3拍子のロックビート。独奏の区間は軽くして、各区間の頭でクラッシュ、その直前の小節でフィル。</li>
+</ul>
+<p>合奏の「嵐のトレモロ」（同じ音の16分の連打）は、伸ばした音を毎秒11.2回揺らす形にまとめて軽くしている。ギターとベースが弾くチェロの合奏パートと、第1バイオリンと同じ音で重なる第2バイオリン・ビオラの音は省いた。それ以外の弦は楽譜どおり。</p>
+
+<h2>楽器の作り（ざっくり）</h2>
+<table>
+<tr><th>バイオリン</th><td>帯域制限したノコギリ波（弓で擦った弦の運動）を、約50個の共鳴を重ねた胴の応答に畳み込む。音の長さと強弱で弓づかいが自動で変わる：短い音は跳ねる弓、長い音はふくらんで遅れてビブラート。</td></tr>
+<tr><th>合奏</th><td>1音を1回だけ鳴らし、揺れる遅延線4本で「別々の奏者」に複製する（遅延時間がゆっくり揺れると音程がわずかに上下するので、奏者ごとのビブラートになる）。人数分鳴らすより軽い。</td></tr>
+<tr><th>ギター</th><td>弦の録音波形ひとつ＋歪み。</td></tr>
+<tr><th>ドラム</th><td>正弦波の音程落ち（キック）、ノイズと胴の鳴り（スネア）、ノイズの帯域制限（ハット・シンバル）。</td></tr>
+</table>
+
+<h2>楽譜（テキスト）</h2>
+<p>自作の「テキスト譜スタジオ」の形式。<code>@名前 楽器 設定</code> でトラックを作り、<code>音名:拍数</code> を並べる。<code>!</code> は強く、<code>?</code> は弱く、<code>_</code> はタイ、<code>|</code> は小節線。</p>
+<details>
+  <summary>楽譜の全文を開く <span class="hint">12トラック・5,276音</span></summary>
+  <div class="tools"><button class="btn" id="copy">コピー</button><a class="btn" href="summer-presto-rock.txt" download>テキストで保存</a></div>
+  <pre id="score">読み込み中…</pre>
+</details>
+
+<p class="lic">楽譜の出典：<a href="https://www.mutopiaproject.org/" rel="noopener">Mutopia Project</a>（Mutopia-2010/02/08-336、Creative Commons 表示-継承 3.0）。この編曲の楽譜と音源も同じく <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" rel="noopener">CC BY-SA 3.0</a> で公開する。楽器の作り込みと編曲は Claude（Anthropic）に依頼して作った。</p>
+
+<footer>テキスト譜スタジオ／Toshiaki Yokoda</footer>
+</main>
+<script>
+(function(){
+  // sections of the movement (score bars), 3/4 at 168 BPM: a bar is 60/168*3 s
+  const BAR=60/168*3, SECS=[[1,'総奏','t'],[40,'独奏','s'],[55,'総奏','t'],[74,'独奏','s'],[85,'総奏','t'],[97,'独奏','s'],[101,'総奏','t'],[109,'独奏','s'],[113,'総奏','t'],[116,'独奏','s'],[120,'終結','t'],[131,'','']];
+  const a=document.getElementById('audio'), play=document.getElementById('play'), bar=document.getElementById('bar'), cur=document.getElementById('cur'), dur=document.getElementById('dur'), now=document.getElementById('now');
+  const total=130*BAR+0.3;
+  const fmt=s=>{ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+  for(let i=0;i<SECS.length-1;i++){ const [b,nm,k]=SECS[i], e=SECS[i+1][0]; const d=document.createElement('div'); d.className='seg '+k; d.style.left=((b-1)*BAR/total*100)+'%'; d.style.width=((e-b)*BAR/total*100)+'%'; if((e-b)*BAR>9) d.innerHTML='<span>'+b+' '+nm+'</span>'; bar.appendChild(d); }
+  const fill=document.createElement('div'); fill.className='fill'; bar.appendChild(fill);
+  const head=document.createElement('div'); head.className='head'; bar.appendChild(head);
+  dur.textContent=fmt(total);
+  a.addEventListener('loadedmetadata',()=>{ dur.textContent=fmt(a.duration); });
+  play.addEventListener('click',()=>{ if(a.paused) a.play().catch(()=>{}); else a.pause(); });
+  a.addEventListener('play',()=>{ play.textContent='❚❚'; play.setAttribute('aria-label','一時停止'); });
+  a.addEventListener('pause',()=>{ play.textContent='▶'; play.setAttribute('aria-label','再生'); });
+  a.addEventListener('ended',()=>{ play.textContent='▶'; });
+  a.addEventListener('timeupdate',()=>{ const T=a.duration||total, p=a.currentTime/T; fill.style.width=(p*100)+'%'; head.style.left=(p*100)+'%'; cur.textContent=fmt(a.currentTime);
+    const b=Math.floor(a.currentTime/BAR)+1; let s=SECS[0]; for(const x of SECS) if(x[0]<=b) s=x; now.innerHTML='<b>'+Math.min(b,130)+'小節</b> '+s[1]; });
+  bar.addEventListener('click',e=>{ const r=bar.getBoundingClientRect(); const p=(e.clientX-r.left)/r.width; a.currentTime=p*(a.duration||total); if(a.paused) a.play().catch(()=>{}); });
+  fetch('summer-presto-rock.txt').then(r=>r.text()).then(t=>{ document.getElementById('score').textContent=t; }).catch(()=>{ document.getElementById('score').textContent='（読み込めなかった。上の「テキストで保存」から開ける）'; });
+  document.getElementById('copy').addEventListener('click',()=>{ const t=document.getElementById('score').textContent; navigator.clipboard&&navigator.clipboard.writeText(t).then(()=>{ document.getElementById('copy').textContent='コピーした'; setTimeout(()=>document.getElementById('copy').textContent='コピー',1500); }); });
+})();
+</script>
+</html>
