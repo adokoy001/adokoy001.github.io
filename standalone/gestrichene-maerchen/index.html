@@ -240,6 +240,45 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 .pn .toix { color: var(--ink-3); }
 @media (max-width: 560px) { .pn a { max-width: none; } .pn .toix { order: 3; width: 100%; } }
 
+/* read aloud */
+.tts-row { margin: 18px 0 0; }
+.tts-go { display: inline-flex; align-items: center; gap: 8px; font: 600 14px/1 var(--f-ja); color: var(--ink); background: none;
+  border: 1px solid var(--rot); border-radius: 3px; padding: 9px 14px 9px 11px; cursor: pointer; }
+.tts-go svg { width: 14px; height: 14px; fill: var(--rot); }
+.tts-go .sc { font: italic 400 14px var(--f-de); color: var(--ink-3); letter-spacing: .02em; }
+.tts-go:hover { background: var(--rot-soft); }
+.speaking { background: var(--rot-soft); box-shadow: 0 0 0 8px var(--rot-soft); border-radius: 1px; }
+.tts { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--leaf); border-top: 1px solid var(--rule);
+  padding-bottom: env(safe-area-inset-bottom, 0px); box-shadow: 0 -10px 30px rgba(0, 0, 0, .28); }
+.tts[hidden] { display: none; }
+.tts-in { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; gap: 8px 14px;
+  padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+.tts-now { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; background: none; border: 0;
+  padding: 2px 0; color: var(--ink); text-align: left; cursor: pointer; font: inherit; }
+.tts-meta { display: flex; gap: 10px; align-items: baseline; max-width: 100%; }
+.tts-lang { font: 12px/1.2 var(--f-de); letter-spacing: .14em; text-transform: uppercase; color: var(--rot); white-space: nowrap; }
+.tts-where { font-size: 12px; line-height: 1.2; color: var(--ink-3); white-space: nowrap; }
+.tts-where[hidden] { display: none; }
+.tts-title { font-size: 15px; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tts-ctl { display: flex; gap: 6px; flex: none; }
+.tts-ctl button { min-width: 42px; height: 42px; display: grid; place-content: center; background: none; border: 1px solid var(--rule);
+  border-radius: 3px; color: var(--ink); cursor: pointer; padding: 0 10px; font: 600 13px/1 var(--f-de); }
+.tts-ctl button:hover { border-color: var(--ink-3); }
+.tts-ctl svg { width: 18px; height: 18px; fill: currentColor; display: block; }
+.tts-ctl .x svg { fill: none; stroke: currentColor; stroke-width: 2; }
+#ttsPlay { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+#ttsPlay .i-pause, #ttsPlay.on .i-play { display: none; }
+#ttsPlay.on .i-pause { display: block; }
+.tts-msg { max-width: 1120px; margin: 0 auto; padding: 0 16px 9px; font-size: 13px; line-height: 1.6; color: var(--ink-2); }
+.tts-msg[hidden] { display: none; }
+body.tts-on { padding-bottom: 120px; }
+@media (max-width: 560px) {
+  .tts-in { flex-wrap: wrap; }
+  .tts-now { flex-basis: 100%; }
+  .tts-ctl { width: 100%; justify-content: space-between; }
+  .tts-ctl button { flex: 1; }
+}
+
 /* Über die Märchen */
 .ueber { padding-block: 44px 64px; border-top: 1px solid var(--rule); }
 .lede2 { max-width: 40em; font-size: 17px; line-height: 2; margin: 0 0 34px; }
@@ -496,6 +535,8 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
         <dd>暗さの目安。†††がいちばん暗い。編者の主観である。</dd>
         <dt>原文</dt>
         <dd>各話が最初に載った版の本文（多くは1812・1815年。後の版で加わった3編は1840・1843年版、断片は1856年の注釈巻）。綴りは原本どおり（seyn、Thier、gieng など）。翻刻はドイツ語版Wikisourceによる。</dd>
+        <dt>読み上げ</dt>
+        <dd>各話の「読み上げ」で、見ている端末に入っている音声が読む。対訳表示ならドイツ語と日本語を段落ごとに交互に、和訳・原文表示ならその言語だけ。声と発音は端末によって違う。</dd>
         <dt>和訳・解説</dt>
         <dd>Claude（AnthropicのAI）による。既存の邦訳は使っていない。原文と段落ごとに対応させてある。</dd>
       </dl>
@@ -579,6 +620,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 6 · 1812</p>
 <h2><span class="de-title" lang="de">Von der Nachtigall und der Blindschleiche</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">ナイチンゲールとアシナシトカゲ</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm6"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -614,6 +656,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 8 · 1812</p>
 <h2><span class="de-title" lang="de">Die Hand mit dem Messer</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">ナイフを持った手</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span><span><b>怖さ</b><span class="dg">††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm8"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -642,6 +685,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 16 · 1812</p>
 <h2><span class="de-title" lang="de">Herr Fix und Fertig</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">フィックス・ウント・フェルティヒ</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm16"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -670,6 +714,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 22 · 1812</p>
 <h2><span class="de-title" lang="de">Wie Kinder Schlachtens mit einander gespielt haben</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">子どもたちが屠殺ごっこをした話</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span><span><b>怖さ</b><span class="dg">†††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm22"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -706,6 +751,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 27 · 1812</p>
 <h2><span class="de-title" lang="de">Der Tod und der Gänshirt</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">死神とガチョウ番</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm27"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -731,6 +777,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 33 · 1812</p>
 <h2><span class="de-title" lang="de">Der gestiefelte Kater</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">長靴をはいた雄猫</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm33"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -761,6 +808,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 34 · 1812</p>
 <h2><span class="de-title" lang="de">Hansens Trine</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">ハンスのトリーネ</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm34"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -783,6 +831,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 37 · 1812</p>
 <h2><span class="de-title" lang="de">Von der Serviette, dem Tornister, dem Kanonenhütlein und dem Horn</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">ナプキンと背嚢と大砲帽子と角笛</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm37"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -809,6 +858,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 43 · 1812</p>
 <h2><span class="de-title" lang="de">Die wunderliche Gasterei</span><span class="margin-note" aria-hidden="true">gestr. 1837</span><span class="ja-title">奇妙なおよばれ</span></h2>
 <p class="facts"><span><b>載った版</b>初版〜1819年版</span><span><b>行方</b>1837年、第3版で消えた</span><span><b>分類</b>別の話へ</span><span><b>怖さ</b><span class="dg">††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm43"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -833,6 +883,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 54 · 1812</p>
 <h2><span class="de-title" lang="de">Hans Dumm</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">ばかのハンス</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>理由不明</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm54"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -860,6 +911,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 59 · 1812</p>
 <h2><span class="de-title" lang="de">Prinz Schwan</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">白鳥王子</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm59"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -903,6 +955,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 60 · 1812</p>
 <h2><span class="de-title" lang="de">Das Goldei</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">金の卵</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm60"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -938,6 +991,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 61 · 1812</p>
 <h2><span class="de-title" lang="de">Von dem Schneider, der bald reich wurde</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">たちまち金持ちになった仕立屋</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>理由の明記</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm61"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -966,6 +1020,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 62 · 1812</p>
 <h2><span class="de-title" lang="de">Blaubart</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">青ひげ</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>理由の明記</span><span><b>怖さ</b><span class="dg">††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm62"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -997,6 +1052,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 64 · 1812</p>
 <h2><span class="de-title" lang="de">Von dem Dummling</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">まぬけの話</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm64"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1037,6 +1093,7 @@ h1 { margin: 0; display: flex; flex-direction: column; gap: 10px; font-weight: 4
 <p class="eyebrow sc">Erster Band · Nr. 66 · 1812</p>
 <h2><span class="de-title" lang="de">Hurleburlebutz</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">フルレブルレブッツ</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm66"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1067,6 +1124,7 @@ In einer andern mündlichen Erzählung, fragt der Fuchs immer, das Mädchen, das
 <p class="eyebrow sc">Erster Band · Nr. 68 · 1812</p>
 <h2><span class="de-title" lang="de">Von dem Sommer- und Wintergarten</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">夏と冬の庭</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm68"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1097,6 +1155,7 @@ In der Leipziger Sammlung ist es das siebente Märchen (S. 113-130). Die jüngst
 <p class="eyebrow sc">Erster Band · Nr. 70 · 1812</p>
 <h2><span class="de-title" lang="de">Der Okerlo</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">オケルロ</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span><span><b>怖さ</b><span class="dg">††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm70"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1138,6 +1197,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Erster Band · Nr. 71 · 1812</p>
 <h2><span class="de-title" lang="de">Prinzessin Mäusehaut</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">ねずみ皮の王女</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm71"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1166,6 +1226,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Erster Band · Nr. 72 · 1812</p>
 <h2><span class="de-title" lang="de">Das Birnli will nit fallen</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">梨っこは落ちようとせん</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>理由不明</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm72"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1269,6 +1330,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Erster Band · Nr. 73 · 1812</p>
 <h2><span class="de-title" lang="de">Das Mordschloß</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">人殺し城</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span><span><b>怖さ</b><span class="dg">†††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm73"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1314,6 +1376,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Erster Band · Nr. 74 · 1812</p>
 <h2><span class="de-title" lang="de">Von Johannes-Wassersprung und Caspar-Wassersprung</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">ヨハネス・ヴァッサーシュプルングとカスパー・ヴァッサーシュプルング</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm74"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1338,6 +1401,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Erster Band · Nr. 75 · 1812</p>
 <h2><span class="de-title" lang="de">Vogel Phönix</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">不死鳥</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm75"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1363,6 +1427,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Erster Band · Nr. 77 · 1812</p>
 <h2><span class="de-title" lang="de">Vom Schreiner und Drechsler</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">指物師とろくろ細工師</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>不完全・断片</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm77"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1391,6 +1456,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Erster Band · Nr. 81 · 1812</p>
 <h2><span class="de-title" lang="de">Der Schmidt und der Teufel</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">鍛冶屋と悪魔</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm81"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1423,6 +1489,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Erster Band · Nr. 82 · 1812</p>
 <h2><span class="de-title" lang="de">Die drei Schwestern</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">三人の姉妹</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm82"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1480,6 +1547,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Erster Band · Nr. 84 · 1812</p>
 <h2><span class="de-title" lang="de">Die Schwiegermutter</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">姑</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>不完全・断片</span><span><b>怖さ</b><span class="dg">†††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm84"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1514,6 +1582,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Erster Band · Nr. 85 · 1812</p>
 <h2><span class="de-title" lang="de">Fragmente</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">断片</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>不完全・断片</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm85"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1555,6 +1624,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Zweiter Band · Nr. 13 (KHM 99) · 1815</p>
 <h2><span class="de-title" lang="de">Der Froschprinz</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">かえるの王子</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm99"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1598,6 +1668,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Zweiter Band · Nr. 18 (KHM 104) · 1815</p>
 <h2><span class="de-title" lang="de">Die treuen Thiere</span><span class="margin-note" aria-hidden="true">gestr. 1857</span><span class="ja-title">忠実な動物たち</span></h2>
 <p class="facts"><span><b>載った版</b>初版〜1850年版</span><span><b>行方</b>1857年、第7版で消えた</span><span><b>分類</b>理由の明記</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm104"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1627,6 +1698,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Zweiter Band · Nr. 21 (KHM 107) · 1815</p>
 <h2><span class="de-title" lang="de">Die Krähen</span><span class="margin-note" aria-hidden="true">gestr. 1843</span><span class="ja-title">からす</span></h2>
 <p class="facts"><span><b>載った版</b>初版〜1840年版</span><span><b>行方</b>1843年、第5版で消えた</span><span><b>分類</b>理由の明記</span><span><b>怖さ</b><span class="dg">††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm107"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1655,6 +1727,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Zweiter Band · Nr. 33 (KHM 119) · 1815</p>
 <h2><span class="de-title" lang="de">Der Faule und der Fleißige</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">怠け者と働き者</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>理由不明</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm119"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1681,6 +1754,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Zweiter Band · Nr. 36 (KHM 122) · 1815</p>
 <h2><span class="de-title" lang="de">Die lange Nase</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">長い鼻</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm122"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1710,6 +1784,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Zweiter Band · Nr. 43 (KHM 129) · 1815</p>
 <h2><span class="de-title" lang="de">Der Löwe und der Frosch</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">ライオンと蛙</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>理由不明</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm129"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1737,6 +1812,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Zweiter Band · Nr. 44 (KHM 130) · 1815</p>
 <h2><span class="de-title" lang="de">Der Soldat und der Schreiner</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">兵隊と指物師</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>不完全・断片</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm130"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1766,6 +1842,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Zweiter Band · Nr. 50 (KHM 136) · 1815</p>
 <h2><span class="de-title" lang="de">De wilde Mann</span><span class="margin-note" aria-hidden="true">gestr. 1850</span><span class="ja-title">野人</span></h2>
 <p class="facts"><span><b>載った版</b>初版〜1843年版</span><span><b>行方</b>1850年、第6版で消えた</span><span><b>分類</b>別の話へ</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm136"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1793,6 +1870,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Zweiter Band · Nr. 57 (KHM 143) · 1815</p>
 <h2><span class="de-title" lang="de">Die Kinder in Hungersnoth</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">飢饉の子どもたち</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>外国・書物から</span><span><b>怖さ</b><span class="dg">†††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm143"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1820,6 +1898,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Zweiter Band · Nr. 66 (KHM 152) · 1815</p>
 <h2><span class="de-title" lang="de">Die heilige Frau Kummerniß</span><span class="margin-note" aria-hidden="true">gestr. 1819</span><span class="ja-title">聖女クンメルニス</span></h2>
 <p class="facts"><span><b>載った版</b>初版のみ</span><span><b>行方</b>1819年、第2版で消えた</span><span><b>分類</b>理由不明</span><span><b>怖さ</b><span class="dg">††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm152"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1848,6 +1927,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">4. Auflage · Nr. 175 · 1840</p>
 <h2><span class="de-title" lang="de">Das  Unglück</span><span class="margin-note" aria-hidden="true">gestr. 1857</span><span class="ja-title">不運</span></h2>
 <p class="facts"><span><b>載った版</b>1840〜1850年版</span><span><b>行方</b>1857年、第7版で消えた</span><span><b>分類</b>理由の明記</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm175"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1869,6 +1949,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">5. Auflage · Nr. 182 · 1843</p>
 <h2><span class="de-title" lang="de">Die Erbsenprobe</span><span class="margin-note" aria-hidden="true">gestr. 1850</span><span class="ja-title">えんどう豆の試し</span></h2>
 <p class="facts"><span><b>載った版</b>1843年版のみ</span><span><b>行方</b>1850年、第6版で消えた</span><span><b>分類</b>理由の明記</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm182"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1894,6 +1975,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">5. Auflage · Nr. 191 · 1843</p>
 <h2><span class="de-title" lang="de">Der Räuber und seine Söhne</span><span class="margin-note" aria-hidden="true">gestr. 1857</span><span class="ja-title">盗賊とその息子たち</span></h2>
 <p class="facts"><span><b>載った版</b>1843〜1850年版</span><span><b>行方</b>1857年、第7版で消えた</span><span><b>分類</b>理由不明</span><span><b>怖さ</b><span class="dg">††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="khm191"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1922,6 +2004,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Anmerkungsband · Bruchstück 1 · 1822 / 1856</p>
 <h2><span class="de-title" lang="de">Der Mann vom Galgen</span><span class="margin-note" aria-hidden="true">nur Anm.</span><span class="ja-title">首吊り台の男</span></h2>
 <p class="facts"><span><b>載った版</b>注釈巻（1822・1856）</span><span><b>行方</b>本文には不掲載</span><span><b>分類</b>注釈巻の断片</span><span><b>怖さ</b><span class="dg">†††</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="bs1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1949,6 +2032,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Anmerkungsband · Bruchstück 2 · 1822 / 1856</p>
 <h2><span class="de-title" lang="de">Die Laus</span><span class="margin-note" aria-hidden="true">nur Anm.</span><span class="ja-title">シラミ</span></h2>
 <p class="facts"><span><b>載った版</b>注釈巻（1822・1856）</span><span><b>行方</b>本文には不掲載</span><span><b>分類</b>注釈巻の断片</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="bs2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1970,6 +2054,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Anmerkungsband · Bruchstück 3 · 1822 / 1856</p>
 <h2><span class="de-title" lang="de">Der starke Hans</span><span class="margin-note" aria-hidden="true">nur Anm.</span><span class="ja-title">力持ちのハンス</span></h2>
 <p class="facts"><span><b>載った版</b>注釈巻（1822・1856）</span><span><b>行方</b>本文には不掲載</span><span><b>分類</b>注釈巻の断片</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="bs3"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -1990,6 +2075,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Anmerkungsband · Bruchstück 4 · 1822 / 1856</p>
 <h2><span class="de-title" lang="de">Der gestiefelte Kater</span><span class="margin-note" aria-hidden="true">nur Anm.</span><span class="ja-title">長靴をはいた猫</span></h2>
 <p class="facts"><span><b>載った版</b>注釈巻（1822・1856）</span><span><b>行方</b>本文には不掲載</span><span><b>分類</b>注釈巻の断片</span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="bs4"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -2018,6 +2104,7 @@ Vergl. auch No. 56. der Liebste Roland.</p>
 <p class="eyebrow sc">Anmerkungsband · Bruchstück 6 · 1822 / 1856</p>
 <h2><span class="de-title" lang="de">Märchenhafte Bruchstücke in Volksliedern</span><span class="margin-note" aria-hidden="true">nur Anm.</span><span class="ja-title">民謡の中の昔話の断片</span></h2>
 <p class="facts"><span><b>載った版</b>注釈巻（1822・1856）</span><span><b>行方</b>本文には不掲載</span><span><b>分類</b>注釈巻の断片</span><span><b>怖さ</b><span class="dg">†</span></span></p>
+<p class="tts-row" hidden><button type="button" class="tts-go" data-tale="bs6"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><span>読み上げ</span><span class="sc" lang="de">Vorlesen</span></button></p>
 </header>
 <div class="cols-head" aria-hidden="true"><span class="sc">Urtext · 1812–1856</span><span>和訳</span></div>
 <div class="text">
@@ -2066,6 +2153,23 @@ Vergl. auch No. 56. der Liebste Roland.</p>
   <p class="colophon" lang="de">Gestrichen 1819–1857 · wieder abgedruckt 2026</p>
 </section>
 </main>
+</div>
+
+<div class="tts" id="tts" role="region" aria-label="読み上げ" hidden>
+  <div class="tts-in">
+    <button type="button" class="tts-now" id="ttsNow" title="読んでいる所へ">
+      <span class="tts-meta"><span class="tts-lang" id="ttsLang">Deutsch</span><span class="tts-where" id="ttsWhere" hidden>↓ 読んでいる所へ</span></span>
+      <span class="tts-title" id="ttsTitle"></span>
+    </button>
+    <div class="tts-ctl">
+      <button type="button" id="ttsPrev" aria-label="前の段落"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.2v14H6zM19 5v14L9 12z"/></svg></button>
+      <button type="button" id="ttsPlay" aria-label="一時停止"><svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg><svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4.2v14H6zM13.8 5H18v14h-4.2z"/></svg></button>
+      <button type="button" id="ttsNext" aria-label="次の段落"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.8 5H18v14h-2.2zM5 5v14l10-7z"/></svg></button>
+      <button type="button" id="ttsRate" aria-label="読む速さ">1.0×</button>
+      <button type="button" id="ttsStop" class="x" aria-label="読み上げを終える"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+    </div>
+  </div>
+  <p class="tts-msg" id="ttsMsg" role="status" hidden></p>
 </div>
 
 <script>
@@ -2139,6 +2243,220 @@ Vergl. auch No. 56. der Liebste Roland.</p>
     }, { rootMargin: '-45% 0px -50% 0px' });
     document.querySelectorAll('article.tale').forEach(function (t) { io.observe(t); });
   }
+
+  // read aloud: the Web Speech API, with whatever German and Japanese voices the device has.
+  // Pausing cancels and remembers the sentence; resuming says that sentence again (pause() is unreliable on mobile).
+  var synth = window.speechSynthesis;
+  if (synth && typeof window.SpeechSynthesisUtterance === 'function') (function () {
+    var bar = document.getElementById('tts'), msg = document.getElementById('ttsMsg');
+    var elLang = document.getElementById('ttsLang'), elTitle = document.getElementById('ttsTitle'), elWhere = document.getElementById('ttsWhere');
+    var bNow = document.getElementById('ttsNow'), bPlay = document.getElementById('ttsPlay'), bPrev = document.getElementById('ttsPrev');
+    var bNext = document.getElementById('ttsNext'), bRate = document.getElementById('ttsRate'), bStop = document.getElementById('ttsStop');
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var RATES = [0.8, 0.9, 1, 1.15, 1.3];
+    var rate = 1;
+    try { var sr = parseFloat(localStorage.getItem('gm-rate')); if (RATES.indexOf(sr) >= 0) rate = sr; } catch (e) {}
+    bRate.textContent = rate.toFixed(rate === 1.15 ? 2 : 1) + '×';
+
+    var voices = [];
+    function loadVoices() { try { voices = synth.getVoices() || []; } catch (e) { voices = []; } }
+    loadVoices();
+    try { synth.addEventListener('voiceschanged', loadVoices); } catch (e) { synth.onvoiceschanged = loadVoices; }
+    var NOVELTY = /\b(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Wobble|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Zarvox|Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley|Fred|Junior|Kathy|Ralph)\b/i;
+    function pickVoice(lang) {
+      if (!voices.length) loadVoices();
+      var want = lang === 'de' ? 'de-de' : 'ja-jp', best = null, bs = -99;
+      voices.forEach(function (v) {
+        var l = String(v.lang || '').toLowerCase().replace('_', '-');
+        if (l.indexOf(lang) !== 0) return;
+        var s = 0;
+        if (l === want) s += 4;
+        if (/premium|enhanced|natural|neural|siri/i.test(v.name)) s += 3;
+        if (/^(Anna|Helena|Markus|Petra|Yannick|Kyoko|Otoya|Hattori|O-Ren)\b/i.test(v.name)) s += 2;
+        if (/Google/i.test(v.name)) s += 1;
+        if (v['default']) s += 1;
+        if (NOVELTY.test(v.name)) s -= 6;
+        if (s > bs) { bs = s; best = v; }
+      });
+      return best;
+    }
+
+    // spoken-only fixes: 1819-era spellings that a German voice may take for English, and ey for ei
+    var FIX = {
+      de: [[/\bthat\b/g, 'tat'], [/\bThat\b/g, 'Tat'], [/\bthus\b/g, 'tust'], [/\b([sS])ey(n|d)?\b/g, '$1ei$2']],
+      ja: []
+    };
+    function fix(t, lang) { FIX[lang].forEach(function (f) { t = t.replace(f[0], f[1]); }); return t; }
+
+    // one utterance per sentence or two: long ones get cut off in some browsers
+    function split(text, lang) {
+      var max = lang === 'ja' ? 90 : 170, out = [];
+      text.split(/\n+/).forEach(function (line) {
+        line = line.trim(); if (!line) return;
+        var parts = lang === 'ja'
+          ? line.match(/[^。！？!?]+[。！？!?」』）)]*|[。！？!?」』）)]+/g)
+          : line.match(/[^.!?;:]+[.!?;:]+[\s"'“”„»«’)\]]*|[^.!?;:]+$/g);
+        var buf = '';
+        (parts || [line]).forEach(function (p) {
+          if (!buf || buf.length < 14 || (buf + p).length <= max) buf += p; else { out.push(buf); buf = p; }
+        });
+        if (buf) out.push(buf);
+      });
+      var res = [];
+      out.forEach(function (s) {
+        s = s.trim();
+        while (s.length > max) {
+          var re = lang === 'ja' ? /[、，]/g : /[,–—]\s/g, m, cut = -1;
+          while ((m = re.exec(s)) && m.index < max) cut = m.index + 1;
+          if (cut < 20) { cut = lang === 'de' ? s.lastIndexOf(' ', max) : max; if (cut < 20) cut = max; }
+          res.push(s.slice(0, cut).trim()); s = s.slice(cut).trim();
+        }
+        if (s) res.push(s);
+      });
+      return res;
+    }
+    function textOf(el) {
+      var t = '';
+      Array.prototype.forEach.call(el.childNodes, function (n) { t += n.nodeName === 'BR' ? '\n' : n.textContent; });
+      return t;
+    }
+
+    var tale = null, units = [], langs = ['de', 'ja'], ui = 0, li = 0, ci = 0, chunks = null;
+    var state = 'idle', seq = 0, errs = 0, follow = true, hl = null, warned = {}, curU = null;
+    function viewLangs() { var v = root.getAttribute('data-view') || 'both'; return v === 'ja' ? ['ja'] : v === 'de' ? ['de'] : ['de', 'ja']; }
+    function go(u) { ui = Math.max(0, u); li = 0; ci = 0; chunks = null; }
+    function current() {
+      while (ui < units.length) {
+        var lang = langs[li];
+        if (lang === undefined) { go(ui + 1); continue; }
+        var el = units[ui][lang];
+        if (!chunks) chunks = el ? split(fix(textOf(el), lang), lang) : [];
+        if (ci < chunks.length) return { el: el, lang: lang, text: chunks[ci] };
+        li++; ci = 0; chunks = null;
+      }
+      return null;
+    }
+    function say(t) { msg.textContent = t || ''; msg.hidden = !t; }
+    function setState(s) {
+      state = s;
+      var on = s === 'playing';
+      bPlay.classList.toggle('on', on);
+      bPlay.setAttribute('aria-label', on ? '一時停止' : s === 'ended' ? '次の話を読む' : '続きを読む');
+    }
+    function scrollToEl(el, force) {
+      if (!el) return;
+      var r = el.getBoundingClientRect(), top = 72, bottom = window.innerHeight - bar.offsetHeight - 16;
+      if (!force && r.top >= top && r.bottom <= bottom) return;
+      if (!force && r.top >= top && r.top <= top + (bottom - top) * 0.35) return;  // a long paragraph that starts near the top
+      var y = window.pageYOffset + r.top - Math.max(top + 12, window.innerHeight * 0.22);
+      window.scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' });
+    }
+    function highlight(el) {
+      if (hl === el) return;
+      if (hl) hl.classList.remove('speaking');
+      hl = el;
+      if (el) { el.classList.add('speaking'); if (follow) scrollToEl(el, false); }
+    }
+    function setFollow(f) { follow = f; elWhere.hidden = f; }
+
+    function speakCurrent() {
+      var c = current();
+      if (!c) { finish(); return; }
+      highlight(c.el);
+      elLang.textContent = c.lang === 'de' ? 'Deutsch · 原文' : '日本語 · 和訳';
+      var u = new SpeechSynthesisUtterance(c.text);
+      u.lang = c.lang === 'de' ? 'de-DE' : 'ja-JP';
+      var v = pickVoice(c.lang);
+      if (v) u.voice = v;
+      else if (voices.length && !warned[c.lang]) {
+        warned[c.lang] = true;
+        say(c.lang === 'de' ? 'この端末にドイツ語の音声が見つかりませんでした。端末の設定でドイツ語の音声を追加すると、ドイツ語の発音で読みます。'
+                            : 'この端末に日本語の音声が見つかりませんでした。端末の設定で日本語の音声を追加してください。');
+      }
+      u.rate = rate;
+      var my = ++seq, done = false;
+      u.onstart = function () { if (my === seq) errs = 0; };
+      u.onend = function () {
+        if (done || my !== seq || state !== 'playing') return;
+        done = true; ci++; speakCurrent();
+      };
+      u.onerror = function (e) {
+        if (done || my !== seq || state !== 'playing') return;
+        done = true;
+        var er = e && e.error;
+        if (er === 'interrupted' || er === 'canceled') { if (document.hidden) setState('paused'); return; }
+        if (++errs >= 3) { setState('paused'); say('読み上げができませんでした（' + (er || 'error') + '）。端末の音声の設定を確かめてください。'); return; }
+        ci++; speakCurrent();
+      };
+      curU = u;  // keep a reference: some browsers drop events of collected utterances
+      synth.speak(u);
+    }
+    function silence() { seq++; try { synth.cancel(); } catch (e) {} }
+    function play() {
+      var busy = synth.speaking || synth.pending;
+      silence();
+      setState('playing');
+      if (busy) { var my = seq; setTimeout(function () { if (my === seq && state === 'playing') speakCurrent(); }, 150); }
+      else speakCurrent();
+    }
+    function finish() {
+      silence(); highlight(null); setState('ended');
+      say(nextTale() ? '最後まで読みました。▶ で次の話を読みます。' : '最後まで読みました。');
+    }
+    function nextTale() {
+      var all = Array.prototype.slice.call(document.querySelectorAll('article.tale'));
+      return all[all.indexOf(tale) + 1] || null;
+    }
+    function start(art) {
+      if (!art) return;
+      tale = art; langs = viewLangs(); errs = 0; go(0);
+      units = [{ de: art.querySelector('.de-title'), ja: art.querySelector('.ja-title') }];
+      art.querySelectorAll('.text .pair').forEach(function (p) { units.push({ de: p.querySelector('.de'), ja: p.querySelector('.ja') }); });
+      elTitle.textContent = art.querySelector('.ja-title').textContent;
+      bar.hidden = false; document.body.classList.add('tts-on');
+      say(''); setFollow(true);
+      play();
+    }
+    function close() { silence(); highlight(null); setState('idle'); bar.hidden = true; document.body.classList.remove('tts-on'); say(''); }
+
+    document.querySelectorAll('.tts-row').forEach(function (r) { r.hidden = false; });
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.tts-go');
+      if (b) start(document.getElementById(b.dataset.tale));
+    });
+    bPlay.addEventListener('click', function () {
+      if (state === 'playing') { silence(); setState('paused'); return; }
+      if (state === 'ended') { var n = nextTale(); if (n) start(n); return; }
+      say(''); play();
+    });
+    bPrev.addEventListener('click', function () { go(li > 0 || ci > 0 ? ui : ui - 1); setFollow(true); say(''); play(); });
+    bNext.addEventListener('click', function () { go(ui + 1); setFollow(true); say(''); play(); });
+    bRate.addEventListener('click', function () {
+      rate = RATES[(RATES.indexOf(rate) + 1) % RATES.length];
+      bRate.textContent = rate.toFixed(rate === 1.15 ? 2 : 1) + '×';
+      try { localStorage.setItem('gm-rate', String(rate)); } catch (e) {}
+      if (state === 'playing') play();
+    });
+    bStop.addEventListener('click', close);
+    bNow.addEventListener('click', function () { setFollow(true); scrollToEl(hl || tale, true); });
+    ['wheel', 'touchmove'].forEach(function (ev) {
+      window.addEventListener(ev, function () { if (state === 'playing' && follow) setFollow(false); }, { passive: true });
+    });
+    vbtns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (state === 'idle') return;
+        langs = viewLangs(); li = 0; ci = 0; chunks = null;
+        if (state === 'playing') play();
+      });
+    });
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && state === 'playing' && !synth.speaking && !synth.pending) {
+        silence(); setState('paused');
+        say('画面を離れているあいだに止まりました。▶ で続きから読みます。');
+      }
+    });
+    window.addEventListener('pagehide', function () { try { synth.cancel(); } catch (e) {} });
+  })();
 })();
 </script>
 </html>
