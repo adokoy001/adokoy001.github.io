@@ -22,6 +22,55 @@ function enhanceLogView(root = document) {
   });
 }
 
+const NAV_SECTIONS = [
+  ["/apps/", /^\/(apps|works|games)\//],
+  ["/archive/", /^\/(archive|categories|series)\//],
+  ["/tags/", /^\/tags\//],
+  ["/search/", /^\/search\//],
+  ["/", /^\/(?:$|page\/|posts\/|entry\/)/],
+];
+
+function markCurrentNav() {
+  const path = location.pathname;
+  const hit = NAV_SECTIONS.find(([, pattern]) => pattern.test(path));
+  document.querySelectorAll(".site-header nav a").forEach((link) => {
+    if (hit && link.getAttribute("href") === hit[0]) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
+}
+
+// Phone only: tuck the header away while scrolling down, bring it back on scroll up.
+function setupTuckingHeader() {
+  const header = document.querySelector(".site-header");
+  const phone = window.matchMedia("(max-width: 42rem)");
+  if (!header) return;
+  let lastY = window.scrollY;
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const y = window.scrollY;
+    const tuck = phone.matches && y > 160 && y > lastY + 4 && !header.contains(document.activeElement);
+    if (tuck) header.classList.add("is-tucked");
+    else if (y < lastY - 4 || y <= 160 || !phone.matches) header.classList.remove("is-tucked");
+    lastY = y;
+  };
+  window.addEventListener("scroll", () => {
+    if (!ticking) { ticking = true; requestAnimationFrame(update); }
+  }, { passive: true });
+  header.addEventListener("focusin", () => header.classList.remove("is-tucked"));
+}
+
+function refresh() {
+  enhanceLogView();
+  markCurrentNav();
+  document.querySelector(".site-header")?.classList.remove("is-tucked");
+}
+
 enhanceLogView();
-document.addEventListener("tsuzuri:navigation-end", () => enhanceLogView());
-document.addEventListener("tsuzuri:spa-page", () => enhanceLogView());
+markCurrentNav();
+setupTuckingHeader();
+document.addEventListener("tsuzuri:navigation-end", refresh);
+document.addEventListener("tsuzuri:spa-page", refresh);
