@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>船が浮いて、沈むところを見るシミュレーター · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="小型ボートからタンカーまで、浮力・浸水・沈没を3Dで解く「シップラボ」を Claude に作ってもらった。海面を持ち上げて離すと物理計算で波が広がり、サーフィンのビッグウェーブみたいな巻き波も起こせる。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/10/2026-10-11-001/"><meta property="og:title" content="船が浮いて、沈むところを見るシミュレーター"><meta property="og:description" content="小型ボートからタンカーまで、浮力・浸水・沈没を3Dで解く「シップラボ」を Claude に作ってもらった。海面を持ち上げて離すと物理計算で波が広がり、サーフィンのビッグウェーブみたいな巻き波も起こせる。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/10/2026-10-11-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>船が浮いて、沈むところを見るシミュレーター</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-10-11T23:10:00+09:00">2026-10-11T23:10:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-437a172d7b13/">開発</a><a class="tag" href="/tags/javascript/">JavaScript</a><a class="tag" href="/tags/entry-fd2460833058/">ゲーム</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="船が浮いて-沈むところを見るシミュレーター">船が浮いて、沈むところを見るシミュレーター</h1>
+<p>Claude に船のシミュレーターを作ってもらった。小型ボート・漁船・フェリー・コンテナ船・タンカーの5隻を、風速か有義波高（最大20m）で決めた海に浮かべる。</p>
+<p>浮力は、船体の断面を波の面で切って毎ステップ積分している。損傷タブで船体をタップすると穴が開いて、水が区画から区画へ流れ込み、傾いて、沈む。ハッチが水圧で割れたり、フェリーがバウドアから車両甲板に水を入れて転覆したりもする。</p>
+<p>途中で足してもらったのが「波を起こす」機能。</p>
+<ul>
+<li>点か線で海面を持ち上げて、離すと物理計算どおりに崩れて波になる。長い波ほど速いので、うねりが先に来て短い波があとから追いかけてくる。船に届くまでの時間もそこから決まる</li>
+<li>巻き波。海面に線を引くと沖からセットが来て、その線の上で切り立って巻く。引き始めた側から順に崩れていくので、チューブが線に沿って走っていく</li>
+</ul>
+<p>巻き波のほうは、浅瀬で崩れる波の形を観察に合わせて当てはめたモデルで、流体をまじめに解いているわけではない。それでも、コンテナ船の船尾にリップがかぶさるところは見ていて楽しい。</p>
+<p>スマホでも動く。3Dなので PC のほうが快適。</p>
+<p>→ <a href="/works/ship-lab/">シップラボ</a></p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/10/2026-10-04-001/">← トゥールビヨンを眺める</a><a rel="next" href="/posts/2026/10/2026-10-16-001/">ゲームBGMを520曲、テキストの楽譜で作った →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/08/2026-08-26-001/">直3ターボと4ローターを載せ替えられるエンジンシミュレーターを作った</a></li><li><a href="/posts/2026/08/2026-08-25-001/">エンジンサウンドラボを公開しました</a></li><li><a href="/posts/2026/10/2026-10-17-001/">サーキットラボを公開した</a></li><li><a href="/posts/2026/10/2026-10-02-001/">花火のアプリを公開した</a></li><li><a href="/posts/2026/10/2026-10-01-001/">速読ゲーム「一瞥」を公開した</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

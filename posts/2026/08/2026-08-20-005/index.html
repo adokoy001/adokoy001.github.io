@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>システム設計のための数学 第四層: 不可能性と限界 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="何を諦めるかを定理で決める層。Riceの定理が検証を三極に分ける話、FLP不可能性とCAP、LTL合成の実現可能性、状態爆発とAlloyの小スコープ仮説。設計の最初期に参照する価値が最も高い数学。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-005/"><meta property="og:title" content="システム設計のための数学 第四層: 不可能性と限界"><meta property="og:description" content="何を諦めるかを定理で決める層。Riceの定理が検証を三極に分ける話、FLP不可能性とCAP、LTL合成の実現可能性、状態爆発とAlloyの小スコープ仮説。設計の最初期に参照する価値が最も高い数学。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-005/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>システム設計のための数学 第四層: 不可能性と限界</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-08-20T23:48:00+09:00">2026-08-20T23:48:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-872c1fa141b5/">数学</a><a class="tag" href="/tags/entry-088462f65b7e/">システム</a><a class="tag" href="/tags/entry-437a172d7b13/">開発</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="第四層-不可能性と限界の数学">第四層: 不可能性と限界の数学</h1>
+<p><a href="/posts/2026/08/2026-08-20-001/">連載序論はこちら</a>。「何を諦めるか」を定理で決める層。設計の最初期に参照する価値が最も高い。</p>
+<h2 id="4-1-計算可能性の限界-停止性問題と-rice-の定理">4.1 計算可能性の限界: 停止性問題と Rice の定理</h2>
+<p><strong>概念</strong>: プログラムの自明でない意味的性質（「このコードは仕様Sを満たすか」を含む）は一般に決定不能（Rice 1953）。したがって完全自動の検証は原理的に存在せず、実務の検証はどこかで必ず妥協する: (a) 健全な過大近似——全実行を覆う代わりに偽陽性を許す（静的解析）、(b) 過小近似——見つけた反例は本物だが探索範囲外の見逃しを許す（テスト・有界検査。bound内では網羅的でも、無反例は無制限の安全を意味しない）、(c) 決定可能な断片への制限（有限モデル・制限された論理）、(d) 人間が補題・不変条件を与えて個別に証明を構築する（定理証明）。</p>
+<p><strong>刷新での適用</strong>: 検証計画は必ずこの四極のポートフォリオになる。「どの性質を (a)〜(d) のどれで守るか」の割当表を作ることが、検証戦略の設計そのもの。</p>
+<h2 id="4-2-分散合意の不可能性-flp-と-cap">4.2 分散合意の不可能性: FLP と CAP</h2>
+<p><strong>概念</strong>: <strong>FLP</strong>（Fischer–Lynch–Paterson 1985）: 完全非同期システムでは、たった一つのプロセス故障の可能性があるだけで、決定的な合意アルゴリズムは存在しない。実務のタイムアウトは「部分同期」という追加仮定の購入であり、Paxos/Raftはこの仮定の上で安全性を無条件・活性を条件付きで達成する。<strong>CAP</strong>（Brewer予想、Gilbert–Lynch 2002証明）: ネットワーク分断時に一貫性と可用性は両立しない。分断は選べない（起きる）ので、実際の選択は「分断時にCを取るかAを取るか」＋「平常時にレイテンシと一貫性をどう取引するか」（PACELCによる精密化）。</p>
+<p><strong>刷新での適用</strong>: 「切替時に新旧どちらを正とするか」「照合不一致時に止めるか流すか」は、対象操作と障害モデルをCAPと同じ形に定義しない限り定理の直接の帰結ではないが、有用な構造的類推である。いずれにせよ技術ではなく経営判断としてあらかじめ決めておくべき項目。定理は「決めなくて済む設計は存在しない」ことを保証してくれる——これが不可能性定理の実務価値。</p>
+<h2 id="4-3-実現可能性と自動合成-理論先行">4.3 実現可能性と自動合成 [理論先行]</h2>
+<p><strong>概念</strong>: LTL仕様からの実装自動合成（Pnueli–Rosner 1989）は2EXPTIME完全。一般には絶望的な計算量だが、GR(1)という制限クラスなら多項式時間で合成でき、ロボティクス・ハードウェアで実用例がある。仕様を書いた時点で「実現可能か」を検査できること自体に、合成しない場合でも価値がある——実現不能な仕様（環境の悪意ある挙動で必ず破られる仕様）を早期検出できる。</p>
+<h2 id="4-4-状態爆発と計算複雑性">4.4 状態爆発と計算複雑性</h2>
+<p><strong>概念</strong>: モデル検査はLTLでPSPACE完全、並行部品の積で状態空間は指数爆発する。対抗手段の系譜: 記号的モデル検査（BDD、10^20状態の壁を破った）、有界モデル検査（SMTに還元）、半順序簡約、対称性簡約、抽象化による偽反例駆動の精緻化（CEGAR）。<strong>Alloyの小スコープ仮説</strong>——「多くのバグは小さな反例を持つ」——は経験則だが、有界検査の費用対効果を正当化する実務的に重要な仮説。</p>
+<p><strong>刷新での適用</strong>: 「全数は無理」を前提に、どの抽象化で状態を潰すかが検証設計の中心になる。切替手順の検証なら、口座を数個・店舗を2-3個に抽象化したモデルで手順の論理だけ全数検査する、が定石（AmazonのTLA+運用もこの規模感）。</p>
+<hr>
+<p><strong>連載: システム設計と大規模刷新のための数学</strong></p>
+<ol>
+<li><a href="/posts/2026/08/2026-08-20-001/">序論 — 地図の全体像</a></li>
+<li><a href="/posts/2026/08/2026-08-20-002/">第一層: 仕様を書くための数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-003/">第二層: 仕様と実装の関係の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-004/">第三層: 合成の数学</a></li>
+<li>第四層: 不可能性と限界の数学（この記事）</li>
+<li><a href="/posts/2026/08/2026-08-20-006/">横断層: 検証を実行する手段の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-007/">総括: 実績濃淡マップと大規模刷新への適用</a></li>
+</ol>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/08/2026-08-20-004/">← システム設計のための数学 第三層: 合成の数学</a><a rel="next" href="/posts/2026/08/2026-08-20-006/">システム設計のための数学 横断層: 検証を実行する手段 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/08/2026-08-20-007/">システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</a></li><li><a href="/posts/2026/08/2026-08-20-006/">システム設計のための数学 横断層: 検証を実行する手段</a></li><li><a href="/posts/2026/08/2026-08-20-004/">システム設計のための数学 第三層: 合成の数学</a></li><li><a href="/posts/2026/08/2026-08-20-003/">システム設計のための数学 第二層: 仕様と実装の関係</a></li><li><a href="/posts/2026/08/2026-08-20-002/">システム設計のための数学 第一層: 仕様を書くための数学</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

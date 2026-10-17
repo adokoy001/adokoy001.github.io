@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>ウェブアプリケーションを攻撃者から守るためのロードマップ · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="セキュリティ関連のお話。正しい情報はIPA等から得るようにしましょう。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2019/12/2019-12-10-001/"><meta property="og:title" content="ウェブアプリケーションを攻撃者から守るためのロードマップ"><meta property="og:description" content="セキュリティ関連のお話。正しい情報はIPA等から得るようにしましょう。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2019/12/2019-12-10-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>ウェブアプリケーションを攻撃者から守るためのロードマップ</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-04-02T11:01:38+09:00">2020-04-02T11:01:38+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-f5480661a48d/">セキュリティ</a><a class="tag" href="/tags/entry-6ecf6b99f700/">ウェブアプリケーション</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="ウェブアプリケーションを攻撃者から守るためのロードマップ">ウェブアプリケーションを攻撃者から守るためのロードマップ</h1>
+<p>ウェブアプリのセキュリティ対策について無責任なことをネットで書くことはご法度であり、また、セキュリティ対策を講じる担当者もネット上の情報を安易に受け止めてはいけない。このドキュメントも例外ではない。</p>
+<p>JPAが公開している安全なウェブサイトの作り方、脆弱性情報データベースの情報をこまめにチェックすること。</p>
+<h2 id="ネットワーク構成とファイアウォール">ネットワーク構成とファイアウォール</h2>
+<p>アプリケーションとストレージは分離し、HTTPを受け付けるサーバーとそのportのみをpublicに晒す。ロードバランサを利用するのであれば、LBの80,443番ポートのみpublicに晒し、APPとDBはローカルネットワーク内部のみのトラフィックを受け付ける。</p>
+<p>各サーバにアクセスするために、マネジメント用のサーバMGMTを設けると良い。その場合の構成は、LB(80,443ポートを晒す),MGMT(カスタマイズされたsshポートを晒す),APP(ローカルのみ),DB（ローカルのみ）</p>
+<h2 id="中間者攻撃">中間者攻撃</h2>
+<p>クラウドサーバへの初回SSHアクセス時は、予めクラウド基盤で提供されている該当サーバのフィンガープリントを照合する。</p>
+<p>たとえ運用チームだけが用いるウェブコンソールであっても、クラウド上など社内ネットワークの外に置かれている以上は必ず中間者攻撃を想定した構成にしなければならない。対策として最も優れている方法は「とにかくLet&#39;s Encryptを入れて中間者攻撃を確実に防ぐ」こと。</p>
+<h2 id="サーバー本体のアップデート">サーバー本体のアップデート</h2>
+<p>HTTPサーバーおよびリバースプロキシのセキュリティパッチは必ず適用する。</p>
+<p>無停止で手軽にメンテナンスできるような構成が望ましいため、グローバルIPをサーバにほぼゼロダウンタイムでアタッチできるサービスを利用すると良い。</p>
+<h2 id="認証">認証</h2>
+<p>sshログインはpublic key認証とパスワード認証を併用することが望ましい。</p>
+<p>アプリへのログインに用いられるパスワードは必ずsaltを付けてハッシュ化する。saltは共通のものだけを使うのではなく、レコード毎に生成しなければならない。</p>
+<p>システム運用チームは、特権的なウェブコンソールでアカウントを共有してはならない。運用チームのメンバーが退職した際にはそのアカウントをログイン不能な状態にするか、可能であれば削除すること。</p>
+<p>外部システムとの連携に用いられる認証情報は、アプリへのログインに用いる情報とは完全に分離し、APIアクセスキーやToken等として簡単に失効させることができるようにすること。</p>
+<p>PaaS等を利用する際に用いられるクレデンシャルを環境変数に設定する場合、その環境変数がプリントされるページが存在してはならない（例：AWS S3の認証情報をHTTPサーバの環境変数にセットした状態で、phpinfo()が呼ばれるページをプロダクションに放置してしまうなど）</p>
+<p>ソースコード中に外部システムのクレデンシャルを直接書き込まないこと。</p>
+<h2 id="ウェブアプリ固有の問題">ウェブアプリ固有の問題</h2>
+<p>認証情報をhiddenパラメタに含めてはいけない。</p>
+<p>適切なHTMLエスケープ機構を利用せずにユーザーからの入力値やDBから読みだした値を出力することはXSSに繋がる。</p>
+<p>副作用のある操作は全てCSRF対策が必要。</p>
+<p>顧客自身がページをWYSIWYGエディタ等でカスタマイズできる機能がある場合、それ自体がXSS脆弱性となっており、さらにページ編集機能にCSRF対策が施されていない場合はフィッシングサイトへの誘導に利用される危険性がある。</p>
+<h2 id="決済機能">決済機能</h2>
+<p>クレジットカード番号などは間違ってもサーバに保存してはならない。</p>
+<p>デバッグ目的でカード番号をログに保存してはいけない。</p>
+<p>決済時のみ決済サービスへjumpする機能を利用することができるのであれば、利用する。</p>
+<p>何らかの攻撃が成功し決済サービスへのjump先がフィッシングサイトへ書き換えられてしまう事態を想定し、システムの外から定期的に（数分間隔）決済ページへのリダイレクト先を監視するサーバを立てること（具体的には、決済ページに遷移するまでのアクセスを順次実行するUserAgentを作ってcronで定期的に実行して監視。）</p>
+<h2 id="sqlインジェクション">SQLインジェクション</h2>
+<p>何らかの値をリテラル・変数問わず入力する場合、必ずプリペアードステートメントを利用する。プリペアードステートメントのエミュレーションはやはりエミュレーションに過ぎないので安全ではない。</p>
+<p>プリペアードステートメントを利用しなくても安全なケースは「select count(*) from table_a」等、「かならずこのSQLにしかならない」ということが確定している定型文などに限ると考える。</p>
+<p>原則として、「本物の（エミュレーションではない）プリペアードステートメントを利用すること以外にSQLインジェクションの有効な対策は存在しない」と考えるべきである。</p>
+<h2 id="二段階-二要素-認証とアクティビティ通知">二段階（二要素）認証とアクティビティ通知</h2>
+<p>アプリケーションの利用者が必ずしも高いリテラシーを持っているとは限らない。パスワードは辞書攻撃等で突破される前提で考えておき、二段階（二要素）認証を必ず導入しておくこと。</p>
+<p>異常な回数のログイン試行やログインの成功などを、事前に登録されたアカウント本人のメールアドレス等にそのアクティビティを送る。</p>
+<p>パスワードリセット時に、事前に登録されたもの以外のメールアドレスに復旧URLを送り付けてはいけない（例：7Pay）</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2019/12/2019-12-07-001/">← FuelPHPのクエリビルダチートシート</a><a rel="next" href="/posts/2019/12/2019-12-12-001/">ウェブサイトのセキュリティ：入力バリデーション、正規表現 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2019/12/2019-12-12-001/">ウェブサイトのセキュリティ：入力バリデーション、正規表現</a></li><li><a href="/posts/2026/08/2026-08-28-001/">AIへ宛てた「意味論的ワクチン」を一枚書いた</a></li><li><a href="/posts/2020/09/2020-09-17-001/">perlでパスワードハッシュ</a></li><li><a href="/posts/2020/09/2020-09-14-001/">圧倒的に正しいSQLインジェクション対策</a></li><li><a href="/posts/2020/01/2020-01-21-001/">FuelPHPでCSRF対策</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

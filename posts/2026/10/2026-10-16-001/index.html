@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>ゲームBGMを520曲、テキストの楽譜で作った · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="テキストで楽譜を書くとブラウザが合成音で鳴らす「テキスト譜スタジオ」を公開した。ゲームの場面ごとに17ジャンル、全部オリジナルの520曲入り。音色も曲もClaudeと作った。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/10/2026-10-16-001/"><meta property="og:title" content="ゲームBGMを520曲、テキストの楽譜で作った"><meta property="og:description" content="テキストで楽譜を書くとブラウザが合成音で鳴らす「テキスト譜スタジオ」を公開した。ゲームの場面ごとに17ジャンル、全部オリジナルの520曲入り。音色も曲もClaudeと作った。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/10/2026-10-16-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>ゲームBGMを520曲、テキストの楽譜で作った</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-10-16T02:00:00+09:00">2026-10-16T02:00:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-9cbeebd67d49/">創作</a><a class="tag" href="/tags/ai/">AI</a><a class="tag" href="/tags/entry-437a172d7b13/">開発</a><a class="tag" href="/tags/entry-f648d6712cf8/">日常</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="ゲームbgmを520曲-テキストの楽譜で作った">ゲームBGMを520曲、テキストの楽譜で作った</h1>
+<p><code>C4 E4 G4:2 |</code> のようにテキストで楽譜を書くと、ブラウザがその場で音を合成して鳴らす。そういうものを Claude と作っていて、曲が520曲になったので公開した。</p>
+<h2 id="やりたかったこと">やりたかったこと</h2>
+<p>AIにゲームっぽいループBGMをどんどん作らせて、ゲームのあらゆる場面を網羅したかった。タイトル画面、フィールド、ダンジョン、ボス戦、町、イベント、ホラー、SF、レトロ8bit、和風、民族音楽、スポーツ、ミニゲーム、日常、環境音……17ジャンルに分けて、曲には「熱い」「切ない」「夜」「海」のようなタグを付けて、探しやすくした。ジャンルを選んで「ランダムに1曲」を押すと、その場面の曲が流れっぱなしになる。</p>
+<p>曲はぜんぶ Claude に書かせたオリジナル。1曲は数十小節のループで、楽譜がテキストなので中身が全部読めるし、書き換えればその場で鳴る。</p>
+<h2 id="楽譜がテキストであること">楽譜がテキストであること</h2>
+<p>MIDIでも音源ファイルでもなく、人間が読めるテキストにしたのは、AIに曲を書かせるのに一番具合がいいからだ。楽器ごとにトラックを並べて、音名と拍数を書く。<code>!</code> で強く、<code>?</code> で弱く、<code>glide</code> でつなぐ、くらいの記法で、Claude はこの形式で曲を書けるし、こちらも直せる。</p>
+<h2 id="音は全部合成">音は全部合成</h2>
+<p>サンプル音源は使っていない。ピアノ、ギター、ベース、ドラム、オルガン、ストリングス、ブラスなどを Web Audio の部品で組んでいる。最近は楽器を一つずつ作り込んでもらった。</p>
+<ul>
+<li>バイオリン：弓で擦った弦の波形を、約50個の共鳴を重ねた胴の応答に通す。音の長さと強弱で弓づかいが自動で変わる。短い音は跳ね、長い音はふくらんで、遅れてビブラートがかかる</li>
+<li>バイオリンの合奏：1音を1回だけ鳴らして、揺れる遅延線で「別々の奏者」に複製する。人数分鳴らすより軽い</li>
+<li>サックス：強く吹くほど倍音が増える。息の音、タンギング、しゃくり上げ、<code>!!</code> でグロウル</li>
+<li>ドラムンベース用のドラムキット：ゴーストノートが別の音で、連打が毎回少し違う</li>
+</ul>
+<p>音色の良し悪しは、Claude は音を聴けないので、数値で詰めたものを自分が聴いて返す、の繰り返しだった。</p>
+<h2 id="軽さ">軽さ</h2>
+<p>曲を3秒くらいの塊に区切って先に書き出しておき、再生はそれをつなぐだけにしている。これでスマホでも音が途切れない。残響も、畳み込みと計算式の2種類から自動で選ぶ。</p>
+<p>→ <a href="/works/text-score-studio/">テキスト譜スタジオ</a></p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/10/2026-10-11-001/">← 船が浮いて、沈むところを見るシミュレーター</a><a rel="next" href="/posts/2026/10/2026-10-16-002/">楽器を作り込んだので、ゲームBGMを100曲足した →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/10/2026-10-16-002/">楽器を作り込んだので、ゲームBGMを100曲足した</a></li><li><a href="/posts/2026/10/2026-10-16-003/">透明なルービックキューブを眺める</a></li><li><a href="/posts/2026/09/2026-09-14-002/">ERPを作ってGitHubに置いた</a></li><li><a href="/posts/2026/10/2026-10-18-001/">グリム童話から消された話を読む</a></li><li><a href="/posts/2026/10/2026-10-17-001/">サーキットラボを公開した</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>
