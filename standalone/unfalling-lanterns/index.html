@@ -1,0 +1,2228 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>落ちきらない灯</title>
+<meta name="description" content="超大質量ブラックホールへ落ちていく灯は、外からは永遠に落ちきらない。">
+<style>
+/* 一枚の窓：全面の描画と、隅で眠る3つのアイコンだけ。暗い単一の世界に固定する */
+:root{
+  --void:#000;
+  --bone:#d6cfc4;
+  --bone-dim:rgba(214,207,196,.5);
+  --glass:rgba(14,10,9,.46);
+  --glass-hi:rgba(40,28,24,.62);
+  --ember:#8e3a26;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%;background:var(--void);color:var(--bone)}
+body{margin:0;overflow:hidden;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none;background:var(--void)}
+#ui{position:fixed;right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:4px;transition:opacity .9s ease}
+#ui.idle{opacity:0;pointer-events:none}
+#ui:focus-within{opacity:1;pointer-events:auto}
+.btn{appearance:none;-webkit-appearance:none;width:44px;height:44px;border:0;border-radius:50%;padding:0;margin:0;display:grid;place-items:center;background:var(--glass);color:var(--bone-dim);cursor:pointer;transition:color .3s,background .3s}
+.btn:hover{color:var(--bone)}
+.btn:focus-visible{outline:1.5px solid var(--bone);outline-offset:2px}
+.btn svg{width:22px;height:22px;display:block;overflow:visible}
+.btn[aria-pressed="true"] .off,.btn[aria-pressed="false"] .on{display:none}
+#b-snd.hint{animation:hint 2.8s ease-in-out infinite}
+@keyframes hint{0%,100%{color:var(--bone-dim);background:var(--glass)}50%{color:var(--bone);background:var(--glass-hi)}}
+@media (prefers-reduced-motion:reduce){#b-snd.hint{animation:none;color:var(--bone)}#ui{transition:none}}
+.nogl #gl{display:none}
+.nogl body{background:radial-gradient(circle at 50% 50%,var(--void) 0 17vmin,var(--ember) 17.6vmin,rgba(142,58,38,.22) 19.5vmin,var(--void) 28vmin)}
+</style>
+</head>
+<body>
+
+<canvas id="gl" role="img" aria-label="超大質量ブラックホール。タップで灯を落とし、長押しで自分が落ちていく。"></canvas>
+<div id="ui" role="toolbar" aria-label="操作">
+  <button class="btn hint" id="b-snd" type="button" aria-label="音" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3.5 9.4h3.4L12 5.3v13.4l-5.1-4.1H3.5z" fill="currentColor"/>
+      <g class="on" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M15.4 9.1a4.1 4.1 0 0 1 0 5.8"/><path d="M17.9 6.6a7.6 7.6 0 0 1 0 10.8"/></g>
+      <g class="off" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M15.8 9.6l4.8 4.8M20.6 9.6l-4.8 4.8"/></g>
+    </svg>
+  </button>
+  <button class="btn" id="b-fs" type="button" aria-label="全画面" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <g class="off" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></g>
+      <g class="on" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></g>
+    </svg>
+  </button>
+  <button class="btn" id="b-lite" type="button" aria-label="軽量モード" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <g class="off" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19.6 4.4c-5.6.3-10.1 4.3-11.4 9.9l-.6 2.6 2.6-.6c5.6-1.3 9.6-5.8 9.4-11.9z"/><path d="M4.4 19.6l8.4-8.4"/></g>
+      <g class="on" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19.6 4.4c-5.6.3-10.1 4.3-11.4 9.9l-.6 2.6 2.6-.6c5.6-1.3 9.6-5.8 9.4-11.9z" fill="currentColor"/><path d="M4.4 19.6l8.4-8.4" fill="none"/></g>
+    </svg>
+  </button>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* =========================================================
+   落ちきらない灯
+   単位は M = GM/c²。M87* 相当（6.5×10⁹ 太陽質量）なら 1M ≈ 64.2 AU。
+   事象の地平面 r=2、光子球 r=3、影の半径 √27、最内安定円軌道 r=6。
+   ========================================================= */
+
+const cvs = document.getElementById('gl');
+const ui = document.getElementById('ui');
+const bSnd = document.getElementById('b-snd');
+const bFs = document.getElementById('b-fs');
+const bLite = document.getElementById('b-lite');
+
+const TAU = Math.PI * 2;
+const BCRIT = Math.sqrt(27);
+const BFLAT = 58.27047;                 // B♭1。ペルセウス座銀河団のブラックホールが鳴らす音もB♭
+const FOVH = Math.tan(28 * Math.PI / 180); // 短辺方向の半画角
+const TLOOP = 1.8;                      // 光が光子球を一周して戻るまで（演出上の秒）
+const GF = 0.006;                       // 凍った灯の明るさの下限（I0比）
+const PENTA = [932.33, 1108.73, 1244.51, 1396.91, 830.61]; // B♭短調の五音
+const FLOWP = 140;
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const len = a => Math.hypot(a[0], a[1], a[2]);
+const norm = a => mul(a, 1 / (len(a) || 1));
+
+/* ---------- 設定 ---------- */
+const LS_KEY = 'ochikiranai-lite';
+function loadLite() {
+  try { const v = localStorage.getItem(LS_KEY); if (v === '1') return true; if (v === '0') return false; } catch (e) {}
+  const coarse = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  const cores = navigator.hardwareConcurrency || 4;
+  return coarse || cores <= 4;
+}
+function saveLite(v) { try { localStorage.setItem(LS_KEY, v ? '1' : '0'); } catch (e) {} }
+let lite = loadLite();
+let NB = lite ? 5 : 8;
+const mq = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+let reduced = !!(mq && mq.matches);
+if (mq) { const f = e => { reduced = e.matches; }; if (mq.addEventListener) mq.addEventListener('change', f); else if (mq.addListener) mq.addListener(f); }
+
+/* =========================================================
+   描画：シュワルツシルト時空の光線を1画素ずつ逆にたどる
+   ========================================================= */
+const VS1 = 'attribute vec2 aP;void main(){gl_Position=vec4(aP,0.0,1.0);}';
+const VS2 = '#version 300 es\nin vec2 aP;void main(){gl_Position=vec4(aP,0.0,1.0);}';
+const FS = `
+uniform vec2 uRes;
+uniform vec3 uCamPos;
+uniform vec3 uCamR;
+uniform vec3 uCamU;
+uniform vec3 uCamF;
+uniform float uFov;
+uniform float uFish;
+uniform float uAng;
+uniform float uTan;
+uniform float uShift;
+uniform float uGain;
+uniform vec4 uFall;
+uniform float uResc;
+uniform vec4 uFlow;
+uniform vec4 uDisk;
+uniform float uExp;
+uniform float uFade;
+uniform float uTime;
+uniform vec4 uB[NB];
+uniform vec4 uBC[NB];
+uniform float uAnyB;
+uniform vec4 uArc[2];
+uniform vec4 uSolar;
+uniform float uPx;
+uniform float uPxA;
+uniform vec4 uQ;
+uniform vec4 uKnot;
+uniform vec2 uGlare;
+uniform float uQA;
+uniform vec4 uBt;
+uniform vec4 uBa;
+uniform vec4 uIn;
+
+#define PI 3.14159265
+#define RIN 6.0
+#define ROUT 14.0
+#define RMAX 42.5
+#define ECHO 14.0
+#define BCRIT 5.19615242
+#define FLOWP 140.0
+
+float hash13(vec3 p3){
+  p3 = fract(p3*0.1031);
+  p3 += dot(p3, p3.zyx + 31.32);
+  return fract((p3.x + p3.y)*p3.z);
+}
+float vnoise(vec3 x){
+  vec3 i = floor(x);
+  vec3 f = fract(x);
+  vec3 u = f*f*(3.0 - 2.0*f);
+  float a = hash13(i);
+  float b = hash13(i + vec3(1.0, 0.0, 0.0));
+  float c = hash13(i + vec3(0.0, 1.0, 0.0));
+  float d = hash13(i + vec3(1.0, 1.0, 0.0));
+  float e = hash13(i + vec3(0.0, 0.0, 1.0));
+  float f1 = hash13(i + vec3(1.0, 0.0, 1.0));
+  float g = hash13(i + vec3(0.0, 1.0, 1.0));
+  float h = hash13(i + vec3(1.0, 1.0, 1.0));
+  return mix(mix(mix(a, b, u.x), mix(c, d, u.x), u.y), mix(mix(e, f1, u.x), mix(g, h, u.x), u.y), u.z);
+}
+float fbm(vec3 p){
+  float s = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < OCT; i++){
+    s += a*vnoise(p);
+    p = p*2.07 + vec3(5.1, 1.3, 7.7);
+    a *= 0.5;
+  }
+  return s;
+}
+/* 黒体の色（近似）。二乗して線形の光に戻す */
+vec3 bb(float T){
+  float t = clamp(T, 800.0, 30000.0)*0.01;
+  vec3 c;
+  if (t <= 66.0){
+    c.r = 1.0;
+    c.g = clamp(0.39008158*log(t) - 0.63184144, 0.0, 1.0);
+    c.b = t <= 19.0 ? 0.0 : clamp(0.54320679*log(max(t - 10.0, 1.0)) - 1.19625409, 0.0, 1.0);
+  } else {
+    float u = max(t - 60.0, 1.0);
+    c.r = clamp(1.29293619*pow(u, -0.13320476), 0.0, 1.0);
+    c.g = clamp(1.12989086*pow(u, -0.07551485), 0.0, 1.0);
+    c.b = 1.0;
+  }
+  return c*c;
+}
+/* 画素ごとの周波数の比（青方偏移・赤方偏移）と明るさの倍率 */
+float gShift = 1.0;
+float gGain = 1.0;
+/* 光の軌道：u'' + u = 3u² と同値な、中心力 -3h²x/r⁵ */
+vec3 accel(vec3 p, float h2){
+  float r2 = dot(p, p);
+  return -3.0*h2*p/(r2*r2*sqrt(r2));
+}
+/* クェーサー化の前触れ：外から渦を巻いて注ぎ込むガスの腕（2本の対数らせん）。
+   uIn = (強さ, 先端の半径, 流れの位相, 模様の回転角)。塊は腕に沿って内へ流れる */
+float streamAt(float r, float phi){
+  if (r < 11.0 || r > 42.0) return 0.0;
+  float m = smoothstep(uIn.y - 1.5, uIn.y + 2.5, r)*(1.0 - smoothstep(34.0, 42.0, r));
+  if (m <= 0.0) return 0.0;
+  float d = phi - (uIn.w + 2.6*log(r));
+  d = mod(d + 0.5*PI, PI) - 0.5*PI;
+  float w = 0.09 + 0.004*r;
+  float clump = 0.35 + 0.65*vnoise(vec3(log(r)*9.0 + uIn.z, d*4.0, 5.3));
+  return m*exp(-d*d/(w*w))*clump;
+}
+/* クェーサー化の強さ（経過秒 a の関数。JS 側と同じ形） */
+float qxAt(float a){
+  if (a < 0.0) return 0.0;
+  if (a < 7.0) return 0.22*smoothstep(0.0, 7.0, a);
+  if (a < 15.0) return 0.22 + 0.78*smoothstep(7.0, 8.6, a);
+  if (a < 24.0) return 1.0 - smoothstep(15.0, 24.0, a);
+  return 0.0;
+}
+/* 心拍の光の脈を、遅れ lag 秒だけずらして足し合わせる */
+float pulseAt(float lag){
+  vec4 x = uBt - lag;
+  vec4 up = smoothstep(0.0, 0.14, x);
+  vec4 dn = exp(-max(x - 0.14, 0.0)/0.55);
+  vec4 e = mix(up, dn, step(0.14, x))*step(0.0, x);
+  return dot(e, uBa);
+}
+/* 降着円盤：ケプラー回転、ドップラー効果と重力赤方偏移、ずれ続ける渦。
+   中心の明るさの変化は光の速さで外へ伝わり、こちらへ届くまでの道のりの差だけ遅れて見える（反響）。
+   遅れは (r − q·n)/c。手前側はすぐ、横や奥ほど遅れて光る。
+   クェーサー化で温度が上がると、同じ色で光る半径が外へ広がる（降着率の1/3乗） */
+vec4 diskAt(vec3 q, float r, float hy){
+  float lag = (r - dot(q, normalize(uCamPos)))/ECHO;
+  float qr = uQA > -50.0 ? qxAt(uQA - lag) : 0.0;
+  float rv = ROUT + 14.0*qr;
+  float phi = atan(q.z, q.x);
+  float sd = uIn.x > 0.0 ? uIn.x*streamAt(r, phi) : 0.0;
+  if (r > rv && sd < 0.002) return vec4(0.0);
+  float pl = pulseAt(lag);
+  float om = 1.0/(r*sqrt(r));
+  float g = sqrt(1.0 - 3.0/r)/(1.0 + om*hy);
+  float x = 1.0 - sqrt(RIN/r);
+  float prof = pow(r/RIN, -0.75)*sqrt(sqrt(max(x, 0.0)))*2.04;
+  float wA = sin(PI*uFlow.x/FLOWP);
+  wA *= wA;
+  float aA = phi + om*uFlow.x;
+  float aB = phi + om*uFlow.y;
+  float lr = log(r)*34.0;
+  vec3 pA = vec3(cos(aA)*2.2, sin(aA)*2.2, lr + uFlow.z);
+  vec3 pB = vec3(cos(aB)*2.2, sin(aB)*2.2, lr + uFlow.w);
+  float n = wA*fbm(pA) + (1.0 - wA)*fbm(pB);
+  float lanes = 0.75 + 0.25*sin(r*4.1 + n*9.0);
+  float edge = smoothstep(RIN, RIN + 0.5, r)*(1.0 - smoothstep(rv - 6.0 - 4.0*qr, rv, r));
+  float nc = clamp((n - 0.25)*2.5, 0.0, 1.0);
+  float dens = max(edge*(0.15 + 0.85*nc*sqrt(nc))*lanes, sd*(0.55 + 0.6*n));
+  float pf = max(prof, 0.8*sd);
+  float T = uDisk.y*(1.0 + 0.08*pl)*(1.0 + 2.2*qr)*pf*(0.8 + 0.45*n);
+  float p2 = pf*pf;
+  float g2 = g*g;
+  float I = p2*p2*(0.6 + 0.8*n)*dens*g2*g2*uDisk.x*(1.0 + 0.75*pl)*(1.0 + 14.0*qr)*gGain;
+  return vec4(bb(T*g*gShift)*I*3.0, max(edge*clamp(0.62 + dens, 0.0, 0.97), 0.6*sd));
+}
+vec3 starLayer(vec3 d, float sc, float dens, float pxw){
+  vec3 q = d*sc;
+  vec3 ci = floor(q);
+  if (hash13(ci) > dens) return vec3(0.0);
+  vec3 sp = ci + 0.2 + 0.6*vec3(hash13(ci + 17.1), hash13(ci + 31.7), hash13(ci + 47.3));
+  vec3 dd = d - normalize(sp);
+  float a2 = dot(dd, dd);
+  float s = max(uPxA*0.65, min(pxw*0.6, uPxA*5.0));
+  float fadeW = 1.0/(1.0 + pxw/(uPxA*3.0));
+  float e = exp(-a2/(s*s))*(uPxA*uPxA*0.42)/(s*s)*fadeW*fadeW;
+  float br = pow(hash13(ci + 5.9), 10.0)*7.0 + 0.006;
+  float temp = 2600.0 + 9500.0*pow(hash13(ci + 71.3), 2.0);
+  return bb(temp*gShift)*br*e;
+}
+/* 噴流：極から出る相対論的ジェット。心拍ごとに塊が打ち出され、外へ流れる。
+   近づいてくる側が明るい（ドップラー因子の3乗、β=0.6 に弱めてある） */
+vec3 jetEmit(float y, float ay, float w, float rho2, vec3 vn){
+  float core = exp(-rho2/(w*w))/w;
+  float fall = 1.0/(1.0 + ay*0.07);
+  float base = smoothstep(2.2, 4.5, ay);
+  float front = 1.0 - smoothstep(uQ.z - 5.0, uQ.z, ay);
+  vec4 dk = (vec4(ay) - (uKnot*22.0 + 2.5))*0.45;
+  float k = dot(exp(-dk*dk), vec4(1.0));
+  float cosT = -sign(y)*vn.y;
+  float dl = 1.0/(1.25*(1.0 - 0.6*cosT));
+  return vec3(0.5, 0.66, 1.0)*(uQ.y*core*fall*base*front*(0.35 + 1.6*k)*dl*dl*dl*6.0);
+}
+vec3 sky(vec3 d, float pxw){
+  float bd = dot(d, vec3(0.21, 0.93, -0.30));
+  float bm = exp(-bd*bd*7.0);
+  float n1 = fbm(d*2.4 + 11.0);
+  float dust = bm*smoothstep(0.38, 0.7, fbm(d*5.3 + 3.0));
+  vec3 c = (vec3(0.012, 0.0045, 0.0035)*smoothstep(0.35, 0.85, n1) + vec3(0.0018, 0.002, 0.0032)*n1)*(0.25 + bm);
+  c *= 1.0 - dust*0.85;
+  vec3 st = starLayer(d, 150.0, 0.07, pxw);
+#if STAR2
+  st += starLayer(d, 360.0, 0.10, pxw)*0.35;
+#endif
+  c += st*(1.0 - dust*0.9);
+  return c*pow(gGain, 0.4);
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5*uRes)/(0.5*min(uRes.x, uRes.y));
+  /* 影が視野を覆うほど近づいたら、魚眼で影の縁を画面に残す */
+  float rr = length(uv);
+  float th = min(mix(atan(rr*uFov), rr*uAng, uFish), 3.1);
+  vec3 d = rr > 1e-5 ? normalize(cos(th)*uCamF + sin(th)*(uv.x*uCamR + uv.y*uCamU)/rr) : uCamF;
+  gShift = uShift;
+  gGain = uGain;
+  /* 地平面で留まるのをやめ、速さ v で自由落下する観測者の目。
+     光行差で前方（穴）は縮み、後ろの宇宙は広がる。周波数は 静止系の青方偏移 × γ(1 + v cosθ) */
+  if (uFall.x > 0.0){
+    vec3 ein = -uCamPos/length(uCamPos);
+    float v = uFall.x;
+    float cf = dot(d, ein);
+    vec3 tv = d - cf*ein;
+    float tl = length(tv);
+    tv = tl > 1e-5 ? tv/tl : normalize(cross(ein, vec3(0.31, 0.77, 0.56)));
+    float cst = (cf - v)/(1.0 - v*cf);
+    d = cst*ein + sqrt(max(1.0 - cst*cst, 0.0))*tv;
+    float F = uTan*inversesqrt(1.0 - v*v)*(1.0 + v*cst);
+    /* 地平面の内側では、外から届く光はすべて後ろから来て、1/(1+v) より強く赤方偏移する */
+    F = mix(F, 0.5, uFall.z)*uFall.y;
+    gShift = pow(F, mix(0.65, 1.0, v));
+    gGain = pow(F, mix(1.6, 1.25, v));
+  }
+  vec3 p = uCamPos;
+  float rc = length(p);
+  vec3 rh = p/rc;
+  float drr = dot(d, rh);
+  /* その場に留まる観測者の方向を、座標上の速度に直す */
+  vec3 v = drr*rh + (d - drr*rh)*uTan;
+  vec3 hv = cross(p, v);
+  float h2 = dot(hv, hv);
+  float hy = hv.y;
+
+  vec3 col = vec3(0.0);
+  float tr = 1.0;
+  float state = 0.0;
+  vec3 a = accel(p, h2);
+  for (int i = 0; i < MAX_STEPS; i++){
+    float r = length(p);
+    float dt = STEP_K*r;
+    if (r < 4.0) dt = min(dt, max(0.03, (r - 2.0)*0.55));
+    v += a*(0.5*dt);
+    vec3 pn = p + v*dt;
+    a = accel(pn, h2);
+    v += a*(0.5*dt);
+    if (p.y*pn.y <= 0.0 && tr > 0.01){
+      float den = p.y - pn.y;
+      float t = abs(den) > 1e-7 ? p.y/den : 0.5;
+      vec3 q = mix(p, pn, clamp(t, 0.0, 1.0));
+      float rq = length(q.xz);
+      if (rq > RIN && rq < RMAX){
+        vec4 e = diskAt(q, rq, hy);
+        col += tr*e.rgb;
+        tr *= 1.0 - e.a;
+      }
+    }
+    if (uAnyB > 0.5){
+      vec3 sg = pn - p;
+      float L2 = max(dot(sg, sg), 1e-8);
+      float sL = sqrt(L2);
+      for (int k = 0; k < NB; k++){
+        vec4 B = uB[k];
+        if (B.w <= 0.0) continue;
+        vec3 w = B.xyz - p;
+        float tt = clamp(dot(w, sg)/L2, 0.0, 1.0);
+        vec3 c = w - sg*tt;
+        float d2 = dot(c, c);
+        float s = uBC[k].w;
+        float s2 = s*s;
+        if (d2 < 144.0*s2){
+          float hw = 4.0*s;
+          float glow = exp(-d2/s2)*min(sL, 2.0*s)/(2.0*s) + 0.1*exp(-d2/(hw*hw))*min(sL, 2.0*hw)/(2.0*hw);
+          col += tr*uBC[k].rgb*(B.w*glow);
+        }
+      }
+    }
+    if (uQ.y > 0.0){
+      vec3 sgj = pn - p;
+      float lxz = dot(sgj.xz, sgj.xz);
+      float tj = lxz > 1e-8 ? clamp(-dot(p.xz, sgj.xz)/lxz, 0.0, 1.0) : 0.5;
+      vec3 m = p + sgj*tj;
+      float ay = abs(m.y);
+      float w = 0.16 + 0.2*pow(ay, 0.6);
+      float rho2 = dot(m.xz, m.xz);
+      if (ay > 2.2 && ay < uQ.z && rho2 < 9.0*w*w){
+        float sl = length(sgj);
+        float sinT = sqrt(lxz)/max(sl, 1e-6);
+        col += tr*jetEmit(m.y, ay, w, rho2, normalize(v))*min(sl, 1.77*w/max(sinT, 0.05));
+      }
+    }
+    p = pn;
+    float rn = length(p);
+    if (rn < 2.0004){ state = 2.0; break; }
+    if (rn > uResc && dot(p, v) > 0.0){ state = 1.0; break; }
+  }
+  vec3 dir = normalize(v);
+  float pxw = 0.0;
+#if DERIV
+  pxw = length(fwidth(dir));
+#endif
+  if (state == 1.0) col += tr*sky(dir, pxw);
+  /* 積分の外まで伸びた噴流は、直線とみなして一度に足す */
+  if (state == 1.0 && uQ.y > 0.0){
+    float dd = dot(dir.xz, dir.xz);
+    float sq = dd > 1e-6 ? -dot(p.xz, dir.xz)/dd : 0.0;
+    if (sq > 0.0){
+      vec3 c = p + dir*sq;
+      float ay = abs(c.y);
+      float w = 0.16 + 0.2*pow(ay, 0.6);
+      float rho2 = dot(c.xz, c.xz);
+      if (ay < uQ.z && rho2 < 9.0*w*w) col += tr*jetEmit(c.y, ay, w, rho2, dir)*1.77*w/max(sqrt(dd), 0.05);
+    }
+  }
+
+  /* 光子球を回って戻ってくる光（こだま） */
+  float b = sqrt(h2);
+  float rm = (b - BCRIT)*13.0;
+  rm = exp(-rm*rm);
+  if (rm > 0.002){
+    float psi = atan(uv.y, uv.x);
+    float ring = 0.0;
+    for (int k = 0; k < 2; k++){
+      vec4 A = uArc[k];
+      if (A.y <= 0.0) continue;
+      float dd = (mod(psi - A.x + PI, 2.0*PI) - PI)*A.z;
+      float tail = dd < 0.0 ? exp(dd*1.3) : 0.0;
+      ring += A.y*(exp(-dd*dd*60.0) + 0.4*tail);
+    }
+    col += rm*ring*vec3(0.62, 0.74, 1.0);
+  }
+
+  /* 内側の赤：影の縁から画面へ広がる赤いにじみ */
+  if (uFall.w > 0.0){
+    float dr = rr - uGlare.y;
+    float inner = smoothstep(uGlare.y*0.8, uGlare.y*1.05, rr);
+    col += uFall.w*vec3(1.0, 0.045, 0.015)*(0.05/(0.03 + dr*dr*4.0) + 0.35/(1.0 + rr*rr*1.2))*inner;
+  }
+  /* クェーサーのまぶしさ：影の縁を中心にした光のにじみ */
+  if (uGlare.x > 0.0){
+    float dr = rr - uGlare.y;
+    float inner = smoothstep(uGlare.y*0.78, uGlare.y*1.04, rr);
+    col += uGlare.x*vec3(0.85, 0.9, 1.0)*(0.03/(0.02 + dr*dr*10.0) + 0.12/(1.0 + rr*rr*3.0))*inner;
+  }
+  col *= uExp;
+  col = 1.0 - exp(-col);
+  col = sqrt(col);
+  col *= clamp(1.0 - 0.10*dot(uv, uv), 0.55, 1.0);
+
+  /* 同じ距離に置いた太陽系（太陽と海王星の軌道、半径30AU）を同縮尺で重ねる */
+  if (uSolar.w > 0.0){
+    vec2 q = (uv - uSolar.xy)/uSolar.z;
+    float ci = 0.38;
+    vec2 e = vec2(q.x, q.y/ci);
+    float le = max(length(e), 1e-6);
+    float gl = max(length(vec2(q.x, q.y/(ci*ci)))/le, 1e-4);
+    float pxM = uPx/uSolar.z;
+    float dd = (le - 0.4691)/gl/pxM;
+    float m = exp(-dd*dd*1.6);
+    float sd = length(q)/pxM;
+    m += 1.4*exp(-sd*sd*0.9);
+    col = mix(col, vec3(0.80, 0.80, 0.78), clamp(m, 0.0, 1.0)*uSolar.w);
+  }
+
+  col *= uFade;
+  col += (hash13(vec3(gl_FragCoord.xy, uTime)) - 0.5)*(1.2/255.0)*uFade;
+  FRAG = vec4(max(col, vec3(0.0)), 1.0);
+}
+`;
+
+let gl = null, isGL2 = false, deriv = false, prog = null, loc = {}, glLost = false;
+const UNAMES = ['uRes', 'uCamPos', 'uCamR', 'uCamU', 'uCamF', 'uFov', 'uFish', 'uAng', 'uTan', 'uShift', 'uGain', 'uFall', 'uResc', 'uFlow', 'uDisk',
+  'uExp', 'uFade', 'uTime', 'uB[0]', 'uBC[0]', 'uAnyB', 'uArc[0]', 'uSolar', 'uPx', 'uPxA', 'uQ', 'uKnot', 'uGlare', 'uQA', 'uBt', 'uBa', 'uIn'];
+
+function header() {
+  const defs = '#define MAX_STEPS ' + (lite ? 110 : 190) + '\n#define STEP_K ' + (lite ? '0.12' : '0.07') +
+    '\n#define NB ' + NB + '\n#define OCT ' + (lite ? 3 : 4) + '\n#define STAR2 ' + (lite ? 0 : 1) + '\n';
+  if (isGL2) return '#version 300 es\nprecision highp float;\nout vec4 fragOut;\n#define FRAG fragOut\n#define DERIV 1\n' + defs;
+  return (deriv ? '#extension GL_OES_standard_derivatives : enable\n' : '') +
+    'precision highp float;\n#define FRAG gl_FragColor\n#define DERIV ' + (deriv ? 1 : 0) + '\n' + defs;
+}
+function compile(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); gl.deleteShader(s); return null; }
+  return s;
+}
+function buildProgram() {
+  if (!gl) return false;
+  if (prog) { gl.deleteProgram(prog); prog = null; }
+  const vs = compile(gl.VERTEX_SHADER, isGL2 ? VS2 : VS1);
+  const fs = compile(gl.FRAGMENT_SHADER, header() + FS);
+  if (!vs || !fs) return false;
+  const p = gl.createProgram();
+  gl.attachShader(p, vs); gl.attachShader(p, fs);
+  gl.bindAttribLocation(p, 0, 'aP');
+  gl.linkProgram(p);
+  gl.deleteShader(vs); gl.deleteShader(fs);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) { console.error(gl.getProgramInfoLog(p)); return false; }
+  prog = p; loc = {};
+  for (const n of UNAMES) loc[n] = gl.getUniformLocation(p, n);
+  return true;
+}
+function initGL() {
+  const o = { alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' };
+  gl = null;
+  try { gl = cvs.getContext('webgl2', o); } catch (e) { gl = null; }
+  isGL2 = !!gl;
+  if (!gl) { try { gl = cvs.getContext('webgl', o) || cvs.getContext('experimental-webgl', o); } catch (e) { gl = null; } }
+  if (!gl) return false;
+  deriv = isGL2 ? true : !!gl.getExtension('OES_standard_derivatives');
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  return buildProgram();
+}
+cvs.addEventListener('webglcontextlost', e => { e.preventDefault(); glLost = true; });
+cvs.addEventListener('webglcontextrestored', () => { glLost = false; if (!initGL()) document.documentElement.classList.add('nogl'); });
+
+/* ---------- 解像度の自動調整 ---------- */
+const DPR = () => window.devicePixelRatio || 1;
+const resMax = () => lite ? Math.min(DPR(), 0.85) : Math.min(DPR(), 1.5);
+let resScale = lite ? 0.6 : Math.min(DPR(), 1.0);
+let perfAcc = 0, perfN = 0;
+function perf(raw) {
+  if (raw <= 0 || raw > 0.25) return;
+  perfAcc += raw; perfN++;
+  if (perfN >= 45) {
+    const avg = perfAcc / perfN * 1000;
+    if (avg > 26) resScale = Math.max(0.3, resScale * 0.82);
+    else if (avg < 17.5) resScale = Math.min(resMax(), resScale * 1.08);
+    perfAcc = 0; perfN = 0;
+  }
+}
+function resize() {
+  const cw = cvs.clientWidth || window.innerWidth, ch = cvs.clientHeight || window.innerHeight;
+  const w = Math.max(16, Math.round(cw * resScale)), h = Math.max(16, Math.round(ch * resScale));
+  if (cvs.width !== w || cvs.height !== h) { cvs.width = w; cvs.height = h; }
+}
+
+/* =========================================================
+   世界の状態
+   ========================================================= */
+const cam = { az: 0.35, el: 0.11, D: 22, roll: -0.085, vaz: 0, vel: 0 };
+const C = { pos: [0, 0, 22], F: [0, 0, -1], R: [1, 0, 0], U: [0, 1, 0] };
+let Dhome = 22;
+const fall = { active: false, holdT: 0, returning: false };
+let crossing = null, dark = null, solar = null, quasar = null;
+const beacons = [];
+const arcs = [];
+let nowS = 0, diskT = 0, adapt = 1, diskGain = 1, lastInput = -1e9, lastDrop = -1;
+let nextStray = 7, nextQuasar = 40, nextSolar = 82, nextDark = 125, nextPull = 200, nextStar = 100;
+// 心音：ふだんは52拍/分。ときどき早い一拍のあとに長い間が空く
+// 巨大な心臓：ふだんは28拍/分（約2.1秒に1拍）。クェーサー化で72拍/分まで上がる
+const HB = 28, HQ = 72;
+const heart = { next: 2.5, bpm: HB, eff: HB, stopped: false, count: 0, nextExtra: 16, pause: false, strength: 1, vis: [], knots: [] };
+let paused = false;
+let U = { cs: 1, trate: 1, fade: 1, fish: 0, ang: 0.5, shUV: 0.4, solar: [0, 0, 1, 0], turn: 0, fallV: 0, inside: 1, expK: 1, apitch: 1 };
+
+function camBasis() {
+  const ce = Math.cos(cam.el), se = Math.sin(cam.el);
+  const pos = [cam.D * ce * Math.sin(cam.az), cam.D * se, cam.D * ce * Math.cos(cam.az)];
+  let F = norm(mul(pos, -1));
+  let R = norm(cross(F, [0, 1, 0]));
+  const Uv = cross(R, F);
+  // 地平面をこえたあと、振り返って外の宇宙を見る
+  if (U.turn > 0) {
+    const th = U.turn * Math.PI, c = Math.cos(th), s = Math.sin(th);
+    const F2 = add(mul(F, c), mul(R, s));
+    R = sub(mul(R, c), mul(F, s)); F = F2;
+  }
+  const cr = Math.cos(cam.roll), sr = Math.sin(cam.roll);
+  C.pos = pos; C.F = F;
+  C.R = add(mul(R, cr), mul(Uv, sr));
+  C.U = add(mul(R, -sr), mul(Uv, cr));
+}
+function project(P) {
+  const r = sub(P, C.pos);
+  const z = dot(r, C.F);
+  if (z <= 0.01) return { x: 0, y: 0, front: false };
+  return { x: dot(r, C.R) / z / FOVH, y: dot(r, C.U) / z / FOVH, front: true };
+}
+
+/* ---------- 灯 ----------
+   落下は E=1（無限遠から静止して落ちる）の測地線。時間は遠くの観測者が受け取る時刻。
+   1+z = (dt/dτ)·(受信の遅れ)。地平面の近くで指数関数的に伸び、灯は縁で止まって見える。 */
+const KIND = {
+  mine:    { Te: 9500,  I0: 9.0, sig: 0.09,  P: 1.35, g0: 0.42 },
+  stray:   { Te: 6500,  I0: 4.0, sig: 0.09,  P: 2.0,  g0: 0.28 },
+  self:    { Te: 20000, I0: 30,  sig: 0.14,  P: 1.7,  g0: 0.48 },
+  ancient: { Te: 5000,  I0: 4.0, sig: 0.11,  P: 1.6,  g0: 0.24 },
+  star:    { Te: 5800,  I0: 22,  sig: 0.12,  P: 1e9,  g0: 0 }
+};
+function makeBeacon(kind, p0, L, side) {
+  const k = KIND[kind];
+  const r0 = len(p0);
+  const e1 = mul(p0, 1 / r0);
+  let t = sub(side, mul(e1, dot(side, e1)));
+  if (len(t) < 1e-3) t = sub([0, 1, 0], mul(e1, e1[1]));
+  const f0 = kind === 'mine' ? PENTA[(Math.random() * PENTA.length) | 0]
+    : kind === 'stray' ? (Math.random() < 0.5 ? 698.46 : 587.33)
+    : kind === 'self' ? 1396.91 : 932.33;
+  return {
+    kind, r: r0, phi: 0, L, e1, e2: norm(t), z1: 1, phase: Math.random() * 0.5, f0,
+    Te: k.Te, I0: k.I0, sig: k.sig, P: k.P, g0: k.g0,
+    flashAt: -1e9, lastArc: -1e9, born: nowS, hold: false, pos: p0.slice(), code: 'code' + ((Math.random() * 2) | 0)
+  };
+}
+function addBeacon(b) {
+  while (beacons.length >= NB) dropOldest();
+  beacons.push(b);
+  return b;
+}
+function dropOldest() {
+  let idx = 0, best = Infinity;
+  for (let i = 0; i < beacons.length; i++) {
+    const c = beacons[i];
+    const score = (c.z1 > 30 ? 0 : 1e6) + c.born;
+    if (score < best) { best = score; idx = i; }
+  }
+  beacons.splice(idx, 1);
+}
+function starAlive() { for (const b of beacons) if (b.kind === 'star') return true; return false; }
+function fallingCount() { let n = 0; for (const b of beacons) if (b.kind !== 'ancient' && b.z1 < 30) n++; return n; }
+
+function stepBeacon(b, du) {
+  if (b.hold) return;
+  const rem = du * (0.9 + 0.45 * Math.max(b.r - 2, 0)) * (b.tw || 1);
+  const n = Math.min(40, Math.max(1, Math.ceil(rem / 0.2)));
+  const h = rem / n;
+  for (let i = 0; i < n; i++) {
+    const r = b.r, a = 1 - 2 / r, L = b.L;
+    const rad = Math.max(2 / r - (L * L / (r * r)) * a, 0);
+    const drdt = -a * Math.sqrt(rad);
+    const ret = 1 + Math.abs(drdt) / a;
+    const dtc = h / ret;
+    b.r = Math.max(r + drdt * dtc, 2.00005);
+    b.phi += a * L / (r * r) * dtc;
+    b.z1 = ret / a;
+  }
+  const c = Math.cos(b.phi), s = Math.sin(b.phi);
+  b.pos = add(mul(b.e1, b.r * c), mul(b.e2, b.r * s));
+  const zp = Math.min(b.z1, 40);
+  b.phase += du / (b.P * zp);
+  if (b.phase >= 1) { b.phase -= Math.floor(b.phase); firePing(b); }
+}
+function beaconLook(b) {
+  const z = b.z1, zf = Math.min(z, 40);
+  const since = nowS - b.flashAt;
+  const fl = since >= 0 ? Math.exp(-since / (0.25 * Math.pow(zf, 0.75))) : 0;
+  let I;
+  if (b.kind === 'star') {
+    // 点滅も残光もなく、赤くなって消えるだけ
+    if (z > 3 && !b.fadeAt) b.fadeAt = nowS;
+    I = b.I0 * Math.pow(z, -2.2) * (b.fadeAt ? Math.exp(-(nowS - b.fadeAt) / 1.6) : 1);
+    if (b.fadeAt && nowS - b.fadeAt > 8) b.dead = true;
+  } else {
+    I = b.I0 * Math.pow(z, -2.2) * (0.35 + 0.65 * fl);
+    I = Math.max(I, b.I0 * GF * (0.4 + 0.6 * fl));
+  }
+  const born = b.hold ? 0 : clamp((nowS - b.born) / 0.4, 0, 1);
+  const T = b.Te / z;
+  const c = bbRGB(T);
+  return { I: I * born, c };
+}
+function bbRGB(T) {
+  const t = clamp(T, 800, 30000) / 100;
+  let r, g, b;
+  if (t <= 66) {
+    r = 1; g = clamp(0.39008158 * Math.log(t) - 0.63184144, 0, 1);
+    b = t <= 19 ? 0 : clamp(0.54320679 * Math.log(Math.max(t - 10, 1)) - 1.19625409, 0, 1);
+  } else {
+    const u = Math.max(t - 60, 1);
+    r = clamp(1.29293619 * Math.pow(u, -0.13320476), 0, 1); g = clamp(1.12989086 * Math.pow(u, -0.07551485), 0, 1); b = 1;
+  }
+  return [r * r, g * g, b * b];
+}
+
+function firePing(b, boost) {
+  const zp = Math.min(b.z1, 40);
+  const g = b.g0 * Math.max(Math.pow(zp, -0.85), 0.07) * (boost || 1);
+  const sc = project(b.pos);
+  const pan = sc.front ? clamp(sc.x * 0.75, -0.85, 0.85) : 0;
+  b.flashAt = nowS + 0.03 + auLat();
+  let v = null;
+  if (AU.ok && !AU.muted) {
+    v = auVoice(b, g, pan, AU.ctx.currentTime + 0.03);
+    // 深く沈んだ灯の信号は崩れ、空電が膨らむ
+    if (b.z1 > 3 && b.kind !== 'ancient') auStaticSwell(clamp((b.z1 - 3) / 10, 0, 1));
+  }
+  if (b.r < 4.3 && b.kind !== 'ancient' && nowS - b.lastArc > 3.2) spawnArc(b, sc, v, g, pan);
+}
+function spawnArc(b, sc, v, g, pan) {
+  const psi = Math.atan2(sc.y, sc.x);
+  const dir = dot(cross(b.e1, b.e2), C.F) > 0 ? -1 : 1;
+  const lat = auLat();
+  if (arcs.length >= 2) arcs.shift();
+  arcs.push({ psi, dir, t0: nowS + 0.03 + lat, I0: 0.9 });
+  b.lastArc = nowS;
+  // 一周ごとに同じ声が戻る。左右を横切りながら、少しずつ遅く暗くなる
+  if (v && AU.ok && !AU.muted) {
+    const t = AU.ctx.currentTime + 0.03;
+    for (let k = 1; k <= 3; k++) {
+      const side = k % 2 ? 1 : -1;
+      playBuf(v.buf, { when: t + k * TLOOP, rate: v.rate * Math.pow(0.985, k), gain: g * Math.pow(0.42, k), pan: -side * 0.8, panTo: side * 0.8,
+        panDur: TLOOP, lp: 2600 / k, rev: 1.0, echo: 0.15, maxDur: 14 });
+    }
+  }
+}
+
+function dropLantern() {
+  if (crossing || nowS - lastDrop < 0.45) return;
+  lastDrop = nowS;
+  const p0 = add(add(add(C.pos, mul(C.F, 1.25)), mul(C.U, -0.32)), mul(C.R, rand(-0.25, 0.25)));
+  const b = addBeacon(makeBeacon('mine', p0, rand(0.5, 3.3), mul(C.R, Math.random() < 0.5 ? -1 : 1)));
+  b.phase = 0.82;
+  auDrop();
+}
+function spawnStray() {
+  const s = Math.random() < 0.5 ? -1 : 1;
+  const p0 = add(add(add(C.pos, mul(C.F, rand(9, 13))), mul(C.R, s * rand(7, 10))), mul(C.U, rand(-3, 4)));
+  if (len(p0) < 9) return;
+  addBeacon(makeBeacon('stray', p0, rand(2.4, 3.7), mul(C.R, -s)));
+}
+function seedAncient(n) {
+  const base = norm(C.pos);
+  for (let i = 0; i < n; i++) {
+    const dir = norm(add(mul(base, 0.8), [rand(-0.6, 0.6), rand(-0.5, 0.5), rand(-0.6, 0.6)]));
+    const b = makeBeacon('ancient', mul(dir, 2.0007), 0, [0, 1, 0]);
+    b.r = 2.0007; b.z1 = 400; b.born = -1000 + i; b.phase = Math.random();
+    addBeacon(b);
+  }
+}
+
+/* ---------- 長押し：自分が落ちていく ---------- */
+function startFall(auto) {
+  if (fall.active || crossing) return;
+  if (!fall.returning) Dhome = cam.D;
+  fall.active = true; fall.returning = false; fall.holdT = 0; fall.auto = !!auto;
+  auFallStart();
+}
+function release() {
+  if (!fall.active) return;
+  fall.active = false; fall.returning = true; fall.auto = false;
+  auFallEnd(false);
+}
+function startCross() {
+  if (crossing) return;
+  fall.active = false; fall.returning = false; fall.auto = false; press = null; keyHold = 0;
+  const n = norm(C.pos);
+  const self = addBeacon(makeBeacon('self', mul(n, 4.6), 0, C.R));
+  self.hold = true; self.phase = 0.7;
+  crossing = { t0: nowS, reset: false, self, sung: false };
+  auFallEnd(true);
+  if (AU.ok && !AU.muted) auCross();
+}
+function startDark() {
+  dark = { t0: nowS, re: false, hs: false, tin: false, wh: false, pinged: [false, false, false] };
+  if (AU.ok && !AU.muted) auDarkStart();
+}
+// クェーサー化は、ガスが渦を巻いて注ぎ込む10秒の前触れから始まる（t0 は せり上がりの始まり）
+function startQuasar() {
+  quasar = { t0: nowS + 10, ign: false, fade: false, started: false };
+  if (AU.ok && !AU.muted) auInflowStart(17);
+}
+// 音もなく消える星：M87* 級では、太陽のような星は引き裂かれる前に地平面の内側へ入る
+function spawnStar() {
+  const s = Math.random() < 0.5 ? -1 : 1;
+  const back = norm(mul(C.pos, -1));
+  const dir = norm(add(add(mul(back, 0.55), mul(C.R, s * 0.8)), mul(C.U, rand(0.05, 0.3))));
+  const b = addBeacon(makeBeacon('star', mul(dir, rand(26, 30)), rand(3.2, 3.8), mul(C.R, -s)));
+  b.tw = 0.8; b.phase = 0;
+}
+function heartBeat(tb, s) {
+  const eff = heart.eff;
+  const gap = Math.min(0.5, 24 / eff);
+  const lat = auLat();
+  const k = reduced ? 0.4 : 1;
+  // 光の脈は毎秒2.7回を超えないようにする（速くなると「ドッ」の光から消していく）
+  const aL = s * k * clamp((160 - eff) / 40, 0, 1);
+  const aD = s * k * 0.45 * clamp((90 - eff) / 25, 0, 1);
+  if (aL > 0) heart.vis.push({ t: tb + lat, a: aL });
+  if (aD > 0) heart.vis.push({ t: tb + gap + lat, a: aD });
+  heart.knots.push(tb + lat);
+  if (heart.knots.length > 4) heart.knots.shift();
+  if (AU.ok && !AU.muted) auHeart(tb - nowS, gap, s);
+}
+function heartPulse() {
+  let p = 0;
+  for (let i = heart.vis.length - 1; i >= 0; i--) {
+    const x = nowS - heart.vis[i].t;
+    if (x > 6) { heart.vis.splice(i, 1); continue; }
+    if (x < 0) continue;
+    // 重いものはゆっくり膨らみ、ゆっくり引く
+    p += heart.vis[i].a * (x < 0.14 ? sstep(0, 0.14, x) : Math.exp(-(x - 0.14) / 0.55));
+  }
+  return p;
+}
+
+/* =========================================================
+   更新
+   ========================================================= */
+function update(dt) {
+  if (press && !press.moved && !fall.active && !crossing && nowS - press.t0 > 0.6) startFall();
+  if (keyHold && !fall.active && !crossing && nowS - keyHold > 0.6) startFall();
+
+  // カメラ
+  if (fall.active) {
+    fall.holdT += dt;
+    const k = 0.12 + 0.09 * fall.holdT;
+    cam.D = 1.96 + (cam.D - 1.96) * Math.exp(-k * dt);
+    if (cam.D < 2.04) startCross();
+  } else if (fall.returning && !crossing) {
+    cam.D += (Dhome - cam.D) * (1 - Math.exp(-dt * 0.8));
+    if (Math.abs(cam.D - Dhome) < 0.03) { cam.D = Dhome; fall.returning = false; }
+  }
+  if (!(press && press.moved)) { cam.az += cam.vaz * dt; cam.el += cam.vel * dt; }
+  const dmp = Math.exp(-dt * 2.6);
+  cam.vaz *= dmp; cam.vel *= dmp;
+  if (keys.l) cam.az += dt * 0.6;
+  if (keys.r) cam.az -= dt * 0.6;
+  if (keys.u) cam.el += dt * 0.45;
+  if (keys.d) cam.el -= dt * 0.45;
+  if (keys.zi || keys.zo) { cam.D = clamp(cam.D * Math.exp((keys.zo ? 1 : -1) * dt * 0.6), 5.5, 60); if (!fall.active) Dhome = cam.D; }
+
+  // 放置時の自動演出：ゆっくり回り込み、ときどき真上から「瞳」を見下ろす
+  const idleFor = nowS - lastInput;
+  const blend = sstep(18, 26, idleFor);
+  if (blend > 0 && !fall.active && !crossing && !fall.returning) {
+    const sp = reduced ? 0.5 : 1;
+    cam.az += dt * 0.010 * blend * sp;
+    const ph = (nowS % 260) / 260;
+    const eye = sstep(0.62, 0.72, ph) * (1 - sstep(0.86, 0.96, ph));
+    // クェーサー化で光る範囲が広がるあいだは、少し引いて上から全体を見せる
+    const qa = quasar ? nowS - quasar.t0 : -1;
+    const qEnv = !quasar ? 0 : sstep(-10, -4, qa) * (1 - sstep(18, 27, qa));
+    const elT = 0.20 + 0.22 * Math.sin(nowS * TAU / 150) + 0.95 * eye + 0.2 * qEnv;
+    cam.el += (elT - cam.el) * (1 - Math.exp(-dt * Math.max(0.12, 0.5 * qEnv) * blend * sp));
+    const DT = 22 + 5 * Math.sin(nowS * TAU / 200 + 1.0) + 16 * qEnv;
+    cam.D += (DT - cam.D) * (1 - Math.exp(-dt * Math.max(0.06, 0.45 * qEnv) * blend * sp));
+    Dhome = cam.D;
+  }
+  cam.el = clamp(cam.el, -1.4, 1.4);
+  if (!fall.active && !crossing) cam.D = clamp(cam.D, 5.5, 60);
+
+  // 地平面をこえる。留まるのをやめて自由落下に移ると、光行差で影は前方に縮み、まわりの宇宙が戻ってくる。
+  // 内側では外から届く光がすべて赤方偏移し（地平面で約1/2）、さらに赤く、暗く、遅くなっていく
+  let fade = 1, letGo = 0;
+  U.fallV = 0; U.inside = 1; U.turn = 0; U.open = 0; U.redMix = 0; U.veil = 0;
+  let redExp = 1;
+  if (crossing) {
+    const a = nowS - crossing.t0;
+    if (!crossing.reset) {
+      letGo = sstep(0, 1.2, a);
+      U.fallV = 0.99 * letGo;
+      U.open = sstep(0.2, 2.2, a);
+      U.redMix = sstep(0.6, 2.5, a);
+      U.inside = a < 3 ? 1 : Math.exp(-(a - 3) * 0.45);
+      U.veil = 0.85 * U.redMix * Math.sqrt(U.inside);
+      redExp = 1 + 0.9 * sstep(0.6, 2.5, a);
+      if (a > 8) fade = 1 - sstep(8, 9.2, a);
+      if (!crossing.sung && a >= 1.3) { crossing.sung = true; if (AU.ok && !AU.muted) for (const v of AU.voices) moan(v, 'fall'); }
+      if (a >= 11.2) {
+        crossing.reset = true;
+        cam.D = Dhome; cam.vaz = 0; cam.vel = 0;
+        crossing.self.hold = false;
+        lastInput = nowS;
+        U.fallV = 0; U.open = 0; U.redMix = 0; U.veil = 0; U.inside = 1; letGo = 0; redExp = 1;
+        fade = 0;
+      }
+    } else {
+      fade = sstep(11.2, 14.7, a);
+      if (a > 14.8) crossing = null;
+    }
+  }
+  U.fade = fade;
+  camBasis();
+  // 影の見かけの半径。r<3 では空の半分以上を覆う
+  const sa = Math.min(1, BCRIT * Math.sqrt(Math.max(1 - 2 / cam.D, 0)) / cam.D);
+  const alpha = cam.D >= 3 ? Math.asin(sa) : Math.PI - Math.asin(sa);
+  const base = Math.atan(FOVH), need = alpha * 1.45 + 0.05;
+  U.fish = sstep(base, base + 0.35, need);
+  U.ang = Math.min(Math.max(need, base), 3.0);
+  U.shUV = Math.tan(Math.min(alpha, 1.5)) / FOVH;
+  U.shR = (1 - U.fish) * Math.tan(Math.min(alpha, 1.4)) / FOVH + U.fish * alpha / U.ang;
+  if (letGo > 0) {
+    // 自由落下の目では、影の半径は cosθ' = (cosα + v)/(1 + v cosα) に縮む（地平面で約64°）
+    const ca = Math.cos(alpha), v = U.fallV;
+    const aF = Math.acos(clamp((ca + v) / (1 + v * ca), -1, 1));
+    U.fish = 1; U.ang = 3.0 + (1.6 - 3.0) * U.open;
+    U.shR = aF / U.ang;
+  }
+
+  // 重力による時間の遅れ：低いところに留まる自分には、外の世界が早回しに見える
+  const cs = 1 / Math.sqrt(Math.max(1 - 2 / cam.D, 1e-4));
+  let trate = Math.min(cs, reduced ? 1.6 : 7) * (reduced ? 0.6 : 1);
+  let apitch = Math.min(Math.pow(cs, 0.5), 2.6);
+  U.expK = Math.pow(cs, -0.8);
+  if (letGo > 0) {
+    // 落ちながら振り返ると、外の世界は赤く、遅く、低くなる
+    const red = 0.5 * U.inside;
+    trate += (red * (reduced ? 0.6 : 1) - trate) * letGo;
+    apitch += (Math.max(Math.pow(red, 0.8), 0.12) - apitch) * letGo;
+    U.expK += (1 - U.expK) * letGo;
+  }
+  U.expK *= redExp;
+  U.cs = cs; U.trate = trate; U.apitch = apitch;
+  const du = dt * trate;
+  diskT += du * 10;
+
+  // できごと
+  if (!crossing) {
+    if (nowS > nextStray) { nextStray = nowS + rand(38, 72); if (!dark && fallingCount() < 4) spawnStray(); }
+    if (nowS > nextQuasar) {
+      if (!dark && !quasar && !solar && !fall.active && !starAlive()) { nextQuasar = nowS + rand(150, 200); startQuasar(); }
+      else nextQuasar = nowS + 10;
+    }
+    // 放置していると、ときどき自分ごと引き込まれる
+    if (nowS > nextPull && nowS - lastInput > 45 && !dark && !quasar && !solar && !fall.active && !fall.returning && !starAlive()) {
+      nextPull = nowS + rand(300, 420);
+      startFall(true);
+    }
+    if (nowS > nextDark && !dark && !quasar && !fall.active && !starAlive()) { nextDark = nowS + rand(115, 165); startDark(); }
+    if (nowS > nextStar) {
+      if (!dark && !quasar && !fall.active && !crossing) { nextStar = nowS + rand(110, 170); spawnStar(); }
+      else nextStar = nowS + 8;
+    }
+    if (nowS > nextSolar && !solar && !quasar && !fall.active) {
+      nextSolar = nowS + rand(170, 240);
+      solar = { t0: nowS, dur: 34, side: Math.random() < 0.5 ? -1 : 1, yo: rand(-0.4, -0.12) };
+      if (AU.ok && !AU.muted) auMusicBox(solar.dur, solar.side);
+    }
+  }
+
+  // クェーサー化：降着が一気に増え、円盤が白熱し、極から噴流が伸びる
+  const live = AU.ok && !AU.muted;
+  let qx = 0, qj = 0, qf = 0, hbpm = HB;
+  if (quasar) {
+    const a = nowS - quasar.t0;
+    if (a < 0) { hbpm = HB + 6 * sstep(-10, 0, a); }
+    else if (a < 7) { qx = 0.22 * sstep(0, 7, a); hbpm = HB + 6 + (HQ - HB - 6) * sstep(0, 6.5, a); }
+    else if (a < 15) { qx = 0.22 + 0.78 * sstep(7, 8.6, a); qj = sstep(7, 8.2, a); hbpm = HQ; }
+    else if (a < 24) { qx = 1 - sstep(15, 24, a); qj = 1 - sstep(15, 22, a); hbpm = HQ - (HQ - HB) * sstep(15, 23, a); }
+    else if (a > 29) quasar = null;   // 外側の残光（反響の遅れ）が消えるまで待つ
+    if (quasar) {
+      qf = a > 7 ? 25 * (a - 7) : 0;
+      if (!quasar.started && a >= 0) { quasar.started = true; if (live) auQuasarStart(); }
+      if (!quasar.ign && a >= 7) { quasar.ign = true; if (live) auQuasarIgnite(); }
+      if (!quasar.fade && a >= 15) { quasar.fade = true; if (live) auQuasarFade(); }
+    }
+  }
+  if (dark && nowS - dark.t0 < 3) hbpm = HB - 8 * sstep(0, 3, nowS - dark.t0);
+  U.qx = qx; U.qj = qj; U.qf = qf;
+  // 前触れのガスの腕：外（42M）から内（12M）へ9秒かけて届き、点火のあとで円盤に溶ける
+  U.inflow = [0, 42, 0, 0];
+  if (quasar) {
+    const a = nowS - quasar.t0, e = a + 10;
+    U.inflow = [sstep(-10, -6, a) * (1 - sstep(8, 12, a)), 42 - 30 * sstep(-10, -1, a), e * 1.6, -e * 0.05];
+  }
+
+  // 心音。時間の遅れで外の世界が早回しになると、心拍も速くなる
+  heart.bpm += (hbpm - heart.bpm) * (1 - Math.exp(-dt / 1.2));
+  heart.eff = heart.bpm * trate;
+  if (!heart.stopped && !(crossing && !crossing.reset)) {
+    if (heart.next < nowS - 1) heart.next = nowS + 0.3;
+    while (heart.next < nowS + 0.12) {
+      const tb = heart.next;
+      let iv = 60 / heart.eff * rand(0.96, 1.04);
+      if (heart.pause) { iv *= 1.55; heart.pause = false; }
+      else if (++heart.count >= heart.nextExtra) { iv *= 0.6; heart.pause = true; heart.count = 0; heart.nextExtra = 14 + Math.floor(Math.random() * 10); }
+      heartBeat(tb, heart.strength);
+      heart.strength += (1 - heart.strength) * 0.5;
+      heart.next = tb + iv;
+    }
+  }
+  U.pulse = heartPulse();
+
+  for (const b of beacons) stepBeacon(b, du);
+  // 星は長くても90秒で退場させる（他の出来事を待たせ続けないように）
+  for (let i = beacons.length - 1; i >= 0; i--) { const c = beacons[i]; if (c.dead || (c.kind === 'star' && nowS - c.born > 90)) beacons.splice(i, 1); }
+
+  for (let i = arcs.length - 1; i >= 0; i--) if ((nowS - arcs[i].t0) / TLOOP > 3.3) arcs.splice(i, 1);
+
+  // 消灯：降着が途絶え、凍った灯だけが見えてくる
+  let dg = 1;
+  if (dark) {
+    const a = nowS - dark.t0;
+    if (!dark.hs && a >= 3.0) { dark.hs = true; heart.stopped = true; }
+    if (a < 3.0) dg = 1 - 0.45 * sstep(0, 3.0, a);
+    else if (a < 3.8) dg = 0.55 - 0.538 * sstep(3.0, 3.8, a);
+    else if (a < 11.5) dg = 0.012;
+    else if (a < 16) {
+      if (!dark.re) {
+        dark.re = true;
+        // 光が戻る瞬間に、止まっていた心臓が強く打ち直す
+        heart.stopped = false; heart.next = nowS + 0.05; heart.strength = 1.8; heart.bpm = HB + 8;
+        if (live) { auTinnitus(false); auReignite(); }
+      }
+      dg = 0.012 + 0.988 * sstep(11.5, 16, a);
+    } else { dark = null; }
+    if (dark) {
+      if (!dark.tin && a >= 4.5) { dark.tin = true; if (live) auTinnitus(true); }
+      if (!dark.wh && a >= 8.4) { dark.wh = true; if (live && Math.random() < 0.65) auWhisper(0.03, true); }
+      const marks = [5.0, 7.4, 9.6];
+      const frozen = beacons.filter(b => b.z1 > 25 && b.kind !== 'star').sort((x, y) => x.born - y.born);
+      for (let k = 0; k < 3; k++) if (!dark.pinged[k] && a >= marks[k]) {
+        dark.pinged[k] = true;
+        const b = frozen[k];
+        if (b) { b.phase = 0; firePing(b, 3); }
+      }
+    }
+  }
+  diskGain = dg;
+  const target = Math.pow(0.18 + 0.82 * diskGain, -0.6) / Math.pow(1 + 5 * U.qx, 0.7);
+  adapt += (target - adapt) * (1 - Math.exp(-dt / 1.4));
+
+  // 太陽系の縮尺
+  U.solar = [0, 0, 1, 0];
+  if (solar) {
+    const a = (nowS - solar.t0) / solar.dur;
+    if (a >= 1) solar = null;
+    else if (!fall.active && !crossing && U.fish < 0.01) {
+      const shUV = U.shUV;
+      U.solar = [solar.side * (-0.95 + 1.9 * a) * shUV, solar.yo * shUV, 1 / (cam.D * FOVH),
+        0.55 * sstep(0, 0.1, a) * (1 - sstep(0.88, 1, a))];
+    }
+  }
+
+  auFrame();
+}
+
+/* =========================================================
+   描画
+   ========================================================= */
+const Bpos = new Float32Array(16 * 4), Bcol = new Float32Array(16 * 4), Arc = new Float32Array(8);
+function render() {
+  if (!gl || !prog || glLost) return;
+  resize();
+  const W = cvs.width, H = cvs.height, mn = Math.min(W, H);
+  gl.viewport(0, 0, W, H);
+  gl.useProgram(prog);
+  const D = cam.D, cs = U.cs;
+  gl.uniform2f(loc.uRes, W, H);
+  gl.uniform3fv(loc.uCamPos, C.pos);
+  gl.uniform3fv(loc.uCamR, C.R);
+  gl.uniform3fv(loc.uCamU, C.U);
+  gl.uniform3fv(loc.uCamF, C.F);
+  // 拍ごとに、ほんのわずか天体が膨らむ（視野を最大1%狭める）
+  gl.uniform1f(loc.uFov, FOVH * (1 - (reduced ? 0 : 0.01) * Math.min(U.pulse || 0, 1.5)));
+  gl.uniform1f(loc.uFish, U.fish);
+  gl.uniform1f(loc.uAng, U.ang);
+  gl.uniform1f(loc.uTan, cs);
+  gl.uniform1f(loc.uShift, Math.pow(cs, 0.65));
+  gl.uniform1f(loc.uGain, Math.pow(cs, 1.6));
+  gl.uniform1f(loc.uResc, Math.max(quasar ? 44 : 27, D + 1));
+  const inf = U.inflow || [0, 42, 0, 0];
+  gl.uniform4f(loc.uIn, inf[0], inf[1], inf[2], inf[3]);
+  const tA = diskT % FLOWP, tB = (diskT + FLOWP / 2) % FLOWP;
+  const sA = Math.floor(diskT / FLOWP) % 61, sB = Math.floor((diskT + FLOWP / 2) / FLOWP) % 61;
+  gl.uniform4f(loc.uFlow, tA, tB, sA * 7.31 + 0.5, sB * 7.31 + 3.9);
+  const breath = 1 + 0.05 * Math.sin(nowS * TAU / 17);
+  const pulse = U.pulse || 0, qx = U.qx || 0;
+  gl.uniform4f(loc.uDisk, diskGain * breath, 2500, 0, 0);
+  // 脈とクェーサー化は、円盤の場所ごとの遅れをつけてシェーダーで足す
+  gl.uniform1f(loc.uQA, quasar ? nowS - quasar.t0 : -100);
+  const bt = [99, 99, 99, 99], ba = [0, 0, 0, 0], hv = heart.vis;
+  for (let i = 0; i < 4 && i < hv.length; i++) { const e = hv[hv.length - 1 - i]; bt[i] = nowS - e.t; ba[i] = e.a; }
+  gl.uniform4f(loc.uBt, bt[0], bt[1], bt[2], bt[3]);
+  gl.uniform4f(loc.uBa, ba[0], ba[1], ba[2], ba[3]);
+  gl.uniform4f(loc.uQ, qx, U.qj || 0, U.qf || 0, 0);
+  const kn = heart.knots, ka = [99, 99, 99, 99];
+  for (let i = 0; i < kn.length; i++) { const age = nowS - kn[i]; if (age >= 0) ka[i] = age * (reduced ? 0.5 : 1); }
+  gl.uniform4f(loc.uKnot, ka[0], ka[1], ka[2], ka[3]);
+  gl.uniform2f(loc.uGlare, 0.9 * qx * qx * (1 + 0.25 * pulse), U.shR || 0.4);
+  gl.uniform1f(loc.uExp, 0.3 * adapt * U.expK);
+  gl.uniform4f(loc.uFall, U.fallV, U.inside, U.redMix, U.veil);
+  gl.uniform1f(loc.uFade, U.fade);
+  gl.uniform1f(loc.uTime, nowS % 97);
+  let any = 0;
+  for (let i = 0; i < NB; i++) {
+    const b = beacons[i];
+    if (b) {
+      const lk = beaconLook(b);
+      Bpos[i * 4] = b.pos[0]; Bpos[i * 4 + 1] = b.pos[1]; Bpos[i * 4 + 2] = b.pos[2]; Bpos[i * 4 + 3] = lk.I;
+      Bcol[i * 4] = lk.c[0]; Bcol[i * 4 + 1] = lk.c[1]; Bcol[i * 4 + 2] = lk.c[2]; Bcol[i * 4 + 3] = b.sig;
+      if (lk.I > 0) any = 1;
+    } else {
+      Bpos[i * 4 + 3] = 0; Bcol[i * 4 + 3] = 0.1;
+    }
+  }
+  gl.uniform4fv(loc['uB[0]'], Bpos.subarray(0, NB * 4));
+  gl.uniform4fv(loc['uBC[0]'], Bcol.subarray(0, NB * 4));
+  gl.uniform1f(loc.uAnyB, any);
+  for (let k = 0; k < 2; k++) {
+    const a = arcs[k];
+    if (a && nowS >= a.t0) {
+      const age = nowS - a.t0, loops = age / TLOOP;
+      Arc[k * 4] = a.psi + a.dir * TAU * loops;
+      Arc[k * 4 + 1] = a.I0 * Math.pow(0.45, loops) * sstep(0, 0.12, age) * (1 - sstep(3.0, 3.3, loops));
+      Arc[k * 4 + 2] = a.dir;
+    } else { Arc[k * 4 + 1] = 0; Arc[k * 4 + 2] = 1; }
+  }
+  gl.uniform4fv(loc['uArc[0]'], Arc);
+  gl.uniform4fv(loc.uSolar, U.solar);
+  gl.uniform1f(loc.uPx, 2 / mn);
+  gl.uniform1f(loc.uPxA, 2 / mn * FOVH);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+/* =========================================================
+   音：軽量の1系統
+   床（常に鳴る）：B♭の圧とその脈、ふたつの呻き、終わらない下降、地鳴り → ダック → 出口
+   空電・耳鳴り・灯の声はダックを通らないので、暗闇の中でも残る。
+   灯の声は起動時に OfflineAudioContext で焼いておき、再生速度 1/(1+z) で鳴らす。
+   重力赤方偏移と時間の遅れは、音の高さと長さを同じ比で変える。再生速度を変えることがそのまま物理になる。
+   ========================================================= */
+const AU = { ctx: null, ok: false, muted: false, floorOsc: [], shep: [], voices: [], nextShep: 0, shepPhase: 0,
+  lastCents: 0, cents: 0, pitch: 1, tr: 1, fallN: null, tinn: null, nextThrob: 0, nextCreak: 0, nextWhisper: 0 };
+const SND = {};
+let baking = false;
+const BAKE_SR = 32000;
+const pick = a => a[(Math.random() * a.length) | 0];
+const kr = p => { try { if (p && 'automationRate' in p) p.automationRate = 'k-rate'; } catch (e) {} return p; };
+function auLat() { const c = AU.ctx; if (!c || !AU.ok) return 0; return (c.outputLatency || 0) + (c.baseLatency || 0); }
+function disc(nodes, ms) { setTimeout(() => { for (const n of nodes) { try { n.disconnect(); } catch (e) {} } }, ms || 200); }
+function env(param, t, pts) {
+  param.setValueAtTime(pts[0][1], t + pts[0][0]);
+  for (let i = 1; i < pts.length; i++) {
+    const p = pts[i];
+    if (p[2] === 'exp') param.exponentialRampToValueAtTime(Math.max(p[1], 1e-4), t + p[0]);
+    else param.linearRampToValueAtTime(p[1], t + p[0]);
+  }
+}
+function noiseBuf(ctx, kind, sec) {
+  const n = Math.floor(ctx.sampleRate * sec);
+  const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  let last = 0, b0 = 0, b1 = 0, b2 = 0;
+  for (let i = 0; i < n; i++) {
+    const w = Math.random() * 2 - 1;
+    if (kind === 'brown') { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+    else if (kind === 'pink') { b0 = 0.99765 * b0 + w * 0.099046; b1 = 0.963 * b1 + w * 0.2965164; b2 = 0.57 * b2 + w * 1.0526913; d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.11; }
+    else d[i] = w;
+  }
+  const drift = d[n - 1] - d[0];
+  for (let i = 0; i < n; i++) d[i] -= drift * i / (n - 1);
+  return buf;
+}
+function makeIR(ctx, sec) {
+  const sr = ctx.sampleRate, n = Math.floor(sr * sec), pre = Math.floor(sr * 0.03);
+  const buf = ctx.createBuffer(1, n, sr), d = buf.getChannelData(0);
+  let lp = 0;
+  for (let i = pre; i < n; i++) {
+    const t = (i - pre) / (n - pre);
+    lp += ((Math.random() * 2 - 1) - lp) * (0.85 - 0.78 * t);
+    d[i] = lp * Math.pow(1 - t, 2.2) * Math.exp(-t * 2.2);
+  }
+  return buf;
+}
+function normBuf(buf, peak) {
+  const d = buf.getChannelData(0);
+  let m = 0;
+  for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > m) m = a; }
+  if (m > 0) { const k = peak / m; for (let i = 0; i < d.length; i++) d[i] *= k; }
+  return buf;
+}
+function staticBuf(ctx) {
+  // 空電：ゆらぐ砂嵐と、まばらなはじける音。9秒で一巡する
+  const sec = 9, sr = ctx.sampleRate, n = Math.floor(sec * sr);
+  const buf = ctx.createBuffer(1, n, sr), d = buf.getChannelData(0);
+  let lf = 0.3, amp = 0.3;
+  for (let i = 0; i < n; i++) {
+    if (i % 1024 === 0) amp = i > n - sr * 0.5 ? 0.3 : 0.12 + 0.4 * Math.random() * Math.random();
+    lf += (amp - lf) * 0.0006;
+    d[i] = (Math.random() * 2 - 1) * lf * 0.3;
+  }
+  for (let k = 0; k < sec * 9; k++) {
+    const p = Math.floor(Math.random() * n), a = Math.pow(Math.random(), 3) * 0.9 + 0.04, L = 2 + Math.floor(Math.random() * 60);
+    for (let j = 0; j < L && p + j < n; j++) d[p + j] += a * (Math.random() * 2 - 1) * Math.exp(-3 * j / L);
+  }
+  return buf;
+}
+function lfo(ctx, hz, depth, param) {
+  const o = ctx.createOscillator(); o.frequency.value = hz;
+  const g = ctx.createGain(); g.gain.value = depth;
+  o.connect(g); g.connect(param); o.start();
+  return o;
+}
+
+/* ---------- 焼き込み（起動時に一度だけ、別スレッドで描き出す） ---------- */
+function oac(sec) {
+  const O = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  if (!O) return null;
+  try { return new O(1, Math.ceil(sec * BAKE_SR), BAKE_SR); } catch (e) { return null; }
+}
+function renderOff(oc) {
+  return new Promise((res, rej) => {
+    oc.oncomplete = e => res(e.renderedBuffer);
+    let p = null;
+    try { p = oc.startRendering(); } catch (e) { rej(e); return; }
+    if (p && p.then) p.then(res, rej);
+  });
+}
+function partial(oc, out, f, a, d, glide) {
+  if (f * (glide || 1) > BAKE_SR * 0.45) return;
+  const o = oc.createOscillator();
+  o.frequency.setValueAtTime(f * (glide || 1), 0);
+  o.frequency.exponentialRampToValueAtTime(f, 0.06);
+  o.frequency.exponentialRampToValueAtTime(f * 0.99, d + 0.1);
+  const g = oc.createGain();
+  env(g.gain, 0, [[0, 0.0001], [0.005, a, 'exp'], [d, 0.0001, 'exp']]);
+  o.connect(g); g.connect(out); o.start(0); o.stop(d + 0.1);
+}
+// 灯の声：ソナーのような打音と、高い息の尾。極端に遅く鳴らすと、上の成分が低い唸りに降りてくる
+function bakeSonar() {
+  const D = 2.6, oc = oac(D); if (!oc) return null;
+  const out = oc.createGain(); out.connect(oc.destination);
+  for (const [m, a, d] of [[1, 1, 2.4], [2.756, 0.24, 0.9], [5.404, 0.13, 0.5], [8.93, 0.07, 0.32], [13.34, 0.035, 0.2]]) partial(oc, out, 880 * m, a, d, 1.006);
+  const n = oc.createBufferSource(); n.buffer = noiseBuf(oc, 'white', D);
+  const bp = oc.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 4600; bp.Q.value = 1.4;
+  const ng = oc.createGain(); env(ng.gain, 0, [[0, 0.0001], [0.02, 0.09, 'exp'], [1.6, 0.0001, 'exp']]);
+  n.connect(bp); bp.connect(ng); ng.connect(out); n.start(0);
+  return renderOff(oc).then(b => normBuf(b, 0.9));
+}
+// ほかの探査機：雑音まじりの呼び出し符号
+function bakeCode(k) {
+  const D = 2.0, oc = oac(D); if (!oc) return null;
+  const out = oc.createGain(); out.connect(oc.destination);
+  const bp = oc.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 0.8; bp.connect(out);
+  const o = oc.createOscillator(); o.type = 'square'; o.frequency.value = 1180;
+  const g = oc.createGain(); g.gain.value = 0;
+  o.connect(g); g.connect(bp); o.start(0); o.stop(D);
+  const pat = k ? [0.22, 0.08, 0.07, 0.05, 0.07, 0.16, 0.22, 0.08, 0.07] : [0.07, 0.06, 0.07, 0.06, 0.22, 0.1, 0.07, 0.06, 0.07];
+  let t = 0.08;
+  for (let i = 0; i < pat.length; i++) {
+    if (i % 2 === 0) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 0.006); g.gain.setValueAtTime(0.5, t + pat[i] - 0.008); g.gain.linearRampToValueAtTime(0, t + pat[i]); }
+    t += pat[i];
+  }
+  const n = oc.createBufferSource(); n.buffer = noiseBuf(oc, 'white', D);
+  const nb = oc.createBiquadFilter(); nb.type = 'bandpass'; nb.frequency.value = 1800; nb.Q.value = 0.6;
+  const ng = oc.createGain(); env(ng.gain, 0, [[0, 0], [0.05, 0.14], [t + 0.1, 0.1], [D, 0]]);
+  n.connect(nb); nb.connect(ng); ng.connect(out); n.start(0);
+  return renderOff(oc).then(b => normBuf(b, 0.8));
+}
+// 自分の声：「おーい」に聞こえる母音の呼びかけ（お → い）
+function bakeCall() {
+  const D = 1.9, oc = oac(D); if (!oc) return null;
+  const out = oc.createGain(); out.connect(oc.destination);
+  env(out.gain, 0, [[0, 0], [0.14, 1], [1.35, 0.9], [1.75, 0], [D, 0]]);
+  const src = oc.createGain();
+  const o = oc.createOscillator(); o.type = 'sawtooth';
+  o.frequency.setValueAtTime(186, 0); o.frequency.linearRampToValueAtTime(204, 0.28); o.frequency.linearRampToValueAtTime(200, 0.8);
+  o.frequency.linearRampToValueAtTime(214, 1.0); o.frequency.exponentialRampToValueAtTime(158, 1.75);
+  const vib = oc.createOscillator(); vib.frequency.value = 5.3;
+  const vg = oc.createGain(); vg.gain.value = 2.6; vib.connect(vg); vg.connect(o.frequency); vib.start(0); vib.stop(D);
+  o.connect(src); o.start(0); o.stop(D);
+  const n = oc.createBufferSource(); n.buffer = noiseBuf(oc, 'white', D);
+  const ngn = oc.createGain(); ngn.gain.value = 0.06; n.connect(ngn); ngn.connect(src); n.start(0);
+  for (const [fo, fi, q, a] of [[500, 290, 7, 1.0], [880, 2250, 9, 0.55], [2450, 2950, 12, 0.22]]) {
+    const bp = oc.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = q;
+    bp.frequency.setValueAtTime(fo, 0); bp.frequency.setValueAtTime(fo, 0.62); bp.frequency.exponentialRampToValueAtTime(fi, 0.95);
+    const g = oc.createGain(); g.gain.value = a;
+    src.connect(bp); bp.connect(g); g.connect(out);
+  }
+  const body = oc.createBiquadFilter(); body.type = 'lowpass'; body.frequency.value = 400;
+  const bg = oc.createGain(); bg.gain.value = 0.15; src.connect(body); body.connect(bg); bg.connect(out);
+  return renderOff(oc).then(b => normBuf(b, 0.85));
+}
+// 船体のきしみ：固着と滑りのくり返しを、金属の共鳴で鳴らす
+function bakeCreak() {
+  const D = 2.8, oc = oac(D); if (!oc) return null;
+  const n = Math.ceil(D * BAKE_SR);
+  const buf = oc.createBuffer(1, n, BAKE_SR), d = buf.getChannelData(0);
+  const f0 = 26 + Math.random() * 30, f1 = 18 + Math.random() * 50, L = 1.6 + Math.random() * 0.9;
+  let t = 0.05 + Math.random() * 0.1;
+  while (t < L) {
+    const u = t / L;
+    const e = Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05)), 0.7);
+    const i = Math.floor(t * BAKE_SR);
+    if (i < n) d[i] += e * (0.4 + 0.6 * Math.random()) * (Math.random() < 0.5 ? 1 : -1);
+    t += 1 / ((f0 + (f1 - f0) * u) * (0.8 + 0.4 * Math.random()));
+  }
+  const s = oc.createBufferSource(); s.buffer = buf;
+  const out = oc.createGain(); out.connect(oc.destination);
+  const base = 120 + Math.random() * 110;
+  for (const [m, q, a] of [[1, 22, 1], [2.31, 16, 0.6], [4.73, 12, 0.35], [8.2, 9, 0.15]]) {
+    const bp = oc.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = base * m; bp.Q.value = q;
+    const g = oc.createGain(); g.gain.value = a;
+    s.connect(bp); bp.connect(g); g.connect(out);
+  }
+  s.start(0);
+  return renderOff(oc).then(b => normBuf(b, 0.85));
+}
+// 吸い込み：雑音と不協和の一撃を長い残響に通し、逆再生する。最後は「ぷつり」と切れる
+function bakeSwell() {
+  const D = 3.6, oc = oac(D); if (!oc) return null;
+  const out = oc.createGain(); out.connect(oc.destination);
+  const conv = oc.createConvolver(); conv.normalize = true; conv.buffer = makeIR(oc, 3.2); conv.connect(out);
+  const dry = oc.createGain(); dry.gain.value = 0.4; dry.connect(out);
+  const n = oc.createBufferSource(); n.buffer = noiseBuf(oc, 'pink', 0.5);
+  const nl = oc.createBiquadFilter(); nl.type = 'lowpass'; nl.frequency.value = 2400;
+  const ng = oc.createGain(); env(ng.gain, 0, [[0, 0.0001], [0.01, 1, 'exp'], [0.45, 0.0001, 'exp']]);
+  n.connect(nl); nl.connect(ng); ng.connect(conv); ng.connect(dry); n.start(0);
+  const tl = oc.createBiquadFilter(); tl.type = 'lowpass'; tl.frequency.value = 900;
+  const tg = oc.createGain(); env(tg.gain, 0, [[0, 0.0001], [0.01, 0.5, 'exp'], [0.6, 0.0001, 'exp']]);
+  tl.connect(tg); tg.connect(conv); tg.connect(dry);
+  for (const f of [BFLAT, 82.41, 246.94]) { const o = oc.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.connect(tl); o.start(0); o.stop(0.7); }
+  return renderOff(oc).then(b => {
+    const d = b.getChannelData(0);
+    d.reverse();
+    const f = Math.floor(BAKE_SR * 0.012);
+    for (let i = 0; i < f; i++) d[d.length - 1 - i] *= i / f;
+    return normBuf(b, 0.9);
+  });
+}
+// ささやき：言葉にならない母音と子音の切れ端
+function bakeWhisper() {
+  const D = 2.6, oc = oac(D); if (!oc) return null;
+  const out = oc.createGain(); out.connect(oc.destination);
+  const n = oc.createBufferSource(); n.buffer = noiseBuf(oc, 'white', D);
+  const b1 = oc.createBiquadFilter(); b1.type = 'bandpass'; b1.Q.value = 5;
+  const b2 = oc.createBiquadFilter(); b2.type = 'bandpass'; b2.Q.value = 7;
+  const vg = oc.createGain(); vg.gain.value = 0;
+  n.connect(b1); n.connect(b2); b1.connect(vg); b2.connect(vg); vg.connect(out);
+  const hp = oc.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3800;
+  const cg = oc.createGain(); cg.gain.value = 0;
+  n.connect(hp); hp.connect(cg); cg.connect(out);
+  const V = [[300, 870], [500, 900], [750, 1200], [480, 1900], [290, 2200], [650, 1080]];
+  let t = 0.1 + Math.random() * 0.15;
+  const cnt = 4 + Math.floor(Math.random() * 4);
+  for (let i = 0; i < cnt && t < D - 0.45; i++) {
+    if (Math.random() < 0.55) {
+      const cl = 0.04 + Math.random() * 0.07;
+      cg.gain.setValueAtTime(0, t); cg.gain.linearRampToValueAtTime(0.35 + Math.random() * 0.3, t + 0.012); cg.gain.linearRampToValueAtTime(0, t + cl);
+      t += cl * 0.8;
+    }
+    const v = pick(V), sl = 0.1 + Math.random() * 0.25;
+    b1.frequency.setValueAtTime(v[0], t); b2.frequency.setValueAtTime(v[1], t);
+    vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(1, t + 0.03); vg.gain.linearRampToValueAtTime(0.7, t + sl * 0.7); vg.gain.linearRampToValueAtTime(0, t + sl);
+    t += sl + 0.03 + (Math.random() < 0.3 ? Math.random() * 0.35 : 0.02);
+  }
+  n.start(0);
+  return renderOff(oc).then(b => normBuf(b, 0.8));
+}
+// オルゴールの歯：片持ち梁の倍音（1 : 6.27 : 17.55）と、わずかにずれた二重音
+function bakeTine() {
+  const D = 1.8, oc = oac(D); if (!oc) return null;
+  const out = oc.createGain(); out.connect(oc.destination);
+  for (const [m, a, d] of [[1, 1, 1.6], [1.003, 0.4, 1.4], [6.27, 0.16, 0.35], [17.55, 0.05, 0.08]]) partial(oc, out, 1046.5 * m, a, d, 1);
+  const n = oc.createBufferSource(); n.buffer = noiseBuf(oc, 'white', 0.02);
+  const hp = oc.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3000;
+  const ng = oc.createGain(); ng.gain.value = 0.25; n.connect(hp); hp.connect(ng); ng.connect(out); n.start(0);
+  return renderOff(oc).then(b => normBuf(b, 0.85));
+}
+// 灯を手放す音：硝子の小さな音と、遠ざかる風
+function bakeDrop() {
+  const D = 1.3, oc = oac(D); if (!oc) return null;
+  const out = oc.createGain(); out.connect(oc.destination);
+  for (const [f, a, d] of [[2650, 0.5, 0.25], [4120, 0.3, 0.12], [6930, 0.15, 0.07]]) partial(oc, out, f, a, d, 1);
+  const n = oc.createBufferSource(); n.buffer = noiseBuf(oc, 'white', D);
+  const bp = oc.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 3;
+  bp.frequency.setValueAtTime(1400, 0); bp.frequency.exponentialRampToValueAtTime(260, 0.9);
+  const ng = oc.createGain(); env(ng.gain, 0, [[0, 0.0001], [0.05, 0.3, 'exp'], [0.95, 0.0001, 'exp']]);
+  n.connect(bp); bp.connect(ng); ng.connect(out); n.start(0);
+  const o = oc.createOscillator(); o.type = 'triangle';
+  o.frequency.setValueAtTime(190, 0); o.frequency.exponentialRampToValueAtTime(70, 0.45);
+  const og = oc.createGain(); env(og.gain, 0, [[0, 0.0001], [0.02, 0.35, 'exp'], [0.5, 0.0001, 'exp']]);
+  o.connect(og); og.connect(out); o.start(0); o.stop(0.55);
+  return renderOff(oc).then(b => normBuf(b, 0.8));
+}
+// 心音：巨大な心臓。沈む超低音の胴（42→21Hz）と、同じ高さで滑る鋸歯状波の倍音
+// （小さなスピーカーでも、倍音から低い音程が聞こえる）、こもった打撃、洞窟のような暗い残響を焼き込む
+function bakeHeart(dub) {
+  const D = dub ? 2.6 : 3.2, oc = oac(D); if (!oc) return null;
+  const out = oc.createGain(); out.connect(oc.destination);
+  const wet = oc.createConvolver(); wet.normalize = true; wet.buffer = makeIR(oc, 3.0);
+  const wl = oc.createBiquadFilter(); wl.type = 'lowpass'; wl.frequency.value = 260;
+  const wg = oc.createGain(); wg.gain.value = 0.55;
+  wet.connect(wl); wl.connect(wg); wg.connect(out);
+  const dry = oc.createGain(); dry.connect(out);
+  const send = n => { n.connect(dry); n.connect(wet); };
+  const f0 = dub ? 50 : 42, f1 = dub ? 27 : 21, glide = dub ? 0.45 : 0.6, dec = dub ? 0.8 : 1.15;
+  const o = oc.createOscillator();
+  o.frequency.setValueAtTime(f0, 0); o.frequency.exponentialRampToValueAtTime(f1, glide);
+  const g = oc.createGain(); env(g.gain, 0, [[0, 0.0001], [0.035, 1, 'exp'], [dec, 0.0001, 'exp']]);
+  o.connect(g); send(g); o.start(0); o.stop(dec + 0.1);
+  const sw = oc.createOscillator(); sw.type = 'sawtooth';
+  sw.frequency.setValueAtTime(f0, 0); sw.frequency.exponentialRampToValueAtTime(f1, glide);
+  const sl = oc.createBiquadFilter(); sl.type = 'lowpass'; sl.frequency.value = 260; sl.Q.value = 0.7;
+  const sg = oc.createGain(); env(sg.gain, 0, [[0, 0.0001], [0.03, 0.75, 'exp'], [dec * 0.75, 0.0001, 'exp']]);
+  sw.connect(sl); sl.connect(sg); send(sg); sw.start(0); sw.stop(dec);
+  const n = oc.createBufferSource(); n.buffer = noiseBuf(oc, 'brown', 0.6);
+  const nl = oc.createBiquadFilter(); nl.type = 'lowpass'; nl.frequency.value = dub ? 170 : 130; nl.Q.value = 1.0;
+  const ng = oc.createGain(); env(ng.gain, 0, [[0, 0.0001], [0.018, dub ? 0.7 : 0.9, 'exp'], [0.32, 0.0001, 'exp']]);
+  n.connect(nl); nl.connect(ng); send(ng); n.start(0);
+  return renderOff(oc).then(b => normBuf(b, 0.95));
+}
+// 噴流が出る瞬間の一撃：沈む超低音と、閉じていく雑音の残響
+function bakeBoom() {
+  const D = 5.5, oc = oac(D); if (!oc) return null;
+  const out = oc.createGain(); out.connect(oc.destination);
+  const conv = oc.createConvolver(); conv.normalize = true; conv.buffer = makeIR(oc, 4.0); conv.connect(out);
+  const o = oc.createOscillator();
+  o.frequency.setValueAtTime(52, 0); o.frequency.exponentialRampToValueAtTime(24, 2.5);
+  const g = oc.createGain(); env(g.gain, 0, [[0, 0.0001], [0.02, 1, 'exp'], [3.2, 0.0001, 'exp']]);
+  o.connect(g); g.connect(out); o.start(0); o.stop(3.3);
+  const sw = oc.createOscillator(); sw.type = 'sawtooth';
+  sw.frequency.setValueAtTime(52, 0); sw.frequency.exponentialRampToValueAtTime(26, 2.5);
+  const sl = oc.createBiquadFilter(); sl.type = 'lowpass';
+  sl.frequency.setValueAtTime(420, 0); sl.frequency.exponentialRampToValueAtTime(110, 2.5);
+  const sg = oc.createGain(); env(sg.gain, 0, [[0, 0.0001], [0.02, 0.5, 'exp'], [2.6, 0.0001, 'exp']]);
+  sw.connect(sl); sl.connect(sg); sg.connect(out); sg.connect(conv); sw.start(0); sw.stop(2.7);
+  const n = oc.createBufferSource(); n.buffer = noiseBuf(oc, 'pink', 2.2);
+  const nl = oc.createBiquadFilter(); nl.type = 'lowpass';
+  nl.frequency.setValueAtTime(1800, 0); nl.frequency.exponentialRampToValueAtTime(200, 1.5);
+  const ng = oc.createGain(); env(ng.gain, 0, [[0, 0.0001], [0.01, 0.8, 'exp'], [1.9, 0.0001, 'exp']]);
+  n.connect(nl); nl.connect(ng); ng.connect(out); ng.connect(conv); n.start(0);
+  return renderOff(oc).then(b => normBuf(b, 0.95));
+}
+function bakeAll() {
+  if (baking) return;
+  baking = true;
+  const jobs = [['sonar', bakeSonar], ['lub', () => bakeHeart(false)], ['dub', () => bakeHeart(true)], ['drop', bakeDrop], ['boom', bakeBoom], ['call', bakeCall], ['code0', () => bakeCode(0)], ['code1', () => bakeCode(1)],
+    ['swell', bakeSwell], ['creak0', bakeCreak], ['creak1', bakeCreak], ['creak2', bakeCreak], ['wh0', bakeWhisper], ['wh1', bakeWhisper], ['tine', bakeTine]];
+  let i = 0;
+  const next = () => {
+    if (i >= jobs.length) return;
+    const [k, fn] = jobs[i++];
+    if (SND[k]) { next(); return; }
+    let p = null;
+    try { p = fn(); } catch (e) { p = null; }
+    if (!p) { setTimeout(next, 0); return; }
+    p.then(b => { SND[k] = b; next(); }, () => next());
+  };
+  next();
+}
+
+/* ---------- 鳴らす ---------- */
+function playBuf(buf, o) {
+  const ctx = AU.ctx;
+  if (!ctx || !buf) return null;
+  const t = Math.max(o.when || 0, ctx.currentTime + 0.01);
+  const rate = o.rate || 1;
+  const s = ctx.createBufferSource(); s.buffer = buf; s.playbackRate.value = rate;
+  const g = ctx.createGain(); g.gain.value = o.gain;
+  const nodes = [s, g];
+  if (o.lp) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp; s.connect(f); f.connect(g); nodes.push(f); }
+  else s.connect(g);
+  let tail = g;
+  if (ctx.createStereoPanner) {
+    const p = ctx.createStereoPanner(); p.pan.value = o.pan || 0;
+    if (o.panTo != null) { p.pan.setValueAtTime(o.pan || 0, t); p.pan.linearRampToValueAtTime(o.panTo, t + (o.panDur || 2)); }
+    g.connect(p); tail = p; nodes.push(p);
+  }
+  tail.connect(o.bus || AU.ev);
+  if (o.rev) { const r = ctx.createGain(); r.gain.value = o.rev; tail.connect(r); r.connect(AU.rv); nodes.push(r); }
+  if (o.echo) { const e = ctx.createGain(); e.gain.value = o.echo; tail.connect(e); e.connect(AU.eIn); nodes.push(e); }
+  const off = Math.max(0, Math.min(o.offset || 0, buf.duration - 0.01));
+  let len = (buf.duration - off) / rate;
+  if (o.maxDur && len > o.maxDur) {
+    g.gain.setValueAtTime(o.gain, t + o.maxDur * 0.7);
+    g.gain.linearRampToValueAtTime(0, t + o.maxDur);
+    len = o.maxDur;
+  }
+  s.start(t, off);
+  s.stop(t + len + 0.05);
+  s.onended = () => disc(nodes);
+  return { t, len, rate };
+}
+function oscPing(f, dur, g, pan, when) {
+  const ctx = AU.ctx, t = Math.max(when || 0, ctx.currentTime + 0.01);
+  const o = ctx.createOscillator(); o.frequency.value = Math.max(f, BFLAT);
+  const gg = ctx.createGain();
+  env(gg.gain, t, [[0, 0.0001], [0.012, Math.max(g, 2e-4), 'exp'], [dur, 0.0001, 'exp']]);
+  o.connect(gg);
+  let tail = gg;
+  const nodes = [o, gg];
+  if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan || 0; gg.connect(p); tail = p; nodes.push(p); }
+  tail.connect(AU.ev);
+  const r = ctx.createGain(); r.gain.value = 0.5; tail.connect(r); r.connect(AU.rv); nodes.push(r);
+  o.start(t); o.stop(t + dur + 0.05);
+  o.onended = () => disc(nodes);
+}
+// 灯の声。高さと長さを 1/(1+z) で同時に変える（下限は聞こえる範囲に留める）
+function auVoice(b, g, pan, when) {
+  const z = b.z1;
+  let buf, rate;
+  if (b.kind === 'self') { buf = SND.call; rate = 1 / Math.min(z, 10); }
+  else if (b.kind === 'stray') { buf = SND[b.code] || SND.code0; rate = (b.f0 / 698.46) / Math.min(z, 16); }
+  else { buf = SND.sonar; rate = (b.f0 / 880) / Math.min(z, 24); }
+  if (!buf) { oscPing(b.f0 / Math.min(z, 24), Math.min(0.9 * Math.pow(Math.min(z, 40), 0.8), 7.5), g, pan, when); return null; }
+  playBuf(buf, { when, rate, gain: g, pan, rev: b.kind === 'self' ? 0.8 : 0.6, echo: 0.35, maxDur: 26 });
+  return { buf, rate };
+}
+function auStaticSwell(x) {
+  const g = AU.stat.gain, t = AU.ctx.currentTime;
+  g.cancelScheduledValues(t);
+  g.setTargetAtTime(0.022 + 0.07 * x, t, 0.08);
+  g.setTargetAtTime(0.022, t + 0.8 + 1.2 * x, 0.9);
+}
+
+function auCreate() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  let ctx;
+  try { ctx = new AC({ latencyHint: 'playback' }); } catch (e) { try { ctx = new AC(); } catch (e2) { return false; } }
+  AU.ctx = ctx; AU.floorOsc = []; AU.shep = []; AU.nextShep = 0; AU.fallN = null; AU.tinn = null; AU.lastCents = 0;
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -22; comp.knee.value = 16; comp.ratio.value = 4; comp.attack.value = 0.006; comp.release.value = 0.4;
+  const mlp = ctx.createBiquadFilter(); mlp.type = 'lowpass'; mlp.frequency.value = 16000; mlp.Q.value = 0.4;
+  const out = ctx.createGain(); out.gain.value = 1;
+  const vol = ctx.createGain(); vol.gain.value = 0;
+  comp.connect(mlp); mlp.connect(out); out.connect(vol); vol.connect(ctx.destination);
+  AU.comp = comp; AU.mlp = mlp; AU.out = out; AU.vol = vol;
+  // 残響はモノラル1本
+  const conv = ctx.createConvolver(); conv.buffer = makeIR(ctx, 2.4);
+  const rv = ctx.createGain(); rv.connect(conv);
+  const rvo = ctx.createGain(); rvo.gain.value = 0.7; conv.connect(rvo); rvo.connect(comp);
+  AU.rv = rv;
+  // 左右のエコー（帰還つき、だんだん暗くなる）
+  const eIn = ctx.createGain();
+  const dL = ctx.createDelay(2), dR = ctx.createDelay(2);
+  dL.delayTime.value = 0.61; dR.delayTime.value = 0.97;
+  const elp = ctx.createBiquadFilter(); elp.type = 'lowpass'; elp.frequency.value = 1800;
+  const fb = ctx.createGain(); fb.gain.value = 0.42;
+  const mg = ctx.createChannelMerger(2);
+  eIn.connect(dL); dL.connect(dR); dR.connect(elp); elp.connect(fb); fb.connect(dL);
+  dL.connect(mg, 0, 0); dR.connect(mg, 0, 1);
+  const eo = ctx.createGain(); eo.gain.value = 0.32; mg.connect(eo); eo.connect(comp);
+  const es = ctx.createGain(); es.gain.value = 0.25; mg.connect(es); es.connect(rv);
+  AU.eIn = eIn;
+  // 床 → ダック → 出口（残響とエコーへの送りもダックの後ろから）
+  const floor = ctx.createGain(); floor.gain.value = 0.85;
+  const duck = ctx.createGain(); duck.gain.value = 1;
+  floor.connect(duck); duck.connect(comp);
+  const fs = ctx.createGain(); fs.gain.value = 0.5; duck.connect(fs); fs.connect(rv);
+  const fe = ctx.createGain(); fe.gain.value = 0.12; duck.connect(fe); fe.connect(eIn);
+  AU.floorBus = floor; AU.duck = duck;
+  const ev = ctx.createGain(); ev.gain.value = 0.9; ev.connect(comp);
+  AU.ev = ev;
+  // 空電はダックを通らない
+  const sn = ctx.createBufferSource(); sn.buffer = staticBuf(ctx); sn.loop = true;
+  const shp = ctx.createBiquadFilter(); shp.type = 'highpass'; shp.frequency.value = 250;
+  const sbp = ctx.createBiquadFilter(); sbp.type = 'bandpass'; sbp.frequency.value = 1500; sbp.Q.value = 0.6;
+  const sg = ctx.createGain(); sg.gain.value = 0.022;
+  sn.connect(shp); shp.connect(sbp); sbp.connect(sg); sg.connect(comp);
+  const ss = ctx.createGain(); ss.gain.value = 0.2; sg.connect(ss); ss.connect(rv);
+  sn.start();
+  AU.stat = sg;
+  buildFloor(ctx, floor);
+  AU.voices = [{ pan: -0.4, next: nowS + rand(2, 5) }, { pan: 0.45, next: nowS + rand(10, 18) }];
+  AU.nextThrob = nowS + rand(4, 10); AU.nextCreak = nowS + rand(20, 40); AU.nextWhisper = nowS + rand(80, 130);
+  bakeAll();
+  return true;
+}
+function buildFloor(ctx, bus) {
+  // 1. 圧：B♭1 の鋸歯状波2本。0.12Hz ずらして約8秒ごとにうなり、脈（降着円盤の準周期振動）で揺らす
+  const dl = ctx.createBiquadFilter(); dl.type = 'lowpass'; dl.frequency.value = 280; dl.Q.value = 1.0; kr(dl.frequency);
+  const th = ctx.createGain(); th.gain.value = 1; kr(th.gain);
+  const dg = ctx.createGain(); dg.gain.value = 0.17;
+  dl.connect(th); th.connect(dg); dg.connect(bus);
+  AU.throb = th;
+  for (const f of [BFLAT, BFLAT + 0.12]) {
+    const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+    o.connect(dl); o.start(); AU.floorOsc.push(o);
+  }
+  lfo(ctx, 0.029, 130, dl.frequency);
+  // 2. 終わらない下降（シェパード＝リセ）。B♭ のオクターブ列がずっと沈み続ける
+  const sh = ctx.createGain(); sh.gain.value = 0.055; sh.connect(bus);
+  for (let i = 0; i < 4; i++) {
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = 220;
+    const g = ctx.createGain(); g.gain.value = 0;
+    o.connect(g); g.connect(sh); o.start();
+    AU.shep.push({ o, g, f: 220, a: 0, oct: -1 });
+  }
+  // 3. 地鳴りと、聞こえる帯域のざらつき
+  const ns = ctx.createBufferSource(); ns.buffer = noiseBuf(ctx, 'brown', 6); ns.loop = true;
+  const rl = ctx.createBiquadFilter(); rl.type = 'lowpass'; rl.frequency.value = 110;
+  const rg = ctx.createGain(); rg.gain.value = 0.26; kr(rg.gain);
+  ns.connect(rl); rl.connect(rg); rg.connect(bus);
+  lfo(ctx, 0.043, 0.12, rg.gain);
+  const rb = ctx.createBiquadFilter(); rb.type = 'bandpass'; rb.frequency.value = 230; rb.Q.value = 1.3;
+  const rbg = ctx.createGain(); rbg.gain.value = 0.12;
+  ns.connect(rb); rb.connect(rbg); rbg.connect(bus);
+  ns.start();
+}
+
+/* ---------- 呻き：言葉のない声が、母音を変えながらゆっくり滑る ----------
+   ペルセウス座銀河団の音波を可聴域に移した音の「呻き」に寄せた。
+   ふたつの声は互いを待たないので、ときどき半音や三全音でぶつかる。 */
+const VOW = { u: [300, 870], o: [480, 900], a: [720, 1150], e: [460, 1850], i: [290, 2150] };
+function moan(v, force) {
+  const ctx = AU.ctx, t = ctx.currentTime + 0.05;
+  const sp = Math.max(AU.tr, 0.5);
+  const r = force === 'cry' ? 0.95 : force === 'fall' ? 0.7 : Math.random();
+  let pts, vows, dur, peak, far = false;
+  if (r < 0.6) {         // 歌う：半音か三全音へ移り、最後に沈む
+    dur = rand(7, 13);
+    const s = pick([116.54, 138.59, 174.61, 116.54]);
+    const n1 = s * pick([1.0595, 1 / 1.0595, 1.4142, 1 / 1.4142]);
+    pts = [[0, s], [0.32, s], [0.58, n1], [0.82, n1], [1, n1 * 0.965]];
+    vows = ['u', 'o', 'a', 'o', 'u'];
+    peak = 0.26;
+  } else if (r < 0.86) { // 落ちる：一オクターブ以上ゆっくり沈む
+    dur = rand(10, 16);
+    const s = pick([233.08, 174.61, 164.81]);
+    pts = [[0, s], [0.15, s * 1.02], [1, s / pick([2, 2.83, 1.5])]];
+    vows = ['a', 'o', 'u'];
+    peak = 0.24;
+  } else {               // 遠い叫び：一気に上がり、長く落ちる
+    dur = rand(5.5, 8);
+    const s = pick([164.81, 174.61]);
+    pts = [[0, s * 0.75], [0.12, s * 1.5], [0.3, s * 1.42], [1, s * 0.6]];
+    vows = ['o', 'a', 'a', 'u'];
+    peak = 0.2; far = true;
+  }
+  dur /= sp;
+  const end = t + dur;
+  const mix = ctx.createGain(); mix.gain.value = 0;
+  env(mix.gain, t, [[0, 0], [dur * 0.3, peak], [dur * 0.62, peak * 0.85], [dur, 0]]);
+  const src = ctx.createGain();
+  const nodes = [mix, src];
+  const oscs = [];
+  for (const det of [0, 14]) {
+    const o = ctx.createOscillator(); o.type = 'sawtooth';
+    o.detune.value = AU.cents + det;
+    o.frequency.setValueAtTime(pts[0][1], t);
+    for (let i = 1; i < pts.length; i++) o.frequency.exponentialRampToValueAtTime(pts[i][1], t + pts[i][0] * dur);
+    o.connect(src); oscs.push(o);
+  }
+  // 船酔いのような遅い揺れ
+  const wob = ctx.createOscillator(); wob.frequency.value = rand(0.18, 0.42);
+  const wg = ctx.createGain(); wg.gain.value = rand(12, 26);
+  wob.connect(wg); wg.connect(oscs[0].detune); wg.connect(oscs[1].detune);
+  oscs.push(wob); nodes.push(wg);
+  const f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.Q.value = 5;
+  const f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = 8;
+  const body = ctx.createBiquadFilter(); body.type = 'lowpass'; body.frequency.value = 260;
+  const g1 = ctx.createGain(); g1.gain.value = 1;
+  const g2 = ctx.createGain(); g2.gain.value = 0.7;
+  const gb = ctx.createGain(); gb.gain.value = 0.22;
+  for (let i = 0; i < vows.length; i++) {
+    const tt = t + dur * i / (vows.length - 1), V = VOW[vows[i]];
+    if (i === 0) { f1.frequency.setValueAtTime(V[0], tt); f2.frequency.setValueAtTime(V[1], tt); }
+    else { f1.frequency.linearRampToValueAtTime(V[0], tt); f2.frequency.linearRampToValueAtTime(V[1], tt); }
+  }
+  src.connect(f1); src.connect(f2); src.connect(body);
+  f1.connect(g1); f2.connect(g2); body.connect(gb);
+  g1.connect(mix); g2.connect(mix); gb.connect(mix);
+  nodes.push(f1, f2, body, g1, g2, gb);
+  let outN = mix;
+  if (far) { const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; mix.connect(lp); outN = lp; nodes.push(lp); }
+  let tail = outN;
+  if (ctx.createStereoPanner) {
+    const p = ctx.createStereoPanner();
+    p.pan.setValueAtTime(v.pan, t);
+    p.pan.linearRampToValueAtTime(clamp(v.pan + rand(-0.35, 0.35), -0.9, 0.9), end);
+    outN.connect(p); tail = p; nodes.push(p);
+  }
+  tail.connect(AU.floorBus);
+  for (const o of oscs) { o.start(t); o.stop(end + 0.1); }
+  oscs[0].onended = () => disc(nodes.concat(oscs));
+  return dur;
+}
+
+/* ---------- 毎フレーム ---------- */
+function auFrame() {
+  if (!AU.ok || AU.muted) return;
+  const ctx = AU.ctx, t = ctx.currentTime;
+  AU.tr = U.trate;
+  AU.pitch = U.apitch;
+  // 低く留まるほど、外から届く音は高く聞こえる（重力による青方偏移）
+  AU.cents = 1200 * Math.log2(AU.pitch);
+  if (Math.abs(AU.cents - AU.lastCents) > 3) {
+    AU.lastCents = AU.cents;
+    for (const o of AU.floorOsc) o.detune.setTargetAtTime(AU.cents, t, 0.25);
+  }
+  if (t >= AU.nextShep) {
+    const iv = 0.25;
+    AU.nextShep = t + iv;
+    const N = AU.shep.length;
+    AU.shepPhase = (AU.shepPhase + iv * AU.tr / 50) % 1;
+    for (let i = 0; i < N; i++) {
+      const s = AU.shep[i];
+      const oct = (((i + 1 - AU.shepPhase) % N) + N) % N;
+      const f = BFLAT * 0.5 * Math.pow(2, oct) * AU.pitch;
+      const x = (oct - N / 2) / (N / 4);
+      const a = Math.exp(-x * x);
+      s.o.frequency.cancelScheduledValues(t);
+      s.g.gain.cancelScheduledValues(t);
+      if (s.oct >= 0 && oct > s.oct + 0.5) s.o.frequency.setValueAtTime(f, t);
+      else { s.o.frequency.setValueAtTime(s.f, t); s.o.frequency.linearRampToValueAtTime(f, t + iv); }
+      s.g.gain.setValueAtTime(s.a, t); s.g.gain.linearRampToValueAtTime(a, t + iv);
+      s.f = f; s.a = a; s.oct = oct;
+    }
+  }
+  if (!crossing) {
+    if (!dark) {
+      for (const v of AU.voices) if (nowS >= v.next) v.next = nowS + moan(v) + rand(3, 15) / Math.max(AU.tr, 0.5);
+      if (nowS >= AU.nextCreak) {
+        AU.nextCreak = nowS + rand(35, 85);
+        const b = SND['creak' + ((Math.random() * 3) | 0)];
+        if (b) playBuf(b, { rate: rand(0.5, 0.85), gain: rand(0.06, 0.1), pan: rand(-0.9, 0.9), rev: 1.2, echo: 0.3, lp: 1800 });
+      }
+      if (nowS >= AU.nextWhisper) {
+        AU.nextWhisper = nowS + rand(140, 260);
+        auWhisper(0.014, false);
+      }
+    }
+  }
+  if (AU.fallN) auFallUpdate();
+}
+// 心音。圧の持続音も一拍ごとに膨らむ。深く留まるほど少し高く聞こえる
+function auHeart(ahead, gap, s) {
+  const ctx = AU.ctx, when = ctx.currentTime + Math.max(ahead, 0) + 0.02;
+  const rate = Math.min(AU.pitch, 1.6), g = 0.85 * s;
+  const md = heart.eff > 90 ? 1.0 : 0;   // 速く打つときは残響の尾を切る
+  if (SND.lub) playBuf(SND.lub, { when, rate, gain: g, rev: 0.12, maxDur: md });
+  else oscPing(60, 0.6, g * 0.5, 0, when);
+  if (SND.dub) playBuf(SND.dub, { when: when + gap, rate, gain: g * 0.62, rev: 0.1, maxDur: md });
+  // 打った瞬間に周りの音が引き、少し遅れて大きく膨らむ（巨大なものは遅れて動く）
+  const th = AU.throb.gain;
+  th.setTargetAtTime(0.55, when, 0.03);
+  th.setTargetAtTime(1.35, when + 0.18, 0.12);
+  th.setTargetAtTime(1.0, when + 0.6, 0.6);
+}
+// 前触れ：渦を巻いて注ぎ込むガスの音。帯域が上がり、左右の回転がだんだん速くなる
+function auInflowStart(dur) {
+  // ガスの塊が近い側を通るたびに「ザァ…」と膨らみ、周回はだんだん速く、音はだんだん高くなる
+  const ctx = AU.ctx, t = ctx.currentTime;
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf(ctx, 'pink', 6); src.loop = true;
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4;
+  const g = ctx.createGain(), am = ctx.createGain();
+  const N = 1024, fc = new Float32Array(N), ac = new Float32Array(N), pc = new Float32Array(N), ec = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const x = i / (N - 1), th = TAU * 7 * Math.pow(x, 1.6);
+    const near = 0.5 + 0.5 * Math.cos(th);
+    fc[i] = 220 * Math.pow(4, x) * (1 + 0.18 * Math.sin(th));
+    ac[i] = 0.2 + 0.8 * near * near;
+    pc[i] = 0.75 * Math.sin(th);
+    ec[i] = 0.0001 + 2.4 * Math.pow(Math.min(x * 1.2, 1), 1.1);
+  }
+  try {
+    bp.frequency.setValueCurveAtTime(fc, t, dur);
+    am.gain.setValueCurveAtTime(ac, t, dur);
+    g.gain.setValueCurveAtTime(ec, t, dur);
+  } catch (e) { bp.frequency.value = 400; g.gain.value = 0.3; }
+  // 終わらせるときは曲線に触らず、この k だけを絞る（曲線の途中キャンセルは値が跳ねる）
+  const k = ctx.createGain();
+  src.connect(bp); bp.connect(am); am.connect(g); g.connect(k);
+  const nodes = [src, bp, am, g, k];
+  let tail = k;
+  if (ctx.createStereoPanner) {
+    const p = ctx.createStereoPanner();
+    try { p.pan.setValueCurveAtTime(pc, t, dur); } catch (e) {}
+    k.connect(p); tail = p; nodes.push(p);
+  }
+  tail.connect(AU.ev);
+  const rs = ctx.createGain(); rs.gain.value = 0.5; tail.connect(rs); rs.connect(AU.rv); nodes.push(rs);
+  src.start(t); src.stop(t + dur + 3);
+  src.onended = () => disc(nodes);
+  AU.inf = { k, src };
+}
+function auInflowEnd() {
+  const I = AU.inf;
+  if (!I || !AU.ctx) return;
+  AU.inf = null;
+  const t = AU.ctx.currentTime;
+  I.k.gain.setTargetAtTime(0.0001, t, 0.25);
+  try { I.src.stop(t + 1.5); } catch (e) {}
+}
+// クェーサー化の音：せり上がる和音 → 一撃 → 轟音と噴流の笛 → 引いていく
+function auQuasarStart() {
+  const ctx = AU.ctx, t = ctx.currentTime;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 3;
+  lp.frequency.setValueAtTime(150, t); lp.frequency.exponentialRampToValueAtTime(2400, t + 7);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 6.8);
+  lp.connect(g); g.connect(AU.ev);
+  const rs = ctx.createGain(); rs.gain.value = 0.4; g.connect(rs); rs.connect(AU.rv);
+  const os = [];
+  for (const f of [BFLAT, 82.41, 116.54, 123.47]) {
+    const o = ctx.createOscillator(); o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.5, t + 7);
+    o.connect(lp); o.start(t); o.stop(t + 9); os.push(o);
+  }
+  AU.qn = { g, os, nodes: [lp, g, rs] };
+  os[0].onended = () => { if (AU.qn && AU.qn.os === os) AU.qn = null; disc([lp, g, rs].concat(os)); };
+  const d = AU.duck.gain;
+  d.cancelScheduledValues(t); d.setValueAtTime(d.value, t); d.linearRampToValueAtTime(0.5, t + 4);
+}
+function auQuasarIgnite() {
+  const ctx = AU.ctx, t = ctx.currentTime;
+  const Q = AU.qn;
+  if (Q) {
+    AU.qn = null;
+    Q.g.gain.cancelScheduledValues(t); Q.g.gain.setTargetAtTime(0.0001, t, 0.08);
+    for (const o of Q.os) o.stop(t + 0.6);
+    setTimeout(() => disc(Q.nodes.concat(Q.os)), 900);
+  }
+  auInflowEnd();
+  if (SND.boom) playBuf(SND.boom, { gain: 0.85, rev: 0.4 });
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf(ctx, 'pink', 6); src.loop = true;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(200, t); lp.frequency.exponentialRampToValueAtTime(2600, t + 1.5);
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 1.2);
+  src.connect(lp); lp.connect(g); g.connect(AU.ev);
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 4000;
+  const hg = ctx.createGain(); hg.gain.setValueAtTime(0.0001, t); hg.gain.exponentialRampToValueAtTime(0.04, t + 1.5);
+  src.connect(hp); hp.connect(hg); hg.connect(AU.ev);
+  const rs = ctx.createGain(); rs.gain.value = 0.35; g.connect(rs); rs.connect(AU.rv);
+  const w1 = ctx.createOscillator(), w2 = ctx.createOscillator();
+  w1.frequency.setValueAtTime(1760, t); w1.frequency.exponentialRampToValueAtTime(1975, t + 8);
+  w2.frequency.setValueAtTime(1766, t); w2.frequency.exponentialRampToValueAtTime(1983, t + 8);
+  const vib = ctx.createOscillator(); vib.frequency.value = 5.5;
+  const vg = ctx.createGain(); vg.gain.value = 8; vib.connect(vg); vg.connect(w1.frequency); vg.connect(w2.frequency);
+  const wg = ctx.createGain(); wg.gain.setValueAtTime(0.0001, t); wg.gain.exponentialRampToValueAtTime(0.03, t + 2);
+  w1.connect(wg); w2.connect(wg);
+  let wt = wg;
+  const nodes = [src, lp, g, hp, hg, rs, w1, w2, vib, vg, wg];
+  if (ctx.createStereoPanner) {
+    const p = ctx.createStereoPanner(); p.pan.setValueAtTime(-0.5, t); p.pan.linearRampToValueAtTime(0.5, t + 9);
+    wg.connect(p); wt = p; nodes.push(p);
+  }
+  wt.connect(AU.ev);
+  const ws = ctx.createGain(); ws.gain.value = 0.6; wt.connect(ws); ws.connect(AU.rv); nodes.push(ws);
+  for (const o of [src, w1, w2, vib]) o.start(t);
+  AU.qr = { lp, g, hg, wg, w1, w2, src, vib, nodes };
+  // ふたつの声が同時に叫ぶ
+  for (const v of AU.voices) v.next = nowS + moan(v, 'cry') + 6;
+}
+function auQuasarFade() {
+  const Q = AU.qr;
+  if (!Q) return;
+  AU.qr = null;
+  const t = AU.ctx.currentTime;
+  Q.lp.frequency.cancelScheduledValues(t); Q.lp.frequency.setTargetAtTime(200, t, 2.5);
+  Q.g.gain.cancelScheduledValues(t); Q.g.gain.setTargetAtTime(0.0001, t + 1, 2.2);
+  Q.hg.gain.cancelScheduledValues(t); Q.hg.gain.setTargetAtTime(0.0001, t, 1.5);
+  Q.w1.frequency.cancelScheduledValues(t); Q.w1.frequency.setTargetAtTime(880, t, 3);
+  Q.w2.frequency.cancelScheduledValues(t); Q.w2.frequency.setTargetAtTime(884, t, 3);
+  Q.wg.gain.cancelScheduledValues(t); Q.wg.gain.setTargetAtTime(0.0001, t + 1, 2);
+  for (const o of [Q.src, Q.w1, Q.w2, Q.vib]) o.stop(t + 9.5);
+  Q.src.onended = () => disc(Q.nodes);
+  const d = AU.duck.gain;
+  d.cancelScheduledValues(t); d.setValueAtTime(d.value, t); d.linearRampToValueAtTime(1, t + 7);
+}
+function auWhisper(gain, close) {
+  const buf = SND[Math.random() < 0.5 ? 'wh0' : 'wh1'];
+  if (!buf) return;
+  const side = Math.random() < 0.5 ? -1 : 1;
+  playBuf(buf, { rate: close ? rand(0.92, 1.0) : rand(0.7, 0.85), gain, pan: side * (close ? 0.95 : 0.6), panTo: side * (close ? 0.7 : 0.25),
+    panDur: 2.5, rev: close ? 0.1 : 0.9, lp: close ? 0 : 2200 });
+}
+function auTinnitus(on) {
+  const ctx = AU.ctx, t = ctx.currentTime;
+  if (on) {
+    if (AU.tinn) return;
+    const g = ctx.createGain(); g.gain.value = 0.0001;
+    const o1 = ctx.createOscillator(); o1.frequency.value = 3150;
+    const o2 = ctx.createOscillator(); o2.frequency.value = 3158.5;
+    o1.connect(g); o2.connect(g); g.connect(AU.comp);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.006, t + 4);
+    o1.start(t); o2.start(t);
+    AU.tinn = { g, o1, o2 };
+  } else {
+    const T = AU.tinn;
+    if (!T) return;
+    AU.tinn = null;
+    T.g.gain.cancelScheduledValues(t); T.g.gain.setTargetAtTime(0.0001, t, 0.4);
+    T.o1.stop(t + 2); T.o2.stop(t + 2);
+    T.o1.onended = () => disc([T.o1, T.o2, T.g]);
+  }
+}
+function auDrop() {
+  if (!AU.ok || AU.muted) return;
+  if (SND.drop) { playBuf(SND.drop, { gain: 0.32, pan: rand(-0.15, 0.15), rev: 0.5 }); return; }
+  oscPing(1600, 0.4, 0.05, 0, 0);
+}
+function auFallStart() {
+  if (!AU.ok || AU.muted || AU.fallN) return;
+  const ctx = AU.ctx;
+  // 圧の塊（B♭ と B）。深くなるほど開くローパス
+  const g = ctx.createGain(); g.gain.value = 0.0001;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 180; lp.Q.value = 2;
+  const o1 = ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = BFLAT;
+  const o2 = ctx.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = 61.74;
+  o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(AU.ev);
+  const rs = ctx.createGain(); rs.gain.value = 0.3; g.connect(rs); rs.connect(AU.rv);
+  // 青方偏移した星の光：高いところで擦れ合う二音
+  const hg = ctx.createGain(); hg.gain.value = 0.0001;
+  const h1 = ctx.createOscillator(); h1.frequency.value = 2800;
+  const h2 = ctx.createOscillator(); h2.frequency.value = 2967;
+  h1.connect(hg); h2.connect(hg); hg.connect(AU.ev);
+  const hs = ctx.createGain(); hs.gain.value = 0.6; hg.connect(hs); hs.connect(AU.rv);
+  for (const o of [o1, o2, h1, h2]) o.start();
+  AU.fallN = { g, lp, o1, o2, hg, h1, h2, nodes: [o1, o2, h1, h2, g, lp, rs, hg, hs], nextCreak: nowS + 0.8 };
+}
+function auFallUpdate() {
+  const N = AU.fallN, t = AU.ctx.currentTime;
+  // 深さは距離の対数で測る（最後の数Mが長く感じられるように）
+  const depth = clamp(Math.log(Dhome / cam.D) / Math.log(Dhome / 2.04), 0, 1);
+  N.lp.frequency.setTargetAtTime(180 + 1400 * depth * depth, t, 0.3);
+  N.g.gain.setTargetAtTime(0.02 + 0.12 * depth, t, 0.3);
+  N.o1.detune.setTargetAtTime(AU.cents, t, 0.3); N.o2.detune.setTargetAtTime(AU.cents, t, 0.3);
+  N.h1.frequency.setTargetAtTime(2800 * AU.pitch, t, 0.3); N.h2.frequency.setTargetAtTime(2967 * AU.pitch, t, 0.3);
+  N.hg.gain.setTargetAtTime(0.0001 + 0.02 * depth * depth * depth, t, 0.4);
+  // 留まるための推力に、船体がきしむ（r=2.04 では約1600G）
+  if (nowS >= N.nextCreak) {
+    const b = SND['creak' + ((Math.random() * 3) | 0)];
+    if (b) playBuf(b, { rate: rand(0.7, 1.1) * Math.min(AU.pitch, 1.8), gain: 0.06 + 0.2 * depth, pan: rand(-1, 1), rev: 0.5, lp: 3000 });
+    N.nextCreak = nowS + rand(0.5, 1.4) * (2.4 - 1.9 * depth);
+  }
+}
+function auFallEnd(hard) {
+  const N = AU.fallN;
+  if (!N || !AU.ctx) return;
+  AU.fallN = null;
+  const t = AU.ctx.currentTime;
+  N.g.gain.cancelScheduledValues(t); N.g.gain.setTargetAtTime(0.0001, t, hard ? 0.05 : 0.6);
+  N.hg.gain.cancelScheduledValues(t); N.hg.gain.setTargetAtTime(0.0001, t, hard ? 0.05 : 0.4);
+  const end = t + (hard ? 0.4 : 3.5);
+  for (const o of [N.o1, N.o2, N.h1, N.h2]) o.stop(end);
+  N.o1.onended = () => disc(N.nodes);
+}
+// 消灯：吸い込み → ぷつりと切れる → 無音（空電と耳鳴りだけが残る）
+function auDarkStart() {
+  const ctx = AU.ctx, t = ctx.currentTime;
+  if (SND.swell) playBuf(SND.swell, { offset: SND.swell.duration - 3.0, gain: 0.55, rev: 0.3 });
+  const d = AU.duck.gain;
+  d.cancelScheduledValues(t);
+  d.setValueAtTime(d.value, t);
+  d.setValueAtTime(d.value, t + 2.97);
+  d.linearRampToValueAtTime(0, t + 3.0);
+}
+function auReignite() {
+  const ctx = AU.ctx, t = ctx.currentTime;
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf(ctx, 'pink', 8);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(70, t); lp.frequency.exponentialRampToValueAtTime(1100, t + 3.5); lp.frequency.exponentialRampToValueAtTime(200, t + 7.5);
+  const g = ctx.createGain();
+  env(g.gain, t, [[0, 0.0001], [3.0, 0.45, 'exp'], [7.8, 0.0001, 'exp']]);
+  src.connect(lp); lp.connect(g); g.connect(AU.ev);
+  const rs = ctx.createGain(); rs.gain.value = 0.5; g.connect(rs); rs.connect(AU.rv);
+  src.start(t); src.stop(t + 8);
+  const nodes = [src, lp, g, rs];
+  // 戻ってくる光の和音：B♭ の上に短九度（B）をのせた濁り
+  const cl = ctx.createBiquadFilter(); cl.type = 'lowpass'; cl.frequency.value = 480;
+  const cg = ctx.createGain();
+  env(cg.gain, t, [[0, 0.0001], [3.2, 0.06, 'exp'], [9.5, 0.0001, 'exp']]);
+  cl.connect(cg); cg.connect(AU.ev); cg.connect(rs);
+  nodes.push(cl, cg);
+  for (const f of [BFLAT, 87.31, 116.54, 123.47]) {
+    const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+    o.connect(cl); o.start(t); o.stop(t + 9.6); nodes.push(o);
+  }
+  src.onended = () => disc(nodes, 2000);
+  const d = AU.duck.gain;
+  d.cancelScheduledValues(t); d.setValueAtTime(0, t); d.setValueAtTime(0, t + 2.5); d.linearRampToValueAtTime(1, t + 7);
+}
+function auCross() {
+  const ctx = AU.ctx, t = ctx.currentTime;
+  const o = ctx.createOscillator(); o.type = 'sawtooth';
+  o.frequency.setValueAtTime(116.54, t); o.frequency.exponentialRampToValueAtTime(22, t + 1.3);
+  const g = ctx.createGain();
+  env(g.gain, t, [[0, 0.0001], [0.08, 0.16, 'exp'], [1.3, 0.0001, 'exp']]);
+  o.connect(g); g.connect(AU.ev); o.start(t); o.stop(t + 1.35);
+  o.onended = () => disc([o, g]);
+  // 外から届く音は赤方偏移して低く遅くなり、こもりながら消えていく
+  const m = AU.mlp.frequency, out = AU.out.gain;
+  m.cancelScheduledValues(t); m.setValueAtTime(16000, t); m.exponentialRampToValueAtTime(900, t + 3); m.exponentialRampToValueAtTime(120, t + 8.6);
+  out.cancelScheduledValues(t); out.setValueAtTime(1, t); out.setValueAtTime(1, t + 7.8); out.linearRampToValueAtTime(0, t + 9.2);
+  const back = t + 11.2;
+  m.setValueAtTime(16000, back);
+  out.setValueAtTime(0, back); out.linearRampToValueAtTime(1, back + 3.2);
+}
+// 太陽系が横切るあいだ、遠くでオルゴールが鳴る。少しずつ遅く、低くなり、途中で止まる
+function auMusicBox(dur, side) {
+  const buf = SND.tine;
+  if (!buf) return;
+  const t0 = AU.ctx.currentTime + 1.2;
+  const mel = [698.46, 1108.73, 1046.5, 932.33, 880.0, 932.33, 698.46, 739.99, 698.46, 659.26];
+  let t = t0, step = 0.52, slow = 1;
+  for (let rep = 0; rep < 4; rep++) {
+    for (let i = 0; i < mel.length; i++) {
+      if (t > t0 + dur - 4 || (rep === 3 && i === 6)) return;
+      const x = (t - t0) / dur;
+      playBuf(buf, { when: t, rate: mel[i] / 1046.5 * slow, gain: 0.09, pan: side * (-0.8 + 1.6 * x), rev: 0.9, echo: 0.35 });
+      t += step * rand(0.94, 1.14) * (i === mel.length - 1 ? 2.2 : 1);
+      step *= 1.03; slow *= 0.9965;
+    }
+  }
+}
+function auStart() {
+  if (AU.muted) return;
+  if (!AU.ctx && !auCreate()) return;
+  const ctx = AU.ctx;
+  const done = () => {
+    if (ctx !== AU.ctx || ctx.state !== 'running' || AU.ok) return;
+    AU.ok = true;
+    const t = ctx.currentTime;
+    AU.vol.gain.cancelScheduledValues(t);
+    AU.vol.gain.setValueAtTime(0, t);
+    AU.vol.gain.linearRampToValueAtTime(1, t + 4);
+    setSndUI();
+  };
+  if (ctx.state !== 'running') {
+    let p = null;
+    try { p = ctx.resume(); } catch (e) {}
+    if (p && p.then) p.then(done, () => {}); else setTimeout(done, 50);
+  } else done();
+}
+function auGesture() { if (!AU.ok && !AU.muted) auStart(); }
+function toggleSound() {
+  if (!AU.ok) { AU.muted = false; auStart(); setSndUI(); return; }
+  const ctx = AU.ctx, t = ctx.currentTime;
+  AU.muted = !AU.muted;
+  AU.vol.gain.cancelScheduledValues(t);
+  AU.vol.gain.setValueAtTime(AU.vol.gain.value, t);
+  if (AU.muted) {
+    AU.vol.gain.linearRampToValueAtTime(0, t + 0.4);
+    setTimeout(() => { if (AU.muted && AU.ctx === ctx) ctx.suspend(); }, 500);
+  } else {
+    ctx.resume();
+    AU.vol.gain.linearRampToValueAtTime(1, t + 0.8);
+  }
+  setSndUI();
+}
+
+/* =========================================================
+   入力
+   ========================================================= */
+const ptrs = new Map();
+let press = null, pinch = null, keyHold = 0, lastMoveT = 0;
+const keys = {};
+let uiT = 0;
+function showUI() { ui.classList.remove('idle'); uiT = performance.now(); }
+function markInput() { lastInput = nowS; showUI(); if (fall.active && fall.auto) release(); }
+cvs.addEventListener('pointerdown', e => {
+  markInput();
+  try { cvs.setPointerCapture(e.pointerId); } catch (err) {}
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (crossing) return;
+  if (ptrs.size === 1) {
+    press = { id: e.pointerId, x0: e.clientX, y0: e.clientY, lx: e.clientX, ly: e.clientY, t0: nowS, moved: false };
+    lastMoveT = performance.now();
+  } else if (ptrs.size === 2) {
+    press = null;
+    if (fall.active) release();
+    const [a, b] = [...ptrs.values()];
+    pinch = { d0: Math.hypot(a.x - b.x, a.y - b.y), D0: cam.D };
+  }
+});
+cvs.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse') showUI(); return; }
+  markInput();
+  const p = ptrs.get(e.pointerId); p.x = e.clientX; p.y = e.clientY;
+  if (crossing) return;
+  if (pinch && ptrs.size >= 2) {
+    const [a, b] = [...ptrs.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinch.d0 > 10) { cam.D = clamp(pinch.D0 * pinch.d0 / Math.max(d, 10), 5.5, 60); Dhome = cam.D; }
+    return;
+  }
+  if (press && press.id === e.pointerId) {
+    const dx = e.clientX - press.lx, dy = e.clientY - press.ly;
+    press.lx = e.clientX; press.ly = e.clientY;
+    if (!press.moved && Math.hypot(e.clientX - press.x0, e.clientY - press.y0) > 9) press.moved = true;
+    if (press.moved && !fall.active) {
+      const k = 3.2 / Math.max(window.innerHeight, 300);
+      cam.az -= dx * k; cam.el += dy * k * 0.8;
+      const nt = performance.now(), de = Math.max((nt - lastMoveT) / 1000, 0.008);
+      lastMoveT = nt;
+      cam.vaz = clamp(cam.vaz * 0.5 + (-dx * k / de) * 0.5, -3, 3);
+      cam.vel = clamp(cam.vel * 0.5 + (dy * k * 0.8 / de) * 0.5, -3, 3);
+    }
+  }
+});
+function onUp(e) {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if (e.type === 'pointerup') auGesture();
+  if (pinch && ptrs.size < 2) pinch = null;
+  if (press && press.id === e.pointerId) {
+    if (fall.active) release();
+    else if (!press.moved && nowS - press.t0 < 0.6 && e.type === 'pointerup' && !crossing) dropLantern();
+    if (performance.now() - lastMoveT > 90) { cam.vaz = 0; cam.vel = 0; }
+    press = null;
+  }
+}
+cvs.addEventListener('pointerup', onUp);
+cvs.addEventListener('pointercancel', onUp);
+cvs.addEventListener('click', () => auGesture());
+cvs.addEventListener('contextmenu', e => e.preventDefault());
+cvs.addEventListener('wheel', e => {
+  e.preventDefault(); markInput();
+  if (crossing || fall.active) return;
+  cam.D = clamp(cam.D * Math.exp(e.deltaY * 0.0011), 5.5, 60); Dhome = cam.D;
+}, { passive: false });
+window.addEventListener('keydown', e => {
+  const onBtn = e.target && e.target.closest && e.target.closest('button');
+  if (onBtn && (e.code === 'Space' || e.code === 'Enter')) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  markInput();
+  if (e.code !== 'KeyM') auGesture();
+  switch (e.code) {
+    case 'Space': e.preventDefault(); if (!e.repeat && !crossing) keyHold = nowS; break;
+    case 'ArrowLeft': keys.l = 1; e.preventDefault(); break;
+    case 'ArrowRight': keys.r = 1; e.preventDefault(); break;
+    case 'ArrowUp': keys.u = 1; e.preventDefault(); break;
+    case 'ArrowDown': keys.d = 1; e.preventDefault(); break;
+    case 'Equal': case 'NumpadAdd': keys.zi = 1; break;
+    case 'Minus': case 'NumpadSubtract': keys.zo = 1; break;
+    case 'KeyM': if (!e.repeat) toggleSound(); break;
+    case 'KeyF': if (!e.repeat) toggleFs(); break;
+    case 'KeyL': if (!e.repeat) setLite(!lite); break;
+  }
+});
+window.addEventListener('keyup', e => {
+  switch (e.code) {
+    case 'Space':
+      if (fall.active) release();
+      else if (keyHold && nowS - keyHold < 0.6) dropLantern();
+      keyHold = 0; break;
+    case 'ArrowLeft': keys.l = 0; break;
+    case 'ArrowRight': keys.r = 0; break;
+    case 'ArrowUp': keys.u = 0; break;
+    case 'ArrowDown': keys.d = 0; break;
+    case 'Equal': case 'NumpadAdd': keys.zi = 0; break;
+    case 'Minus': case 'NumpadSubtract': keys.zo = 0; break;
+  }
+});
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = 0; if (fall.active) release(); keyHold = 0; });
+
+/* ---------- アイコン ---------- */
+function setSndUI() {
+  const on = AU.ok && !AU.muted;
+  bSnd.setAttribute('aria-pressed', on ? 'true' : 'false');
+  bSnd.classList.toggle('hint', !AU.ok && !AU.muted);
+}
+const canFs = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+if (!canFs) bFs.hidden = true;
+function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+function toggleFs() {
+  if (!canFs) return;
+  const el = document.documentElement;
+  try {
+    if (fsEl()) { const x = document.exitFullscreen || document.webkitExitFullscreen; if (x) { const p = x.call(document); if (p && p.catch) p.catch(() => {}); } }
+    else { const r = el.requestFullscreen || el.webkitRequestFullscreen; if (r) { const p = r.call(el); if (p && p.catch) p.catch(() => {}); } }
+  } catch (e) {}
+}
+const fsSync = () => bFs.setAttribute('aria-pressed', fsEl() ? 'true' : 'false');
+document.addEventListener('fullscreenchange', fsSync);
+document.addEventListener('webkitfullscreenchange', fsSync);
+function setLite(v) {
+  lite = v; saveLite(v);
+  NB = lite ? 5 : 8;
+  while (beacons.length > NB) dropOldest();
+  resScale = Math.min(resScale, resMax());
+  if (gl && !buildProgram()) document.documentElement.classList.add('nogl');
+  bLite.setAttribute('aria-pressed', lite ? 'true' : 'false');
+  setSndUI();
+}
+// ポインタで押したときはフォーカスを外し、スペースキーを灯に戻す（キーボード操作のフォーカスは残す）
+const unfocus = e => { if (e.detail > 0 && e.currentTarget.blur) e.currentTarget.blur(); };
+bSnd.addEventListener('click', e => { showUI(); toggleSound(); unfocus(e); });
+bFs.addEventListener('click', e => { showUI(); auGesture(); toggleFs(); unfocus(e); });
+bLite.addEventListener('click', e => { showUI(); setLite(!lite); unfocus(e); });
+bLite.setAttribute('aria-pressed', lite ? 'true' : 'false');
+function uiTick() {
+  if (!ui.classList.contains('idle') && performance.now() - uiT > 3800 && !ui.contains(document.activeElement)) ui.classList.add('idle');
+}
+document.addEventListener('visibilitychange', () => {
+  paused = document.hidden;
+  if (AU.ctx) {
+    if (document.hidden) { try { AU.ctx.suspend(); } catch (e) {} }
+    else if (AU.ok && !AU.muted) { try { AU.ctx.resume(); } catch (e) {} }
+  }
+  if (document.hidden && fall.active) release();
+});
+
+/* ---------- 始動 ---------- */
+let lastTs = null;
+function loop(ts) {
+  requestAnimationFrame(loop);
+  if (paused) { lastTs = null; return; }
+  const t = ts / 1000;
+  if (lastTs === null) { lastTs = t; return; }
+  const raw = t - lastTs;
+  lastTs = t;
+  const dt = Math.min(Math.max(raw, 0), 0.05);
+  nowS += dt;
+  update(dt);
+  render();
+  perf(raw);
+  uiTick();
+}
+if (!initGL()) document.documentElement.classList.add('nogl');
+camBasis();
+seedAncient(2);
+showUI();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
