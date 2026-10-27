@@ -1,0 +1,1557 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>見返す太陽 v9</title>
+<meta name="description" content="黒点がこちらを見返してくる、不気味な3Dの太陽の改良版。見ているカメラの露出とピントが狂う。">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: gallery mode. Full-bleed WebGL star in a black void, no text.
+   Two icon controls bottom-right that fade out when idle. Single dark world by design. */
+:root{
+  --void:#030201;
+  --ember:#c9562b;
+  --bone:#efe5da;
+  --ash:#b7aba1;
+  --scrim:rgba(3,2,1,.5);
+  --line:rgba(183,171,161,.26);
+  --glow:rgba(201,86,43,.45);
+  --glow-0:rgba(201,86,43,0);
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{
+  background:var(--void);color:var(--ash);overflow:hidden;
+  font-family:"Hiragino Sans","Yu Gothic",sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+#sun{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;outline:none}
+#sun.dragging{cursor:grabbing}
+body.idle #sun{cursor:none}
+
+.dock{
+  position:fixed;
+  right:max(16px, env(safe-area-inset-right, 0px));
+  bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+  display:flex;gap:10px;
+  transition:opacity 1s ease;
+}
+body.idle .dock{opacity:0;pointer-events:none}
+.icon{
+  appearance:none;width:44px;height:44px;padding:0;
+  display:grid;place-items:center;border-radius:50%;
+  background:var(--scrim);border:1px solid var(--line);color:var(--ash);
+  cursor:pointer;transition:color .2s,border-color .2s;
+}
+.icon:hover{color:var(--bone);border-color:var(--ember)}
+#lite[aria-pressed="true"]{color:var(--bone);border-color:var(--ember)}
+.icon:focus-visible{outline:2px solid var(--ember);outline-offset:3px}
+.icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.icon.pending{color:var(--ember);border-color:var(--ember);animation:ember 2.8s ease-in-out infinite}
+@keyframes ember{0%,100%{box-shadow:0 0 0 0 var(--glow-0)}50%{box-shadow:0 0 18px 2px var(--glow)}}
+
+.fallback{position:fixed;inset:0;display:grid;place-items:center;padding-inline:max(16px, env(safe-area-inset-left, 0px));color:var(--ash);font-size:14px;letter-spacing:.08em;text-align:center}
+
+@media (prefers-reduced-motion:reduce){
+  .dock,.icon{transition:none}
+  .icon.pending{animation:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="sun" tabindex="0" aria-label="太陽のアート。ドラッグで回転、ホイールやピンチで接近。Fキーで全画面、Mキーで音の切り替え。"></canvas>
+
+<div class="dock" id="dock">
+  <button type="button" class="icon" id="lite" aria-label="軽量モードにする" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 4C13 4 8 8.5 7 15l-2 5"/><path d="M20 4c0 7-4.5 11-12.4 11.2"/><path d="M10.5 11.5h5.5"/>
+    </svg>
+  </button>
+  <button type="button" class="icon pending" id="sound" aria-label="BGMを鳴らす" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>
+      <g id="waves" hidden><path d="M15.5 9.2a4 4 0 0 1 0 5.6"/><path d="M18 6.8a7.5 7.5 0 0 1 0 10.4"/></g>
+      <g id="mute"><path d="M16 9.5l5 5M21 9.5l-5 5"/></g>
+    </svg>
+  </button>
+  <button type="button" class="icon" id="full" aria-label="全画面にする" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <g id="fsIn"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></g>
+      <g id="fsOut" hidden><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></g>
+    </svg>
+  </button>
+</div>
+
+<p class="fallback" id="fallback" hidden>この環境ではWebGLが使えないため、太陽を描画できません。</p>
+
+<script>
+(() => {
+  'use strict';
+  const canvas = document.getElementById('sun');
+  const dock = document.getElementById('dock');
+  const soundBtn = document.getElementById('sound');
+  const fullBtn = document.getElementById('full');
+  const fallback = document.getElementById('fallback');
+  const wavesG = document.getElementById('waves'), muteG = document.getElementById('mute');
+  const fsInG = document.getElementById('fsIn'), fsOutG = document.getElementById('fsOut');
+  const liteBtn = document.getElementById('lite');
+
+  const reduce = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+
+  /* =========================================================
+     BGM: generative, oppressive drone engine (all synthesized)
+     ========================================================= */
+  function createEngine(lite) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    let ctx;
+    try { ctx = new AC({ latencyHint: lite ? 'playback' : 'balanced' }); } catch (e) { ctx = new AC(); }
+    const sr = ctx.sampleRate;
+    // slow modulation only needs one value per 128-sample block; this keeps filters from recomputing every sample
+    const kr = (p) => { try { if ('automationRate' in p) p.automationRate = 'k-rate'; } catch (e) {} return p; };
+    const disposer = (list) => () => { list.forEach((n) => { try { n.disconnect(); } catch (e) {} }); };
+
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -20; comp.knee.value = 14; comp.ratio.value = 4; comp.attack.value = 0.03; comp.release.value = 0.5;
+    // soft ceiling after the compressor: the rage and the sting used to overshoot full scale
+    // for an instant. Linear up to 0.6, then bends smoothly toward 0.98 (inputs up to 2.0).
+    const clipPre = ctx.createGain(); clipPre.gain.value = 0.5;
+    const clip = ctx.createWaveShaper();
+    { const n = 2049, c = new Float32Array(n);
+      for (let i = 0; i < n; i++) { const v = 2 * (i / (n - 1) * 2 - 1), a = Math.abs(v);
+        c[i] = Math.sign(v) * (a <= 0.6 ? a : 0.6 + 0.38 * Math.tanh((a - 0.6) / 0.38)); }
+      clip.curve = c; }
+    comp.connect(clipPre); clipPre.connect(clip); clip.connect(ctx.destination);
+    const master = ctx.createGain(); master.gain.value = 0; master.connect(comp);
+
+    const gainN = (v) => { const g = ctx.createGain(); g.gain.value = v; return g; };
+    const osc = (type, f) => { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; return o; };
+    const filt = (type, f, q) => { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; kr(b.frequency); kr(b.Q); return b; };
+    const lfo = (rate, depth, param, aRate) => { if (!aRate) kr(param); const o = osc('sine', rate); const g = gainN(depth); o.connect(g); g.connect(param); o.start(); };
+
+    // reverb from a generated impulse response (short and mono in light mode)
+    const irLen = lite ? 1.8 : 5.5, irCh = lite ? 1 : 2, irPow = lite ? 3.0 : 2.4;
+    const ir = ctx.createBuffer(irCh, Math.floor(sr * irLen), sr);
+    for (let ch = 0; ch < irCh; ch++) {
+      const d = ir.getChannelData(ch);
+      for (let i = 0; i < d.length; i++) {
+        const x = i / d.length;
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - x, irPow) * Math.min(1, i / (sr * 0.04));
+      }
+    }
+    const verb = ctx.createConvolver(); verb.buffer = ir;
+    const wet = gainN(lite ? 0.7 : 0.55); verb.connect(wet); wet.connect(master);
+    const dry = gainN(1); dry.connect(master);
+    const duckDry = gainN(1), duckWet = gainN(1);
+    // the bed also passes through a 'heave' stage the heartbeat pushes on (kept apart from the duck,
+    // whose ramps the sting and the rage own)
+    const heaveDry = gainN(1), heaveWet = gainN(1);
+    kr(heaveDry.gain); kr(heaveWet.gain);
+    duckDry.connect(heaveDry); heaveDry.connect(dry); duckWet.connect(heaveWet); heaveWet.connect(verb);
+    function route(node, d, w, bed) {
+      const made = [];
+      if (d) { const g = gainN(d); node.connect(g); g.connect(bed ? duckDry : dry); made.push(g); }
+      if (w) { const g = gainN(w); node.connect(g); g.connect(bed ? duckWet : verb); made.push(g); }
+      return made;
+    }
+
+    // long ping-pong echo for the bells (the warble is skipped in light mode)
+    const echoIn = gainN(1);
+    const dl1 = ctx.createDelay(4), dl2 = ctx.createDelay(4);
+    dl1.delayTime.value = 0.73; dl2.delayTime.value = 1.13;
+    const fb1 = gainN(0.52), fb2 = gainN(0.5);
+    const elp1 = filt('lowpass', 1700, 0.4), elp2 = filt('lowpass', 1300, 0.4);
+    echoIn.connect(dl1);
+    dl1.connect(elp1); elp1.connect(fb1); fb1.connect(dl2);
+    dl2.connect(elp2); elp2.connect(fb2); fb2.connect(dl1);
+    if (!lite) { lfo(0.11, 0.006, dl1.delayTime, true); lfo(0.07, 0.008, dl2.delayTime, true); }
+    const mkPan = (v) => { if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = v; return p; } return gainN(1); };
+    const pan1 = mkPan(-0.7), pan2 = mkPan(0.7);
+    elp1.connect(pan1); elp2.connect(pan2);
+    const echoOut = gainN(0.9); pan1.connect(echoOut); pan2.connect(echoOut);
+    route(echoOut, 0.6, 0.75, false);
+
+    // noise buffers
+    const brown = ctx.createBuffer(1, sr * 6, sr);
+    { const d = brown.getChannelData(0); let l = 0; for (let i = 0; i < d.length; i++) { l = (l + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = l * 3.5; } }
+    const white = ctx.createBuffer(1, sr * 3, sr);
+    { const d = white.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    const loopSrc = (buf, off) => { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.start(0, off || 0); return s; };
+
+    // 1. sub drone + growling resonant saw (D1)
+    const sub = gainN(0.3);
+    [36.71, 36.93].forEach((f) => { const o = osc('sine', f); o.connect(sub); o.start(); });
+    const growl = osc('sawtooth', 36.71);
+    const growlLP = filt('lowpass', 95, 7);
+    const growlG = gainN(0.16);
+    growl.connect(growlLP); growlLP.connect(growlG); growlG.connect(sub); growl.start();
+    lfo(0.019, 45, growlLP.frequency);
+    if (!lite) lfo(0.011, 9, growl.detune);
+    const oct = osc('triangle', 73.42); const octG = gainN(0.07);
+    oct.connect(octG); octG.connect(sub); oct.start(); lfo(0.014, 0.05, octG.gain);
+    route(sub, 1.0, 0.25, true);
+
+    // 2. dissonant cluster pad (4 single voices in light mode, 6 detuned pairs otherwise)
+    const padLP = filt('lowpass', 420, 1.2); lfo(0.012, 220, padLP.frequency);
+    const VOICES = [[73.42, 0.05, 0.021], [77.78, 0.04, 0.013], [103.83, 0.035, 0.029], [146.83, 0.025, 0.017], [155.56, 0.018, 0.011], [311.13, 0.008, 0.037]];
+    (lite ? VOICES.slice(0, 4) : VOICES).forEach(([f, base, rate]) => {
+      const amp = lite ? base * 1.5 : base;
+      const vg = gainN(amp); lfo(rate * 0.6, amp * 0.95, vg.gain);
+      (lite ? [0] : [-5, 5]).forEach((c) => { const o = osc('sawtooth', f); o.detune.value = c; o.connect(vg); o.start(); });
+      vg.connect(padLP);
+    });
+    const padOut = gainN(0.55); padLP.connect(padOut);
+    route(padOut, 0.45, 0.9, true);
+
+    // 3. endless descending Shepard tone
+    const SN = lite ? 5 : 7, SBASE = lite ? 55 : 28;
+    const shep = []; const shepBus = gainN(0.05);
+    for (let k = 0; k < SN; k++) {
+      const o = osc('sine', 100); kr(o.frequency);
+      const g = gainN(0); kr(g.gain);
+      o.connect(g); g.connect(shepBus); o.start(); shep.push({ o, g, f: 100 });
+    }
+    route(shepBus, 0.25, 1.0, true);
+    let shepPhase = 0, shepLast = ctx.currentTime;
+    function shepard() {
+      const now = ctx.currentTime;
+      shepPhase -= (now - shepLast) / 80; shepLast = now;
+      const ph = ((shepPhase % 1) + 1) % 1;
+      for (let k = 0; k < SN; k++) {
+        const lp = (k + ph) / SN;
+        const f = SBASE * Math.pow(2, SN * lp);
+        const a = Math.exp(-Math.pow((lp - 0.48) / 0.17, 2));
+        const v = shep[k];
+        v.o.frequency.cancelScheduledValues(now); v.g.gain.cancelScheduledValues(now);
+        if (f > v.f * 1.5) v.o.frequency.setValueAtTime(f, now); else v.o.frequency.setTargetAtTime(f, now, 0.08);
+        v.f = f;
+        v.g.gain.setTargetAtTime(a, now, 0.1);
+      }
+    }
+
+    // 4. breathing noise, whisper (normal mode only), rumble bed
+    const breathBP = filt('bandpass', 380, 1.4); lfo(0.026, 180, breathBP.frequency);
+    const breathG = gainN(0.35); lfo(0.037, 0.3, breathG.gain);
+    loopSrc(brown).connect(breathBP); breathBP.connect(breathG); route(breathG, 0.5, 0.7, true);
+    if (!lite) {
+      const hissBP = filt('bandpass', 1650, 9); lfo(0.042, 420, hissBP.frequency);
+      const hissG = gainN(0.012); lfo(0.018, 0.01, hissG.gain);
+      loopSrc(white).connect(hissBP); hissBP.connect(hissG); route(hissG, 0.3, 1.0, true);
+    }
+    const rumbleLP = filt('lowpass', 120, 0.7); const rumbleG = gainN(0.5);
+    loopSrc(brown, 2.3).connect(rumbleLP); rumbleLP.connect(rumbleG); route(rumbleG, 1.0, 0.3, true);
+
+    // 5. heartbeat: a slow, enormous knock. A sinking sub sine, a lowpassed saw on the same glide
+    // whose harmonics carry the pitch on small speakers (missing fundamental), and a muffled thud.
+    const hbLP = filt('lowpass', 260, 0.7); route(hbLP, 1.0, 0.45, false);
+    function thump(time, amp, f0) {
+      const f1 = f0 * 0.5;
+      const o = osc('sine', f0);
+      o.frequency.setValueAtTime(f0, time); o.frequency.exponentialRampToValueAtTime(f1, time + 0.55);
+      const g = gainN(0);
+      g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(amp, time + 0.035); g.gain.exponentialRampToValueAtTime(0.0001, time + 1.3);
+      o.connect(g); g.connect(hbLP); o.start(time); o.stop(time + 1.4);
+      o.onended = disposer([o, g]);
+      const sw = osc('sawtooth', f0);
+      sw.frequency.setValueAtTime(f0, time); sw.frequency.exponentialRampToValueAtTime(f1, time + 0.55);
+      const sg = gainN(0);
+      sg.gain.setValueAtTime(0.0001, time); sg.gain.exponentialRampToValueAtTime(amp * 0.5, time + 0.04); sg.gain.exponentialRampToValueAtTime(0.0001, time + 0.9);
+      sw.connect(sg); sg.connect(hbLP); sw.start(time); sw.stop(time + 1.0);
+      sw.onended = disposer([sw, sg]);
+      if (!lite) {
+        const n = ctx.createBufferSource(); n.buffer = brown; n.loop = true;
+        const nl = filt('lowpass', 130, 0.7); const ng = gainN(0);
+        ng.gain.setValueAtTime(0.0001, time); ng.gain.exponentialRampToValueAtTime(amp, time + 0.02); ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.35);
+        n.connect(nl); nl.connect(ng); ng.connect(hbLP); n.start(time, Math.random() * 3); n.stop(time + 0.4);
+        n.onended = disposer([n, nl, ng]);
+      }
+    }
+    // a body this large answers late: the whole bed gives way at the knock, then swells after it
+    function heave(time) {
+      [heaveDry.gain, heaveWet.gain].forEach((p) => {
+        p.setTargetAtTime(0.5, time, 0.03);
+        p.setTargetAtTime(1.15, time + 0.22, 0.15);
+        p.setTargetAtTime(1, time + 0.8, 0.5);
+      });
+    }
+
+    // 6. bells: inharmonic partials (hum, prime, minor-third tierce, quint, nominal...), sagging pitch
+    const BELL = [[0.5, 0.9, 10], [1.0, 0.75, 7], [1.183, 0.6, 5.5], [1.506, 0.35, 4.2], [2.0, 0.55, 4.8],
+                  [2.514, 0.28, 3.2], [2.662, 0.22, 3.0], [3.011, 0.2, 2.4], [4.166, 0.12, 1.7], [5.433, 0.07, 1.2]];
+    const BELL_LITE = [BELL[0], BELL[1], BELL[2], BELL[3], BELL[4], BELL[6]];
+    const bellLP = filt('lowpass', 2800, 0.5);
+    route(bellLP, 0.35, 1.25, false);
+    const bellEcho = gainN(0.85); bellLP.connect(bellEcho); bellEcho.connect(echoIn);
+    function strike(time, f, amp, bend) {
+      const nodes = [];
+      const b = gainN(amp); b.connect(bellLP); nodes.push(b);
+      let last = null, lastEnd = 0;
+      (lite ? BELL_LITE : BELL).forEach(([r, a, dec], i) => {
+        const end = time + dec * 1.9;
+        const mk = (fr, aa) => {
+          const o = osc('sine', fr); kr(o.detune);
+          o.detune.setValueAtTime(0, time); o.detune.linearRampToValueAtTime(-bend, end);
+          const g = gainN(0);
+          g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(aa, time + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, end);
+          o.connect(g); g.connect(b); o.start(time); o.stop(end + 0.05);
+          nodes.push(o, g);
+          if (end > lastEnd) { lastEnd = end; last = o; }
+        };
+        mk(f * r * (1 + (Math.random() - 0.5) * 0.002), a);
+        if (!lite && i < 4) mk(f * r + 0.45 + i * 0.2, a * 0.5);
+      });
+      const n = ctx.createBufferSource(); n.buffer = white; n.loop = true;
+      const bp = filt('bandpass', f * 4.2, 3); const g = gainN(0);
+      g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(0.25, time + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, time + 0.12);
+      n.connect(bp); bp.connect(g); g.connect(b); n.start(time, Math.random()); n.stop(time + 0.15);
+      n.onended = disposer([n, bp, g]);
+      if (last) last.onended = disposer(nodes);
+    }
+    function toll(time) {
+      const notes = [146.83, 138.59, 103.83, 155.56, 116.54];
+      const f = notes[Math.floor(Math.random() * notes.length)];
+      const count = 3 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < count; k++) {
+        const sour = k === count - 1 && Math.random() < 0.4;
+        strike(time + k * 6.4 + Math.random() * 0.2, sour ? f * 0.944 : f, 0.34 - k * 0.03, 25);
+      }
+      return count * 6.4;
+    }
+
+    // 7. boom (flare)
+    function boom(time, amp) {
+      const n = ctx.createBufferSource(); n.buffer = brown; n.loop = true;
+      const lp = filt('lowpass', 400, 0.9);
+      lp.frequency.setValueAtTime(420, time); lp.frequency.exponentialRampToValueAtTime(55, time + 4.5);
+      const g = gainN(0);
+      g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(2.2 * amp, time + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, time + 7.5);
+      n.connect(lp); lp.connect(g);
+      n.onended = disposer([n, lp, g, ...route(g, 0.8, 0.8, false)]);
+      n.start(time, Math.random() * 3); n.stop(time + 8);
+      const o = osc('sine', 52);
+      o.frequency.setValueAtTime(52, time); o.frequency.exponentialRampToValueAtTime(24, time + 4);
+      const og = gainN(0);
+      og.gain.setValueAtTime(0.0001, time); og.gain.exponentialRampToValueAtTime(0.6 * amp, time + 0.08); og.gain.exponentialRampToValueAtTime(0.0001, time + 4.5);
+      o.connect(og);
+      o.onended = disposer([o, og, ...route(og, 1.0, 0.3, false)]);
+      o.start(time); o.stop(time + 4.7);
+      rumbleG.gain.setTargetAtTime(0.5 + 1.1 * amp, time, 0.6);
+      rumbleG.gain.setTargetAtTime(0.5, time + 2.5, 4);
+    }
+
+    // 8. feeding: a rising drag while the prey is reeled in, then a swallow and a toll
+    function reel(time, dur) {
+      const n = ctx.createBufferSource(); n.buffer = brown; n.loop = true;
+      const bp = filt('bandpass', 70, 6);
+      bp.frequency.setValueAtTime(70, time); bp.frequency.exponentialRampToValueAtTime(170, time + dur);
+      const g = gainN(0);
+      g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(1.4, time + dur); g.gain.exponentialRampToValueAtTime(0.0001, time + dur + 0.4);
+      n.connect(bp); bp.connect(g);
+      n.onended = disposer([n, bp, g, ...route(g, 0.8, 0.6, false)]);
+      n.start(time, Math.random() * 3); n.stop(time + dur + 0.5);
+    }
+    function devour(time) {
+      const o = osc('sawtooth', 70);
+      o.frequency.setValueAtTime(70, time); o.frequency.exponentialRampToValueAtTime(28, time + 3.1);
+      const lp = filt('lowpass', 420, 8);
+      lp.frequency.setValueAtTime(420, time); lp.frequency.exponentialRampToValueAtTime(70, time + 2.8);
+      const g = gainN(0);
+      g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(0.5, time + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, time + 3.6);
+      o.connect(lp); lp.connect(g);
+      o.onended = disposer([o, lp, g, ...route(g, 0.9, 0.6, false)]);
+      o.start(time); o.stop(time + 3.7);
+      const n = ctx.createBufferSource(); n.buffer = brown; n.loop = true;
+      const bp = filt('bandpass', 260, 5);
+      bp.frequency.setValueAtTime(260, time); bp.frequency.exponentialRampToValueAtTime(70, time + 1.3);
+      const ng = gainN(0);
+      ng.gain.setValueAtTime(0.0001, time); ng.gain.exponentialRampToValueAtTime(1.6, time + 0.08); ng.gain.exponentialRampToValueAtTime(0.0001, time + 1.6);
+      n.connect(bp); bp.connect(ng);
+      n.onended = disposer([n, bp, ng, ...route(ng, 0.8, 0.5, false)]);
+      n.start(time, Math.random() * 3); n.stop(time + 1.7);
+      strike(time + 0.8, 103.83, 0.42, 40);
+    }
+
+    // 9. sting: an inhale that rises, a hard cut to near-silence, then the hit
+    function sting(time) {
+      const n = ctx.createBufferSource(); n.buffer = white; n.loop = true;
+      const bp = filt('bandpass', 250, 2.5);
+      const IN = 7;
+      bp.frequency.setValueAtTime(250, time); bp.frequency.exponentialRampToValueAtTime(2600, time + IN);
+      const g = gainN(0);
+      g.gain.setValueAtTime(0.0001, time); g.gain.exponentialRampToValueAtTime(0.32, time + IN); g.gain.setValueAtTime(0, time + IN + 0.02);
+      n.connect(bp); bp.connect(g);
+      n.onended = disposer([n, bp, g, ...route(g, 0.7, 0.35, false)]);
+      n.start(time); n.stop(time + IN + 0.1);
+      [duckDry.gain, duckWet.gain].forEach((p) => {
+        p.cancelScheduledValues(time);
+        p.setValueAtTime(1, time + IN - 0.1);
+        p.linearRampToValueAtTime(0.06, time + IN + 0.03);
+        p.setValueAtTime(0.06, time + IN + 1.1);
+        p.linearRampToValueAtTime(1, time + IN + 7);
+      });
+      const hit = time + IN + 1.1;
+      boom(hit, 1);
+      strike(hit, 73.42, 0.5, 60);
+      return hit - ctx.currentTime;
+    }
+
+    // 10. rage: sudden dead silence, then everything at once
+    function rageHit(start, lead) {
+      const hit = start + lead;
+      [duckDry.gain, duckWet.gain].forEach((p) => {
+        p.cancelScheduledValues(start);
+        p.setValueAtTime(1, start);
+        p.linearRampToValueAtTime(0.0001, start + 0.12);
+        p.setValueAtTime(0.0001, hit - 0.02);
+        p.linearRampToValueAtTime(0.7, hit + 0.04);
+        p.linearRampToValueAtTime(0.45, hit + 3.5);
+        p.linearRampToValueAtTime(1, hit + 13);
+      });
+      boom(hit, 1.6);
+      strike(hit, 73.42, 0.55, 90);
+      strike(hit + 0.015, 77.78, 0.45, 110);
+      if (!lite) strike(hit + 0.03, 103.83, 0.4, 70);
+      const o = osc('sine', 60);
+      o.frequency.setValueAtTime(60, hit); o.frequency.exponentialRampToValueAtTime(18, hit + 3.5);
+      const og = gainN(0);
+      og.gain.setValueAtTime(0.0001, hit); og.gain.exponentialRampToValueAtTime(0.9, hit + 0.02); og.gain.exponentialRampToValueAtTime(0.0001, hit + 4);
+      o.connect(og);
+      o.onended = disposer([o, og, ...route(og, 1.0, 0.2, false)]);
+      o.start(hit); o.stop(hit + 4.2);
+      (lite ? [1864.7] : [1760, 1864.7, 2489]).forEach((f, i) => {
+        const sw = osc('sawtooth', f); kr(sw.detune);
+        sw.detune.setValueAtTime(0, hit); sw.detune.linearRampToValueAtTime(-300, hit + 4);
+        const list = [sw];
+        if (!lite) {
+          const vib = osc('sine', 5.5 + i); const vg = gainN(18); vib.connect(vg); vg.connect(sw.detune);
+          vib.start(hit); vib.stop(hit + 4.6); list.push(vib, vg);
+        }
+        const bp = filt('bandpass', f, 6);
+        const g = gainN(0);
+        g.gain.setValueAtTime(0.0001, hit); g.gain.exponentialRampToValueAtTime(lite ? 0.08 : 0.05, hit + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, hit + 4.5);
+        sw.connect(bp); bp.connect(g);
+        list.push(bp, g, ...route(g, 0.5, 0.9, false));
+        sw.onended = disposer(list);
+        sw.start(hit); sw.stop(hit + 4.6);
+      });
+      const tn = osc('sine', 3400); const tg = gainN(0);
+      tg.gain.setValueAtTime(0.0001, hit + 0.3); tg.gain.exponentialRampToValueAtTime(0.022, hit + 0.8); tg.gain.exponentialRampToValueAtTime(0.0001, hit + 9);
+      tn.connect(tg);
+      tn.onended = disposer([tn, tg, ...route(tg, 1.0, 0, false)]);
+      tn.start(hit + 0.3); tn.stop(hit + 9.1);
+    }
+
+    return {
+      ctx, on: false, lite,
+      shepEvery: lite ? 0.25 : 0.1,
+      latency() { return (ctx.outputLatency || 0) + (ctx.baseLatency || 0); },
+      fadeIn() {
+        const n = ctx.currentTime;
+        master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(master.gain.value, n);
+        master.gain.linearRampToValueAtTime(0.7, n + 6);
+      },
+      fadeOut() {
+        const n = ctx.currentTime;
+        master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(master.gain.value, n);
+        master.gain.linearRampToValueAtTime(0, n + 1.2);
+      },
+      shepard,
+      heartbeat(time, agit) { const a = 0.6 + 0.5 * agit; thump(time, a, 46); thump(time + 0.5 - 0.15 * agit, a * 0.62, 54); heave(time); },
+      toll, boom, sting, reel, devour, rage: rageHit
+    };
+  }
+
+  let audio = null, wantSound = true, everStarted = false;
+  let lite = (() => { try { return matchMedia('(pointer: coarse)').matches || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4); } catch (e) { return false; } })();
+  try { const v = localStorage.getItem('mikaesu-lite'); if (v === '1') lite = true; else if (v === '0') lite = false; } catch (e) {}
+  let nextTollAt = Infinity, nextStingAt = Infinity, lastShepAt = 0;
+  const AC_OK = !!(window.AudioContext || window.webkitAudioContext);
+  if (!AC_OK) soundBtn.hidden = true;
+  const audioLive = () => !!(audio && audio.on && audio.ctx.state === 'running');
+
+  function syncSoundIcon() {
+    const on = !!(audio && audio.on);
+    wavesG.toggleAttribute('hidden', !on); muteG.toggleAttribute('hidden', on);
+    soundBtn.setAttribute('aria-pressed', String(on));
+    soundBtn.setAttribute('aria-label', on ? 'BGMを止める' : 'BGMを鳴らす');
+    soundBtn.classList.toggle('pending', !everStarted && wantSound && AC_OK);
+  }
+  async function startSound() {
+    if (!audio) audio = createEngine(lite);
+    if (!audio) { soundBtn.hidden = true; return; }
+    audio.on = true;
+    try { await audio.ctx.resume(); } catch (e) {}
+    if (audio.ctx.state !== 'running') { audio.on = false; syncSoundIcon(); return; }
+    audio.fadeIn();
+    if (!everStarted) {
+      const s = performance.now() / 1000;
+      nextTollAt = s + 9; nextStingAt = s + 60;
+    }
+    everStarted = true;
+    syncSoundIcon();
+  }
+  function stopSound() {
+    if (audio && audio.on) {
+      audio.on = false; audio.fadeOut();
+      setTimeout(() => { if (audio && !audio.on) audio.ctx.suspend().catch(() => {}); }, 1400);
+    }
+    syncSoundIcon();
+  }
+  soundBtn.addEventListener('click', () => {
+    if (audio && audio.on) { wantSound = false; stopSound(); }
+    else { wantSound = true; startSound(); }
+  });
+  syncSoundIcon();
+
+  /* ---------- light mode: lighter audio graph + lower render resolution ---------- */
+  let visualCap = null;
+  function syncLite() {
+    liteBtn.setAttribute('aria-pressed', String(lite));
+    liteBtn.setAttribute('aria-label', lite ? '通常モードに戻す' : '軽量モードにする');
+  }
+  liteBtn.addEventListener('click', () => {
+    lite = !lite;
+    try { localStorage.setItem('mikaesu-lite', lite ? '1' : '0'); } catch (e) {}
+    syncLite();
+    if (visualCap) visualCap();
+    if (audio) {
+      const was = audio.on, old = audio;
+      audio = null;
+      try { old.ctx.close(); } catch (e) {}
+      if (was) startSound();
+    }
+  });
+  syncLite();
+
+  /* ---------- fullscreen & wake lock ---------- */
+  const root = document.documentElement;
+  const fsSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+  if (!fsSupported) fullBtn.hidden = true;
+  const isFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  function toggleFs() {
+    try {
+      if (!isFs()) {
+        if (root.requestFullscreen) root.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+        else if (root.webkitRequestFullscreen) root.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      }
+    } catch (e) {}
+  }
+  function syncFs() {
+    const on = isFs();
+    fsInG.toggleAttribute('hidden', on); fsOutG.toggleAttribute('hidden', !on);
+    fullBtn.setAttribute('aria-pressed', String(on));
+    fullBtn.setAttribute('aria-label', on ? '全画面を終了' : '全画面にする');
+  }
+  document.addEventListener('fullscreenchange', syncFs);
+  document.addEventListener('webkitfullscreenchange', syncFs);
+  fullBtn.addEventListener('click', () => {
+    toggleFs();
+    if (wantSound && !everStarted) startSound();
+  });
+  canvas.addEventListener('dblclick', () => { if (fsSupported) toggleFs(); });
+
+  let wakeLock = null;
+  async function keepAwake() {
+    try {
+      if ('wakeLock' in navigator && document.visibilityState === 'visible' && !wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      }
+    } catch (e) {}
+  }
+
+  function firstActivation(e) {
+    if (e.target && e.target.closest && e.target.closest('.dock')) return;
+    if (e.type === 'keydown' && (e.key === 'm' || e.key === 'M')) return;
+    if (wantSound && !everStarted && AC_OK && !(audio && audio.on)) startSound();
+    keepAwake();
+  }
+  window.addEventListener('pointerup', firstActivation, true);
+  window.addEventListener('click', firstActivation, true);
+  window.addEventListener('keydown', firstActivation, true);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (audio && audio.on) audio.ctx.suspend().catch(() => {}); }
+    else { if (audio && audio.on) audio.ctx.resume().catch(() => {}); keepAwake(); }
+  });
+
+  let lastUi = performance.now() / 1000, dockHover = false;
+  const uiPing = () => { lastUi = performance.now() / 1000; };
+  ['pointermove', 'pointerdown', 'keydown', 'wheel'].forEach((ev) => window.addEventListener(ev, uiPing, { passive: true }));
+  dock.addEventListener('pointerenter', () => { dockHover = true; });
+  dock.addEventListener('pointerleave', () => { dockHover = false; });
+  dock.addEventListener('focusin', uiPing);
+
+  /* =========================================================
+     WebGL sun
+     ========================================================= */
+  const gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'high-performance' });
+  if (!gl) { fallback.hidden = false; return; }
+
+  const VS = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+  const FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uDist;
+uniform float uF;
+uniform mat3 uRot;
+uniform vec3 uSpot;
+uniform float uPupil;
+uniform float uEyeSize;
+uniform vec4 uPrey[6];
+uniform float uPull[6];
+uniform vec4 uFlare;
+uniform float uFlareAmp;
+uniform vec3 uEarth;
+uniform float uExpo;
+uniform float uRageU;
+uniform float uRageRise;
+uniform vec2 uShake;
+uniform float uFlashOn;
+uniform float uBlur;
+uniform float uFrame;
+uniform float uGain;
+uniform float uStorm;
+uniform vec3 uBloom;
+
+float hash1(vec3 p){
+  p = 50.0*fract(p*0.3183099 + vec3(0.71,0.113,0.419));
+  return fract(p.x*p.y*p.z*(p.x+p.y+p.z));
+}
+float noise(vec3 x){
+  vec3 i = floor(x); vec3 f = fract(x);
+  f = f*f*(3.0-2.0*f);
+  float a = hash1(i);
+  float b = hash1(i+vec3(1.0,0.0,0.0));
+  float c = hash1(i+vec3(0.0,1.0,0.0));
+  float d = hash1(i+vec3(1.0,1.0,0.0));
+  float e = hash1(i+vec3(0.0,0.0,1.0));
+  float g = hash1(i+vec3(1.0,0.0,1.0));
+  float h = hash1(i+vec3(0.0,1.0,1.0));
+  float k = hash1(i+vec3(1.0,1.0,1.0));
+  return mix(mix(mix(a,b,f.x),mix(c,d,f.x),f.y), mix(mix(e,g,f.x),mix(h,k,f.x),f.y), f.z);
+}
+const mat3 M3 = mat3(0.00,0.80,0.60, -0.80,0.36,-0.48, -0.60,-0.48,0.64);
+float fbm3(vec3 p){ float s=0.0; float a=0.5; for(int i=0;i<3;i++){ s+=a*noise(p); p=M3*p*2.03; a*=0.5; } return s/0.875; }
+float fbm5(vec3 p){ float s=0.0; float a=0.5; for(int i=0;i<5;i++){ s+=a*noise(p); p=M3*p*2.03; a*=0.5; } return s/0.96875; }
+
+vec3 hash3(vec3 p){
+  p = vec3(dot(p,vec3(127.1,311.7,74.7)), dot(p,vec3(269.5,183.3,246.1)), dot(p,vec3(113.5,271.9,124.6)));
+  return fract(sin(p)*43758.5453);
+}
+vec2 worley(vec3 x, float t){
+  vec3 i = floor(x); vec3 f = fract(x);
+  float d1 = 9.0; float d2 = 9.0;
+  for(int z=-1; z<=1; z++){
+    for(int y=-1; y<=1; y++){
+      for(int xx=-1; xx<=1; xx++){
+        vec3 g = vec3(float(xx), float(y), float(z));
+        vec3 o = hash3(i+g);
+        o = 0.5 + 0.4*sin(t + 6.2831*o);
+        vec3 r = g + o - f;
+        float d = dot(r,r);
+        if(d < d1){ d2 = d1; d1 = d; } else if(d < d2){ d2 = d; }
+      }
+    }
+  }
+  return vec2(sqrt(d1), sqrt(d2));
+}
+
+// Light needs 2.32 s to cross one solar radius. Anything that happens to the whole star at once
+// reaches us first from the point nearest us, and seconds later from the limb and the corona.
+const float LS = 2.32;
+float rageAt(float d, float rise){
+  float u = uRageU - d;
+  if(u <= 0.0 || u > 9.5) return 0.0;
+  return u < 4.0 ? smoothstep(0.0, rise, u) : 1.0 - smoothstep(4.0, 9.5, u);
+}
+// the red that fills the void has no surface to travel across: it waits for the limb, then rises softly
+float rageField(float d){
+  float u = uRageU - d;
+  if(u <= 0.0 || u > 9.5) return 0.0;
+  return u < 4.0 ? smoothstep(0.0, max(uRageRise, 1.4), u) : 1.0 - smoothstep(4.0, 9.5, u);
+}
+float flashAt(float d){
+  float u = uRageU - d;
+  return u > 0.0 ? uFlashOn*exp(-u*5.0) : 0.0;
+}
+
+float h21(vec2 p){
+  p = fract(p*vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x*p.y);
+}
+
+// Prominences seen against the disc. Over the limb they burn as flames; turned toward us the same
+// active regions show as dark filaments (as on the real Sun) with faint red loops higher up.
+// Each layer is sampled where the ray crosses a shell above the surface, so they shift with depth.
+float promRegion(vec3 dir, float t){
+  // two octaves are enough for a field this broad; it is evaluated on every pixel of the disc
+  vec3 p = dir*1.6 + vec3(3.1, 0.0, t*0.003);
+  return smoothstep(0.45, 0.68, (0.5*noise(p) + 0.25*noise(M3*p*2.03))/0.75);
+}
+float ridge(vec3 p){ return 1.0 - abs(2.0*(0.5*noise(p) + 0.25*noise(M3*p*2.03))/0.75 - 1.0); }
+
+vec3 ramp(float x){
+  vec3 c = vec3(0.30,0.015,0.0)*smoothstep(0.0,0.22,x);
+  c = mix(c, vec3(0.78,0.13,0.02), smoothstep(0.18,0.46,x));
+  c = mix(c, vec3(1.0,0.43,0.07), smoothstep(0.42,0.74,x));
+  c = mix(c, vec3(1.0,0.78,0.42), smoothstep(0.70,0.98,x));
+  c = mix(c, vec3(1.0,0.96,0.86), smoothstep(0.95,1.35,x));
+  return c;
+}
+
+float surface(vec3 n, float mu, float t, float foot, float fe){
+  float big = fbm3(n*2.6 + vec3(0.0, t*0.003, t*0.004));
+
+  // frame around the big spot
+  float cd = dot(n, uSpot);
+  float a = acos(clamp(cd, -1.0, 1.0));
+  float R2 = 0.12*uEyeSize;
+  float R1 = R2*0.42*uPupil;
+  vec3 up = abs(uSpot.y) < 0.9 ? vec3(0.0,1.0,0.0) : vec3(1.0,0.0,0.0);
+  vec3 tA = normalize(cross(up, uSpot));
+  vec3 tB = cross(uSpot, tA);
+  vec3 v = n - uSpot*cd;
+  float vl = length(v);
+  vec3 er = vl > 1e-5 ? v/vl : tA;
+  vec2 l = vec2(dot(v, tA), dot(v, tB));
+
+  bool nearEye = a < R2*2.2;
+  float rN = 9.0;
+  float rU = 9.0;
+  vec3 nm = n;
+  if(nearEye){
+    // ragged outlines that travel with the spot
+    float sh = fbm3(vec3(l/R2*1.4, t*0.006)) - 0.5;
+    rN = a/(R2*(1.0 + 0.45*sh));
+    float shU = fbm3(vec3(l/R2*2.3 + vec2(5.2, 1.3), t*0.01 + 3.0)) - 0.5;
+    rU = a/(R1*(1.0 + 0.5*shU));
+    // compress the radial coordinate so convection cells stretch into penumbral filaments
+    float s = 1.0 - smoothstep(0.8, 1.35, rN);
+    float am = mix(a, 0.28*a + 0.62*R2, s);
+    nm = uSpot*cos(am) + er*sin(am);
+  }
+
+  vec3 gp = nm*36.0;
+  gp += (noise(gp*0.33 + vec3(t*0.012)) - 0.5)*1.3;
+  vec2 w = worley(gp, t*0.13);
+  float cellC = 1.0 - smoothstep(0.0, 0.85, w.x);
+  float lane = smoothstep(0.0, 0.17, w.y - w.x);
+  float gran = (0.35 + 0.65*cellC)*(0.32 + 0.68*lane);
+  gran = mix(0.5, gran, 1.0 - smoothstep(0.012, 0.035, foot));
+  float fine = noise(nm*150.0 + vec3(t*0.07));
+  gran *= mix(1.0, 0.82 + 0.36*fine, 1.0 - smoothstep(0.002, 0.006, foot));
+  float micro = noise(nm*620.0 + vec3(t*0.18));
+  gran *= mix(1.0, 0.86 + 0.28*micro, 1.0 - smoothstep(0.0005, 0.0015, foot));
+  float heat = (0.52 + 0.52*gran)*(0.8 + 0.4*big);
+
+  // smaller spots: prey. While being pulled they stretch into a teardrop
+  // and a dark thread runs from them into the big spot.
+  for(int i=0; i<6; i++){
+    vec4 P = uPrey[i];
+    if(P.w <= 0.0) continue;
+    float pull = uPull[i];
+    vec3 off = n - P.xyz;
+    vec3 toE = uSpot - P.xyz;
+    float dE = length(toE);
+    vec3 dirE = toE/max(dE, 1e-5);
+    float along = dot(off, dirE);
+    float dl = length(off - dirE*clamp(along, 0.0, dE));
+    if(dl > P.w*1.8 + R2*0.25*pull + 0.01) continue;
+    vec3 perp = off - dirE*along;
+    float stretch = 1.0 + 2.5*pull*step(0.0, along);
+    float dd = length(perp + dirE*(along/stretch));
+    float rr = dd/(P.w*(1.0 + 0.4*(noise(off/P.w*1.3 + vec3(float(i)*3.7, 0.0, t*0.015)) - 0.5)));
+    float pm = (1.0 - smoothstep(0.85, 1.12, rr))*smoothstep(0.012, 0.024, P.w);
+    float um = 1.0 - smoothstep(0.32, 0.55, rr);
+    heat = mix(heat, (0.36 + 0.34*gran)*(0.9 + 0.2*big), pm);
+    heat = mix(heat, 0.18 + 0.04*noise(n*240.0), um);
+    if(pull > 0.0){
+      float tt = clamp(along/max(dE, 1e-5), 0.0, 1.0);
+      float width = mix(P.w*0.5, R2*0.22, tt)*pull;
+      float wob = (noise(n*70.0 + vec3(t*0.2)) - 0.5)*width*0.9;
+      float tm = (1.0 - smoothstep(width*0.35, width + 1e-4, dl + wob))*smoothstep(0.0, 0.3, pull);
+      heat = mix(heat, 0.26 + 0.2*gran, tm);
+    }
+  }
+
+  // the big spot
+  if(nearEye){
+    float pen = 1.0 - smoothstep(0.9 - 0.12*uBlur, 1.08 + 0.3*uBlur, rN);
+    float umb = 1.0 - smoothstep(0.88 - 0.15*uBlur, 1.1 + 0.35*uBlur, rU);
+    float penVal = (0.34 + 0.38*gran)*mix(0.78, 1.0, smoothstep(0.3, 1.0, rN))*(0.92 + 0.16*big);
+    float dots = smoothstep(0.8, 0.96, noise(n*260.0 + vec3(t*0.06)));
+    float umbVal = (0.16 + 0.08*dots)*mix(0.62, 1.0, smoothstep(0.0, 0.9, rU));
+    heat = mix(heat, penVal, pen);
+    heat = mix(heat, umbVal, umb);
+  }
+  // faculae around it, mostly visible toward the limb
+  if(a < R2*3.0){
+    float kf = (a - R2*1.6)/(R2*0.7);
+    heat += exp(-kf*kf)*0.12*smoothstep(0.45, 0.8, noise(n*30.0))*(1.0 - mu)*1.4;
+  }
+
+  float fcd = dot(n, uFlare.xyz);
+  if(fe > 0.001 && fcd > 0.6){
+    float fa = acos(clamp(fcd,-1.0,1.0));
+    float ft = t - uFlare.w;
+    heat += fe*1.2*exp(-fa*fa*650.0)*(0.5 + noise(n*80.0 + vec3(t*0.25)));
+    heat += fe*0.22*exp(-fa*fa*50.0);
+    float kq = (fa - ft*0.045)/0.012;
+    heat += 0.16*uFlareAmp*exp(-ft*0.1)*exp(-kq*kq);
+  }
+  return heat;
+}
+
+vec3 corona(vec3 qs, float h, float t){
+  float g1 = exp(-h*10.0);
+  float g2 = exp(-h*2.6);
+  float g3 = 1.0/(1.0 + h*h*5.0);
+  float st = smoothstep(0.32, 0.78, fbm3(qs*2.1 + vec3(0.0, t*0.004, 0.0)));
+  float r1 = noise(qs*15.0 + vec3(0.0, 0.0, t*0.006));
+  float r2 = mix(noise(qs*41.0 - vec3(t*0.004)), 0.5, uBlur);
+  float ray = 0.6*r1 + 0.4*r2;
+  vec3 c = vec3(1.0,0.34,0.07)*g1*0.85;
+  c += vec3(0.85,0.36,0.14)*g2*0.20*(0.45 + st);
+  c += vec3(0.74,0.69,0.64)*g3*0.17*st*(0.35 + ray);
+  c += vec3(0.80,0.72,0.66)*exp(-h*3.2)*0.55*pow(ray, 4.0);
+  return c;
+}
+
+vec2 flames(vec3 qs, float h, float t){
+  if(h > 0.32) return vec2(0.0);
+  float region = promRegion(qs, t);
+  vec3 p = qs*6.5;
+  float w = fbm3(p*0.8 + vec3(0.0, t*0.02, 0.0));
+  float d = fbm5(p + vec3(w*1.7) + qs*(h*11.0) + vec3(0.0, -t*0.024, t*0.012));
+  float thr = 0.40 + h*mix(5.5, 1.5, region);
+  float f = smoothstep(thr - 0.05*uBlur, thr + 0.07 + 0.2*uBlur, d)*exp(-h*5.0)*(1.0 - 0.25*uBlur);
+  float core = smoothstep(thr + 0.09, thr + 0.22 + 0.2*uBlur, d)*exp(-h*9.0)*(1.0 - 0.4*uBlur);
+  float rim = exp(-h*160.0)*0.7;
+  return vec2(max(f, rim), core);
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5*uRes)/uRes.y + uShake;
+  float px = 1.0/uRes.y;
+  float t = uTime;
+  vec3 ro = vec3(0.0, 0.0, uDist);
+  vec3 rd = normalize(vec3(uv, -uF));
+  float b = dot(ro, rd);
+  float tca = -b;
+  vec3 q = ro + rd*tca;
+  float qb = length(q);
+  vec3 qs = uRot*(q/qb);
+  float pxw = px*tca/uF;
+  float breath0 = 1.0 + 0.035*sin(t*0.24)*sin(t*0.083 + 1.3);
+  // extra light path, in solar radii, compared with the point of the surface nearest us.
+  // corona: the light first climbs out to height h, then comes to us from the plane of the sky
+  float dly = max(qb - 1.0, 0.0) + tca - (uDist - 1.0);
+
+  float ft = t - uFlare.w;
+  float fe = ft > 0.0 ? smoothstep(0.0, 1.1, ft)*exp(-ft*0.2)*uFlareAmp : 0.0;
+
+  vec3 col = vec3(0.0);
+  float limbW = 0.025*uBlur;
+  if(qb > 1.0 - 3.0*pxw - limbW){
+    float h = max(qb - 1.0, 0.0);
+    col = corona(qs, h, t);
+    vec2 fl = flames(qs, h, t);
+    col = mix(col, vec3(1.0, 0.10, 0.08), fl.x*0.85);
+    col += vec3(1.0, 0.5, 0.28)*fl.y*0.9;
+    float fd = dot(qs, uFlare.xyz);
+    col += vec3(1.0, 0.62, 0.4)*fe*1.4*exp(-h*5.0)*smoothstep(0.86, 0.99, fd);
+    col *= breath0;
+  }
+
+  float disc = b*b - (dot(ro, ro) - 1.0);
+  if(disc > 0.0){
+    float th = -b - sqrt(disc);
+    vec3 n = ro + rd*th;
+    dly = th - (uDist - 1.0);
+    float breath = breath0;
+    float mu = clamp(dot(n, -rd), 0.0, 1.0);
+    vec3 ns = uRot*n;
+    float foot = th*px/uF/max(mu, 0.15) + 0.032*uBlur;
+    float heat = surface(ns, mu, t, foot, fe);
+    float m1 = 1.0 - mu;
+    heat *= mix(0.6, 1.0, pow(mu, 0.4));
+    float ld = 1.0 - 0.47*m1 - 0.23*m1*m1;
+    vec3 sc = ramp(heat*breath)*ld;
+    sc += vec3(0.55, 0.04, 0.03)*pow(m1, 6.0)*0.5;
+
+    // filaments (low shell) and loops (higher shell)
+    float rL = 1.025, rH = 1.09;
+    float dL = b*b - (dot(ro, ro) - rL*rL), dH = b*b - (dot(ro, ro) - rH*rH);
+    vec3 dirL = uRot*((ro + rd*(-b - sqrt(max(dL, 0.0))))/rL);
+    vec3 dirH = uRot*((ro + rd*(-b - sqrt(max(dH, 0.0))))/rH);
+    float reg = promRegion(dirL, t);
+    if(reg > 0.02){
+      float fil = smoothstep(0.84 - 0.12*uBlur, 0.95, ridge(dirL*5.5 + vec3(1.7, t*0.004, 4.2)))*reg;
+      float lp = reg > 0.25 ? smoothstep(0.9 - 0.12*uBlur, 0.975, ridge(dirH*4.2 + vec3(-3.1, 2.2, t*0.006)))*reg : 0.0;
+      float lumS = dot(sc, vec3(0.5, 0.4, 0.1));
+      sc = mix(sc, sc*vec3(0.46, 0.13, 0.08), fil*0.85*(1.0 - 0.3*uBlur));
+      sc = mix(sc, vec3(0.95, 0.16, 0.08)*lumS*1.05, lp*0.55*(1.0 - 0.3*uBlur));
+    }
+    float cover = 1.0 - smoothstep(1.0 - 1.5*pxw - limbW, 1.0 + limbW, qb);
+    col = mix(col, sc, cover);
+  }
+
+  col += vec3(0.10, 0.035, 0.02)*0.25/(1.0 + max(qb - 1.0, 0.0)*3.0);
+  col += vec3(1.0, 0.55, 0.25)*0.3*uBlur*exp(-max(qb - 1.0, 0.0)/0.045)*step(1.0, qb);
+
+  if(uEarth.z > 0.5){
+    float rS = uF/sqrt(uDist*uDist - 1.0);
+    vec2 ec = uEarth.xy*rS;
+    float er = rS/109.2;
+    float d = length(uv - ec);
+    float m = (1.0 - smoothstep(er - px*0.75, er + px*0.75 + 2.5*er*uBlur, d))*(1.0 - 0.5*uBlur);
+    col *= 1.0 - m;
+  }
+
+  // rage: everything drains into blood red, the void included. The red, like the flash,
+  // spreads outward from the point nearest us at the speed of light; the void waits for the corona.
+  float dv = min(dly, 1.6)*LS;
+  float dLimb = sqrt(uDist*uDist - 1.0) - (uDist - 1.0);
+  float df = min(dly, dLimb)*LS;
+  float rg = rageAt(dv, uRageRise + 1.6*clamp(qb - 1.0, 0.0, 1.0));
+  float rf = rageField(df);
+  if(rg + rf > 0.001){
+    float lum = dot(col, vec3(0.45, 0.4, 0.15));
+    vec3 blood = vec3(lum*1.35 + 0.015, lum*0.10, lum*0.07);
+    col = mix(col, blood, rg);
+    vec2 vr = gl_FragCoord.xy/uRes - 0.5;
+    float field = 0.5*(1.0 - 0.9*dot(vr, vr));
+    col += vec3(field, field*0.035, field*0.02)*rf;
+  }
+
+  col *= uExpo*(1.0 + 0.8*flashAt(dv));
+  col = 1.0 - exp(-col*1.6);
+  vec2 vq = gl_FragCoord.xy/uRes - 0.5;
+  col *= 1.0 - (0.75 + 0.55*rf)*dot(vq, vq);
+
+  // ---- the sensor ----
+  vec2 fc = floor(gl_FragCoord.xy);
+  float fr = mod(uFrame, 997.0);
+  // a saturated flare kernel bleeds charge up and down its column
+  if(uBloom.z > 0.002){
+    float bx = abs(uv.x - uBloom.x)/px;
+    float by = abs(uv.y - uBloom.y);
+    float len = 0.02 + 0.15*uBloom.z;
+    float run = (1.0 - smoothstep(len*0.5, len, by))*(0.72 + 0.28*h21(vec2(floor(by/px*0.5), floor(fr/4.0))));
+    col = mix(col, vec3(1.0, 0.96, 0.88), exp(-bx*bx/2.2)*run*min(uBloom.z*1.6, 0.92));
+  }
+  // energetic particles from a flare striking the sensor: specks and short worm-like tracks
+  if(uStorm > 0.002){
+    // cells of 28 px; a track is at most 14 px long, so only this cell and the three nearest matter
+    float cs = 28.0;
+    vec2 cp = gl_FragCoord.xy/cs;
+    vec2 cell = floor(cp);
+    vec2 sd = step(0.5, fract(cp))*2.0 - 1.0;
+    float fb = floor(fr/3.0);
+    float hit = 0.0;
+    for(int j=0; j<=1; j++){
+      for(int i=0; i<=1; i++){
+        vec2 c = cell + vec2(float(i), float(j))*sd;
+        if(h21(c*1.17 + fb*vec2(3.1, 7.7)) > uStorm*0.08) continue;
+        vec2 a = (c + vec2(h21(c + fb + 0.3), h21(c - fb + 1.7)))*cs;
+        float ang = h21(c*2.3 + fb)*6.2832;
+        float ln = h21(c*0.9 + fb + 5.1) < 0.6 ? 0.0 : 3.0 + 11.0*h21(c*3.1 + fb);
+        vec2 ba = vec2(cos(ang), sin(ang))*ln;
+        vec2 pa = gl_FragCoord.xy - a;
+        float hh = clamp(dot(pa, ba)/max(dot(ba, ba), 1e-4), 0.0, 1.0);
+        float dd = length(pa - ba*hh);
+        // tracks deposit unevenly along their length and thin out toward one end
+        float dep = ln > 0.0 ? (0.55 + 0.45*sin(hh*9.0 + h21(c - fb)*6.0))*(1.0 - 0.6*hh) : 1.0;
+        hit = max(hit, (1.0 - smoothstep(0.35, 1.35, dd))*(0.5 + 0.5*h21(c + fb*1.3))*dep);
+      }
+    }
+    col = mix(col, vec3(1.0, 0.97, 0.93), hit*min(uStorm, 1.0));
+  }
+  // noise: grain everywhere, colour noise and faint column banding in the dark; the gain rises
+  // when the auto-exposure pushes up. A few stuck pixels never change.
+  float lumD = dot(col, vec3(0.3, 0.55, 0.15));
+  float dk = 1.0 - smoothstep(0.0, 0.35, lumD);
+  float n0 = h21(fc + fr*vec2(17.0, 59.0)) - 0.5;
+  vec3 nc = vec3(h21(fc*1.31 + fr*vec2(31.0, 7.0)), h21(fc*0.73 + fr*vec2(5.0, 43.0)), h21(fc*1.93 + fr*vec2(13.0, 29.0))) - 0.5;
+  float cb = h21(vec2(fc.x*0.61, floor(fr/8.0))) - 0.5;
+  col += (n0*0.022 + cb*0.0035*dk)*uGain + nc*0.022*dk*uGain;
+  if(h21(fc*0.37 + vec2(7.1, 3.3)) > 0.99993) col += vec3(h21(fc + 1.0), h21(fc + 2.0), h21(fc + 3.0))*0.45;
+  gl_FragColor = vec4(max(col, 0.0), 1.0);
+}
+`;
+
+  function compile(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); return null; }
+    return s;
+  }
+  const vs = compile(gl.VERTEX_SHADER, VS);
+  const fs = compile(gl.FRAGMENT_SHADER, FS);
+  if (!vs || !fs) { fallback.hidden = false; return; }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+  gl.bindAttribLocation(prog, 0, 'p');
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { console.error(gl.getProgramInfoLog(prog)); fallback.hidden = false; return; }
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const U = {};
+  ['uRes', 'uTime', 'uDist', 'uF', 'uRot', 'uSpot', 'uPupil', 'uEyeSize', 'uPrey', 'uPull', 'uFlare', 'uFlareAmp', 'uEarth', 'uExpo', 'uRageU', 'uRageRise', 'uShake', 'uFlashOn', 'uBlur', 'uFrame', 'uGain', 'uStorm', 'uBloom']
+    .forEach((k) => { U[k] = gl.getUniformLocation(prog, k); });
+
+  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); fallback.hidden = false; });
+
+  /* ---------- math ---------- */
+  const F = 1.6;
+  const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const angle = (a, b) => Math.acos(clamp(dot(a, b), -1, 1));
+  const rotX = (a) => { const c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, c, -s, 0, s, c]; };
+  const rotY = (a) => { const c = Math.cos(a), s = Math.sin(a); return [c, 0, s, 0, 1, 0, -s, 0, c]; };
+  const mul = (A, B) => {
+    const R = new Array(9);
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) R[r * 3 + c] = A[r * 3] * B[c] + A[r * 3 + 1] * B[3 + c] + A[r * 3 + 2] * B[6 + c];
+    return R;
+  };
+  const tr = (A) => [A[0], A[3], A[6], A[1], A[4], A[7], A[2], A[5], A[8]];
+  const apply = (A, v) => [A[0] * v[0] + A[1] * v[1] + A[2] * v[2], A[3] * v[0] + A[4] * v[1] + A[5] * v[2], A[6] * v[0] + A[7] * v[1] + A[8] * v[2]];
+  function rotateToward(a, b, step, ang) {
+    let p = [b[0] - a[0] * Math.cos(ang), b[1] - a[1] * Math.cos(ang), b[2] - a[2] * Math.cos(ang)];
+    let l = Math.hypot(p[0], p[1], p[2]);
+    if (l < 1e-6) { p = [a[1], -a[0], 0]; l = Math.hypot(p[0], p[1], p[2]) || 1; }
+    p = [p[0] / l, p[1] / l, p[2] / l];
+    const c = Math.cos(step), s = Math.sin(step);
+    return norm([a[0] * c + p[0] * s, a[1] * c + p[1] * s, a[2] * c + p[2] * s]);
+  }
+  function around(c, ang, th) {
+    const up = Math.abs(c[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+    const a = norm(cross(up, c)), b = cross(c, a);
+    const s = Math.sin(ang), co = Math.cos(ang), ct = Math.cos(th), st2 = Math.sin(th);
+    return norm([c[0] * co + (a[0] * ct + b[0] * st2) * s, c[1] * co + (a[1] * ct + b[1] * st2) * s, c[2] * co + (a[2] * ct + b[2] * st2) * s]);
+  }
+
+  /* ---------- state ---------- */
+  const st = {
+    yaw: 0.35, pitch: 0.16, yawT: 0.35, pitchT: 0.16, vyaw: 0, vpitch: 0,
+    spin: 0, zoom: 1.12, zoomTarget: 1,
+    flare: [1, 0, 0, -100], flareAmp: 1, nextFlare: 14
+  };
+  let curM = mul(rotX(st.pitch), rotY(st.yaw));
+  let curW2S = tr(curM);
+  const startSec = performance.now() / 1000;
+
+  // the big spot and its behavior
+  const eye = {
+    spot: norm(apply(curW2S, norm([-0.93, 0.2, 0.3]))),
+    mode: 'watch', until: startSec + 20,
+    prey: null, glanceW: null, huntStart: 0,
+    boost: 0, spike: 0, kick: 0, pupil: 1.3, size: 1.0, vel: 0
+  };
+
+  // the smaller spots it feeds on
+  const prey = [];
+  let nextSpawnAt = startSec + 2;
+  const worldZ = (p) => apply(curM, p)[2];
+  function spawnPrey() {
+    if (prey.length >= 6) return;
+    const view = norm(apply(curW2S, [0, 0, 1]));
+    for (let tries = 0; tries < 30; tries++) {
+      const d = around(view, 0.2 + Math.random() * 0.75, Math.random() * Math.PI * 2);
+      if (worldZ(d) < 0.3) continue;
+      if (angle(d, eye.spot) < 0.32) continue;
+      if (prey.some((q) => angle(q.p, d) < 0.16)) continue;
+      prey.push({ p: d, r: 0, rT: 0.012 + Math.random() * 0.022, pull: 0, hunted: false });
+      return;
+    }
+  }
+  for (let k = 0; k < 4; k++) spawnPrey();
+
+  let pointer = null;
+  let t = 0;
+
+  function triggerFlare(strong) {
+    const r = (a) => (Math.random() * 2 - 1) * a;
+    let fd;
+    if (strong) fd = norm([eye.spot[0] + r(0.06), eye.spot[1] + r(0.06), eye.spot[2] + r(0.06)]);
+    else if (Math.random() < 0.6) fd = norm([eye.spot[0] + r(0.3), eye.spot[1] + r(0.3), eye.spot[2] + r(0.3)]);
+    else { const th = Math.random() * Math.PI * 2; fd = norm(apply(curW2S, [Math.cos(th), Math.sin(th), 0.12])); }
+    st.flare = [fd[0], fd[1], fd[2], t];
+    st.flareAmp = strong ? 1.6 : 1;
+    const nowR = performance.now() / 1000;
+    // particles arrive some seconds after the light (in reality tens of minutes or more)
+    if (strong || Math.random() < 0.6) storms.push({ at: nowR + (strong ? 4 : 7) + Math.random() * 5, amp: strong ? 1.15 : 0.35 + Math.random() * 0.3 });
+    if (storms.length > 4) storms.shift();
+    // the lens hunts for focus: out, back, out again, and settles
+    if (strong || Math.random() < 0.7) {
+      const k = strong ? 1 : 0.55 + Math.random() * 0.3;
+      af.plan = [[nowR + 0.15, 0.85 * k], [nowR + 1.3, 0.05], [nowR + 2.2, 0.6 * k], [nowR + 3.1, 0.12 * k], [nowR + 3.8, 0]];
+    }
+    st.nextFlare = t + 26 + Math.random() * 30;
+  }
+
+  /* ---------- sizing & adaptive resolution ---------- */
+  const dpr = window.devicePixelRatio || 1;
+  let maxScale = Math.min(dpr, lite ? 1.0 : 1.75);
+  let scale = Math.min(dpr, lite ? 0.85 : 1.25);
+  let W = 1, H = 1, D0 = 5;
+  function resize() {
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.max(1, Math.round(W * scale));
+    canvas.height = Math.max(1, Math.round(H * scale));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    const rS0 = Math.min(0.30, 0.40 * W / H);
+    D0 = Math.sqrt((F / rS0) * (F / rS0) + 1);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  visualCap = () => {
+    maxScale = Math.min(dpr, lite ? 1.0 : 1.75);
+    if (scale > maxScale) { scale = maxScale; resize(); }
+  };
+
+  /* ---------- input ---------- */
+  const pts = new Map();
+  let dragging = false, lastPinch = 0, lastMoveT = 0;
+  let lastInteract = startSec;
+  let turn = null, nextTurnAt = startSec + 45;
+  const touched = () => { lastInteract = performance.now() / 1000; turn = null; };
+  const toUV = (x, y) => ({ x: (x - W / 2) / H, y: (H / 2 - y) / H });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    canvas.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    hold = pts.size === 1 ? { x: e.clientX, y: e.clientY, t: performance.now() / 1000 } : null;
+    dragging = true; canvas.classList.add('dragging');
+    st.vyaw = 0; st.vpitch = 0; lastMoveT = performance.now();
+    st.yawT = st.yaw; st.pitchT = st.pitch;
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y); }
+    const uv = toUV(e.clientX, e.clientY); pointer = { x: uv.x, y: uv.y, at: performance.now() };
+    touched();
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    const uv = toUV(e.clientX, e.clientY);
+    pointer = { x: uv.x, y: uv.y, at: performance.now() };
+    if (!pts.has(e.pointerId)) return;
+    const prev = pts.get(e.pointerId);
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (hold && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 12) hold = null;
+    touched();
+    if (pts.size === 1) {
+      const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+      const now = performance.now(); const dt = Math.max(8, now - lastMoveT) / 1000; lastMoveT = now;
+      const k = 3.2 / Math.max(H, 1);
+      st.yawT += dx * k; st.pitchT = clamp(st.pitchT + dy * k, -1.35, 1.35);
+      st.vyaw = clamp((dx * k) / dt, -3, 3); st.vpitch = clamp((dy * k) / dt, -3, 3);
+    } else if (pts.size === 2) {
+      const [a, b] = [...pts.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (lastPinch > 0) st.zoomTarget = clamp(st.zoomTarget * (lastPinch / d), 0.04, 2.6);
+      lastPinch = d;
+    }
+  });
+  function endPointer(e) {
+    pts.delete(e.pointerId);
+    hold = null;
+    if (pts.size < 2) lastPinch = 0;
+    if (pts.size === 0) {
+      dragging = false; canvas.classList.remove('dragging');
+      if (performance.now() - lastMoveT > 80) { st.vyaw = 0; st.vpitch = 0; }
+    }
+  }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+  canvas.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !dragging) pointer = null; });
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    st.zoomTarget = clamp(st.zoomTarget * Math.exp(e.deltaY * 0.0011), 0.04, 2.6);
+    touched();
+  }, { passive: false });
+  window.addEventListener('keydown', (e) => {
+    if (e.target && e.target.closest && e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return;
+    const k = e.key;
+    if (k === 'ArrowLeft') st.vyaw -= 0.45;
+    else if (k === 'ArrowRight') st.vyaw += 0.45;
+    else if (k === 'ArrowUp') st.vpitch -= 0.45;
+    else if (k === 'ArrowDown') st.vpitch += 0.45;
+    else if (k === '+' || k === '=') st.zoomTarget = clamp(st.zoomTarget * 0.8, 0.04, 2.6);
+    else if (k === '-' || k === '_') st.zoomTarget = clamp(st.zoomTarget * 1.25, 0.04, 2.6);
+    else if (k === 'f' || k === 'F') { if (fsSupported) toggleFs(); return; }
+    else if (k === 'm' || k === 'M') { soundBtn.click(); return; }
+    else if (k === 'r' || k === 'R') { setTimeout(triggerRage, 80); return; }
+    else return;
+    e.preventDefault(); touched();
+  });
+
+  /* ---------- eye behavior ---------- */
+  function snapBack(nowSec) {
+    eye.mode = 'watch';
+    eye.until = nowSec + 14 + Math.random() * 12;
+    eye.boost = 1.8;
+    eye.spike = 1;
+    if (Math.random() < 0.6) aeEpisode(nowSec + 0.25 + Math.random() * 0.5, 1.25);
+    if (eye.prey) eye.prey.hunted = false;
+    eye.prey = null;
+  }
+  function decideNext(nowSec) {
+    const cand = prey.filter((q) => !q.hunted && q.r > 0.008 && worldZ(q.p) > 0.15 && angle(eye.spot, q.p) < 1.4);
+    if (cand.length && Math.random() < 0.7) {
+      cand.sort((a, b) => angle(eye.spot, a.p) - angle(eye.spot, b.p));
+      const q = cand[0];
+      q.hunted = true;
+      eye.mode = 'hunt'; eye.prey = q; eye.huntStart = nowSec;
+    } else {
+      const sx = Math.random() < 0.5 ? -1 : 1;
+      eye.mode = 'glance';
+      eye.glanceW = norm([sx * (0.6 + Math.random() * 0.45), (Math.random() * 2 - 1) * 0.45, 0.8]);
+      eye.until = nowSec + 5 + Math.random() * 4;
+    }
+  }
+  function eat(q, nowSec) {
+    const i = prey.indexOf(q);
+    if (i >= 0) prey.splice(i, 1);
+    eye.size = Math.min(1.6, eye.size + 0.08 + q.rT * 3);
+    eye.kick = 0.45;
+    if (audioLive()) audio.devour(audio.ctx.currentTime + 0.02);
+    nextSpawnAt = Math.min(nextSpawnAt, nowSec + 7 + Math.random() * 10);
+    eye.prey = null;
+    snapBack(nowSec);
+    eye.boost = 2.1;
+  }
+
+  /* ---------- rage: the spot suddenly swells and the world goes red ---------- */
+  const RAGE_LEAD = 1.6, BLOOM = 3.4, BLOOM_RISE = 1.2;
+  const rage = { active: false, t0: 0, hitAt: -1e4, engulfed: false, endedAt: -100 };
+  let nextRageAt = startSec + 100 + Math.random() * 40;
+  let hold = null;
+
+  /* ---------- the viewer's camera: an auto-exposure that cannot settle ----------
+     It re-meters now and then, sometimes guessing the wrong way first, overshoots and rings
+     (an underdamped follower), and the iris only moves in clunks of one or two 1/6-EV steps, at most one every 0.5 s.
+     A flare dazzles the meter; the spot turning back onto you throws it off. */
+  const storms = [];
+  const af = { x: 0, v: 0, target: 0, plan: [] };
+  const AE_STEP = 1 / 6;
+  const ae = { ev: -0.45, v: 0, q: -0.5, shown: -0.5, lastStep: 0, kick: 0, plan: [], lastEpisode: -100, nextEpisode: startSec + 9 };
+  function aeEpisode(at, strength) {
+    if (at - ae.lastEpisode < 5) return;
+    ae.lastEpisode = at;
+    const s = strength * (0.22 + Math.random() * 0.16) * (Math.random() < 0.5 ? -1 : 1);
+    const plan = [];
+    if (Math.random() < 0.35) { plan.push([at, -0.7 * s]); at += 0.45 + Math.random() * 0.4; }
+    plan.push([at, s]); at += 0.7 + Math.random() * 0.9;
+    plan.push([at, 0]);
+    ae.plan = plan;
+  }
+  function triggerRage() {
+    if (rage.active) return;
+    const nowSec = performance.now() / 1000;
+    rage.active = true; rage.t0 = nowSec; rage.hitAt = nowSec + RAGE_LEAD; rage.engulfed = false;
+    if (eye.prey) { eye.prey.hunted = false; eye.prey = null; }
+    for (const q of prey) q.pull = 0;
+    eye.mode = 'rage'; eye.boost = 2.5; eye.spike = 0;
+    if (audioLive()) audio.rage(audio.ctx.currentTime + 0.02, RAGE_LEAD);
+    nextStingAt = Math.max(nextStingAt, nowSec + 45);
+    nextTollAt = Math.max(nextTollAt, nowSec + 16);
+    nextRageAt = nowSec + 150 + Math.random() * 130;
+  }
+
+  /* ---------- loop ---------- */
+  let last = performance.now(), frameN = 0, perfAcc = 0, perfN = 0;
+  const speed = reduce ? 0.35 : 1;
+  let nextBeatAt = startSec + 2;
+  const preyBuf = new Float32Array(24), pullBuf = new Float32Array(6);
+  const RAGE_RISE = reduce ? 2.0 : 0.6;
+
+  function frame(now) {
+    const rawDt = (now - last) / 1000; last = now;
+    const dt = Math.min(0.1, rawDt);
+    const nowSec = now / 1000;
+    frameN++;
+
+    if (frameN > 40) {
+      perfAcc += rawDt; perfN++;
+      if (perfN >= 45) {
+        const avg = perfAcc / perfN; perfAcc = 0; perfN = 0;
+        if (avg > 0.026 && scale > 0.45) { scale = Math.max(0.45, scale * 0.82); resize(); }
+        else if (avg < 0.0175 && scale < maxScale) { scale = Math.min(maxScale, scale * 1.08); resize(); }
+      }
+    }
+
+    if (!rage.active && nowSec >= nextRageAt && !dragging && eye.mode !== 'feed') triggerRage();
+    if (hold && !rage.active && nowSec - hold.t > 2.2 && nowSec - rage.endedAt > 12) { hold = null; triggerRage(); }
+    let bloom = 0, rageAmt = 0, punch = 0, rageTau = -1, shakeX = 0, shakeY = 0;
+    if (rage.active) {
+      rageTau = nowSec - rage.t0;
+      const u = rageTau - RAGE_LEAD;
+      if (u >= 0) {
+        // the swelling is heavy: it keeps coming for over a second
+        bloom = u < BLOOM_RISE ? 1 - Math.pow(1 - u / BLOOM_RISE, 3) : u < 4.5 ? 1 : 1 - smooth(4.5, 9.5, u);
+        rageAmt = u < 4 ? smooth(0, RAGE_RISE, u) : 1 - smooth(4, 9.5, u);
+        if (!reduce) {
+          punch = u < 0.9 ? smooth(0, 0.9, u) : 1 - smooth(0.9, 7, u);
+          if (u < 0.7) { const a = 0.007 * (1 - u / 0.7); shakeX = (Math.random() * 2 - 1) * a; shakeY = (Math.random() * 2 - 1) * a; }
+        }
+        if (!rage.engulfed && u > BLOOM_RISE) {
+          rage.engulfed = true;
+          const reach = 0.12 * eye.size * (1 + BLOOM) * 0.9;
+          for (let i = prey.length - 1; i >= 0; i--) if (angle(prey[i].p, eye.spot) < reach) prey.splice(i, 1);
+          nextSpawnAt = nowSec + 8;
+        }
+        if (u > 9.6) { rage.active = false; rage.endedAt = nowSec; eye.mode = 'watch'; eye.until = nowSec + 10 + Math.random() * 8; }
+      }
+    }
+
+    t += dt * speed * (1 + 1.8 * rageAmt);
+
+    // gallery autopilot
+    if (!reduce && nowSec - lastInteract > 18) {
+      const az = 0.95 + 0.2 * Math.sin(nowSec * 2 * Math.PI / 260);
+      st.zoomTarget += (az - st.zoomTarget) * (1 - Math.exp(-dt * 0.08));
+      const ap = 0.14 + 0.22 * Math.sin(nowSec * 2 * Math.PI / 170);
+      st.pitchT += (ap - st.pitchT) * (1 - Math.exp(-dt * 0.06));
+      if (!turn && nowSec >= nextTurnAt) {
+        turn = { start: nowSec, dur: 16, dir: Math.random() < 0.5 ? -1 : 1 };
+        nextTurnAt = nowSec + 70 + Math.random() * 50;
+      }
+    }
+    if (turn) {
+      const u = (nowSec - turn.start) / turn.dur;
+      if (u >= 1) turn = null; else st.yawT += turn.dir * Math.sin(Math.PI * u) * 0.15 * dt;
+    }
+
+    if (!dragging) {
+      st.yawT += st.vyaw * dt; st.pitchT = clamp(st.pitchT + st.vpitch * dt, -1.35, 1.35);
+      const k = Math.exp(-dt * 1.2); st.vyaw *= k; st.vpitch *= k;
+    }
+    // the star is heavy: it follows the hand a little late, and drifts on after it lets go
+    const follow = 1 - Math.exp(-dt / 0.28);
+    st.yaw += (st.yawT - st.yaw) * follow; st.pitch += (st.pitchT - st.pitch) * follow;
+    st.spin += dt * 0.015 * speed;
+    st.zoom += (st.zoomTarget - st.zoom) * (1 - Math.exp(-dt * 1.6));
+    const D = 1 + (D0 - 1) * st.zoom * (1 - 0.22 * punch);
+    const rS = F / Math.sqrt(D * D - 1);
+
+    const M = mul(rotX(st.pitch), rotY(st.yaw + st.spin));
+    const W2S = tr(M); curM = M; curW2S = W2S;
+    const view = norm(apply(W2S, [0, 0, 1]));
+
+    // --- prey: emerge, recycle the ones that rotated far out of sight ---
+    for (const q of prey) if (q.pull === 0) q.r += (q.rT - q.r) * (1 - Math.exp(-dt * 0.15));
+    if (prey.length >= 4) {
+      const gone = prey.findIndex((q) => !q.hunted && worldZ(q.p) < -0.5);
+      if (gone >= 0) prey.splice(gone, 1);
+    }
+    if (prey.length < 4 && nowSec >= nextSpawnAt) { spawnPrey(); nextSpawnAt = nowSec + 10 + Math.random() * 15; }
+
+    // --- eye: watch you, glance away, hunt, feed ---
+    let viewT = [0.06, 0.08, 1];
+    if (pointer && now - pointer.at < 6000) {
+      let gx = pointer.x / rS, gy = pointer.y / rS;
+      const L = Math.hypot(gx, gy); if (L > 1.3) { gx *= 1.3 / L; gy *= 1.3 / L; }
+      viewT = [gx * 0.6, gy * 0.6, 1];
+    }
+    const watchTarget = norm(apply(W2S, norm(viewT)));
+    const R2 = 0.12 * eye.size;
+    const R1 = R2 * 0.42 * (eye.pupil + eye.kick);
+    let target = watchTarget;
+
+    if (eye.mode === 'rage') {
+      target = norm(apply(W2S, [0, 0.03, 1]));
+    } else if (eye.mode === 'watch') {
+      if (nowSec > eye.until) decideNext(nowSec);
+    } else if (eye.mode === 'glance') {
+      target = norm(apply(W2S, eye.glanceW));
+      if (nowSec > eye.until) snapBack(nowSec);
+    } else if (eye.mode === 'hunt') {
+      const q = eye.prey;
+      if (!q || prey.indexOf(q) < 0 || nowSec - eye.huntStart > 50) snapBack(nowSec);
+      else {
+        target = q.p;
+        if (angle(eye.spot, q.p) < R2 + q.r * 1.5 + 0.06) {
+          eye.mode = 'feed';
+          if (audioLive()) audio.reel(audio.ctx.currentTime + 0.02, 5);
+        }
+      }
+    } else if (eye.mode === 'feed') {
+      const q = eye.prey;
+      if (!q || prey.indexOf(q) < 0) snapBack(nowSec);
+      else {
+        target = eye.spot;
+        q.pull = Math.min(1, q.pull + dt / 4);
+        const dq = angle(q.p, eye.spot);
+        const sp = (0.008 + 0.06 * q.pull * q.pull) * speed;
+        if (dq > 1e-4) q.p = rotateToward(q.p, eye.spot, Math.min(dq, sp * dt), dq);
+        if (dq < R1 * 0.9) eat(q, nowSec);
+      }
+    }
+    if (eye.mode === 'watch') target = watchTarget;
+
+    // the spot has mass: half the old drift, but the snap back is still about ten times its drift.
+    // It gathers speed over half a second and sheds it as it arrives.
+    const ang = angle(eye.spot, target);
+    let want = eye.mode === 'hunt' ? 0.03 + 0.05 * Math.min(ang, 1.6) : 0.035 + 0.06 * Math.min(ang, 1.6);
+    if (eye.boost > 0) { want *= 1 + (eye.mode === 'rage' ? 11 : 8) * Math.min(1, eye.boost); eye.boost -= dt; }
+    want = Math.min(want, 0.02 + 1.6 * ang) * speed;
+    const tau = want > eye.vel ? (eye.mode === 'rage' ? 0.3 : 0.45) : 0.3;
+    eye.vel += (want - eye.vel) * (1 - Math.exp(-dt / tau));
+    if (ang > 1e-4) eye.spot = rotateToward(eye.spot, target, Math.min(ang, eye.vel * dt), ang);
+
+    const angView = angle(eye.spot, view);
+    let pt;
+    if (eye.mode === 'rage') pt = 0.6;
+    else if (eye.mode === 'watch') pt = 0.82 + 0.5 * smooth(0.15, 1.2, angView);
+    else if (eye.mode === 'glance') pt = 1.0;
+    else if (eye.mode === 'hunt') pt = 1.12;
+    else pt = 1.35;
+    pt += 0.03 * Math.sin(t * 0.35);
+    eye.pupil += (pt - eye.pupil) * (1 - Math.exp(-dt * (eye.mode === 'rage' ? 2 : 0.5)));
+    eye.kick *= Math.exp(-dt * 0.6);
+    eye.size += (1 - eye.size) * (1 - Math.exp(-dt / 80));
+    eye.spike *= Math.exp(-dt / 5);
+
+    // heartbeat: races when it locks back onto you, or while it hunts and feeds
+    const modeAg = eye.mode === 'feed' ? 0.9 : eye.mode === 'hunt' ? 0.55 : eye.mode === 'glance' ? 0.3 : 0.12;
+    const holdAg = hold ? smooth(0.2, 2.2, nowSec - hold.t) : 0;
+    const rageAg = rage.active && rageTau >= RAGE_LEAD ? 1 - smooth(5, 10, rageTau - RAGE_LEAD) : 0;
+    const agit = clamp(Math.max(eye.mode === 'watch' ? smooth(0.25, 1.3, angView) : 0, modeAg, eye.spike, holdAg, rageAg), 0, 1);
+    if (rage.active && rageTau < RAGE_LEAD + 0.3) nextBeatAt = Math.max(nextBeatAt, rage.t0 + RAGE_LEAD + 0.3);
+    if (nowSec >= nextBeatAt) {
+      const interval = 2.7 - 1.65 * agit;
+      nextBeatAt = Math.max(nextBeatAt + interval, nowSec + 0.3);
+      if (audioLive()) audio.heartbeat(audio.ctx.currentTime + 0.03, agit);
+    }
+
+    // flares on their own clock
+    if (!reduce && !rage.active && t > st.nextFlare) {
+      triggerFlare(false);
+      if (audioLive()) audio.boom(audio.ctx.currentTime + 0.05, 0.45);
+    }
+
+    // BGM events
+    if (audioLive()) {
+      if (nowSec - lastShepAt > audio.shepEvery) { audio.shepard(); lastShepAt = nowSec; }
+      if (nowSec >= nextTollAt && !rage.active) {
+        const dur = audio.toll(audio.ctx.currentTime + 0.05);
+        nextTollAt = nowSec + dur + 40 + Math.random() * 35;
+      }
+      if (nowSec >= nextStingAt && !rage.active) {
+        const delay = audio.sting(audio.ctx.currentTime + 0.05);
+        setTimeout(() => triggerFlare(true), Math.max(0, delay * 1000));
+        st.nextFlare = Math.max(st.nextFlare, t + delay * speed + 20);
+        nextStingAt = nowSec + 85 + Math.random() * 50;
+        nextTollAt = Math.max(nextTollAt, nowSec + 22);
+        nextRageAt = Math.max(nextRageAt, nowSec + 30);
+      }
+    }
+
+    // earth transit, in units of the sun's projected radius. At its real orbital speed the
+    // crossing would take about 13 hours; here it takes about five minutes. It starts on the disc.
+    const et = ((t + 150) % 480) / 480;
+    const ex = -1.6 + 3.2 * et, ey = -0.36 + 0.1 * et;
+
+    // auto-exposure. During the rage (and a few seconds after) it only glides, without clunks or episodes
+    const aeCalm = rage.active || nowSec - rage.endedAt < 5;
+    while (ae.plan.length && nowSec >= ae.plan[0][0]) { ae.kick = ae.plan.shift()[1]; }
+    if (!aeCalm && nowSec >= ae.nextEpisode) { aeEpisode(nowSec, 1); ae.nextEpisode = nowSec + 14 + Math.random() * 22; }
+    const fT = t - st.flare[3];
+    const fE = fT > 0 ? smooth(0, 1.1, fT) * Math.exp(-fT * 0.2) * st.flareAmp : 0;
+    const aeTarget = aeCalm ? 0 : ae.kick - 0.3 * Math.min(fE, 1.2);
+    const aeW = 2 * Math.PI * 0.45, aeZ = 0.33;
+    ae.v += (aeW * aeW * (aeTarget - ae.ev) - 2 * aeZ * aeW * ae.v) * dt;
+    ae.ev += ae.v * dt;
+    if (aeCalm || reduce) ae.q = ae.ev;
+    else if (Math.abs(ae.ev - ae.q) > AE_STEP * 0.6 && nowSec - ae.lastStep > 0.5) {
+      // one clunk moves the iris by one or two steps, never more
+      const n = clamp(Math.round((ae.ev - ae.q) / AE_STEP), -2, 2);
+      ae.q = Math.round(ae.q / AE_STEP + n) * AE_STEP; ae.lastStep = nowSec;
+    }
+    ae.shown += (ae.q - ae.shown) * (1 - Math.exp(-dt / (aeCalm || reduce ? 0.3 : 0.045)));
+    // focus hunting: an underdamped follower of the planned targets
+    while (af.plan.length && nowSec >= af.plan[0][0]) af.target = af.plan.shift()[1];
+    const fw = 2 * Math.PI * 0.6;
+    af.v += (fw * fw * (af.target - af.x) - 2 * 0.3 * fw * af.v) * dt;
+    af.x += af.v * dt;
+    const blur = clamp(af.x, 0, 1) * (reduce ? 0.6 : 1);
+    // particle storm intensity
+    let storm = 0;
+    for (const s of storms) { const u = nowSec - s.at; if (u > 0) storm += s.amp * smooth(0, 2.5, u) * Math.exp(-u / 18); }
+    if (reduce) storm *= 0.4;
+    // blooming: the flare kernel saturates the sensor when it is bright and facing us
+    let bloomX = 0, bloomY = 0, bloomA = 0;
+    if (fE > 0.6 && !reduce) {
+      const pw = apply(M, [st.flare[0], st.flare[1], st.flare[2]]);
+      if (pw[2] > 1 / D + 0.05) {
+        const den = D - pw[2];
+        bloomX = F * pw[0] / den; bloomY = F * pw[1] / den;
+        bloomA = clamp((fE - 0.6) * 1.6, 0, 1.1) * smooth(1 / D + 0.05, 1 / D + 0.3, pw[2]);
+      }
+    }
+    const gain = clamp(0.85 + 0.9 * Math.max(ae.shown, 0) + 0.2 * Math.min(storm, 1), 0.7, 1.8);
+    const expo = smooth(0, 5, t) * (1 + 0.9 * clamp((2.3 - D) / 1.1, 0, 1)) * Math.pow(2, ae.shown * (reduce ? 0.5 : 1));
+
+    preyBuf.fill(0); pullBuf.fill(0);
+    for (let i = 0; i < Math.min(6, prey.length); i++) {
+      const q = prey[i];
+      preyBuf[i * 4] = q.p[0]; preyBuf[i * 4 + 1] = q.p[1]; preyBuf[i * 4 + 2] = q.p[2]; preyBuf[i * 4 + 3] = q.r;
+      pullBuf[i] = q.pull;
+    }
+
+    gl.uniform2f(U.uRes, canvas.width, canvas.height);
+    gl.uniform1f(U.uTime, t);
+    gl.uniform1f(U.uDist, D);
+    gl.uniform1f(U.uF, F);
+    gl.uniformMatrix3fv(U.uRot, false, new Float32Array(M)); // row-major M == column-major Mᵀ (world -> sun)
+    gl.uniform3f(U.uSpot, eye.spot[0], eye.spot[1], eye.spot[2]);
+    gl.uniform1f(U.uPupil, Math.min(1.7, eye.pupil + eye.kick) * (1 - bloom) + 1.55 * bloom);
+    gl.uniform1f(U.uEyeSize, eye.size * (1 + BLOOM * bloom));
+    gl.uniform4fv(U.uPrey, preyBuf);
+    gl.uniform1fv(U.uPull, pullBuf);
+    gl.uniform4f(U.uFlare, st.flare[0], st.flare[1], st.flare[2], st.flare[3]);
+    gl.uniform1f(U.uFlareAmp, st.flareAmp);
+    gl.uniform3f(U.uEarth, ex, ey, 1);
+    gl.uniform1f(U.uExpo, expo);
+    gl.uniform1f(U.uRageU, clamp(nowSec - rage.hitAt, -100, 100));
+    gl.uniform1f(U.uRageRise, RAGE_RISE);
+    gl.uniform2f(U.uShake, shakeX, shakeY);
+    gl.uniform1f(U.uFlashOn, reduce ? 0 : 1);
+    gl.uniform1f(U.uBlur, blur);
+    gl.uniform1f(U.uFrame, frameN % 997);
+    gl.uniform1f(U.uGain, gain);
+    gl.uniform1f(U.uStorm, storm);
+    gl.uniform3f(U.uBloom, bloomX, bloomY, bloomA);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    const pending = !everStarted && wantSound && AC_OK;
+    const idle = !pending && !dockHover && nowSec - lastUi > 3.2;
+    document.body.classList.toggle('idle', idle);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

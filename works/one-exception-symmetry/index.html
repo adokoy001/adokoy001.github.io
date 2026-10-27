@@ -1,0 +1,1714 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><meta name="description" content="ドミノゲームを任意グラフへ抽象化した、一例外付き対称ペアのGrundy値の一般定理。厳密な証明、図解、操作実験、三角形の例外集合への拡張、先行研究照合、再現コードを収録。"><title>一つの例外を許す対称性 — ドミノゲームから得た一般定理</title>
+<style>
+:root{--ink:#172c40;--muted:#53677a;--teal:#087f83;--teal-bg:#eaf6f3;--rust:#ad472e;--line:#d7e1e8;--paper:#fbfcfd;--purple:#654cc0}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,'Noto Sans JP','Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:16px;line-height:1.9}main{max-width:980px;margin:auto;padding:38px 40px 70px}a{color:#066d86;text-underline-offset:3px;overflow-wrap:anywhere}a:hover{color:var(--rust)}h1,h2,h3{line-height:1.45;letter-spacing:.01em}h1{font-size:clamp(29px,5vw,49px);margin:18px 0 13px;font-weight:750}h2{font-size:27px;margin:0 0 20px}h3{font-size:19px;margin:24px 0 10px}p{margin:13px 0}strong{font-weight:720}section{padding:40px 0;border-top:1px solid var(--line)}.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--teal);font-weight:750}.subtitle{font-size:19px;color:var(--muted);max-width:750px}.meta{font-size:13px;color:var(--muted);margin:22px 0}.hero{border-top:6px solid var(--teal);padding-top:25px}.hero figure{margin:26px 0 14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 18px}.hero figure svg{max-height:245px}.badges{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}.badge{font-size:12px;padding:4px 12px;border-radius:99px;background:#eaf6f3;color:#145a5b;border:1px solid #c4dfd8}.badge.caution{background:#fff4e7;color:#835522;border-color:#eed8bb}.lead{font-size:18px}.callout{border-left:4px solid var(--teal);padding:13px 22px;background:var(--teal-bg);margin:23px 0}.callout.caution{border-color:#b77835;background:#fff6eb}.callout p:first-child{margin-top:0}.callout p:last-child{margin-bottom:0}.theorem{border:1px solid #a4cfc9;border-top:4px solid var(--teal);padding:22px 26px;background:white;border-radius:4px;margin:24px 0}.theorem .tag{color:var(--teal);font-size:13px;font-weight:750}.formula{font-family:'Cambria Math','STIX Two Math','Times New Roman',serif;font-size:25px;line-height:1.6;text-align:center;margin:22px 0;padding:14px 12px;overflow-wrap:anywhere;background:#f3f7f9;border-radius:8px}.formula.small{font-size:21px}i{font-family:'Cambria Math','Times New Roman',serif}ul,ol{padding-left:25px}li{margin:9px 0}.toc{padding:18px 0 32px;display:flex;flex-wrap:wrap;gap:10px 22px;font-size:14px}.toc a{text-decoration:none}figure{margin:25px 0}.compact-graph{max-width:620px;margin:25px auto}svg{display:block;width:100%;height:auto}figcaption{font-size:13px;color:var(--muted);line-height:1.75;margin-top:9px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}.panel{background:#fff;border:1px solid var(--line);padding:20px;border-radius:10px;min-width:0}.panel h3{margin-top:0}.proof-step{position:relative;padding:0 0 8px 24px;border-left:2px solid #d7e5e6;margin:25px 0}.proof-step h3{margin:0 0 10px}.proof-step:last-child{margin-bottom:0}.proof-step .n{color:var(--teal);font-size:13px;letter-spacing:.05em}.table-wrap{width:100%;overflow-x:auto;margin:21px 0}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.75}th,td{padding:13px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{background:#edf3f5;font-weight:700}td.num{font-variant-numeric:tabular-nums;white-space:nowrap}small,.small{font-size:13px;color:var(--muted)}details{border:1px solid var(--line);border-radius:8px;background:#fff;margin:18px 0;padding:14px 18px}summary{cursor:pointer;font-weight:650}details[open] summary{margin-bottom:15px}pre{max-height:460px;overflow:auto;padding:18px;background:#132737;color:#e0eef2;border-radius:8px;font-size:12px;line-height:1.65;tab-size:4}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}p code,li code{font-size:.9em;background:#eaf0f3;padding:2px 5px;border-radius:4px}.btn{display:inline-block;border:1px solid #a9bdc8;color:var(--ink);background:#fff;border-radius:7px;padding:10px 15px;cursor:pointer;font:inherit;font-size:14px;line-height:1.4;text-decoration:none;min-height:42px}.btn:hover{background:#eaf6f3}.buttons{display:flex;flex-wrap:wrap;gap:10px}.ref-list{font-size:14px;padding-left:24px}.ref-list li{padding:10px 0;border-bottom:1px solid var(--line)}.ref-list .comment{display:block;color:var(--muted);font-size:13px}.footer{color:var(--muted);font-size:13px;margin-top:32px}.mini-label{text-align:center;font-weight:650;font-size:14px}.no-js{color:var(--rust)}@media(max-width:640px){main{padding:22px 20px 45px}h2{font-size:23px}section{padding:29px 0}.two-col{grid-template-columns:1fr}.theorem{padding:18px}.formula{font-size:22px}.subtitle{font-size:17px}.lead{font-size:17px}.hero figure{padding:8px}.callout{padding:13px 16px}.proof-step{padding-left:17px}th,td{padding:10px 8px;font-size:13px}.toc{gap:10px 17px}.hero figure svg{min-height:140px}}@media print{body{background:#fff;font-size:11pt}main{max-width:none;padding:0}.toc,.buttons,.no-print,#explorer{display:none!important}h1{font-size:27pt}h2{font-size:20pt}section{padding:22px 0}figure,.theorem,.proof-step{break-inside:avoid}a{color:inherit;text-decoration:none}pre{white-space:pre-wrap;max-height:none;font-size:8pt}.badges{margin:12px 0}}
+</style></head><body><main>
+<header class="hero">
+<div class="eyebrow">EXPLORATORY MATHEMATICS · RESEARCH NOTE</div>
+<h1>一つの例外を許す対称性</h1>
+<p class="subtitle">ドミノゲームから得た、任意グラフのゲーム値を決める一般定理</p>
+<p class="meta">2026 09 15 · 第6.1版・完成稿（予想Kの反証を反映） · 横田さんとAIによる「探索的な数学的発見」</p>
+<div class="badges"><span class="badge">一般の場合の証明を収録</span><span class="badge">独立監査・有限検査を実施</span><span class="badge caution">一般形は調査範囲で未確認・梯子の特殊例は既述あり</span></div>
+<p class="lead">盤面をきれいな対称形にする必要は、どこまであるのだろう。隣接する頂点をペアにし、ペア群の結び方に対称性を残せば、<strong>一個の例外頂点をどこへつないでも、ゲームの値はペア数の偶奇だけで決まる</strong>。</p>
+<figure><svg viewBox="0 0 640 220" role="img" aria-label="対称な3組の隣接ペアと、非対称に接続した例外頂点z" xmlns="http://www.w3.org/2000/svg"><title>対称な3組の隣接ペアと、非対称に接続した例外頂点z</title><line x1="110" y1="55" x2="110" y2="155" stroke="#087f83" stroke-width="5"/><line x1="285" y1="55" x2="285" y2="155" stroke="#087f83" stroke-width="5"/><line x1="460" y1="55" x2="460" y2="155" stroke="#087f83" stroke-width="5"/><line x1="110" y1="55" x2="285" y2="55" stroke="#8c9caf" stroke-width="2.4"/><line x1="110" y1="155" x2="285" y2="155" stroke="#8c9caf" stroke-width="2.4"/><line x1="285" y1="55" x2="460" y2="155" stroke="#8c9caf" stroke-width="2.4"/><line x1="285" y1="155" x2="460" y2="55" stroke="#8c9caf" stroke-width="2.4"/><path d="M575 105 C620 20 580 10 530 10 L150 10 Q110 10 110 55" fill="none" stroke="#c4583c" stroke-width="2.4"/><path d="M575 105 C635 185 580 200 535 200 L325 200 Q285 200 285 155" fill="none" stroke="#c4583c" stroke-width="2.4"/><line x1="575" y1="105" x2="460" y2="55" stroke="#c4583c" stroke-width="2.4"/><circle cx="110" cy="55" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="110" y="60.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">a₁</text><circle cx="110" cy="155" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="110" y="160.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">b₁</text><circle cx="285" cy="55" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="285" y="60.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">a₂</text><circle cx="285" cy="155" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="285" y="160.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">b₂</text><circle cx="460" cy="55" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="460" y="60.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">a₃</text><circle cx="460" cy="155" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="460" y="160.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">b₃</text><circle cx="575" cy="105" r="22" fill="#fff0e8" stroke="#c4583c" stroke-width="2"/><text x="575" y="110.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">z</text></svg><figcaption>緑の太線が必須のペア内辺。灰色の辺は全ペアを同時交換しても変わらない。橙色の例外頂点 z の接続には、この対称性を要求しない。この例は3ペアなので g = 1。</figcaption></figure>
+<p class="small">本稿の主結果 T1 は、有限単純無向グラフ上の通常ルールの Arc Kayles に関する十分条件。証明手法の対称応手・mex帰納は既知であり、新技法の発明は主張しない。候補となる新規性は、<strong>任意接続の一例外を許す一般的な定式化</strong>にある。ただし、2×n の梯子に葉を一枚付けるという特殊例には、証明なしの既存記述がある（<a href="#novelty">07節</a>）。専門家査読と証明支援系による形式検証は未実施。</p>
+</header>
+<p class="small">02〜05節で定理 T1 とその証明・応用・重み付き版を示す。06節では成立の境界を調べ、二例外では一律の保証が失われる一方、<a href="#odd-clique">例外集合が三角形なら同じ型の式が成り立つ</a>ことを示す。09節では証明の仕組みを取り出し、拡張に耐える局所条件（命題 M）と、自己同型を仮定しない等重量除去ゲーム（定理 R）を記録する。奇数クリーク一般への予想 K は <a href="#k-refuted">K₅ の反例</a>で撤回した。完成稿までの変更点は<a href="#changelog-6-1">変更記録</a>にまとめた。</p>
+<nav class="toc" aria-label="目次"><a href="#rule">01 ルールと値</a><a href="#theorem">02 一般定理</a><a href="#proof">03 厳密な証明</a><a href="#corollaries">04 応用と戦略</a><a href="#weighted">05 重み付きへの拡張</a><a href="#limits">06 成立の境界と三角形の例外</a><a href="#novelty">07 新規性照合</a><a href="#verification">08 検証と再現</a><a href="#meta-theorem">09 抽象化の追補</a><a href="#appendix-switch">付録 探索の切替</a></nav>
+<section id="rule"><div class="eyebrow">01 · GAME AND INVARIANT</div><h2>ドミノを置くことを、辺を取ることへ</h2>
+<p>二人が交互に、まだ残っている<strong>隣接した二頂点</strong>を選び、その二頂点と、それらに接続する全ての辺を取り除く。合法手がなくなった側が負け。グラフが途中で分断されてもよく、孤立頂点は残っていても手には使えない。これが Arc Kayles の通常ルールである。格子のマスを頂点に見立てると、空いた隣接二マスにドミノを置く Cram と一致する。<a href="#ref1">[1]</a></p>
+<p>勝敗より少し詳しい量が <strong>Sprague–Grundy値</strong> g(G) である。一手後の局面の値を全部集め、その集合に入っていない最小の非負整数を取る。</p>
+<div class="formula">g(G) = mex { g(G − {u,v}) : uv ∈ E(G) }</div>
+<p>例えば mex ∅ = 0、mex {1,3} = 0、mex {0,2} = 1、mex {0,1} = 2。g = 0 は後手必勝、g ≠ 0 は先手必勝を表す。互いに接続しない複数のゲームを並べ、一手ごとに一つを選んで遊ぶ場合、その値は各値の XOR になる。これは既知の Sprague–Grundy 理論である。<a href="#ref1">[1]</a></p>
+<div class="callout"><p><strong>本稿で「値が変わらない」という意味</strong><br>単独での勝敗だけでなく、別の独立なゲームとの和でも同じ働きをする。ただし、別のグラフへ頂点を共有してつなぐ部品置換まで保証するわけではない。この区別は<a href="#limits">反例付きで後述</a>する。</p></div>
+</section>
+<section id="theorem"><div class="eyebrow">02 · THE GENERAL STATEMENT</div><h2>隣接する対称ペアと、任意接続の一頂点</h2>
+<p>グラフ H の頂点を m 組のペア {aᵢ,bᵢ} に分ける。各ペアを同時に交換する写像を τ とする。ここでいう「対称性」は図形の左右対称ではなく、<strong>交換しても隣接関係が変わらないこと</strong>である。交差した辺も、密につながったグラフも許す。</p>
+<div class="theorem"><div class="tag">定理 T1 · 一例外を許す対称ペア</div>
+<p>m ≥ 0 とする。有限単純無向グラフ G の頂点が、互いに素な m 組のペアと一頂点 z に分割されているとする。</p>
+<ol><li>すべての i について aᵢbᵢ ∈ E(G)。すなわち、<strong>各ペアは一手で取れる</strong>。</li><li>H = G − z 上で、τ(aᵢ) = bᵢ、τ(bᵢ) = aᵢ とする写像 τ が自己同型である。</li></ol>
+<p>z と H の間の辺は任意でよい。このとき、</p><div class="formula">g(G) = m mod 2.</div>
+<p>したがって、m が偶数なら後手必勝、奇数なら先手必勝である。</p></div>
+<p>条件2を完全に書けば、H の相異なる任意の頂点 x,y に対して、xy ∈ E(H) と τ(x)τ(y) ∈ E(H) が同値、という意味である。<strong>z を含む G 全体が対称である必要はない。</strong>また、ペアごとに独立して交換できるという強い仮定も置かない。必要なのは、全ペアを一斉に交換する一つの自己同型だけである。</p>
+<p>連結性・平面性・二部グラフ性・次数上限は仮定しない。m = 0 では G は一頂点だけであり、式は g(G) = 0 を与える。</p>
+<details><summary>英語による正確な定式化</summary><p>Let G be a finite simple undirected graph with vertex partition V(G) = {z} ⊔ ⨆ᵢ₌₁ᵐ {aᵢ,bᵢ}. Suppose every aᵢbᵢ is an edge, and the simultaneous interchange τ(aᵢ)=bᵢ, τ(bᵢ)=aᵢ is an automorphism of G−z. No restriction is imposed on the neighborhood of z. Under normal-play Arc Kayles, the Sprague–Grundy value of G is m mod 2.</p><p>The statement is proved below. Its exact general formulation was not located in the primary sources examined; the symmetry-response and mex-induction techniques are established methods.</p></details>
+</section>
+<section id="explorer" aria-labelledby="ak-title">
+  <div class="ak-kicker">INTERACTIVE · 有限盤面の実験</div>
+  <h2 id="ak-title">例外のつなぎ方を変えても、値は変わらない</h2>
+  <p class="ak-intro">辺を選び、その両端の頂点を取り除くゲームです。最後に手を指せた側が勝ちます。対称な本体に加える頂点 <var>z</var> の接続を自由に変え、Grundy 値を確かめてください。</p>
+  <div class="ak-controls">
+    <label><span>頂点対の数 <var>m</var></span><select id="ak-pairs"><option value="1">1 対</option><option value="2">2 対</option><option value="3" selected>3 対</option><option value="4">4 対</option><option value="5">5 対</option></select></label>
+    <label>本体の形<select id="ak-mode"><option value="parallel">鎖型：並行の辺</option><option value="cross" selected>鎖型：交差する辺</option><option value="random">ランダムな対称グラフ</option><option value="counterexample">反例：例外を 2 個にした P₄</option></select></label>
+    <button id="ak-randomize" type="button">盤面を振り直す</button>
+  </div>
+  <div id="ak-connections" class="ak-connections">
+    <div class="ak-chip-heading"><span><var>z</var> の接続先</span><small>ボタンを押すと接続を切り替えます。</small></div>
+    <div id="ak-chips" class="ak-chips" role="group" aria-label="例外頂点 z の接続先"></div>
+    <p class="ak-chip-note">● 接続あり　○ 接続なし。本体の交換対称性を、<var>z</var> が壊しても構いません。</p>
+  </div>
+  <div class="ak-figure">
+    <svg id="ak-svg" viewBox="0 0 760 400" role="img" aria-labelledby="ak-svg-title ak-svg-desc" xmlns="http://www.w3.org/2000/svg"><title id="ak-svg-title">対称な本体と例外頂点の盤面</title><desc id="ak-svg-desc">各対を結ぶ辺と、対称な対間の辺を持つ本体に、例外頂点を接続します。</desc></svg>
+    <div class="ak-legend"><span><i class="ak-line-pair"></i>対の内部：必須</span><span><i class="ak-line-core"></i>対の間：交換対称</span><span><i class="ak-line-extra"></i>例外への辺：自由</span></div>
+  </div>
+  <div class="ak-results" aria-live="polite" aria-atomic="true">
+    <div><span class="ak-result-label">定理の予測</span><strong id="ak-predicted">1</strong><small id="ak-formula">m mod 2 = 1</small></div>
+    <div><span class="ak-result-label">全探索で得た Grundy 値</span><strong id="ak-measured">1</strong><small id="ak-outcome">先手必勝</small></div>
+    <div class="ak-verdict"><span id="ak-status">一致</span><p id="ak-status-note">例外は 1 頂点。本体は定理の仮定を満たしています。</p></div>
+  </div>
+  <p class="ak-mex" id="ak-mex"></p>
+  <p class="ak-caption" id="ak-caption">各 <var>aᵢ</var> と <var>bᵢ</var> を一斉に入れ替えても、本体の辺集合は変わりません。太い実線が各対の内部辺です。z が孤立していても構いません。</p>
+  <p class="ak-footnote">計算はこの端末だけで実行します。Grundy 値は、合法手の先の値から mex（含まれない最小の非負整数）を再帰的に求めます。有限個の実験による一致と、一般の盤面に対する証明は別の根拠です。</p>
+</section>
+<style>
+#explorer{--ak-ink:#183148;--ak-teal:#087b78;--ak-coral:#c65c3c;--ak-line:#8194a2;--ak-border:#dce5e9;color:var(--ak-ink);background:#fff;border:1px solid var(--ak-border);border-radius:20px;padding:clamp(20px,4vw,38px);margin:32px 0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;line-height:1.75;box-sizing:border-box;overflow:hidden}
+#explorer *{box-sizing:border-box}#explorer .ak-kicker{font-size:11px;letter-spacing:.13em;font-weight:750;color:var(--ak-teal)}#explorer h2{font-size:clamp(21px,3vw,29px);line-height:1.5;margin:8px 0 12px}#explorer p{margin:0 0 15px}#explorer .ak-intro{font-size:15px;color:#3d5261;max-width:70ch}#explorer .ak-controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin:25px 0 22px}#explorer label{font-size:12px;font-weight:650;display:flex;flex-direction:column;gap:6px}#explorer select,#explorer button{font:inherit;min-height:44px;border-radius:9px;border:1px solid #bacbd3;background:#fff;color:var(--ak-ink);padding:8px 12px}#explorer select{font-size:14px;max-width:100%}#explorer button{cursor:pointer;font-size:13px;font-weight:650}#explorer button:hover{border-color:var(--ak-teal);background:#f3faf9}#explorer button:focus-visible,#explorer select:focus-visible{outline:3px solid #176daa;outline-offset:3px}#explorer button:disabled,#explorer select:disabled{opacity:.5;cursor:default}#explorer .ak-connections{padding:15px 17px;border-radius:12px;background:#f6f8fa;border:1px solid #e5eaed}#explorer .ak-chip-heading{display:flex;flex-wrap:wrap;gap:5px 15px;align-items:baseline;font-size:14px;font-weight:650;margin-bottom:10px}#explorer .ak-chip-heading small{font-size:12px;color:#536776;font-weight:400}#explorer .ak-chips{display:flex;flex-wrap:wrap;gap:8px}#explorer .ak-chips button{min-width:57px;background:#fff;padding:6px 10px}#explorer .ak-chips button[aria-pressed="true"]{color:#9a432a;background:#fff0e9;border-color:#d58e74}#explorer .ak-chip-note{font-size:11px;color:#596d79;margin:10px 0 0}#explorer .ak-figure{margin:15px 0 20px}#explorer svg{display:block;width:100%;height:auto;max-height:460px;overflow:visible;background:#fff}#explorer svg text{font-family:inherit}#explorer .ak-legend{display:flex;flex-wrap:wrap;gap:9px 24px;justify-content:center;font-size:11px;color:#465d6c}#explorer .ak-legend span{display:flex;gap:7px;align-items:center}#explorer .ak-legend i{width:24px;display:inline-block;height:0;border-top:3px solid var(--ak-line)}#explorer .ak-legend .ak-line-pair{border-top-width:5px;border-color:var(--ak-teal)}#explorer .ak-legend .ak-line-extra{border-top:2px dashed var(--ak-coral)}#explorer .ak-results{display:grid;grid-template-columns:1fr 1.15fr 1.6fr;gap:0;border:1px solid var(--ak-border);border-radius:13px;background:#f7fbfa;overflow:hidden}#explorer .ak-results>div{padding:17px 20px;display:flex;flex-direction:column;justify-content:center}#explorer .ak-results>div+div{border-left:1px solid var(--ak-border)}#explorer .ak-result-label{font-size:11px;font-weight:650;color:#526a74}#explorer .ak-results strong{font-size:38px;line-height:1.4;font-variant-numeric:tabular-nums}#explorer .ak-results small{font-size:12px;color:#566e77}#explorer .ak-verdict>span{font-size:16px;font-weight:750;color:var(--ak-teal)}#explorer .ak-verdict p{font-size:12px;line-height:1.7;margin:5px 0 0}#explorer .ak-results.ak-outside{background:#fff7f1}#explorer .ak-results.ak-outside .ak-verdict>span{color:#9b462b}#explorer .ak-results.ak-outside #ak-predicted{font-size:22px;padding:10px 0}#explorer .ak-mex{font-size:12px;line-height:1.8;margin:12px 0 18px;overflow-wrap:anywhere;color:#4c6270}#explorer .ak-caption{font-size:13px;line-height:1.8}#explorer .ak-footnote{font-size:11px;color:#6b7c86;margin-bottom:0;line-height:1.8}#explorer [hidden]{display:none!important}@media(max-width:560px){#explorer{padding:20px 16px;border-radius:14px}#explorer .ak-controls{gap:12px}#explorer .ak-controls label:nth-child(2){flex-basis:100%;order:1}#explorer .ak-controls label:nth-child(2) select{width:100%}#explorer .ak-results{grid-template-columns:1fr 1fr}#explorer .ak-results>div{padding:14px 15px}#explorer .ak-results .ak-verdict{grid-column:1/-1;border-left:0;border-top:1px solid var(--ak-border)}#explorer .ak-results strong{font-size:33px}#explorer .ak-legend{justify-content:flex-start;gap:6px 13px;font-size:10px}#explorer .ak-chip-heading{display:block}#explorer .ak-chip-heading small{display:block}#explorer svg{margin:2px 0 12px}#explorer .ak-result-label{font-size:10px}}
+</style>
+<script>
+(()=>{
+  'use strict';
+  const root=document.getElementById('explorer');if(!root)return;
+  const byId=id=>root.querySelector('#'+id),NS='http://www.w3.org/2000/svg';
+  const pairs=byId('ak-pairs'),mode=byId('ak-mode'),svg=byId('ak-svg'),chips=byId('ak-chips');
+  let m=3,zLinks=Array.from({length:6},(_,i)=>i%2===0),coreEdges=[];
+  const sub=n=>String(n).split('').map(c=>'₀₁₂₃₄₅₆₇₈₉'[+c]).join('');
+  function add(parent,name,attributes,text){const e=document.createElementNS(NS,name);for(const [k,v]of Object.entries(attributes))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;parent.appendChild(e);return e;}
+  function buildCore(){
+    coreEdges=[];for(let i=0;i<m;i++)coreEdges.push({u:2*i,v:2*i+1,kind:'pair'});
+    for(let i=0;i<m;i++)for(let j=i+1;j<m;j++){
+      const parallel=mode.value==='parallel'?j===i+1:mode.value==='random'&&Math.random()<.36;
+      const cross=mode.value==='cross'?j===i+1:mode.value==='random'&&Math.random()<.36;
+      if(parallel)coreEdges.push({u:2*i,v:2*j,kind:'core'},{u:2*i+1,v:2*j+1,kind:'core'});
+      if(cross)coreEdges.push({u:2*i,v:2*j+1,kind:'core'},{u:2*i+1,v:2*j,kind:'core'});
+    }
+  }
+  function solve(n,edges){
+    const masks=edges.map(e=>(1<<e.u)|(1<<e.v)),memo=new Map();
+    function grundy(state){if(memo.has(state))return memo.get(state);const values=new Set();for(const mask of masks)if((state&mask)===mask)values.add(grundy(state^mask));let g=0;while(values.has(g))g++;memo.set(state,g);return g;}
+    const full=(1<<n)-1,g=grundy(full),options=[...new Set(masks.map(mask=>grundy(full^mask)))].sort((a,b)=>a-b);
+    return{g,options,states:memo.size};
+  }
+  function draw(n,edges,counter){
+    while(svg.firstChild)svg.removeChild(svg.firstChild);
+    add(svg,'title',{id:'ak-svg-title'},counter?'例外頂点を 2 個にすると Grundy 値が 2 になるパス P₄':'対称な本体 '+m+' 対と、自由につながる例外頂点 z');
+    add(svg,'desc',{id:'ak-svg-desc'},counter?'左から z₁、a₁、b₁、z₂ の順に並ぶ 4 頂点の道。中央が必須の対内辺、両端が例外頂点への辺。':m+' 個の各対 aᵢ と bᵢ を太い実線で結び、本体の辺を灰色の実線、例外 z への接続を破線で描いています。z の接続数は '+zLinks.filter(Boolean).length+'。');
+    let points=[];const compact=window.matchMedia('(max-width:560px)').matches;svg.setAttribute('viewBox','0 0 760 400');
+    if(counter){
+      points=[{x:290,y:190,label:'a₁'},{x:470,y:190,label:'b₁'},{x:110,y:190,label:'z₁',extra:true},{x:650,y:190,label:'z₂',extra:true}];
+      add(svg,'rect',{x:240,y:95,width:280,height:192,rx:22,fill:'#f1f8f7',stroke:'#d2e6e1','stroke-dasharray':'5 6'});
+      add(svg,'text',{x:380,y:70,'text-anchor':'middle','font-size':16,fill:'#375b63'},'本体：1 対');
+      add(svg,'text',{x:380,y:335,'text-anchor':'middle','font-size':17,fill:'#9b462b'},'例外が 2 頂点になると、予測は崩れる');
+    }else if(compact){
+      const last=100+(m-1)*82,total=last+102,zY=(100+last)/2+24;svg.setAttribute('viewBox','0 0 460 '+total);
+      add(svg,'rect',{x:24,y:62,width:286,height:last-20,rx:20,fill:'#f5faf9',stroke:'#d2e6e1','stroke-dasharray':'5 6'});
+      add(svg,'text',{x:168,y:33,'text-anchor':'middle','font-size':17,fill:'#375b63'},'交換対称な本体：'+m+' 対');
+      for(let i=0;i<m;i++){const y=100+i*82;points.push({x:85,y,label:'a'+sub(i+1)},{x:250,y,label:'b'+sub(i+1)});}
+      points.push({x:395,y:zY,label:'z',extra:true});
+      add(svg,'text',{x:395,y:zY+62,'text-anchor':'middle','font-size':15,fill:'#9b462b'},'例外 1 頂点');
+      add(svg,'text',{x:168,y:total-17,'text-anchor':'middle','font-size':14,fill:'#56717a'},'すべての aᵢ ↔ bᵢ を同時に交換');
+    }else{
+      add(svg,'rect',{x:35,y:65,width:555,height:285,rx:20,fill:'#f5faf9',stroke:'#d2e6e1','stroke-dasharray':'5 6'});
+      add(svg,'text',{x:312,y:42,'text-anchor':'middle','font-size':16,fill:'#375b63'},'交換対称な本体：'+m+' 対');
+      for(let i=0;i<m;i++){const x=m===1?312:86+i*455/(m-1);points.push({x,y:130,label:'a'+sub(i+1)},{x,y:285,label:'b'+sub(i+1)});}
+      points.push({x:680,y:207.5,label:'z',extra:true});
+      add(svg,'text',{x:680,y:278,'text-anchor':'middle','font-size':16,fill:'#9b462b'},'例外 1 頂点');
+      add(svg,'text',{x:312,y:378,'text-anchor':'middle','font-size':14,fill:'#56717a'},'すべての aᵢ ↔ bᵢ を同時に交換');
+    }
+    const order={core:0,extra:1,pair:2},vb=svg.viewBox.baseVal,cx0=points.reduce((t,p)=>t+p.x,0)/points.length,cy0=points.reduce((t,p)=>t+p.y,0)/points.length;
+    function route(a,b){
+      // Bend an edge (quadratic curve, outward first) until it keeps clear of every other vertex.
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len,mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const sign=(nx*(mx-cx0)+ny*(my-cy0))<0?-1:1,others=points.filter(p=>p!==a&&p!==b);let best=null;
+      for(const k of [0,1,-1,2,-2,3,-3,4,-4,5,-5]){
+        const off=sign*k*38,qx=mx+2*nx*off,qy=my+2*ny*off;let clear=Infinity,inside=true;
+        for(let t=.03;t<.975;t+=.015){const u=1-t,x=u*u*a.x+2*u*t*qx+t*t*b.x,y=u*u*a.y+2*u*t*qy+t*t*b.y;
+          if(x<vb.x+6||y<vb.y+6||x>vb.x+vb.width-6||y>vb.y+vb.height-6)inside=false;
+          for(const p of others)clear=Math.min(clear,Math.hypot(p.x-x,p.y-y));}
+        if(inside&&clear>=36)return{qx,qy,k};
+        const score=inside?clear:-1;if(!best||score>best.score)best={qx,qy,k,score};
+      }
+      return best;
+    }
+    for(const e of [...edges].sort((a,b)=>order[a.kind]-order[b.kind])){
+      const a=points[e.u],b=points[e.v],style={stroke:e.kind==='pair'?'#087b78':e.kind==='extra'?'#c65c3c':'#8194a2','stroke-width':e.kind==='pair'?6:e.kind==='extra'?2.3:2,'stroke-linecap':'round',opacity:e.kind==='core'?.62:1,fill:'none'};
+      if(e.kind==='extra')style['stroke-dasharray']='7 6';
+      const r=e.kind==='pair'?{k:0}:route(a,b);
+      if(r.k===0)add(svg,'line',Object.assign({x1:a.x,y1:a.y,x2:b.x,y2:b.y},style));
+      else add(svg,'path',Object.assign({d:'M'+a.x+' '+a.y+'Q'+r.qx.toFixed(1)+' '+r.qy.toFixed(1)+' '+b.x+' '+b.y},style));
+    }
+    points.forEach(p=>{add(svg,'circle',{cx:p.x,cy:p.y,r:25,fill:p.extra?'#fff1e9':'#fff',stroke:p.extra?'#c65c3c':'#087b78','stroke-width':2.5});add(svg,'text',{x:p.x,y:p.y+7,'text-anchor':'middle','font-size':22,'font-weight':650,fill:p.extra?'#9b462b':'#183148'},p.label);});
+  }
+  function renderChips(){
+    chips.textContent='';zLinks.forEach((selected,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed',String(selected));const label=(i%2?'b':'a')+sub(Math.floor(i/2)+1);b.setAttribute('aria-label','z と '+label+' の接続');b.textContent=(selected?'● ':'○ ')+label;b.addEventListener('click',()=>{zLinks[i]=!zLinks[i];b.setAttribute('aria-pressed',String(zLinks[i]));b.textContent=(zLinks[i]?'● ':'○ ')+label;render();});chips.appendChild(b);});
+  }
+  function render(){
+    const counter=mode.value==='counterexample';pairs.disabled=counter;byId('ak-randomize').disabled=counter;byId('ak-connections').hidden=counter;
+    const edges=counter?[{u:0,v:1,kind:'pair'},{u:2,v:0,kind:'extra'},{u:1,v:3,kind:'extra'}]:[...coreEdges,...zLinks.flatMap((on,i)=>on?[{u:i,v:2*m,kind:'extra'}]:[])];
+    const n=counter?4:2*m+1,result=solve(n,edges);draw(n,edges,counter);
+    byId('ak-predicted').textContent=counter?'適用外':String(m%2);
+    byId('ak-formula').textContent=counter?'例外が 2 頂点':'m mod 2 = '+(m%2);
+    byId('ak-measured').textContent=result.g;
+    byId('ak-outcome').textContent=result.g===0?'後手必勝':'先手必勝';
+    root.querySelector('.ak-results').classList.toggle('ak-outside',counter);
+    byId('ak-status').textContent=counter?'「例外 1 個」が効いている':result.g===m%2?'一致':'不一致：盤面・計算を要確認';
+    byId('ak-status-note').textContent=counter?'本体は 1 対ですが、P₄ の値は 2。例外数を増やす拡張は、そのままでは成立しません。':'例外は 1 頂点。本体は定理の仮定を満たしています。';
+    byId('ak-mex').textContent='初手後に現れる値 {'+result.options.join(', ')+'} → mex = '+result.g+'。重複を除いて '+result.states+' 状態を計算。';
+    byId('ak-caption').textContent=counter?'中央の辺を取ると値 0、端の辺を取ると値 1 の盤面が残ります。よって g(P₄) = mex{0, 1} = 2 です。':'各 aᵢ と bᵢ を一斉に入れ替えても、本体の辺集合は変わりません。太い実線が各対の内部辺です。z が孤立していても構いません。';
+    root.dataset.grundy=result.g;root.dataset.predicted=counter?'outside':String(m%2);
+  }
+  pairs.addEventListener('change',()=>{m=Number(pairs.value);zLinks=Array.from({length:2*m},(_,i)=>i%2===0);buildCore();renderChips();render();});
+  mode.addEventListener('change',()=>{buildCore();renderChips();render();});
+  byId('ak-randomize').addEventListener('click',()=>{zLinks=Array.from({length:2*m},()=>Math.random()<.5);buildCore();renderChips();render();});
+  window.matchMedia('(max-width:560px)').addEventListener('change',render);
+  buildCore();renderChips();render();
+})();
+</script>
+
+<section id="proof"><div class="eyebrow">03 · COMPLETE PROOF</div><h2>例外は消えるだけでなく、別の頂点へ移る</h2>
+<p>m に関する強い帰納法で証明する。m = 0 では辺がなく、g = 0。m &gt; 0 とし、小さいペア数では定理が成立すると仮定する。p = m mod 2 と置き、すべての合法手を次の三種類に分ける。</p>
+<div class="proof-step"><div class="n">CASE A · ペアを丸ごと取る</div><h3>辺 aᵢbᵢ を取る場合</h3><p>そのペアが消え、m−1 ペアと同じ例外 z が残る。残ったペア群には τ の制限が自己同型として残るので、帰納仮定より次局面の値は (m−1) mod 2 = 1−p。よって p ではない。</p></div>
+<div class="proof-step"><div class="n">CASE B · 例外を使う</div><h3>辺 zaᵢ を取る場合</h3><p>z と aᵢ が消え、相方 bᵢ が残る。<strong>bᵢ を新しい例外頂点と見なす</strong>。その他の m−1 ペアの誘導グラフは対称なままであり、新例外の接続は任意でよい。したがって次局面の値は再び 1−p。辺 zbᵢ の場合も同じである。</p>
+<div class="two-col"><figure><svg viewBox="0 0 420 220" role="img" aria-label="zとa_iを取る前。紫の辺を選ぶ" xmlns="http://www.w3.org/2000/svg"><title>zとa_iを取る前。紫の辺を選ぶ</title><line x1="180" y1="55" x2="180" y2="165" stroke="#087f83" stroke-width="5"/><line x1="345" y1="55" x2="345" y2="165" stroke="#087f83" stroke-width="5"/><line x1="180" y1="55" x2="345" y2="55" stroke="#8c9caf" stroke-width="2.4"/><line x1="180" y1="165" x2="345" y2="165" stroke="#8c9caf" stroke-width="2.4"/><line x1="55" y1="110" x2="180" y2="55" stroke="#654cc0" stroke-width="5"/><line x1="55" y1="110" x2="345" y2="165" stroke="#c4583c" stroke-width="2.4"/><circle cx="55" cy="110" r="22" fill="#fff0e8" stroke="#c4583c" stroke-width="2"/><text x="55" y="115.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">z</text><circle cx="180" cy="55" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="180" y="60.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">aᵢ</text><circle cx="180" cy="165" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="180" y="170.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">bᵢ</text><circle cx="345" cy="55" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="345" y="60.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">aⱼ</text><circle cx="345" cy="165" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="345" y="170.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">bⱼ</text></svg><figcaption>紫の辺 zaᵢ を一手で取る。元の例外 z と、ペアの片側 aᵢ が消える。</figcaption></figure><figure><svg viewBox="-40 0 420 220" role="img" aria-label="zとa_iを取った後。b_iが新しい例外になる" xmlns="http://www.w3.org/2000/svg"><title>zとa_iを取った後。b_iが新しい例外になる</title><line x1="230" y1="55" x2="230" y2="165" stroke="#087f83" stroke-width="5"/><line x1="70" y1="150" x2="230" y2="165" stroke="#c4583c" stroke-width="2.4"/><circle cx="70" cy="150" r="22" fill="#fff0e8" stroke="#c4583c" stroke-width="2"/><text x="70" y="155.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">bᵢ</text><circle cx="230" cy="55" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="230" y="60.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">aⱼ</text><circle cx="230" cy="165" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="230" y="170.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">bⱼ</text></svg><figcaption>残った bᵢ が新しい例外になる。残りのペア群だけを見れば、仮定がそのまま保存される。</figcaption></figure></div></div>
+<div class="proof-step"><div class="n">CASE C · 異なるペアをまたぐ</div><h3>別々のペアに属する x,y の辺 xy を取る場合</h3><p>一手後の局面を G′ とする。対称性により、鏡像の辺 τ(x)τ(y) が存在する。x と y は別々のペアに属するので、この鏡像の両端はまだ残っており、<strong>G′ から取れる合法手</strong>である。</p><p>さらにその辺を取った局面 G″ には、m−2 ペアと例外 z が残る。帰納仮定より g(G″) = (m−2) mod 2 = p。したがって G′ は、値 p の局面への合法手を持つ。mex の定義から、<strong>g(G′) ≠ p</strong>でなければならない。</p>
+<div class="formula small">G → G′ → G″<br>g(G″) = p &nbsp; ⇒ &nbsp; g(G′) ≠ p</div>
+<p class="small">ここでは G′ 自体が定理の仮定を満たすとは言っていない。帰納仮定を使うのは二手後の G″ だけであり、途中の局面への不正な適用や循環論証はない。</p></div>
+<div class="proof-step"><div class="n">MEX · 最後の一歩</div><h3>p を排除し、必要なら 0 を用意する</h3><p>以上で、G のどの一手後の局面も値 p を持たない。p = 0 なら、その集合の mex は 0 である。p = 1 なら m ≥ 1 なので、必須のペア内辺を一つ取れる。Case A により、その手は値 0 へ移る。従って 0 は一手後の値に現れ、1 は現れず、mex は 1 となる。どちらの場合も g(G) = p。証明終。</p></div>
+<div class="callout"><p><strong>抽象化の要点</strong><br>毎手後に全体の対称性が残るのではない。例外を使う手では「例外の役割を相方へ渡す」。対をまたぐ手では「二手後に同じ種類の局面へ戻す」。この二つで、任意の例外接続を許せる。</p></div>
+</section>
+<section id="corollaries"><div class="eyebrow">04 · CONSEQUENCES AND STRATEGY</div><h2>一マスの欠損は、場所を問わない</h2>
+<p>T1 の仮定を満たす対称なペア群 H に対し、次が従う。</p>
+<div class="table-wrap"><table><thead><tr><th>操作</th><th>値</th><th>理由</th></tr></thead><tbody><tr><td>H をそのまま使う</td><td>m mod 2</td><td>孤立した例外 z を追加しても手は増えない。</td></tr><tr><td>任意の一頂点 v を取り除く（m ≥ 1）</td><td>(m−1) mod 2</td><td>τ(v) が新しい例外となり、完全なペアが m−1 組残る。</td></tr><tr><td>一頂点 z を任意の相手へつなぐ</td><td>m mod 2</td><td>T1 そのもの。N(z) を変えても値は不変。</td></tr></tbody></table></div>
+<h3>応用1：2×n のドミノ盤</h3><p>各列の上下二マスを一組にする。上下交換はグラフの自己同型で、各組は縦ドミノで取れる。従って一マスをどこに塞いでも、値は (n−1) mod 2。<strong>欠損の端・中央・上段・下段という違いは、この値には影響しない。</strong>欠損のない 2×n 盤の g = n mod 2 は既知の結果である。<a href="#ref2">[2]</a>ここで n ≥ 1 とする。</p>
+<p>欠損ではなく、一頂点 z を<strong>一つの格子頂点だけにつなぐ（葉を一枚付ける）</strong>場合も T1 の特殊例であり、値は n mod 2 のまま変わらない。この特殊例には、証明なしの既存記述がある。<a href="#ref3">[3]</a>一マス欠けの盤面のうち、<strong>欠損が端の列にある場合</strong>は、2×(n−1) の梯子の角に葉を一枚付けた形そのものなので、この既存記述の範囲に含まれる。<strong>欠損が内側の列にある場合</strong>は、欠損が上段を左右に分け、残った相方が左右の格子をつなぐ唯一の頂点（切断点）になる。この形は、その記述に挙げられた追加の形には当たらない。内側の一マス欠けを扱う記述は、今回の照合範囲では見つからなかった（<a href="#novelty">07節</a>）。</p>
+<figure><svg viewBox="0 0 610 185" role="img" aria-label="2行7列のドミノ盤。上段4列目だけ欠損し、下段4列目が例外になる" xmlns="http://www.w3.org/2000/svg"><rect x="35" y="18" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="67.5" y="58" font-size="22" text-anchor="middle" fill="#182c40">1</text><rect x="35" y="93" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="67.5" y="133" font-size="22" text-anchor="middle" fill="#182c40">1</text><rect x="113" y="18" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="145.5" y="58" font-size="22" text-anchor="middle" fill="#182c40">2</text><rect x="113" y="93" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="145.5" y="133" font-size="22" text-anchor="middle" fill="#182c40">2</text><rect x="191" y="18" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="223.5" y="58" font-size="22" text-anchor="middle" fill="#182c40">3</text><rect x="191" y="93" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="223.5" y="133" font-size="22" text-anchor="middle" fill="#182c40">3</text><rect x="269" y="18" width="65" height="65" rx="9" fill="#eef0f3" stroke="#c4ccd4" stroke-width="2"/><text x="301.5" y="58" font-size="22" text-anchor="middle" fill="#182c40">×</text><rect x="269" y="93" width="65" height="65" rx="9" fill="#fff0e8" stroke="#c4583c" stroke-width="2"/><text x="301.5" y="133" font-size="22" text-anchor="middle" fill="#182c40">z</text><rect x="347" y="18" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="379.5" y="58" font-size="22" text-anchor="middle" fill="#182c40">5</text><rect x="347" y="93" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="379.5" y="133" font-size="22" text-anchor="middle" fill="#182c40">5</text><rect x="425" y="18" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="457.5" y="58" font-size="22" text-anchor="middle" fill="#182c40">6</text><rect x="425" y="93" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="457.5" y="133" font-size="22" text-anchor="middle" fill="#182c40">6</text><rect x="503" y="18" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="535.5" y="58" font-size="22" text-anchor="middle" fill="#182c40">7</text><rect x="503" y="93" width="65" height="65" rx="9" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="535.5" y="133" font-size="22" text-anchor="middle" fill="#182c40">7</text></svg><figcaption>2×7 盤の例。上段の一マスを塞ぐと、その下のマスが例外 z となる。残った完全な列は6組なので g = 0。欠損列の左右のペア群は分断されていてもよい。</figcaption></figure>
+<h3>応用2：任意のグラフを二層にする</h3><p>任意の有限単純グラフ F を二つコピーし、対応する頂点同士を辺で結ぶ。これはデカルト積 F □ K₂ である。F が木でも、サイクルでも、密なグラフでも、値は |V(F)| mod 2。一頂点の欠損後は (|V(F)|−1) mod 2 になる。さらに、層交換と整合する交差辺を加えた場合も、T1 の条件を保つ限り同じ式が使える。</p>
+<h3>応用3：探索せずに選べる必勝手と応手</h3>
+<p>ペア分けが与えられている場合、m が奇数なら、最初に<strong>どのペア内辺を取っても</strong> m−1 が偶数の局面に移れる。偶数の局面を相手に渡した後は、次の応手を繰り返す。</p>
+<div class="table-wrap"><table><thead><tr><th>相手の手</th><th>こちらの応手</th></tr></thead><tbody><tr><td>完全なペアを取った</td><td>残った完全なペアを一組取る。</td></tr><tr><td>例外とペアの片側を取った</td><td>相方を新例外にし、別の完全なペアを一組取る。</td></tr><tr><td>異なるペアをまたぐ辺を取った</td><td>その辺の鏡像の辺を取る。</td></tr></tbody></table></div>
+<p>相手が手を打てる偶数ペア局面では m ≥ 2 なので、上の応手は存在する。各往復で二ペア分が消え、同じ条件を満たす偶数局面へ戻る。グラフの全ゲーム木を読む必要はない。</p>
+<p class="small">これは、対分け・自己同型が与えられた場合の戦略である。任意の入力グラフから、そのような対分けを高速に発見できることまで証明したものではない。関連する例として、各辺とその像が頂点を共有しない対合による鏡像戦略については、その存在の判定がグラフ同型問題と同程度に難しいことが示されている。<a href="#ref4">[4]</a>また、先手必勝は完全なプレイを前提とする。どの手順でも総手数が同じ、という主張ではない。</p>
+</section>
+<section id="weighted"><div class="eyebrow">05 · WEIGHTED COROLLARY</div><h2>頂点に複数の駒を置いても、同じ原理が使える</h2>
+<p>各頂点に非負整数個の駒を置く。一手で辺の両端から一個ずつ取り、片端の駒がゼロならその辺は使えない。ループは許さない。これは既知の Weighted Arc Kayles の一設定である。<a href="#ref5">[5]</a></p>
+<div class="theorem"><div class="tag">系 W1 · 一個の余分な駒</div><p>対称ペア {aᵢ,bᵢ} の両端に同数 cᵢ ≥ 0 の駒を置く。各ペア内辺を持ち、ペア群のグラフが全対交換で不変とする。任意接続の例外頂点 z には<strong>ちょうど一個</strong>の駒を置く。このとき、</p><div class="formula">g(G,c) = (c<sub>1</sub> + ⋯ + c<sub>m</sub>) mod 2.</div><p>例外頂点を置かない場合も同じ式が成立する。</p></div>
+<figure><svg viewBox="0 0 600 225" role="img" aria-label="対称ペアの容量2,2と3,3、例外容量1。Grundy値は1" xmlns="http://www.w3.org/2000/svg"><title>対称ペアの容量2,2と3,3、例外容量1。Grundy値は1</title><line x1="100" y1="55" x2="100" y2="175" stroke="#087f83" stroke-width="5"/><line x1="310" y1="55" x2="310" y2="175" stroke="#087f83" stroke-width="5"/><line x1="100" y1="55" x2="310" y2="55" stroke="#8c9caf" stroke-width="2.4"/><line x1="100" y1="175" x2="310" y2="175" stroke="#8c9caf" stroke-width="2.4"/><line x1="500" y1="110" x2="100" y2="55" stroke="#c4583c" stroke-width="2.4"/><line x1="500" y1="110" x2="310" y2="175" stroke="#c4583c" stroke-width="2.4"/><circle cx="100" cy="55" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="100" y="60.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">2</text><circle cx="100" cy="175" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="100" y="180.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">2</text><circle cx="310" cy="55" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="310" y="60.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">3</text><circle cx="310" cy="175" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="310" y="180.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">3</text><circle cx="500" cy="110" r="22" fill="#fff0e8" stroke="#c4583c" stroke-width="2"/><text x="500" y="115.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">1</text></svg><figcaption>数字は各頂点に残る駒数。対の容量が2と3なら、例外の接続にかかわらず g = (2+3) mod 2 = 1。</figcaption></figure>
+<p><strong>証明。</strong>容量 c の頂点を、互いに隣接しない c 個の複製頂点へ展開する。元の各辺を、両側の複製頂点間の完全二部グラフに置き換える。各手は一組の複製を消し、元の容量を一ずつ減らす手に対応する。複製のどれを選ぶかによる重複は、mex の集合には影響しないので、展開前後のゲーム値は一致する。この重み展開は既知である。<a href="#ref5">[5, §4 Corollary 2]</a></p>
+<p>aᵢ と bᵢ の j 番目の複製をペアにすると、完全なペアは合計 Σcᵢ 組。ペア内辺があり、同時交換は、z の複製を除いた展開グラフの自己同型になる。z の複製は一個だけなので T1 を適用できる。容量0の頂点は初めから除いてよい。証明終。</p>
+<p>同様に、例外のない対称な重み配置から<strong>どこか一頂点の駒を一個減らす</strong>と、残った相方の一複製が例外となり、値は (Σcᵢ−1) mod 2。一個増やすと増分の複製が例外となり、値は Σcᵢ mod 2 のままである。減らす場合には、その頂点の容量が正であることを前提とする。</p>
+</section>
+<section id="limits"><div class="eyebrow">06 · SHARP LIMITS</div><h2>二個の例外では、もう同じ結論にならない</h2>
+<figure class="compact-graph"><svg viewBox="0 0 360 100" role="img" aria-label="二例外の反例P4。中央辺が1組のペア" xmlns="http://www.w3.org/2000/svg"><title>二例外の反例P4。中央辺が1組のペア</title><line x1="45" y1="50" x2="135" y2="50" stroke="#c4583c" stroke-width="2.4"/><line x1="135" y1="50" x2="225" y2="50" stroke="#087f83" stroke-width="5"/><line x1="225" y1="50" x2="315" y2="50" stroke="#c4583c" stroke-width="2.4"/><circle cx="45" cy="50" r="22" fill="#fff0e8" stroke="#c4583c" stroke-width="2"/><text x="45" y="57.04" text-anchor="middle" fill="#182c40" font-size="22" font-family="sans-serif">z₁</text><circle cx="135" cy="50" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="135" y="57.04" text-anchor="middle" fill="#182c40" font-size="22" font-family="sans-serif">a</text><circle cx="225" cy="50" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="225" y="57.04" text-anchor="middle" fill="#182c40" font-size="22" font-family="sans-serif">b</text><circle cx="315" cy="50" r="22" fill="#fff0e8" stroke="#c4583c" stroke-width="2"/><text x="315" y="57.04" text-anchor="middle" fill="#182c40" font-size="22" font-family="sans-serif">z₂</text></svg><figcaption>中央の a,b は一ペア。両端に例外 z₁,z₂ を一個ずつ付けると、4頂点の道 P₄ になる。</figcaption></figure>
+<p>中央の辺 ab を取ると孤立頂点二つだけが残り、値は0。端の辺を取ると一辺 K₂ が残り、値は1。したがって、</p><div class="formula">g(P₄) = mex {0,1} = 2 ≠ 1.</div>
+<p>一ペアなら g = 1 という式が破れる。P₄ は<strong>非空のペア群と二例外を持つ、頂点数最小の連結反例</strong>である（4頂点・3辺）。非連結も許すなら、ペア内辺 ab と例外同士の辺 z₁z₂ だけからなる 2K₂ も反例になる。こちらは同じ4頂点で辺が2本しかなく、g(2K₂) = 1 ⊕ 1 = 0 ≠ 1 である。したがって P₄ を辺数まで含めた無条件の最小例とは呼ばない。</p>
+<p>空のペア群を許すなら、二例外を一辺で結ぶ K₂ が2頂点の反例となる。二個の例外が常に失敗するという意味ではなく、<em>任意接続についての一律保証</em>が失われるという意味である。</p>
+<div class="two-col"><div class="panel"><h3>重みの例外も「一個」が効く</h3><p>三角形の容量を (1,1,2) とし、前二頂点をペア、容量2を例外にする。ペアを取れば値0、例外を使えば容量 (0,1,1) の一辺となり値1。よって元の値は2。W1 の例外容量を任意の正整数へ広げることはできない。</p></div><div class="panel"><h3>共有接点での部品置換はできない</h3><p>z–a–b という3頂点の道は、値1の一例外局面。しかし z に新しい頂点 w をつなぐと P₄ になり値2。元の局面を「孤立した z と独立な一辺」に置き換えてから同じ接続をすると、独立な二辺になり値0。同じ値でも、接点を共有する外部文脈では振る舞いが変わる。</p></div></div>
+<h3>ほかの仮定を落とした場合</h3><ul><li><strong>ペア内辺がない：</strong>一ペアの二頂点を孤立させれば値0であり、m mod 2 = 1 と一致しない。</li><li><strong>ペア群の対称性がない：</strong>P₄ の頂点を道順に1,2,3,4とし、ペアを {1,2},{3,4} とする。ペア内辺はあるが、中間辺23の鏡像14がない。孤立例外を付けても g = 2 ≠ 0。</li><li><strong>ルールが違う：</strong>途中でグラフを分断してはいけないルールや、最後に取った側が負けるルールには、この証明をそのまま使えない。</li></ul>
+<h3>一律の保証は消えても、族によっては残る</h3>
+<p><strong>有限検査での観察：梯子への葉二枚の追加。</strong>2×n の梯子（F = Pₙ の二層グラフ）に、葉を一枚ずつ任意の二頂点へ付けた盤面を全列挙すると、n = 2〜8 では値が n mod 2 のままだった。一頂点に何枚も葉を付けた星（tuft）を二つ付けても、葉1〜3枚の組合せで n = 2〜6 では同じだった。葉二枚の検査範囲 n = 1〜8 で値が変わったのは、n = 1 の両端へ一枚ずつ付けた P₄ だけだった。三枚の葉では、検査した n = 2〜6 の各 n に値が変わる配置があった。これらは有限検査の観察であり、n ≥ 9 の二枚追加や n ≥ 7 の三枚追加についての一般的な証明は本稿では与えていない。梯子に限った二例外のこの振る舞いは、T1 の証明では扱えない。</p>
+<p class="small">一頂点 v に葉を何枚付けても、葉一枚の場合と同じ値になる。v を使う手はどの葉を選んでも v を消し、残りの葉を全て孤立させる。v を使わない手は葉の集まりをそのまま残す。この二点から、選択肢の値の集合が一致することを帰納法で確かめられる。</p>
+<h3 id="odd-clique">例外集合が三角形なら、一例外と同じ型の式が成り立つ</h3>
+<figure class="compact-graph"><svg viewBox="0 0 560 220" role="img" aria-label="2組の対称ペアと、非対称に接続した三角形の例外集合" xmlns="http://www.w3.org/2000/svg"><title>2組の対称ペアと、非対称に接続した三角形の例外集合</title><line x1="90" y1="55" x2="90" y2="165" stroke="#087f83" stroke-width="5"/><line x1="240" y1="55" x2="240" y2="165" stroke="#087f83" stroke-width="5"/><line x1="90" y1="55" x2="240" y2="55" stroke="#8c9caf" stroke-width="2.4"/><line x1="90" y1="165" x2="240" y2="165" stroke="#8c9caf" stroke-width="2.4"/><line x1="240" y1="55" x2="390" y2="60" stroke="#c4583c" stroke-width="2.4"/><line x1="240" y1="165" x2="440" y2="165" stroke="#c4583c" stroke-width="2.4"/><line x1="390" y1="60" x2="490" y2="60" stroke="#c4583c" stroke-width="4"/><line x1="390" y1="60" x2="440" y2="165" stroke="#c4583c" stroke-width="4"/><line x1="490" y1="60" x2="440" y2="165" stroke="#c4583c" stroke-width="4"/><circle cx="90" cy="55" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="90" y="60.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">a₁</text><circle cx="90" cy="165" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="90" y="170.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">b₁</text><circle cx="240" cy="55" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="240" y="60.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">a₂</text><circle cx="240" cy="165" r="22" fill="#e1f3f1" stroke="#087f83" stroke-width="2"/><text x="240" y="170.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">b₂</text><circle cx="390" cy="60" r="22" fill="#fff0e8" stroke="#c4583c" stroke-width="2"/><text x="390" y="65.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">x₁</text><circle cx="490" cy="60" r="22" fill="#fff0e8" stroke="#c4583c" stroke-width="2"/><text x="490" y="65.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">x₂</text><circle cx="440" cy="165" r="22" fill="#fff0e8" stroke="#c4583c" stroke-width="2"/><text x="440" y="170.12" text-anchor="middle" fill="#182c40" font-size="16" font-family="sans-serif">x₃</text></svg><figcaption>太い橙の三角形が例外集合 X。X と本体を結ぶ細い橙の辺は、交換対称でなくてよい。この例は2ペアなので、命題 K3 より g = (2+1) mod 2 = 1（全探索でも1）。</figcaption></figure>
+<div class="theorem"><div class="tag">命題 K3 · 三角形の例外集合</div>
+<p>m ≥ 0 とする。G の頂点が、T1 の条件1・2を満たす m 組のペアと、三頂点集合 X に分割され、<strong>X が三角形 K₃ を誘導する</strong>とする。X と H = G − X の間の辺は任意でよい。このとき、</p>
+<div class="formula">g(G) = (m + 1) mod 2.</div></div>
+<details open><summary>命題 K3 の証明：T1 へ一手で戻す</summary>
+<p>m に関する強い帰納法で示す。p = (m+1) mod 2 と置き、合法手を四種類に分ける。</p>
+<p><strong>ペア内辺 aᵢbᵢ。</strong>三角形を保ったまま m−1 ペアになり、帰納仮定より値は m mod 2 = 1−p。</p>
+<p><strong>X 内の辺。</strong>X の二頂点が消え、残る一頂点が任意接続の一例外になる。T1 より値は m mod 2 = 1−p。</p>
+<p><strong>X の頂点 x とペアの片側 aᵢ を結ぶ辺。</strong>一手後の局面には、X の残り二頂点を結ぶ辺が残る。その辺を取ると、bᵢ を例外とする m−1 ペアの T1 の局面になり、値は (m−1) mod 2 = p。したがって一手後の局面の値は p ではない。辺 xbᵢ も同じである。</p>
+<p><strong>ペアをまたぐ辺。</strong>T1 と同じく鏡像の辺で応じると、m−2 ペアと三角形 X の局面になり、帰納仮定より値は p。したがって一手後の値は p ではない。</p>
+<p>以上で、どの選択肢も値 p を持たない。p = 1 のとき、X 内の辺を取る手が値0の選択肢を与えるので、mex は p となる。m = 0 では X 内の辺しか手がなく、値は1である。□</p></details>
+<h3 id="k-refuted">予想 K は反証済み：K₅ への拡張は成立しない</h3>
+<div class="callout caution"><p><strong>第6版で予想 K を撤回する。</strong>旧予想は「対称な m 組のペアに、任意接続の奇数クリーク K₂ₖ₊₁ を加えても g = (m+k) mod 2」というものだった。k = 0 の T1 と k = 1 の K3 は成立するが、<strong>k = 2 には反例がある</strong>。</p></div>
+<p><strong>11頂点の反例。</strong>本体は三つの独立な辺 {0,1}, {2,3}, {4,5}。X = {6,7,8,9,10} の間には K₅ の全10辺を置く。本体と X の接続は <strong>{0,6}, {0,9}, {2,7}, {4,8} の4辺だけ</strong>とする。これでグラフ全体を指定した。本体は各ペアを交換しても不変なので、旧予想の仮定を満たす。</p>
+<figure class="compact-graph"><svg viewBox="0 0 440 365" role="img" aria-label="予想Kの11頂点反例。独立な3ペアとK5、接続辺06、09、27、48" xmlns="http://www.w3.org/2000/svg"><title>予想Kの反例：m=3、実際のGrundy値は3</title><line x1="130" y1="125" x2="250" y2="80" stroke="#c4583c" stroke-width="2"/><line x1="130" y1="125" x2="320" y2="205" stroke="#c4583c" stroke-width="2"/><line x1="130" y1="125" x2="130" y2="285" stroke="#c4583c" stroke-width="2"/><line x1="130" y1="125" x2="250" y2="330" stroke="#c4583c" stroke-width="2"/><line x1="250" y1="80" x2="320" y2="205" stroke="#c4583c" stroke-width="2"/><line x1="250" y1="80" x2="130" y2="285" stroke="#c4583c" stroke-width="2"/><line x1="250" y1="80" x2="250" y2="330" stroke="#c4583c" stroke-width="2"/><line x1="320" y1="205" x2="130" y2="285" stroke="#c4583c" stroke-width="2"/><line x1="320" y1="205" x2="250" y2="330" stroke="#c4583c" stroke-width="2"/><line x1="130" y1="285" x2="250" y2="330" stroke="#c4583c" stroke-width="2"/><line x1="60" y1="205" x2="130" y2="125" stroke="#7961a8" stroke-width="3"/><line x1="60" y1="205" x2="130" y2="285" stroke="#7961a8" stroke-width="3"/><line x1="250" y1="35" x2="250" y2="80" stroke="#7961a8" stroke-width="3"/><line x1="365" y1="205" x2="320" y2="205" stroke="#7961a8" stroke-width="3"/><line x1="60" y1="205" x2="20" y2="205" stroke="#087f83" stroke-width="5"/><line x1="250" y1="35" x2="305" y2="35" stroke="#087f83" stroke-width="5"/><line x1="365" y1="205" x2="410" y2="205" stroke="#087f83" stroke-width="5"/><circle cx="60" cy="205" r="14" fill="#e1f3f1" stroke="#087f83" stroke-width="1.6"/><text x="60" y="210" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">0</text><circle cx="20" cy="205" r="14" fill="#e1f3f1" stroke="#087f83" stroke-width="1.6"/><text x="20" y="210" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">1</text><circle cx="250" cy="35" r="14" fill="#e1f3f1" stroke="#087f83" stroke-width="1.6"/><text x="250" y="40" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">2</text><circle cx="305" cy="35" r="14" fill="#e1f3f1" stroke="#087f83" stroke-width="1.6"/><text x="305" y="40" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">3</text><circle cx="365" cy="205" r="14" fill="#e1f3f1" stroke="#087f83" stroke-width="1.6"/><text x="365" y="210" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">4</text><circle cx="410" cy="205" r="14" fill="#e1f3f1" stroke="#087f83" stroke-width="1.6"/><text x="410" y="210" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">5</text><circle cx="130" cy="125" r="14" fill="#fff0e8" stroke="#c4583c" stroke-width="1.6"/><text x="130" y="130" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">6</text><circle cx="250" cy="80" r="14" fill="#fff0e8" stroke="#c4583c" stroke-width="1.6"/><text x="250" y="85" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">7</text><circle cx="320" cy="205" r="14" fill="#fff0e8" stroke="#c4583c" stroke-width="1.6"/><text x="320" y="210" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">8</text><circle cx="130" cy="285" r="14" fill="#fff0e8" stroke="#c4583c" stroke-width="1.6"/><text x="130" y="290" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">9</text><circle cx="250" cy="330" r="14" fill="#fff0e8" stroke="#c4583c" stroke-width="1.6"/><text x="250" y="335" text-anchor="middle" font-size="14" fill="#182c40" font-family="sans-serif">10</text></svg><figcaption>緑が本体の3ペア、橙が K₅、紫が4本の接続辺。頂点0を二つのクリーク頂点6・9へつなぐ。予想値1に対し、実際の値は3。</figcaption></figure>
+<div class="table-wrap"><table><thead><tr><th>最初に取る辺</th><th>辺の数</th><th>一手後の値</th></tr></thead><tbody>
+<tr><td>ペア内の辺、または K₅ 内の辺</td><td>3 + 10</td><td>全て0</td></tr>
+<tr><td>{0,6}, {0,9}</td><td>2</td><td>どちらも2</td></tr>
+<tr><td>{2,7}, {4,8}</td><td>2</td><td>どちらも1</td></tr>
+</tbody></table></div>
+<div class="formula small">g(G) = mex{0,1,2} = 3 ≠ (3+2) mod 2 = 1.</div>
+<p>表は17本の全合法手を尽くしている。一手後の値は、残存頂点を状態にする方法と、残存辺集合を状態にする方法で別々に mex 再帰を行い、全て一致した。再現コードと辺ごとの結果を下に収録する。</p>
+<details><summary>もう一つの反例：4本の長さ2のパスを K₅ に付ける</summary>
+<p>本体は {0,1}, {2,3}, {4,5}, {6,7}、クリークは {8,9,10,11,12}。追加する接続辺は {0,8}, {2,9}, {4,10}, {6,11} だけとする。これは K₅ の異なる4頂点に、長さ2のパスを一本ずつ付けたグラフである。</p>
+<p>4本のペア内辺と10本のクリーク内辺の後は全て値1、4本の接続辺の後は全て値0。従って g = mex{0,1} = 2 で、旧予想の (4+2) mod 2 = 0 と異なる。こちらは勝敗も旧予想と異なる。</p></details>
+<p class="small">追加査読の画像はコード右側が切れていたため、m = 3 の例は上記の辺集合をこちらで具体化して確認したものであり、画像中コードの完全な転記ではない。m = 4 は画像の文章で特定できる構造を確認した。いずれの例にも最小性は主張しない。</p>
+<div class="buttons"><button class="btn" data-download="k_counterexample" type="button">反例の再現コード</button><button class="btn" data-download="k_counterexample_results" type="button">反例の検算結果JSON</button></div>
+<details><summary>反例の完全な再現コード（Python標準ライブラリのみ）</summary><p><code>python odd_clique_counterexample_verify.py</code> を実行すると、二つの反例の値と全ての一手後の値を検算し、同じ場所へJSONを保存する。</p><pre><code>&quot;&quot;&quot;Refutations of conjecture K; normal-play Arc Kayles, standard library only.
+Run: python odd_clique_counterexample_verify.py
+Two independent state representations: remaining vertices and remaining edges.
+&quot;&quot;&quot;
+from functools import lru_cache
+from itertools import combinations
+from pathlib import Path
+import json
+
+
+def mex(values):
+    result = 0
+    while result in values:
+        result += 1
+    return result
+
+
+def verify(m, attachments):
+    n = 2 * m + 5
+    pairs = [(2*i, 2*i+1) for i in range(m)]
+    clique = list(combinations(range(2*m, n), 2))
+    edges = tuple(sorted(pairs + clique + attachments))
+    assert len(set(edges)) == len(edges)
+    core = set(pairs)
+    tau = lambda v: v ^ 1
+    assert all(tuple(sorted((tau(a), tau(b)))) in core for a, b in core)
+    assert all(a &lt; 2*m &lt;= b &lt; n for a, b in attachments)
+    moves = tuple((1 &lt;&lt; a) | (1 &lt;&lt; b) for a, b in edges)
+
+    @lru_cache(None)
+    def by_vertices(mask):
+        return mex({by_vertices(mask ^ move) for move in moves
+                    if mask &amp; move == move})
+
+    @lru_cache(None)
+    def by_edges(remaining):
+        # The state is an immutable edge set; isolated vertices have no moves.
+        options = set()
+        for a, b in remaining:
+            child = tuple((u, v) for u, v in remaining
+                          if a not in (u, v) and b not in (u, v))
+            options.add(by_edges(child))
+        return mex(options)
+
+    full = (1 &lt;&lt; n) - 1
+    first_moves = []
+    for edge, move in zip(edges, moves):
+        a, b = edge
+        child = tuple((u, v) for u, v in edges
+                      if a not in (u, v) and b not in (u, v))
+        value = by_vertices(full ^ move)
+        assert value == by_edges(child)
+        kind = &#x27;pair&#x27; if edge in pairs else &#x27;clique&#x27; if edge in clique else &#x27;attachment&#x27;
+        first_moves.append({&#x27;edge&#x27;: list(edge), &#x27;kind&#x27;: kind, &#x27;grundy&#x27;: value})
+    vertex_value, edge_value = by_vertices(full), by_edges(edges)
+    predicted = (m + 2) % 2
+    assert vertex_value == edge_value != predicted
+    return {&#x27;m&#x27;: m, &#x27;k&#x27;: 2, &#x27;vertices&#x27;: n, &#x27;pairs&#x27;: pairs,
+            &#x27;clique_vertices&#x27;: list(range(2*m, n)), &#x27;attachments&#x27;: attachments,
+            &#x27;edges&#x27;: edges, &#x27;prediction_of_retracted_K&#x27;: predicted,
+            &#x27;grundy_by_vertices&#x27;: vertex_value, &#x27;grundy_by_edges&#x27;: edge_value,
+            &#x27;first_move_value_set&#x27;: sorted({row[&#x27;grundy&#x27;] for row in first_moves}),
+            &#x27;first_moves&#x27;: first_moves}
+
+
+if __name__ == &#x27;__main__&#x27;:
+    examples = [verify(3, [(0, 6), (0, 9), (2, 7), (4, 8)]),
+                verify(4, [(0, 8), (2, 9), (4, 10), (6, 11)])]
+    report = {&#x27;status&#x27;: &#x27;conjecture_K_refuted&#x27;, &#x27;examples&#x27;: examples,
+              &#x27;scope&#x27;: &#x27;two explicit counterexamples; no minimality claim&#x27;}
+    text = json.dumps(report, ensure_ascii=False, indent=2) + &#x27;\n&#x27;
+    Path(__file__).with_name(&#x27;odd_clique_counterexample_results.json&#x27;).write_text(text)
+    print(text, end=&#x27;&#x27;)
+</code></pre></details>
+<p><strong>以前の実験との関係。</strong>第5版で K₅ の1,524例が式に一致したという実験記録は、その標本については正しい。しかし乱択した m = 3 の100例は今回の反例を捉えていなかった。有限個の一致は一般命題の証明ではなく、今回の一つの反例で旧予想の普遍的な主張は否定される。旧データは探索履歴として保持する。</p>
+
+<p>三角形以外の三頂点の例外グラフ（P₃、K₂+K₁、3K₁）や、五頂点の C₅・K₅から一辺を除いたグラフ・蝶ネクタイ形では、m = 2 の乱択300例で値が一つに定まらなかった。少なくとも頂点数の奇偶だけでは、この違いを説明できない。K₃ ではクリーク構造が十分条件として働くことを証明したが、これらの対照実験は<strong>クリークであることの必要性を示すものではない</strong>。さらに、上の K₅ 反例により、奇数クリークであることだけでは旧予想の式を保証できないと分かった。</p>
+<h3>固定点がクリークをなす対合との関係</h3>
+<p>strictly matched involution は、固定点の集合がクリークをなし、固定されない各頂点がその像と隣接する対合である。<a href="#ref6">[6]</a><a href="#ref7">[7]</a>T1 は固定点が0個・1個の場合を、1個の固定点の接続を非対称にして拡げたものに当たる。固定点クリークの大きさ c を変えて、固定点の接続を対称に保ったまま乱択すると（c = 0〜3 は m = 0〜4、c = 4,5 は m = 0〜3、各 (c,m) で200例）、検査した c = 0, 1, 3, 5 の全標本で値が ⌊|V|/2⌋ mod 2 に一致し、c = 2, 4 には不一致の例があった。c = 3 は命題 K3 に含まれる。上の K₅ 反例は接続がペア交換に対して非対称であり、G 全体に対合を要求するこの狭いクラスの c = 5 については反例にならない。ここでの c = 5 の一致は引き続き有限検査の観察である。</p>
+<p>c = 2 の最小規模の反例の一つは、ペア {a,b}、その両方に隣接する z₁、z₁ だけに隣接する z₂ からなる4頂点のグラフである。ab を取ると値1、z₁a または z₁b を取ると値0、z₁z₂ を取ると値1が残るので g = 2 となり、予測の0と食い違う。<strong>固定点の接続を対称にしても、固定点が二個なら破れる。</strong>このクラス上の Arc Kayles を扱った文献は、今回の照合では見つからなかった。</p>
+</section>
+<section id="novelty"><div class="eyebrow">07 · PRIOR WORK AND NOVELTY</div><h2>命題の新規性と、証明技法の新規性を分ける</h2>
+<p>2026 09 15に、Arc Kayles / Cram / Weighted Arc Kayles と、involution・automorphism・paired vertices・perfect matching・symmetry strategy・tufts・vertex deletion の組合せを検索し、次の一次資料の本文を照合した。第5版では、査読の指摘を受けて、Cram の数値データベース、strictly matched involution の周辺、対合を使う他のゲームも追加で照合した。</p>
+<div class="table-wrap"><table><thead><tr><th>一次資料</th><th>確認した既知結果</th><th>今回の一般形との差</th></tr></thead><tbody>
+<tr><td><a href="#ref1">Huggan–Stevens, 2016 [1]</a><br>Theorem 1</td><td>すべての極大マッチングが同じサイズであるグラフでは、そのサイズの偶奇がゲーム値を決める。</td><td>T1 の族は、その仮定を満たすとは限らない。例えば2×3の梯子には、サイズ2と3の極大マッチングがある。</td></tr>
+<tr><td><a href="#ref2">Huggan–Tennenhouse, 2021 [2]</a><br>Theorems 4.4–4.5<br>（<a href="#ref3">arXiv 初版 [3]</a> では 4.5–4.6）</td><td>通常の2×n梯子の値と特定の突起付き盤面を扱う。4.5の証明に「応手で既知値へ戻り、途中の値を排除する」議論がある。梯子の値の定理の直後に、<strong>tuft（格子頂点を中心とするスター）を2個まで加えても値は変わらない</strong>という、証明なしの記述がある。</td><td><strong>証明の中心的手法は既知として帰属。</strong>tuft 1個の場合は、T1 を梯子へ適用した特殊例に当たる（葉が複数なら、06節の「葉を何枚付けても一枚と同じ」を併用する）ので、<strong>この特殊例は既述</strong>として扱う。端の列の一マス欠けもこの形と一致する。tuft 2個の場合は T1 の範囲外であり、計算した範囲（葉一枚ずつなら n = 2〜8）では n ≥ 2 で正しかった（06節）。任意の隣接対付きグラフと任意接続の一例外をまとめた T1 と同じ一般記載は確認できなかった。</td></tr>
+<tr><td><a href="#ref4">Burke–Dailly–Oijid, v2 [4]</a><br>Definition 5 / Theorem 6</td><td>全辺が自己同型による像の辺と頂点を共有しない場合、鏡像応手で後手必勝となる。</td><td>T1 の τ はペア内辺を固定するため、その条件を満たさない。z の隣接は非対称でもよく、τ は G 全体の自己同型でなくてよい。</td></tr>
+<tr><td><a href="#ref5">Dailly–Gledel–Heinrich, 2018/2019 [5]</a><br>§4, Corollary 2</td><td>Weighted Arc Kayles と、重みを頂点の複製へ展開する同値性。</td><td><strong>重み展開は既知。</strong>W1 はその既知同値と T1 を組み合わせた系として扱う。</td></tr>
+<tr><td><a href="#ref7">Andres et al., 2019 [7]</a><br>§5.1, Theorem 7 / Corollary 8</td><td>strictly matched involution を持つグラフを特徴づける。固定点がない場合は T1 の本体 H の構造に対応する。</td><td><strong>本体のグラフ構造は既知。</strong>原典の対象は直交彩色ゲームであり、Arc Kaylesで任意接続の一例外を許す T1 の値の式は本文に見つからなかった。このクラス上の Arc Kayles そのものを扱った文献も、今回の検索では見つからなかった。</td></tr>
+<tr><td><a href="#ref8">Uiterwijk, 2018 [8]</a></td><td>30マス未満の全ての盤面サイズについて Cram の終盤データベースを作り、空の盤面の値が既存文献と一致することを確認している。</td><td>要旨だけでは、一マス欠け局面の収録範囲や、その一般則の記載は確認できない。通常の空の 2×n 盤からは一手で二マスずつ埋まるため、一マスだけ欠けた局面には到達しない。データベースがそのような初期欠損も扱うかは、本文・データ仕様の照合が必要。</td></tr>
+<tr><td><a href="#ref9">Alvarado et al., 2021 [9]</a><br>Theorem 6</td><td>平面グラフ上の別のゲーム（Game of Cycles）で、対合により各面が全体として不変か、その面のどの辺の像も同じ面に属さない、という仮定を置く。その下で、自分に移る辺がなければ後手必勝、端点が固定されない自己対合辺がちょうど1本なら先手必勝とする。</td><td>「一つだけの例外で勝者が反転する」という発想の近接例として帰属する。Arc Kayles の値の式ではない。</td></tr>
+</tbody></table></div>
+<div class="callout caution"><p><strong>現時点での判定</strong><br>T1：一般の場合の証明を本稿に記録。調査した一次資料で、同一の一般形は未確認。<br>既述の特殊例：2×n 梯子に葉を一枚付ける場合は、証明なしの記述が既にある。<a href="#ref3">[3]</a>端の列の一マス欠けはこの形と同じなので、欠損に関する候補は内側の列の場合に限る。<br>命題 K3：T1 から導いた結果として記録。同一の記載は今回の照合範囲で未確認。<br>旧予想 K：K₅ の具体的反例により反証済み・撤回。<br>証明技法：既知の対称応手と mex 帰納法の応用。新技法とは主張しない。<br>応用・系：T1 からの帰結。個々の盤面の結果が初出かどうかは別途確認が必要。</p></div>
+<p>上表の既知結果の仮定へ直接当てはまらないことは、ほかの既知結果からも導けないことを意味しない。とくに <em>Winning Ways</em> 第3巻の関連箇所、接点付きグラフゲーム、line graph 上の Node Kayles、matching game という別名での結果には未照合部分がある。<strong>最優先の照合先は <em>Winning Ways</em> 第3巻の Cram の章である。</strong>梯子の値の出典であり、内側の一マス欠けの盤面を扱っている可能性が最も高い。今回も本文は取得できなかった。</p>
+<p>また、<a href="#ref1">[1]</a><a href="#ref2">[2]</a><a href="#ref6">[6]</a><a href="#ref7">[7]</a>の全てに Melissa Huggan が共著者として入っている。T1 に近い結果が既にあるとすれば、この研究者の周辺が最も有力である。修士論文<a href="#ref10">[10]</a>は、今回もサイトの制限で本文を取得できなかった。検索結果に表示された目次には、道・スター・サイクル・車輪グラフ、Triple Packing、頂点の重み付けなどの章が並ぶ。本文の抜粋では、極大マッチングの偶奇が全て等しいグラフはサイズも全て等しい、という equimatchable 系の議論が中心だった。対称性を扱う章は目次に見当たらないが、全文照合ではないので未照合として扱う。</p>
+<p>書籍原典や引用・被引用文献を網羅した優先権調査は完了していない。<strong>学術的新規性の確定や、未知の証明技法の発見とは表現しない。</strong></p>
+<p class="small"><strong>tuft の記述の評価（第5版で修正）。</strong>第4版では、tuft 2個の記述を任意の葉追加へ読み替えると P₄ の反例に衝突し得る、と書いた。葉一枚ずつの全列挙範囲 n = 1〜8 では、衝突したのは n = 1 の P₄ だけであり、n = 2〜8 では記述どおりだった。有限検査から n ≥ 9 まで結論してはいない。本稿の証明はこの記述に依存しない。<a href="#ref2">[2]</a><a href="#ref3">[3]</a></p>
+<details id="additional-search"><summary>レビューを受けた追加照合：2-lift と既知の構造名</summary>
+<p>2026 09 15に、Arc Kayles / Cram と 2-lift・signed graph・double cover・fixed-point-free involution・Tweedledum–Tweedledee・matched involution の組合せも検索した。この追加範囲でも、任意接続の一例外まで含む T1 と同一の一般命題は未確認だった。</p>
+<p><strong>2-lift による正確な言い換え。</strong>H = G−z、M = {aᵢbᵢ : 1 ≤ i ≤ m} とする。各ペアを基底の一頂点と見れば、H から M の辺だけを除いたグラフは、次の対応で符号付き多重グラフの 2-lift として表せる。正の辺を同じ層へ、負の辺を交差させて持ち上げる構成は既知であり、この対応を T1 の本体へ適用したものが下表である。<a href="#ref11">[11]</a></p>
+<div class="table-wrap"><table><thead><tr><th>基底の辺</th><th>本体で対応する二辺</th></tr></thead><tbody><tr><td>正の辺 i–j</td><td>aᵢaⱼ と bᵢbⱼ</td></tr><tr><td>負の辺 i–j</td><td>aᵢbⱼ と bᵢaⱼ</td></tr></tbody></table></div>
+<p>同じ二頂点間に正負の辺が両方あってよい。したがって基底を単純グラフに限定しない。<strong>H は、この 2-lift に各ペアを結ぶ完全マッチング M を加えたもの</strong>である。この記述なら、ペア内辺をループで表す規約が不要になる。</p>
+<p class="small">レビューの「各頂点に負のループを置く」という表現は、規約を補えば使える。通常のループ（whole-loop）を交換置換で持ち上げるとペア間に平行二辺が生じる一方、half-loop の規約なら一本の辺に対応する。平行辺を単純化する場合には、単純化後を同じ意味での被覆とは呼べない。両者を区別する文献を確認した。<a href="#ref12">[12]</a></p>
+<p><strong>本体の構造には既知の名前もある。</strong>H の交換自己同型は、<em>strictly matched involution</em> のうち固定点を持たない場合に該当する。参照論文は各非固定点とその像が隣接することを条件とし、固定点集合が空である場合も明示的に許している。ただし、そこで扱われるゲームは直交彩色ゲームである。この構造名の一致は、Arc Kayles の T1 が既知だという証拠とは分けて扱う。また、z を含む G 全体に同じ自己同型を要求してはいない。<a href="#ref6">[6]</a></p>
+<p>さらに、用語の導入元である2019年の著者公開原稿も確認した。§5.1 の Theorem 7 / Corollary 8 は、固定点クリーク C を許した形でグラフを特徴づけており、C が空の場合が H に対応する。C = {z} として全体の交換対称性を要求すると、z は各ペアの両端に同じように隣接しなければならない。T1 はその制限を課さない。この原稿中にも Arc Kayles の T1 や例外なしの値の公式は見つからなかった。なお、同論文には、strictly matched involution を持つグラフの同型類の個数の下界を弱める訂正記事が出ている。訂正の対象は §5.1 の特徴付けではない。<a href="#ref13">[13]</a><strong>構造の既知性を明記した上で、任意一例外を許すゲーム値の命題を候補として残す。</strong><a href="#ref7">[7]</a></p>
+</details>
+</section>
+<section id="verification"><div class="eyebrow">08 · VERIFICATION AND REPRODUCTION</div><h2>計算は証明の代わりにせず、反例検査に使う</h2>
+<p>主定理の根拠は上の一般証明である。追加で、定理式を解法に埋め込まず、各局面の全合法手を再帰的に探索する mex 計算と照合した。理論の独立監査と計算検査は、役割を分けたAIエージェントで実施した。</p>
+<div class="table-wrap"><table><thead><tr><th>検査</th><th>範囲</th><th>検査数</th><th>不一致</th></tr></thead><tbody><tr><td>主定理・全列挙</td><td>m = 0,1,2,3。固定した対分けの下の全対称コアと、全 z 隣接</td><td class="num">4,165</td><td>0</td></tr><tr><td>主定理・乱択</td><td>m = 4,5,6,7 で各 2,000 / 1,000 / 300 / 30 回</td><td class="num">3,330</td><td>0</td></tr><tr><td>重み付き・全列挙</td><td>m = 1,2、各 cᵢ ∈ {1,2,3}、全対称コアと全 z 隣接</td><td class="num">588</td><td>0</td></tr><tr><td>重み付き・乱択</td><td>m = 3、各 cᵢ ∈ {1,2,3}、重複しない200設定</td><td class="num">200</td><td>0</td></tr></tbody></table></div>
+<p>主定理の全列挙数は、m ペア間の二種類の辺軌道ごとに有無を選び、z の 2m 本の候補接続の有無を選んだ数 2<sup>m(m−1)+2m</sup> である。m = 0〜3 では 1+4+64+4096 = 4165。これは<strong>対分け・頂点ラベルを固定した設定数</strong>であり、非同型グラフ数ではない。乱択の seed は 20260915。主定理の乱択では重複設定が生じ得る。</p>
+<p>重み付きの検査は、証明で用いた複製展開ではなく、残り容量のタプルを状態にした別の動的計画法で行った。検査対象の合計DP状態数は130,057。P₄ と容量 (1,1,2) の反例も直接計算で確認した。</p>
+<div class="buttons"><button class="btn" data-download="paired" type="button">主定理の検証コードを取り出す</button><button class="btn" data-download="weighted" type="button">重み付きの検証コードを取り出す</button><button class="btn" data-download="results" type="button">検証結果JSONを取り出す</button></div>
+<details><summary>主定理の再現コード（Python標準ライブラリのみ）</summary><p>保存したファイルを <code>python paired_core_verify.py</code> で実行する。標準出力と同じ内容を実行場所の JSON ファイルへ書き出す。</p><pre><code>from functools import lru_cache
+from itertools import combinations
+import random,json
+
+def sg(n,edges):
+    moves=tuple((1&lt;&lt;u)|(1&lt;&lt;v) for u,v in edges)
+    @lru_cache(None)
+    def g(mask):
+        seen={g(mask^e) for e in moves if mask&amp;e==e}
+        x=0
+        while x in seen:x+=1
+        return x
+    return g((1&lt;&lt;n)-1)
+
+def core(m,bits):
+    edges=[(2*i,2*i+1) for i in range(m)]
+    k=0
+    for i,j in combinations(range(m),2):
+        for flip in (0,1):
+            if bits&gt;&gt;k&amp;1:edges.extend([(2*i,2*j+flip),(2*i+1,2*j+1-flip)])
+            k+=1
+    return edges
+report=[]
+for m in range(4):
+    count=0
+    for bits in range(1&lt;&lt;(m*(m-1))):
+        e=core(m,bits)
+        for a in range(1&lt;&lt;(2*m)):
+            edges=e+[(2*m,j) for j in range(2*m) if a&gt;&gt;j&amp;1]
+            value=sg(2*m+1,edges)
+            assert value==m%2,(m,bits,a,value)
+            count+=1
+    report.append({&#x27;pairs&#x27;:m,&#x27;exhaustive_labeled_graphs&#x27;:count})
+rng=random.Random(20260915)
+for m,counts in [(4,2000),(5,1000),(6,300),(7,30)]:
+    for _ in range(counts):
+        bits=rng.randrange(1&lt;&lt;(m*(m-1)));a=rng.randrange(1&lt;&lt;(2*m))
+        edges=core(m,bits)+[(2*m,j) for j in range(2*m) if a&gt;&gt;j&amp;1]
+        assert sg(2*m+1,edges)==m%2
+    report.append({&#x27;pairs&#x27;:m,&#x27;random_graphs&#x27;:counts,&#x27;seed&#x27;:20260915})
+print(json.dumps(report,indent=2))
+open(&#x27;paired_core_results.json&#x27;,&#x27;w&#x27;).write(json.dumps(report,indent=2))
+</code></pre></details>
+<details><summary>重み付きの独立再現コード</summary><p><code>python weighted_verify.py</code> で実行する。</p><pre><code>&quot;&quot;&quot;Independent WAK verification by direct capacity-state mex, without clone reduction.
+Python standard library only. Run: python weighted_verify.py
+&quot;&quot;&quot;
+from functools import lru_cache
+from itertools import product
+from pathlib import Path
+import json,random
+
+def wak_grundy(capacities,edges):
+    edges=tuple(edges)
+    @lru_cache(None)
+    def dp(caps):
+        options=set()
+        for a,b in edges:
+            if caps[a] and caps[b]:
+                nxt=list(caps);nxt[a]-=1;nxt[b]-=1
+                options.add(dp(tuple(nxt)))
+        g=0
+        while g in options:g+=1
+        return g
+    return dp(tuple(capacities)),dp.cache_info().currsize
+
+def core_edges(m,mask):
+    edges=[(2*i,2*i+1) for i in range(m)]
+    bit=0
+    for i in range(m):
+        for j in range(i+1,m):
+            for flip in range(2):
+                if mask&gt;&gt;bit&amp;1:
+                    edges.extend([(2*i,2*j+flip),(2*i+1,2*j+1-flip)])
+                bit+=1
+    return edges
+
+def evaluate(m,c,coremask,adjmask):
+    z=2*m
+    capacities=[v for x in c for v in (x,x)]+[1]
+    edges=core_edges(m,coremask)+[(i,z) for i in range(z) if adjmask&gt;&gt;i&amp;1]
+    got,states=wak_grundy(capacities,edges)
+    expected=sum(c)%2
+    return got,expected,states
+
+def main():
+    report={&#x27;method&#x27;:&#x27;capacity tuple dynamic programming with mex; no clone reduction used by verifier&#x27;,
+            &#x27;seed&#x27;:20260915,&#x27;exhaustive&#x27;:[],&#x27;random&#x27;:{},&#x27;counterexample&#x27;:{},&#x27;total_checked&#x27;:0,&#x27;violations&#x27;:[]}
+    states=0
+    for m in (1,2):
+        checked=0;observed={}
+        for c in product(range(1,4),repeat=m):
+            for cm in range(1&lt;&lt;(m*(m-1))):
+                for am in range(1&lt;&lt;(2*m)):
+                    got,expected,numstates=evaluate(m,c,cm,am)
+                    states+=numstates;checked+=1
+                    observed[got]=observed.get(got,0)+1
+                    if got!=expected:report[&#x27;violations&#x27;].append(dict(m=m,c=c,coremask=cm,adjmask=am,got=got,expected=expected))
+        report[&#x27;exhaustive&#x27;].append(dict(pairs=m,capacities=&#x27;each c_i in 1..3&#x27;,symmetric_core_count=1&lt;&lt;(m*(m-1)),exception_neighbor_count=1&lt;&lt;(2*m),cases=checked,grundy_histogram=observed))
+        report[&#x27;total_checked&#x27;]+=checked
+    rng=random.Random(report[&#x27;seed&#x27;]);m=3;seen=set();observed={}
+    while len(seen)&lt;200:
+        c=tuple(rng.randint(1,3) for _ in range(m));cm=rng.randrange(1&lt;&lt;(m*(m-1)));am=rng.randrange(1&lt;&lt;(2*m))
+        key=(c,cm,am)
+        if key in seen:continue
+        seen.add(key)
+        got,expected,numstates=evaluate(m,c,cm,am)
+        states+=numstates;observed[got]=observed.get(got,0)+1
+        if got!=expected:report[&#x27;violations&#x27;].append(dict(m=m,c=c,coremask=cm,adjmask=am,got=got,expected=expected))
+    report[&#x27;random&#x27;]=dict(pairs=3,cases=200,capacities=&#x27;each c_i in 1..3&#x27;,sampling=&#x27;uniform draws without duplicate parameter tuples&#x27;,grundy_histogram=observed)
+    report[&#x27;total_checked&#x27;]+=200
+    g,n=wak_grundy([1,1,2],[(0,1),(0,2),(1,2)])
+    report[&#x27;counterexample&#x27;]=dict(graph=&#x27;triangle&#x27;,capacities=[1,1,2],core_pairs=[[0,1]],exception=2,actual_grundy=g,claimed_parity_if_generalized=1,option_grundy_values=[0,1])
+    report[&#x27;sum_dp_states_across_cases&#x27;]=states
+    dest=Path(__file__).with_name(&#x27;weighted_verify.json&#x27;)
+    dest.write_text(json.dumps(report,indent=2,ensure_ascii=False)+&#x27;\n&#x27;)
+    print(json.dumps(report,indent=2,ensure_ascii=False))
+    assert not report[&#x27;violations&#x27;]
+    assert g==2
+if __name__==&#x27;__main__&#x27;:main()
+</code></pre></details>
+<details><summary>今回の検査結果（二つの実行出力を統合）</summary><p>これは一つのスクリプトの生出力ではない。<code>main_theorem</code> は主定理スクリプトの出力リスト、<code>weighted_corollary</code> は重み付きスクリプトの出力オブジェクトを、そのまま格納している。外側に記録種別と実験日を付けた。JSONの日付は機械処理向けに <code>YYYY-MM-DD</code>、本文の日付は「2026 09 15」の形で書く。</p><pre><code>{
+  &quot;record_type&quot;: &quot;combined_script_outputs&quot;,
+  &quot;date&quot;: &quot;2026-09-15&quot;,
+  &quot;main_theorem&quot;: [
+    {
+      &quot;pairs&quot;: 0,
+      &quot;exhaustive_labeled_graphs&quot;: 1
+    },
+    {
+      &quot;pairs&quot;: 1,
+      &quot;exhaustive_labeled_graphs&quot;: 4
+    },
+    {
+      &quot;pairs&quot;: 2,
+      &quot;exhaustive_labeled_graphs&quot;: 64
+    },
+    {
+      &quot;pairs&quot;: 3,
+      &quot;exhaustive_labeled_graphs&quot;: 4096
+    },
+    {
+      &quot;pairs&quot;: 4,
+      &quot;random_graphs&quot;: 2000,
+      &quot;seed&quot;: 20260915
+    },
+    {
+      &quot;pairs&quot;: 5,
+      &quot;random_graphs&quot;: 1000,
+      &quot;seed&quot;: 20260915
+    },
+    {
+      &quot;pairs&quot;: 6,
+      &quot;random_graphs&quot;: 300,
+      &quot;seed&quot;: 20260915
+    },
+    {
+      &quot;pairs&quot;: 7,
+      &quot;random_graphs&quot;: 30,
+      &quot;seed&quot;: 20260915
+    }
+  ],
+  &quot;weighted_corollary&quot;: {
+    &quot;method&quot;: &quot;capacity tuple dynamic programming with mex; no clone reduction used by verifier&quot;,
+    &quot;seed&quot;: 20260915,
+    &quot;exhaustive&quot;: [
+      {
+        &quot;pairs&quot;: 1,
+        &quot;capacities&quot;: &quot;each c_i in 1..3&quot;,
+        &quot;symmetric_core_count&quot;: 1,
+        &quot;exception_neighbor_count&quot;: 4,
+        &quot;cases&quot;: 12,
+        &quot;grundy_histogram&quot;: {
+          &quot;1&quot;: 8,
+          &quot;0&quot;: 4
+        }
+      },
+      {
+        &quot;pairs&quot;: 2,
+        &quot;capacities&quot;: &quot;each c_i in 1..3&quot;,
+        &quot;symmetric_core_count&quot;: 4,
+        &quot;exception_neighbor_count&quot;: 16,
+        &quot;cases&quot;: 576,
+        &quot;grundy_histogram&quot;: {
+          &quot;0&quot;: 320,
+          &quot;1&quot;: 256
+        }
+      }
+    ],
+    &quot;random&quot;: {
+      &quot;pairs&quot;: 3,
+      &quot;cases&quot;: 200,
+      &quot;capacities&quot;: &quot;each c_i in 1..3&quot;,
+      &quot;sampling&quot;: &quot;uniform draws without duplicate parameter tuples&quot;,
+      &quot;grundy_histogram&quot;: {
+        &quot;1&quot;: 102,
+        &quot;0&quot;: 98
+      }
+    },
+    &quot;counterexample&quot;: {
+      &quot;graph&quot;: &quot;triangle&quot;,
+      &quot;capacities&quot;: [
+        1,
+        1,
+        2
+      ],
+      &quot;core_pairs&quot;: [
+        [
+          0,
+          1
+        ]
+      ],
+      &quot;exception&quot;: 2,
+      &quot;actual_grundy&quot;: 2,
+      &quot;claimed_parity_if_generalized&quot;: 1,
+      &quot;option_grundy_values&quot;: [
+        0,
+        1
+      ]
+    },
+    &quot;total_checked&quot;: 788,
+    &quot;violations&quot;: [],
+    &quot;sum_dp_states_across_cases&quot;: 130057
+  }
+}</code></pre></details>
+<h3>第5版の追加検査：梯子の tuft と奇数クリークの例外</h3><p class="small">以下は以前の有限検査の記録である。第6版では<a href="#k-refuted">別途構成した K₅ の反例2件</a>を二つの状態表現で検算した。旧標本の一致を、予想 K の成立と解釈してはいけない。</p>
+<div class="table-wrap"><table><thead><tr><th>検査</th><th>範囲</th><th>検査数</th><th>結果</th></tr></thead><tbody>
+<tr><td>梯子・葉一枚</td><td>n = 1〜8、全ての付け位置</td><td class="num">72</td><td>値の変化 0</td></tr>
+<tr><td>梯子・葉一枚ずつ二か所</td><td>n = 1〜8、同じ頂点を含む全ての位置の組</td><td class="num">444</td><td>変化は n = 1 の 1 件（P₄）のみ</td></tr>
+<tr><td>梯子・tuft 二つ</td><td>n = 2〜6、各 tuft の葉1〜3枚、総頂点数18以下</td><td class="num">1,800</td><td>値の変化 0</td></tr>
+<tr><td>梯子・葉一枚ずつ三か所</td><td>n = 2〜6、全ての位置の組</td><td class="num">780</td><td>38 件で変化（各 n に存在）</td></tr>
+<tr><td>三角形の例外（命題 K3）</td><td>m = 0,1,2 は全対称コアと X の全接続を全列挙、m = 3 は乱択400</td><td class="num">16,849</td><td>全て (m+1) mod 2</td></tr>
+<tr><td>K₅ の例外（撤回した予想 K の旧標本）</td><td>m = 1 は全列挙、m = 2・3 は乱択400・100</td><td class="num">1,524</td><td>この標本では全て一致。一般形は第6版の反例で否定</td></tr>
+<tr><td>対照：他の例外グラフ</td><td>P₃、K₂+K₁、3K₁、C₅、K₅−e、蝶ネクタイ形、m = 2 で各300</td><td class="num">1,800</td><td>全てで値が二種類以上</td></tr>
+<tr><td>固定点クリーク付き対合</td><td>c = 0〜3 は m = 0〜4、c = 4,5 は m = 0〜3。固定点の接続は対称、各 (c,m) で200</td><td class="num">5,600</td><td>c = 0,1,3,5 は ⌊|V|/2⌋ mod 2、c = 2,4 は不一致あり</td></tr>
+</tbody></table></div>
+<p class="small">乱択seedは20260915。全列挙の件数は対分け・頂点ラベルを固定した設定数である。値は全て、式を使わない mex の全探索で求めた。</p>
+<div class="buttons"><button class="btn" data-download="family" type="button">第5版の検証コード</button><button class="btn" data-download="family_results" type="button">第5版の検証結果JSON</button></div>
+<details><summary>第5版の再現コード</summary><p><code>python exception_family_verify.py</code> で実行する。手元の環境では約10秒で終わる。結果はスクリプトと同じ場所に保存する。</p><pre><code>"""Checks for the fifth edition: pendant tufts on 2xn ladders and odd-clique exception sets.
+Python standard library only. Run: python exception_family_verify.py
+Every value is computed by plain mex recursion over vertex subsets; no formula is built in.
+"""
+from functools import lru_cache
+from itertools import combinations, combinations_with_replacement, product
+from pathlib import Path
+import json
+import random
+
+SEED = 20260915
+
+
+def sg(n, edges):
+    moves = tuple({(1 &lt;&lt; u) | (1 &lt;&lt; v) for u, v in edges})
+
+    @lru_cache(None)
+    def g(mask):
+        seen = {g(mask ^ e) for e in moves if mask &amp; e == e}
+        k = 0
+        while k in seen:
+            k += 1
+        return k
+    return g((1 &lt;&lt; n) - 1)
+
+
+def ladder(n):
+    """2xn grid; column i is the pair (2i, 2i+1)."""
+    return ([(2 * i, 2 * i + 1) for i in range(n)]
+            + [(2 * i, 2 * i + 2) for i in range(n - 1)]
+            + [(2 * i + 1, 2 * i + 3) for i in range(n - 1)])
+
+
+def core(m, bits):
+    """Pairs (2i, 2i+1) with pair edges; each bit adds one swap-invariant orbit of two edges."""
+    edges = [(2 * i, 2 * i + 1) for i in range(m)]
+    k = 0
+    for i, j in combinations(range(m), 2):
+        for flip in (0, 1):
+            if bits &gt;&gt; k &amp; 1:
+                edges += [(2 * i, 2 * j + flip), (2 * i + 1, 2 * j + 1 - flip)]
+            k += 1
+    return edges
+
+
+def exception_set(m, x_edges, c, bits, adj):
+    """m symmetric pairs plus an exception set X of c vertices (labels 2m..2m+c-1).
+    x_edges is the graph on X; adj chooses every X-to-pair edge independently (no symmetry)."""
+    edges = core(m, bits) + [(2 * m + a, 2 * m + b) for a, b in x_edges]
+    edges += [(2 * m + z, v) for z in range(c) for v in range(2 * m) if adj &gt;&gt; (z * 2 * m + v) &amp; 1]
+    return sg(2 * m + c, edges)
+
+
+def histogram(values):
+    out = {}
+    for v in values:
+        out[str(v)] = out.get(str(v), 0) + 1
+    return dict(sorted(out.items()))
+
+
+def main():
+    rng = random.Random(SEED)
+    report = {'seed': SEED, 'ladder_tufts': {}, 'odd_clique_exceptions': {},
+              'controls': {}, 'strictly_matched_fixed_clique': {}, 'paw': {}}
+
+    # 1. Tufts on 2xn ladders. A tuft is a star whose centre is a grid vertex.
+    one, two, three, multi = [], [], [], []
+    for n in range(1, 9):
+        base = sg(2 * n, ladder(n))
+        assert base == n % 2
+        bad1 = sum(sg(2 * n + 1, ladder(n) + [(v, 2 * n)]) != base for v in range(2 * n))
+        pairs = list(combinations_with_replacement(range(2 * n), 2))
+        bad2 = [p for p in pairs
+                if sg(2 * n + 2, ladder(n) + [(p[0], 2 * n), (p[1], 2 * n + 1)]) != base]
+        one.append({'n': n, 'placements': 2 * n, 'changed': bad1})
+        two.append({'n': n, 'placements': len(pairs), 'changed': len(bad2), 'examples': bad2[:3]})
+        assert bad1 == 0
+        assert (len(bad2) == 0) == (n &gt;= 2)
+    for n in range(2, 7):
+        base = n % 2
+        checked = bad = 0
+        for v, w in combinations_with_replacement(range(2 * n), 2):
+            for a, b in product(range(1, 4), repeat=2):
+                if 2 * n + a + b &gt; 18:
+                    continue
+                edges = ladder(n) + [(v, 2 * n + i) for i in range(a)] + [(w, 2 * n + a + j) for j in range(b)]
+                checked += 1
+                bad += sg(2 * n + a + b, edges) != base
+        multi.append({'n': n, 'leaf_counts': '1..3 per tuft', 'placements': checked, 'changed': bad})
+        assert bad == 0
+        triples = list(combinations_with_replacement(range(2 * n), 3))
+        bad3 = [t for t in triples
+                if sg(2 * n + 3, ladder(n) + [(x, 2 * n + i) for i, x in enumerate(t)]) != base]
+        three.append({'n': n, 'placements': len(triples), 'changed': len(bad3), 'examples': bad3[:3]})
+        assert bad3
+    report['ladder_tufts'] = {'one_leaf': one, 'two_single_leaves': two,
+                              'two_tufts_multi_leaf': multi, 'three_single_leaves': three}
+
+    # 2. Exception set inducing K3 or K5, with arbitrary edges to the pairs.
+    K3 = list(combinations(range(3), 2))
+    K5 = list(combinations(range(5), 2))
+    k3 = []
+    for m in (0, 1, 2):
+        vals = [exception_set(m, K3, 3, bits, adj)
+                for bits in range(1 &lt;&lt; (m * (m - 1))) for adj in range(1 &lt;&lt; (6 * m))]
+        assert set(vals) == {(m + 1) % 2}
+        k3.append({'m': m, 'mode': 'exhaustive', 'cases': len(vals), 'values': histogram(vals)})
+    vals = [exception_set(3, K3, 3, rng.getrandbits(6), rng.getrandbits(18)) for _ in range(400)]
+    assert set(vals) == {0}
+    k3.append({'m': 3, 'mode': 'random', 'cases': 400, 'values': histogram(vals)})
+    k5 = []
+    vals = [exception_set(1, K5, 5, 0, adj) for adj in range(1 &lt;&lt; 10)]
+    assert set(vals) == {1}
+    k5.append({'m': 1, 'mode': 'exhaustive', 'cases': len(vals), 'values': histogram(vals)})
+    for m, count in ((2, 400), (3, 100)):
+        vals = [exception_set(m, K5, 5, rng.getrandbits(m * (m - 1)), rng.getrandbits(10 * m))
+                for _ in range(count)]
+        assert set(vals) == {(m + 2) % 2}
+        k5.append({'m': m, 'mode': 'random', 'cases': count, 'values': histogram(vals)})
+    report['odd_clique_exceptions'] = {'K3_predicted': '(m+1) mod 2', 'K3': k3,
+                                       'K5_predicted': '(m+2) mod 2', 'K5': k5}
+
+    # 3. Other exception graphs on 3 or 5 vertices do not keep a single value.
+    controls = {'P3': (3, [(0, 1), (1, 2)]), 'K2+K1': (3, [(0, 1)]), '3K1': (3, []),
+                'C5': (5, [(i, (i + 1) % 5) for i in range(5)]),
+                'K5-e': (5, [e for e in K5 if e != (0, 1)]),
+                'bowtie': (5, [(0, 1), (0, 2), (1, 2), (2, 3), (2, 4), (3, 4)])}
+    for name, (c, xe) in controls.items():
+        vals = [exception_set(2, xe, c, rng.getrandbits(2), rng.getrandbits(4 * c)) for _ in range(300)]
+        controls_hist = histogram(vals)
+        assert len(controls_hist) &gt; 1
+        report['controls'][name] = {'m': 2, 'cases': 300, 'values': controls_hist}
+
+    # 4. Strictly matched involutions: fixed-point clique C, every z in C symmetric to each pair.
+    for c in range(6):
+        rows = []
+        for m in range(0, 5 if c &lt;= 3 else 4):
+            vals = []
+            for _ in range(200):
+                edges = core(m, rng.getrandbits(max(1, m * (m - 1))))
+                edges += [(2 * m + a, 2 * m + b) for a, b in combinations(range(c), 2)]
+                for z in range(c):
+                    for i in range(m):
+                        if rng.random() &lt; .5:
+                            edges += [(2 * m + z, 2 * i), (2 * m + z, 2 * i + 1)]
+                vals.append(sg(2 * m + c, edges))
+            rows.append({'m': m, 'cases': 200, 'values': histogram(vals),
+                         'floor_half_order_mod2': (2 * m + c) // 2 % 2})
+            if c % 2 == 1 or c == 0:
+                assert set(vals) == {(2 * m + c) // 2 % 2}
+        report['strictly_matched_fixed_clique'][str(c)] = rows
+
+    # 5. Symmetric two-point clique already fails: the paw with a pendant at the triangle apex.
+    paw = [(0, 1), (2, 0), (2, 1), (2, 3)]  # pair {0,1}; C = {2,3}
+    report['paw'] = {'edges': paw, 'pair': [0, 1], 'fixed_clique': [2, 3],
+                     'grundy': sg(4, paw), 'floor_half_order_mod2': 0}
+    assert report['paw']['grundy'] == 2
+
+    dest = Path(__file__).with_name('exception_family_results.json')
+    dest.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></details>
+<details><summary>第5版の検査結果</summary><pre><code>{
+  "seed": 20260915,
+  "ladder_tufts": {
+    "one_leaf": [
+      {
+        "n": 1,
+        "placements": 2,
+        "changed": 0
+      },
+      {
+        "n": 2,
+        "placements": 4,
+        "changed": 0
+      },
+      {
+        "n": 3,
+        "placements": 6,
+        "changed": 0
+      },
+      {
+        "n": 4,
+        "placements": 8,
+        "changed": 0
+      },
+      {
+        "n": 5,
+        "placements": 10,
+        "changed": 0
+      },
+      {
+        "n": 6,
+        "placements": 12,
+        "changed": 0
+      },
+      {
+        "n": 7,
+        "placements": 14,
+        "changed": 0
+      },
+      {
+        "n": 8,
+        "placements": 16,
+        "changed": 0
+      }
+    ],
+    "two_single_leaves": [
+      {
+        "n": 1,
+        "placements": 3,
+        "changed": 1,
+        "examples": [
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      {
+        "n": 2,
+        "placements": 10,
+        "changed": 0,
+        "examples": []
+      },
+      {
+        "n": 3,
+        "placements": 21,
+        "changed": 0,
+        "examples": []
+      },
+      {
+        "n": 4,
+        "placements": 36,
+        "changed": 0,
+        "examples": []
+      },
+      {
+        "n": 5,
+        "placements": 55,
+        "changed": 0,
+        "examples": []
+      },
+      {
+        "n": 6,
+        "placements": 78,
+        "changed": 0,
+        "examples": []
+      },
+      {
+        "n": 7,
+        "placements": 105,
+        "changed": 0,
+        "examples": []
+      },
+      {
+        "n": 8,
+        "placements": 136,
+        "changed": 0,
+        "examples": []
+      }
+    ],
+    "two_tufts_multi_leaf": [
+      {
+        "n": 2,
+        "leaf_counts": "1..3 per tuft",
+        "placements": 90,
+        "changed": 0
+      },
+      {
+        "n": 3,
+        "leaf_counts": "1..3 per tuft",
+        "placements": 189,
+        "changed": 0
+      },
+      {
+        "n": 4,
+        "leaf_counts": "1..3 per tuft",
+        "placements": 324,
+        "changed": 0
+      },
+      {
+        "n": 5,
+        "leaf_counts": "1..3 per tuft",
+        "placements": 495,
+        "changed": 0
+      },
+      {
+        "n": 6,
+        "leaf_counts": "1..3 per tuft",
+        "placements": 702,
+        "changed": 0
+      }
+    ],
+    "three_single_leaves": [
+      {
+        "n": 2,
+        "placements": 20,
+        "changed": 4,
+        "examples": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            1,
+            3
+          ],
+          [
+            0,
+            2,
+            3
+          ]
+        ]
+      },
+      {
+        "n": 3,
+        "placements": 56,
+        "changed": 10,
+        "examples": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            1,
+            3
+          ],
+          [
+            0,
+            1,
+            4
+          ]
+        ]
+      },
+      {
+        "n": 4,
+        "placements": 120,
+        "changed": 8,
+        "examples": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            1,
+            3
+          ],
+          [
+            0,
+            1,
+            4
+          ]
+        ]
+      },
+      {
+        "n": 5,
+        "placements": 220,
+        "changed": 8,
+        "examples": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            1,
+            3
+          ],
+          [
+            0,
+            1,
+            4
+          ]
+        ]
+      },
+      {
+        "n": 6,
+        "placements": 364,
+        "changed": 8,
+        "examples": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            1,
+            3
+          ],
+          [
+            0,
+            1,
+            4
+          ]
+        ]
+      }
+    ]
+  },
+  "odd_clique_exceptions": {
+    "K3_predicted": "(m+1) mod 2",
+    "K3": [
+      {
+        "m": 0,
+        "mode": "exhaustive",
+        "cases": 1,
+        "values": {
+          "1": 1
+        }
+      },
+      {
+        "m": 1,
+        "mode": "exhaustive",
+        "cases": 64,
+        "values": {
+          "0": 64
+        }
+      },
+      {
+        "m": 2,
+        "mode": "exhaustive",
+        "cases": 16384,
+        "values": {
+          "1": 16384
+        }
+      },
+      {
+        "m": 3,
+        "mode": "random",
+        "cases": 400,
+        "values": {
+          "0": 400
+        }
+      }
+    ],
+    "K5_predicted": "(m+2) mod 2",
+    "K5": [
+      {
+        "m": 1,
+        "mode": "exhaustive",
+        "cases": 1024,
+        "values": {
+          "1": 1024
+        }
+      },
+      {
+        "m": 2,
+        "mode": "random",
+        "cases": 400,
+        "values": {
+          "0": 400
+        }
+      },
+      {
+        "m": 3,
+        "mode": "random",
+        "cases": 100,
+        "values": {
+          "1": 100
+        }
+      }
+    ]
+  },
+  "controls": {
+    "P3": {
+      "m": 2,
+      "cases": 300,
+      "values": {
+        "1": 270,
+        "3": 30
+      }
+    },
+    "K2+K1": {
+      "m": 2,
+      "cases": 300,
+      "values": {
+        "1": 236,
+        "3": 64
+      }
+    },
+    "3K1": {
+      "m": 2,
+      "cases": 300,
+      "values": {
+        "0": 69,
+        "1": 126,
+        "3": 105
+      }
+    },
+    "C5": {
+      "m": 2,
+      "cases": 300,
+      "values": {
+        "0": 248,
+        "2": 52
+      }
+    },
+    "K5-e": {
+      "m": 2,
+      "cases": 300,
+      "values": {
+        "0": 283,
+        "2": 17
+      }
+    },
+    "bowtie": {
+      "m": 2,
+      "cases": 300,
+      "values": {
+        "0": 260,
+        "2": 40
+      }
+    }
+  },
+  "strictly_matched_fixed_clique": {
+    "0": [
+      {
+        "m": 0,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 1,
+        "cases": 200,
+        "values": {
+          "1": 200
+        },
+        "floor_half_order_mod2": 1
+      },
+      {
+        "m": 2,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 3,
+        "cases": 200,
+        "values": {
+          "1": 200
+        },
+        "floor_half_order_mod2": 1
+      },
+      {
+        "m": 4,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      }
+    ],
+    "1": [
+      {
+        "m": 0,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 1,
+        "cases": 200,
+        "values": {
+          "1": 200
+        },
+        "floor_half_order_mod2": 1
+      },
+      {
+        "m": 2,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 3,
+        "cases": 200,
+        "values": {
+          "1": 200
+        },
+        "floor_half_order_mod2": 1
+      },
+      {
+        "m": 4,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      }
+    ],
+    "2": [
+      {
+        "m": 0,
+        "cases": 200,
+        "values": {
+          "1": 200
+        },
+        "floor_half_order_mod2": 1
+      },
+      {
+        "m": 1,
+        "cases": 200,
+        "values": {
+          "0": 99,
+          "2": 101
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 2,
+        "cases": 200,
+        "values": {
+          "1": 99,
+          "3": 101
+        },
+        "floor_half_order_mod2": 1
+      },
+      {
+        "m": 3,
+        "cases": 200,
+        "values": {
+          "0": 55,
+          "2": 145
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 4,
+        "cases": 200,
+        "values": {
+          "1": 71,
+          "3": 129
+        },
+        "floor_half_order_mod2": 1
+      }
+    ],
+    "3": [
+      {
+        "m": 0,
+        "cases": 200,
+        "values": {
+          "1": 200
+        },
+        "floor_half_order_mod2": 1
+      },
+      {
+        "m": 1,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 2,
+        "cases": 200,
+        "values": {
+          "1": 200
+        },
+        "floor_half_order_mod2": 1
+      },
+      {
+        "m": 3,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 4,
+        "cases": 200,
+        "values": {
+          "1": 200
+        },
+        "floor_half_order_mod2": 1
+      }
+    ],
+    "4": [
+      {
+        "m": 0,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 1,
+        "cases": 200,
+        "values": {
+          "1": 160,
+          "3": 40
+        },
+        "floor_half_order_mod2": 1
+      },
+      {
+        "m": 2,
+        "cases": 200,
+        "values": {
+          "0": 82,
+          "2": 118
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 3,
+        "cases": 200,
+        "values": {
+          "0": 11,
+          "1": 100,
+          "3": 89
+        },
+        "floor_half_order_mod2": 1
+      }
+    ],
+    "5": [
+      {
+        "m": 0,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 1,
+        "cases": 200,
+        "values": {
+          "1": 200
+        },
+        "floor_half_order_mod2": 1
+      },
+      {
+        "m": 2,
+        "cases": 200,
+        "values": {
+          "0": 200
+        },
+        "floor_half_order_mod2": 0
+      },
+      {
+        "m": 3,
+        "cases": 200,
+        "values": {
+          "1": 200
+        },
+        "floor_half_order_mod2": 1
+      }
+    ]
+  },
+  "paw": {
+    "edges": [
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "pair": [
+      0,
+      1
+    ],
+    "fixed_clique": [
+      2,
+      3
+    ],
+    "grundy": 2,
+    "floor_half_order_mod2": 0
+  }
+}
+</code></pre></details>
+<noscript><p class="no-js">JavaScriptが無効です。証明と静的図はそのまま読めます。コードは上の欄からコピーできます。</p></noscript>
+<h3>ここから先に残る問い</h3>
+<ol><li><strong>二例外の構造分類。</strong>任意接続は保証できないと分かった。一方で、梯子への葉二枚は検査した n = 2〜8 で値が保たれ、例外集合が三角形なら一般に式が成り立つ。どの接続なら値0/1にとどまり、どこで大きな値が現れるか。単なる十分条件から必要十分条件へ進める余地がある。</li><li><strong>旧予想 K の撤回と成立範囲。</strong>奇数クリーク一般への式は K₅ の反例で否定された。本稿は T1・K3 の成立と、一般化が破れる具体例を記録するところで一区切りとする。追加の接続条件による分類は、本稿では扱わない。</li><li><strong>任意一頂点追加に不変なグラフの逆問題。</strong>対称ペア条件は十分条件である。そのような対称性を持たなくても不変なグラフを含め、完全に特徴づけられるかは本稿では未解決。</li><li><strong>接点を持つ部品の情報。</strong>通常のGrundy値だけでは共有接点での置換に足りない。どの追加情報を保持すれば、一例外構造を部品として組み合わせられるか。</li></ol>
+<p class="small">これらは今後の探索問題であり、一般に未解決であると文献確認した主張ではない。新たな結果として進める前に、それぞれの先行研究照合が必要である。</p>
+</section>
+<section id="meta-theorem">
+<div class="eyebrow">09 · FROM SYMMETRY TO LOCAL CERTIFICATES</div>
+<h2>盤面を外し、証明の仕組みを取り出す</h2>
+<p class="lead">一例外の定理で働いていたのは、形の対称性だけではなかった。<strong>扱いやすい局面から外れても、同じ値の別の局面へ一手で応じられること</strong>が、未知の選択肢を排除していた。ここでは拡張の許し方を定め、その範囲で値保存と同値になる局所条件を整理する。</p>
+<p>ここでの「頂点」はゲームの局面、「辺」は一手の遷移を表す。前節までの盤面上の頂点とは区別する。対象は有限・非巡回で、双方の合法手が同じ、手がなくなった側が負けるゲームである。</p>
+<div class="table-wrap"><table><thead><tr><th>段階</th><th>残す構造</th><th>結論</th></tr></thead><tbody><tr><td>T1</td><td>隣接ペアの交換対称性と一例外</td><td>g = m mod 2</td></tr><tr><td>下の M</td><td>指定値への手と、同じ値へ戻す応手</td><td>任意の非負整数ラベルを、未知部分の拡張から保護</td></tr><tr><td>下の R</td><td>二ブロック内の補集合と、小さな例外集合</td><td>自己同型を仮定せず、等重量除去ゲームで g = m mod 2</td></tr></tbody></table></div>
+
+<h3>命題 M：未知部分の拡張に耐える必要十分条件</h3>
+<p>有限有向非巡回グラフ D の局面集合を S ⊔ U に分ける。S は値を指定したい局面、U は値を指定しない局面である。空でない S に、候補ラベル c : S → {0,1,2,…} を与える。</p>
+<p><strong>許す拡張</strong>は、D を含む任意の有限有向非巡回グラフ D′ とする。ただし既存の辺を削除せず、<strong>S の全ての出辺は元のまま固定</strong>する。U と新しい局面からは、非巡回性を保つ範囲で自由に辺を追加できる。新しい局面から元の局面へ接続することも許す。</p>
+<p><strong>M の位置づけ。</strong>十分性は標準的な mex と応手の議論であり、必要性も私有のNimを自由に追加できることから短く導ける。M は、この拡張クラスに対する同値条件を整理した命題として扱う。とくに必要性は拡張クラスの選択に依存し、追加できるゲームや辺を制限した別のクラスで、そのまま必要条件になるとは限らない。役割は、T1 や R で使う証明の手順と、保証の範囲を明確にすることである。この位置づけに合わせ、第5版で呼称を「定理」から「命題」に改めた。</p>
+<div class="theorem"><div class="tag">命題 M · 指定した拡張クラスでの同値条件</div>
+<p>次の二つは同値である。</p>
+<p><strong>（保存）</strong>許される全ての D′ で、全ての s ∈ S に対して g<sub>D′</sub>(s) = c(s)。</p>
+<p><strong>（局所条件）</strong>全ての s ∈ S について、k = c(s) とすると次を満たす。</p>
+<ol><li><strong>下位値の供給：</strong>各整数 0 ≤ j &lt; k に対し、s → t、t ∈ S、c(t) = j となる直接の手がある。</li><li><strong>同値の直接手を禁止：</strong>s → t かつ t ∈ S なら c(t) ≠ k。</li><li><strong>未知側からの応手：</strong>s → u かつ u ∈ U なら、u → t、t ∈ S、c(t) = k となる既存の手がある。</li></ol>
+</div>
+<p>三条件の確認に必要なのは、S の指定ラベルと、各 s から二手までの既存の接続である。U の Grundy 値そのものを計算する必要はない。ただし、S 全体でこれらの条件を満たすことが必要であり、たった一局面の周辺だけで他の指定ラベルも正しいと仮定してよいわけではない。</p>
+
+<figure class="meta-flow"><svg viewBox="0 0 360 400" role="img" aria-label="値2を守る仕組み。sから下位値0,1への手があり、未知uには別の値2の局面tへの応手がある。uには新しいゲームを追加してよい" xmlns="http://www.w3.org/2000/svg"><defs><marker id="meta-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#6a8291"/></marker></defs>
+<g fill="none" stroke="#6a8291" stroke-width="2" marker-end="url(#meta-arrow)"><path d="M85 86 V160"/><path d="M85 226 V300"/><path d="M142 55 H207"/><path d="M142 195 H207"/></g>
+<g fill="#edf8f5" stroke="#087f83" stroke-width="2"><rect x="28" y="25" width="114" height="61" rx="12"/><rect x="28" y="301" width="114" height="61" rx="12"/><rect x="211" y="25" width="136" height="61" rx="12"/></g><rect x="28" y="163" width="114" height="63" rx="12" fill="#fff0e8" stroke="#b65435" stroke-width="2"/><rect x="211" y="163" width="136" height="63" rx="12" fill="#f0f3f5" stroke="#8b9ca8"/>
+<g fill="#173348" text-anchor="middle" font-size="20"><text x="85" y="63">s : 2</text><text x="85" y="203">u : ?</text><text x="85" y="340">t : 2</text></g>
+<g fill="#365569" font-size="14"><text x="100" y="125">想定外の手</text><text x="100" y="265">同じ値への応手</text></g><g text-anchor="middle" fill="#365569" font-size="15"><text x="279" y="51">下位の値</text><text x="279" y="73">0 と 1</text><text x="279" y="189">追加できる</text><text x="279" y="212">任意のゲーム</text><text x="180" y="390">t は s と異なる後続局面。循環ではない。</text></g></svg><figcaption>局所的な保証の一部。t の値2を支える下位の手などは省略している。u にどんな追加手があっても、既存の u → t により g(u) ≠ 2。そのため s の値2が守られる。</figcaption></figure>
+
+<details open><summary>証明：十分性</summary><p>任意の拡張 D′ を固定し、その非巡回性を使って後続局面から帰納する。s ∈ S、k = c(s) とする。条件1により、s の選択肢に値0,…,k−1が全てある。S 内の選択肢は条件2と帰納仮定により値 k ではない。</p><p>S 外の選択肢 u には、条件3により値 k の局面 t への手が残る。mex の定義から g(u) ≠ k。したがって s の全選択肢から値 k が除外され、下位値は全てそろうので g(s) = k。U の値の確定は不要である。□</p></details>
+
+<details><summary>証明：必要性と、小さいNimによる反証</summary>
+<p>全拡張で S の指定値が保存されると仮定する。*j は、値が j の通常のNimの山を表す。以下の追加ゲームは元の D に戻る手を持たない私有のコピーなので、必ず許される有限非巡回な拡張になる。</p>
+<p><strong>条件2。</strong>S 内の辺が同じ指定値 k を結ぶなら、保存された実際の Grundy 値も同じになってしまう。局面は自分と同じ値の選択肢を持てないので矛盾。</p>
+<p><strong>条件1。</strong>s から S 内の値 j &lt; c(s) への手がないとする。全ての u ∈ U に、新たな選択肢 *j を一個ずつ追加する。これで全ての g(u) ≠ j。保存を仮定している S 内にも該当する後続値がないため、s は値 j の選択肢を一つも持たず、g(s) ≤ j &lt; c(s) となり矛盾。</p>
+<p><strong>条件3。</strong>s → u、u ∈ U に対する同値への応手が欠けるとし、k = c(s) と置く。U のうち u 以外の各局面には *k を追加する。u には *0,…,*(k−1) を追加する（k = 0 なら追加なし）。u の U 内の後続は値 k ではなく、S 内の後続にも指定値 k はない。一方、u の下位値は全て補われるので g(u) = k。s が自分と同じ値の選択肢を持つことになり矛盾。</p>
+<p>いずれも「全指定値が保存される」という仮定への矛盾である。作った拡張で壊れるのは<strong>少なくとも一つの指定値</strong>であり、選んだ s だけが必ず変わるとまでは主張しない。□</p>
+</details>
+<div class="callout"><p><strong>この拡張クラスでは、小さいNimだけで反証できる。</strong><br>K = max{c(s) : s ∈ S} とすると、三条件のどれかが欠ける場合、元のゲームのまま、または大きさ K 以下のNimの山だけを追加した拡張で反証できる。これは、私有Nimの自由な追加を許すという設定の下で得られる、同値条件の一つの表現である。</p></div>
+
+<div class="meta-demo" id="meta-demo"><h3>値2の保証を手元で試す</h3><p class="small">s の直接の選択肢は *0、*1、u。応手を残す場合、u には *2 への手がある。チェックした山を u の追加選択肢とする。</p><label class="meta-switch"><input id="meta-return" type="checkbox" checked> u から値2への応手を残す</label><div class="meta-heaps" role="group" aria-label="uに追加するNimの山"><label><input type="checkbox" value="0" checked> *0</label><label><input type="checkbox" value="1" checked> *1</label><label><input type="checkbox" value="2"> *2</label><label><input type="checkbox" value="3"> *3</label><label><input type="checkbox" value="4"> *4</label></div><p class="formula small" id="meta-value" aria-live="polite"></p><p id="meta-demo-note" class="small"></p></div>
+
+<h3>T1 はこの命題のどこに入るか</h3>
+<p>T1 の仮定を満たす初期盤面から到達可能な全残存グラフを、局面グラフ D の頂点とする。そのうち、T1 の条件を満たす対分けと例外頂点の選び方が少なくとも一つ存在する局面 Q の集合を S とする。頂点数には、残った孤立頂点も含める。</p>
+<div class="formula small">c(Q) = ((|V(Q)| − 1) / 2) mod 2.</div>
+<p><strong>ラベルは対分けに依存しない。</strong>どの T1 分解でもペア数は m = (|V(Q)|−1)/2 なので、対分けや例外頂点を選び直しても同じ c(Q) が得られる。この定義は頂点数だけを使っており、T1 のゲーム値の結論を先取りしていない。</p>
+<p>ラベル1の局面には、ペア内辺を取ってラベル0の S 内局面へ進む手がある（条件1）。また、一手で頂点が二個減るため、S 内の一手では必ずラベルが反転する（条件2）。<strong>Case C の直後が、別の対分けによって S に入る場合も、この条件2で扱う。</strong></p>
+<p>一方、S の外へ出る手は、現在の局面で選んだ T1 分解について Case A・B ではあり得ず、Case C に限られる。その鏡像の辺を取れば、元の分解から二ペアを除いた S 内の後続局面へ進み、ラベルは元と同じになる（条件3）。その応手先も到達可能なので D 内にある。これで M の三条件がそろう。</p>
+<p>したがって T1 の値を支えるのは、全ゲーム木の対称性ではなく、この証明書である。対称局面 S の出口と既存の応手を保つなら、S 外の局面に新しい有限ゲームへの手を追加しても S の値は変わらない。S 自体に自由に新しい手を追加してよい、という主張ではない。</p>
+
+<h3>定理 R：対称性を仮定しない等重量除去ゲーム</h3>
+<p>有限の資源集合 V の各要素 v に正の重み w(v) を与え、w(A) = Σ<sub>v∈A</sub>w(v) とする。合法手はあらかじめ指定した集合族 ℋ で、全ての e ∈ ℋ が同じ合計重量 W &gt; 0 を持つ。一手で残っている e の全要素を取り除く。除去後は、残存集合に完全に含まれる元の合法手だけを使う。</p>
+<div class="theorem"><div class="tag">定理 R · 局所的な補集合と例外集合の移送</div><p>V = E ⊔ B<sub>1</sub> ⊔ ⋯ ⊔ B<sub>m</sub> と分割でき、次を満たすとする。</p><ol><li>各本体ブロック B<sub>i</sub> は合法手。</li><li>例外集合の重量は ρ = w(E) &lt; W。</li><li>E に触れない合法手は一つの本体全体か、二本体 B<sub>i</sub> ∪ B<sub>j</sub> の中にある。後者で両本体にまたがる手 e には、補集合 (B<sub>i</sub> ∪ B<sub>j</sub>) ∖ e も合法手として存在する。</li><li>E に触れる合法手は、E と<strong>一つだけの本体</strong>を合わせた E ∪ B<sub>i</sub> の中にある。</li></ol><div class="formula">g(V,ℋ) = m mod 2.</div></div>
+<p>取り除く個数も、本体ブロックの個数以外の形も、頂点の交換自己同型も仮定しない。ただし「重量が等しい」ことだけで合法手が決まるのではない。ℋ は指定済みであり、特に補集合の合法性は別条件である。</p>
+<p><strong>自己同型が不要になるのは、どの範囲か。</strong>重みが全て1で W = 2 の場合、本体は二頂点のペア、例外は高々一頂点である。二つのペアにまたがる辺 xy の補集合は、x と y それぞれの相方を結ぶ辺であり、T1 の交換 τ による像そのものになる。したがってこの場合の条件3は T1 の交換自己同型の条件と同じで、例外なしの場合も含めて R と T1 は同じ内容になる。R で E = ∅ の場合は、孤立した例外頂点を追加して T1 を適用すればよい。<strong>自己同型を仮定しないことが実際に効くのは、重みが全て1で W = r ≥ 3 の場合か、重みが一様でない場合</strong>である。下の非対称な例は r = 3 である。</p>
+<details><summary>R の証明：例外集合の移送を含む閉包確認</summary><p>m = 0 では総重量が W 未満なので手がない。p = m mod 2 とし、m に関する強い帰納法を用いる。</p><p>本体 B<sub>i</sub> を取れば、条件を保って m−1 本体になる。例外に触れる手 e ⊆ E ∪ B<sub>i</sub> では、残り E′ = (E ∪ B<sub>i</sub>) ∖ e を新しい例外集合とする。重量は w(E′) = ρ + W − W = ρ であり、m−1 本体が残る。</p><p>ここで条件が保たれることを確かめる。旧 E ∪ B<sub>i</sub> 内の手は残れない。残るなら E′ 内に重量 W の集合があることになり、ρ &lt; W に反する。旧 E ∪ B<sub>j</sub> または旧 B<sub>i</sub> ∪ B<sub>j</sub> にあった残存手は、新しい E′ ∪ B<sub>j</sub> に収まる。それらが E′ に触れなければ、正の重みと重量 W から B<sub>j</sub> 全体に等しい。i を含まない二本体内の手は、その補集合とともに丸ごと残る。各未除去本体も残る。よって新しい分割でも全条件が成立し、以上二種類の手の直後の値は 1−p。</p><p>二本体にまたがる手 e の後には、互いに素な合法補集合が残る。その応手で二本体を取り切れば、m−2 本体の同族で値 p。従って e の直後の局面は値 p を持てない。全ての選択肢が p と異なり、p = 1 のときは本体を取る値0の選択肢があるので、mex は p となる。□</p></details>
+
+<h3>二個取る手と三個取る手が、同じゲームで共存する</h3>
+<div class="meta-blocks"><div><strong>B₁</strong><p>a : 2　b : 2</p><small>合計重量4</small></div><div><strong>B₂</strong><p>c : 2　d : 1　e : 1</p><small>合計重量4</small></div><div class="meta-extra"><strong>E</strong><p>z : 2</p><small>合計重量2 &lt; 4</small></div></div>
+<p>W = 4 とし、合法手を次の七つだけにする。</p><div class="formula small">ab, cde, ac, bde, za, zc, zde.</div><p>例えば ac と bde は二本体の中の互いに補集合であり、どちらも重量4。例外を使う三手は、それぞれ一つの本体と z の中に収まる。本体は二個なので g = 0。二個除去と三個除去の混在は、元の単純グラフ上の Arc Kayles の直接の範囲を越えている。</p>
+<details><summary>本体自体が非対称な例もある</summary><p>各資源の重量を1、W = 3 とし、本体を 012、345、678 とする。数字列はその数字の頂点集合を表す。追加の合法手を、補集合の四対 015 / 234、025 / 134、027 / 168、356 / 478 とする。全11手で g = 1 となる。</p><p>このハイパーグラフは恒等写像以外の自己同型を持たない。以下で確認できる。次数は0〜5が4、6〜8が3。各頂点に接続する超辺について、他の二頂点の次数の組を多重集合として集めると、自己同型で保たれる四群 X = {0,2,3,5}、Y = {1,4}、Z = {6,7}、{8} に分かれる。</p><p>X のうち、Y の二頂点と同じ超辺に入るのは3だけなので3が固定される。残る X の頂点0,2,5が3と共有する超辺数は順に0,1,2であり、全て固定される。Y の1,4では1,3、Z の6,7では1,0と区別できる。8はもともと単独群である。よって全頂点が固定される。局所的な補集合条件は、全体の対称性を要求していない。</p></details>
+
+<h3>どこまで一般化できたか</h3>
+<p>全資源の重みを1、W = r とすれば「毎手 r 個を取る」ゲームになる。例外は q &lt; r 個まで許され、r = 2、q = 1 が T1 を含む。r ≥ 3 では、例外に触れる手が二本体以上へまたがらないという制約が効く。<strong>例外が r−1 個までなら接続は何でもよい、とは言っていない。</strong></p>
+<p>この局所性を落とす反例は小さい。三個ブロック A = {a,b,c}、B = {d,e,f} と例外 z に対し、合法手を A、B、{z,a,d} だけにする。最後の手は二本体を同時に壊して終局となり、値0へ移る。本体を取れば値1へ移る。従って g = mex{0,1} = 2 となり、本体二個の偶奇0と食い違う。</p>
+
+<h3>既知理論との境界と、検証</h3>
+<p>値の異なる選択肢と同値への応手は、既知の mex・可逆応手・semi-kernel に近い。各 k ∈ c(S) について S<sub>k</sub> = {s ∈ S : c(s) = k} とすると、M の条件2・3は「S<sub>k</sub> が誘導有向グラフ D[U ∪ S<sub>k</sub>] の semi-kernel」という既知概念で表せる。下位全値を供給する条件1を別に加えている。semi-Grundy 関数も近接概念であり、新しい証明技法としては扱わない。<a href="#ref14">[14]</a>また M の十分性には、同じ値へ戻る応手で余分な選択肢を扱うという、可逆な選択肢（reversible option）の標準理論に通じる構造がある。ただし、M の拡張クラスとの同値性まで同書に記載されているとは主張しない。<a href="#ref15">[15]</a></p>
+<p>集合を取るゲームモデルも既知で、ハイパーグラフ版 Arc Kayles や、各山の大きさを0/1とした hypergraph Nim の枠組みに入る。<a href="#ref16">[16]</a><a href="#ref17">[17]</a>今回調べた一次資料では、M の任意拡張との同値な定式化と、R の<strong>等重量・局所補集合・例外移送を組み合わせた一般形</strong>の同一記載は未確認である。ただし、M の同じ記載が見つからないことを、新しい一般理論や新技法を得たという評価にはつなげない。新規性の追加調査は、主に T1 や R の具体的な構造条件と適用範囲に向ける。検索語は semi-kernel / semi-Grundy / partial Grundy / extension / robustness、および hypergraph Arc Kayles / complementary / pairing strategy / normal play など。関連する Huggan の2015年修士論文は本文を取得できず（07節）、網羅的な新規性確認ではない。<a href="#ref10">[10]</a></p>
+<div class="table-wrap"><table><thead><tr><th>今回の検査</th><th>実施した範囲</th><th>結果</th></tr></thead><tbody><tr><td>M：全小DAGと指定ラベル</td><td>固定したトポロジカル順で1〜4頂点、S は空でない全部分集合、指定値0,1,2。計16,857設定</td><td>条件を満たす523設定に、私有Nim追加による拡張を各5回検査。計2,615回で全て保存</td></tr><tr><td>M：必要性の証人</td><td>条件違反の16,334設定に、私有の小Nim追加による反証を構成</td><td>全てで少なくとも一つの指定値が変化</td></tr><tr><td>R：三個除去の全列挙</td><td>固定分割で (m,q) = (1,0),(1,1),(1,2),(2,0),(2,1)。計33,801設定</td><td>全て一致</td></tr><tr><td>R：三個・四個除去の乱択</td><td>五種類のパラメータ、計1,900標本</td><td>全て一致</td></tr></tbody></table></div>
+<p class="small">乱択seedは20260915。R の標本は重複を排除していない。M の検証コードが試す拡張は、U の各局面に私有Nimの山を追加するものに限る。既存局面同士に新しい辺を張る拡張や、新頂点から元の局面へ戻る辺を追加する拡張は、このコードでは検査していない。それらも含む一般性の根拠は上の証明であり、計算は明記した範囲での有限検査である。コードと図の動作も確認した。</p>
+<div class="buttons"><button class="btn" data-download="meta" type="button">M の検証コード</button><button class="btn" data-download="structure" type="button">R の検証コード</button><button class="btn" data-download="meta_results" type="button">追補の検証結果JSON</button></div>
+<details><summary>M の再現コード</summary><p><code>python meta_robust_verify.py</code> で実行。結果はスクリプトと同じ場所に保存する。</p><pre><code>&quot;&quot;&quot;Check the robust partial-Grundy characterization on all labeled DAGs up to 4 vertices.
+The order is fixed; every edge goes from a larger index to a smaller index.
+Only standard Python is required. Additional followers are private Nim heaps.
+&quot;&quot;&quot;
+from itertools import product
+from pathlib import Path
+import json
+import random
+
+
+def grundy(edges, extra):
+    values = []
+    for i, followers in enumerate(edges):
+        # Each k in extra[i] is the value of a private Nim heap option *k.
+        options = {values[j] for j in followers} | set(extra[i])
+        value = 0
+        while value in options:
+            value += 1
+        values.append(value)
+    return values
+
+
+def first_violation(edges, labels):
+    for s, c in labels.items():
+        inner = {labels[t] for t in edges[s] if t in labels}
+        if c in inner:
+            return (&#x27;same_label&#x27;, s, None)
+        for k in range(c):
+            if k not in inner:
+                return (&#x27;missing_lower&#x27;, s, k)
+        for u in edges[s]:
+            if u not in labels and not any(t in labels and labels[t] == c for t in edges[u]):
+                return (&#x27;missing_return&#x27;, s, u)
+    return None
+
+
+def main():
+    rng = random.Random(20260915)
+    report = {&#x27;seed&#x27;: 20260915, &#x27;label_range&#x27;: [0, 1, 2], &#x27;max_vertices&#x27;: 4,
+              &#x27;labelled_order&#x27;: &#x27;edge i -&gt; j allowed exactly when i &gt; j&#x27;,
+              &#x27;templates&#x27;: 0, &#x27;valid_certificates&#x27;: 0, &#x27;random_completions_checked&#x27;: 0,
+              &#x27;invalid_certificates&#x27;: 0, &#x27;constructed_counterexamples&#x27;: 0,
+              &#x27;violation_types&#x27;: {}, &#x27;by_vertices&#x27;: []}
+    for n in range(1, 5):
+        potential = [(i, j) for i in range(n) for j in range(i)]
+        count = 0
+        for edge_mask in range(1 &lt;&lt; len(potential)):
+            edges = [[] for _ in range(n)]
+            for bit, (i, j) in enumerate(potential):
+                if edge_mask &gt;&gt; bit &amp; 1:
+                    edges[i].append(j)
+            for s_mask in range(1, 1 &lt;&lt; n):
+                anchors = [i for i in range(n) if s_mask &gt;&gt; i &amp; 1]
+                unknown = [i for i in range(n) if not (s_mask &gt;&gt; i &amp; 1)]
+                for c in product(range(3), repeat=len(anchors)):
+                    labels = dict(zip(anchors, c))
+                    report[&#x27;templates&#x27;] += 1
+                    count += 1
+                    violation = first_violation(edges, labels)
+                    if violation is None:
+                        report[&#x27;valid_certificates&#x27;] += 1
+                        for _ in range(5):
+                            extra = [set() for _ in range(n)]
+                            for u in unknown:
+                                extra[u] = {k for k in range(7) if rng.getrandbits(1)}
+                            got = grundy(edges, extra)
+                            assert all(got[s] == value for s, value in labels.items())
+                            report[&#x27;random_completions_checked&#x27;] += 1
+                    else:
+                        report[&#x27;invalid_certificates&#x27;] += 1
+                        kind, s, witness = violation
+                        report[&#x27;violation_types&#x27;][kind] = report[&#x27;violation_types&#x27;].get(kind, 0) + 1
+                        extra = [set() for _ in range(n)]
+                        if kind == &#x27;missing_lower&#x27;:
+                            # Every unknown now has an option *k, so none has value k.
+                            for u in unknown:
+                                extra[u] = {witness}
+                        elif kind == &#x27;missing_return&#x27;:
+                            # Other unknowns cannot equal k; u is forced to k if all
+                            # anchor labels survive. Otherwise robustness already fails.
+                            k = labels[s]
+                            for u in unknown:
+                                extra[u] = set(range(k)) if u == witness else {k}
+                        assert all(k &lt;= max(c) for opts in extra for k in opts)
+                        got = grundy(edges, extra)
+                        assert any(got[s] != value for s, value in labels.items()), (edges, labels, violation, extra, got)
+                        report[&#x27;constructed_counterexamples&#x27;] += 1
+        report[&#x27;by_vertices&#x27;].append({&#x27;vertices&#x27;: n, &#x27;templates&#x27;: count})
+    report[&#x27;violations_of_theorem&#x27;] = 0
+    report[&#x27;counterexample_heap_bound&#x27;] = &#x27;every added Nim option *k has k &lt;= max prescribed label&#x27;
+    dest = Path(__file__).with_name(&#x27;meta_robust_results.json&#x27;)
+    dest.write_text(json.dumps(report, ensure_ascii=False, indent=2) + &#x27;\n&#x27;)
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+
+
+if __name__ == &#x27;__main__&#x27;:
+    main()
+</code></pre></details>
+<details><summary>R の再現コード</summary><p><code>python meta_structure_verify.py</code> で実行。結果は実行場所に保存する。各仮定を外した反例も含む。</p><pre><code>from functools import lru_cache
+from itertools import combinations,product
+import random,json
+
+def sg(n,edges):
+    moves=tuple(set(sum(1&lt;&lt;v for v in e) for e in edges))
+    @lru_cache(None)
+    def g(mask):
+        seen={g(mask^e) for e in moves if mask&amp;e==e}
+        k=0
+        while k in seen:k+=1
+        return k
+    mask=(1&lt;&lt;n)-1
+    return g(mask),sorted({g(mask^e) for e in moves})
+
+def params(r,m,q):
+    bs=[set(range(r*i,r*(i+1))) for i in range(m)]
+    ex=set(range(r*m,r*m+q))
+    orbits=[]
+    for a,b in combinations(bs,2):
+        allv=a|b
+        for e in combinations(sorted(allv),r):
+            f=tuple(sorted(allv-set(e)))
+            if set(e) not in (a,b) and e&lt;f:orbits.append([e,f])
+    for b in bs:
+        for e in combinations(sorted(b|ex),r):
+            if set(e)&amp;ex:orbits.append([e])
+    return [tuple(sorted(b)) for b in bs],orbits
+
+def instance(r,m,q,bits):
+    blocks,orbits=params(r,m,q)
+    return blocks+[e for i,orb in enumerate(orbits) if bits&gt;&gt;i&amp;1 for e in orb]
+
+if __name__=='__main__':
+    report={'exhaustive':[],'random':[],'examples':{},'seed':20260915}
+    for r,m,q in [(3,1,0),(3,1,1),(3,1,2),(3,2,0),(3,2,1)]:
+        bs,orbits=params(r,m,q)
+        for bits in range(1&lt;&lt;len(orbits)):
+            es=bs+[e for i,orb in enumerate(orbits) if bits&gt;&gt;i&amp;1 for e in orb]
+            val,_=sg(r*m+q,es)
+            assert val==m%2,(r,m,q,bits,val)
+        report['exhaustive'].append({'r':r,'m':m,'q':q,'count':1&lt;&lt;len(orbits)})
+    rng=random.Random(20260915)
+    for r,m,q,count in [(3,2,2,500),(3,3,2,500),(3,4,2,300),(4,2,3,300),(4,3,3,300)]:
+        bs,orbits=params(r,m,q)
+        for _ in range(count):
+            bits=rng.getrandbits(len(orbits))
+            es=bs+[e for i,orb in enumerate(orbits) if bits&gt;&gt;i&amp;1 for e in orb]
+            val,_=sg(r*m+q,es)
+            assert val==m%2,(r,m,q,bits,val)
+        report['random'].append({'r':r,'m':m,'q':q,'count':count})
+    # Worked examples. Blocks are A=012 and B=345 unless noted; values are recorded, not asserted.
+    # r3_transfer: exception E=67 (weight 2 &lt; 3); 670 and 712 lie in E+A, 634 in E+B; m=2, value 0.
+    # missing_complement: 013 meets A and B, but its complement 245 is absent (condition 3 fails).
+    # exception_two_blocks: E=6 and the move 603 meets both A and B (condition 4 fails).
+    # exception_too_large: one block A=012 and E=345 with w(E)=3=W (rho&lt;W fails); 340 and 512 touch E.
+    # missing_block: the intended block 012 is not a legal move (condition 1 fails); value 0, not 1.
+    # mixed_size: the weighted example of the text with a,b,c,d,e,z = 0..5 (sg ignores the weights).
+    examples={
+      'r3_transfer':(8,[(0,1,2),(3,4,5),(0,1,3),(2,4,5),(6,7,0),(6,3,4),(7,1,2)]),
+      'missing_complement':(6,[(0,1,2),(3,4,5),(0,1,3)]),
+      'exception_two_blocks':(7,[(0,1,2),(3,4,5),(6,0,3)]),
+      'exception_too_large':(6,[(0,1,2),(3,4,0),(5,1,2)]),
+      'missing_block':(3,[]),
+      'mixed_size':(6,[(0,1),(2,3,4),(0,2),(1,3,4),(5,0),(5,2),(5,3,4)])
+    }
+    for name,(n,es) in examples.items():
+        value,opts=sg(n,es)
+        report['examples'][name]={'n':n,'edges':es,'grundy':value,'option_values':opts}
+    # three_blocks: search for a move meeting three blocks A, B, C=678, which breaks condition 3.
+    # Optional orbits and triple moves are pruned while the value stays different from 3 mod 2 = 1.
+    bs,orbits=params(3,3,0)
+    cross3=list(product(range(3),range(3,6),range(6,9)))
+    for t in range(10000):
+        chosen=[orb for orb in orbits if rng.random()&lt;.08]
+        es=bs+[e for orb in chosen for e in orb]+[e for e in cross3 if rng.random()&lt;.08]
+        val,opts=sg(9,es)
+        if val!=1:
+            # Remove optional core-orbits/triple moves greedily, preserve failed value.
+            groups=chosen+[[e] for e in es[len(bs)+sum(map(len,chosen)):]]
+            change=True
+            while change:
+                change=False
+                for i in range(len(groups)):
+                    cand=groups[:i]+groups[i+1:]
+                    nv,_=sg(9,bs+[e for group in cand for e in group])
+                    if nv!=1:groups=cand;change=True;break
+            es=bs+[e for group in groups for e in group]
+            val,opts=sg(9,es)
+            report['examples']['three_blocks']={'n':9,'edges':es,'grundy':val,'option_values':opts}
+            break
+    print(json.dumps(report,indent=2))
+    open('meta_structure_results.json','w').write(json.dumps(report,indent=2))
+</code></pre></details>
+</section>
+<style>.meta-flow{max-width:470px;margin:25px auto}.meta-demo{border:1px solid #c6dcd6;background:#f6fbf9;padding:20px;border-radius:10px;margin:24px 0}.meta-demo h3{margin-top:0}.meta-heaps{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}.meta-heaps label{border:1px solid #c9d5dc;border-radius:7px;padding:7px 13px;background:white;cursor:pointer}.meta-demo input{width:18px;height:18px;vertical-align:middle;accent-color:#087f83}.meta-switch{cursor:pointer;font-weight:650}.meta-blocks{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:12px;margin:22px 0}.meta-blocks>div{border:2px solid #75b1a8;border-radius:9px;padding:15px;background:#f0f9f6;text-align:center}.meta-blocks p{margin:8px 0}.meta-blocks .meta-extra{border-color:#cc927d;background:#fff4ee}@media(max-width:640px){.meta-blocks{grid-template-columns:1fr}.meta-flow{max-width:360px}.meta-demo{padding:16px}.meta-demo .formula{font-size:20px}}</style>
+<script>(()=>{const root=document.getElementById('meta-demo');if(!root)return;const mex=xs=>{let k=0;while(xs.has(k))k++;return k;};function render(){const retained=root.querySelector('#meta-return').checked,values=new Set([...root.querySelectorAll('.meta-heaps input:checked')].map(e=>Number(e.value)));if(retained)values.add(2);const u=mex(values),s=mex(new Set([0,1,u]));root.querySelector('#meta-value').textContent='g(u) = '+u+'　→　g(s) = '+s;root.querySelector('#meta-demo-note').textContent=retained?'応手があるため g(u) ≠ 2。追加の山をどう変えても g(s) = 2。':s===2?'この追加では値2のまま。ただし任意の追加への保証は失われている。*2 を外して *0 と *1 を選ぶと反例になる。':'*0 と *1 が u の下位値を埋め、u の値が2になった。s の値2は守られなくなった。';root.dataset.u=u;root.dataset.s=s;root.dataset.return=retained;}root.addEventListener('change',render);render();})();</script>
+
+<section id="appendix-switch"><div class="eyebrow">APPENDIX · RESEARCH LOG</div><h2>付録：探索を途中で切り替えた理由</h2>
+<p class="small">T1 の新規性判定とは独立した、探索過程の記録である。第5版で07節から移した。</p>
+<h3>ヒント耐性</h3><p>前の探索で考えた「一個のヒントが消えても一意解」と trade の二重被覆は、Bean–Cavenagh の2026年論文に同じ枠組みがある。小さい盤面の数値や、互いに素な一意解集合との関係も扱われており、今回の主な新規候補から外した。<a href="#ref18">[18]</a></p>
+<h3>ライツアウト</h3><p>一辺変更が最少押下数へ及ぼす大きな影響は Caro–Klostermeyer (2003), Theorem 16 に既存の境界があり、低ランクの辺変更と解集合対応も Batal の式(5)などで研究済みだった。<a href="#ref19">[19]</a><a href="#ref20">[20]</a>弦付きサイクルの具体的分類には調査余地が残るが、今回は任意グラフに適用できる T1 を優先した。</p>
+<p>この切替は「候補が間違っていた」というだけの記録ではない。計算や導出が正しくても、既知の成果と一致すれば帰属を修正し、その先に残る問いを選び直すという探索手順の一部である。</p>
+</section>
+<section id="references"><div class="eyebrow">REFERENCES</div><h2>出典と照合箇所</h2><ol class="ref-list">
+<li id="ref1">Melissa Huggan &amp; Brett Stevens. <a href="https://math.colgate.edu/~integers/q86/q86.pdf">Polynomial Time Graph Families for Arc Kayles</a>. <em>Integers</em> 16, A86 (2016).<span class="comment">本文確認。§2 のGrundy値、Theorem 1 のequimatchableグラフ、Theorem 2 のline graph対応。通常のゲーム理論と近接するグラフ族の帰属。</span></li>
+<li id="ref2">Melissa A. Huggan &amp; Craig Tennenhouse. <a href="https://math.colgate.edu/~integers/vb13/vb13.pdf">Genetically Modified Games</a>. <em>Integers</em> 21B, A13 (2021).<span class="comment">本文確認。Theorems 4.4–4.5。梯子の既知値と、応手により途中の値を排除する帰納法の近接先行例。4.4 は <em>Winning Ways</em> に帰属している。arXiv 初版では番号が一つずれる。</span></li>
+<li id="ref3">Melissa A. Huggan &amp; Craig Tennenhouse. <a href="https://arxiv.org/pdf/2102.00476v1">An investigation into the application of genetic programming to combinatorial game theory</a>. arXiv:2102.00476v1 (2021).<span class="comment">本文確認。[2] の初版。Theorem 4.5（2×n 梯子の値、<em>Winning Ways</em> 第3巻に帰属）の直後に、tuft を2個まで加えても値は変わらないという証明なしの記述がある。Theorem 4.6 は、四隅のうち3か所または4か所に突起（葉）を付けた梯子の値。角一か所だけの場合はこの定理ではなく、上の tuft の記述の範囲に入る。</span></li>
+<li id="ref4">Kyle Burke, Antoine Dailly &amp; Nacim Oijid. <a href="https://arxiv.org/html/2404.10390v2">Complexity and algorithms for Arc-Kayles and Non-Disconnecting Arc-Kayles</a>. arXiv:2404.10390v2, 2025 11 21改訂（初稿2024）。短縮版は WALCOM 2026, LNCS 16444. <a href="https://doi.org/10.1007/978-981-95-7127-7_20">DOI</a>.<span class="comment">本文確認。Definition 5 / Theorem 6 のedge-disjoint involution（各辺と像が交わらない自己同型）と、その存在判定がグラフ同型問題並みに難しいこと。版により定理番号が異なるため v2 を固定して引用。</span></li>
+<li id="ref5">Antoine Dailly, Valentin Gledel &amp; Marc Heinrich. <a href="https://arxiv.org/pdf/1709.05219">A Generalization of Arc-Kayles</a>. arXiv:1709.05219v3 (2018); <em>International Journal of Game Theory</em> 48, 491–511 (2019). <a href="https://doi.org/10.1007/s00182-018-0639-5">DOI</a>.<span class="comment">本文確認。Weighted Arc Kaylesの定義、§4 Proposition 7 / Corollary 2 の複製頂点との同値性。本稿のW1はループなしに限定。</span></li>
+<li id="ref6">Stephan Dominique Andres, François Dross, Melissa A. Huggan, Fionn Mc Inerney &amp; Richard J. Nowakowski. <a href="https://link.springer.com/article/10.1007/s00453-022-01069-w">The Complexity of Two Colouring Games</a>. <em>Algorithmica</em> 85, 1067–1090 (2023), online 2022 11 24.<span class="comment">§2 の strictly matched involution の定義 (SI 1)–(SI 2)。固定点集合は空でもよい。T1の本体の構造に対応するが、論文の対象は別の彩色ゲームである。用語の導入は同論文が引用する2019年の先行研究に帰属する。</span></li>
+<li id="ref7">Stephan Dominique Andres, Melissa Huggan, Fionn Mc Inerney &amp; Richard J. Nowakowski. <a href="https://doi.org/10.1016/j.tcs.2019.07.014">The Orthogonal Colouring Game</a>. <em>Theoretical Computer Science</em> 795, 312–325 (2019). <a href="https://www.researchgate.net/publication/332495236_The_Orthogonal_Colouring_Game">著者公開原稿</a>.<span class="comment">Nowakowskiが公開した著者原稿全文を確認。§3 Theorem 1 は直交彩色ゲームの引分け保証、§5.1 Theorem 7 / Corollary 8 はstrictly matched involutionを持つグラフの特徴付け。出版社版の本文は取得できなかったため、照合対象を著者原稿と明記する。同論文には訂正記事がある。</span></li>
+<li id="ref8">Jos W. H. M. Uiterwijk. <a href="https://doi.org/10.3233/ICG-180064">Construction and investigation of Cram endgame databases</a>. <em>ICGA Journal</em> 40(4), 425–437 (2018).<span class="comment">要旨を確認。30マス未満の全盤面サイズの Cram データベースと、空盤面の値が既存文献と一致すること。本文は未取得。</span></li>
+<li id="ref9">Ryan Alvarado, Maia Averett, Benjamin Gaines, Christopher Jackson, Mary Leah Karker, Malgorzata Aneta Marciniak, Francis Su &amp; Shanise Walker. <a href="https://arxiv.org/abs/2004.00776">The Game of Cycles</a>. arXiv:2004.00776; <em>The American Mathematical Monthly</em> 128(10), 868–887 (2021).<span class="comment">本文確認。Theorem 6 の対合と mirror-reverse 戦略。別のゲームにおける「一つだけの例外」の近接例。</span></li>
+<li id="ref10">Melissa Amber Huggan. <a href="https://carleton.scholaris.ca/items/ecf787b6-9198-4fe6-87b9-843dfc6c0162">Impartial Intersection Restriction Games</a>. Master's thesis (2015).<span class="comment">Arc KaylesとTriple Packingに関連する研究として書誌を確認。本文PDFはサイトの制限で取得できず、検索結果に表示された目次と抜粋のみ確認。全文照合が残る。Triple Packingの交差制限を、互いに素な集合を取る本稿のルールと同一視しない。</span></li>
+<li id="ref11">Yonatan Bilu &amp; Nathan Linial. <a href="https://arxiv.org/pdf/math/0312022">Constructing expander graphs by 2-lifts and discrepancy vs. spectral gap</a>. arXiv:math/0312022.<span class="comment">§2 の2-lift構成。正の辺と負の辺をそれぞれ並行・交差する二辺へ持ち上げる対応を確認。T1のゲーム値を主張する文献ではない。</span></li>
+<li id="ref12">Jorge Garza-Vargas &amp; Archit Kulkarni. <a href="https://arxiv.org/html/1912.10137v5">Spectra of infinite graphs via freeness with amalgamation</a>. arXiv:1912.10137v5.<span class="comment">§1.3 のwhole-loop / half-loopの区別、Example 1.11、§2.2 Definition 2.2 のlift公式。ペア内辺を「負のループ」と呼ぶ際の規約を確認。</span></li>
+<li id="ref13">Stephan Dominique Andres, Melissa A. Huggan, Fionn Mc Inerney &amp; Richard J. Nowakowski. <a href="https://doi.org/10.1016/j.tcs.2019.12.007">Corrigendum to “The orthogonal colouring game”</a>. <em>Theoretical Computer Science</em> 842, 133–135 (2020).<span class="comment">出版社の要旨・検索索引で訂正対象を確認。[7] の Theorem 15（strictly matched involution を持つグラフの同型類の個数の下界）を、より弱い下界に訂正する。</span></li>
+<li id="ref14">Hortensia Galeana-Sánchez &amp; Raúl González-Silva. <a href="https://arxiv.org/pdf/1901.04845">Semi-Grundy function, an hereditary approach to Grundy function</a>. arXiv:1901.04845v1 (2019).<span class="comment">§2 のsemi-kernel、Definition 3.1 のsemi-Grundyを確認。Mの十分条件の近接概念であり、応手の発想を新技法として扱わない根拠。</span></li>
+<li id="ref15">Aaron N. Siegel. <a href="https://www.ams.org/books/gsm/146/gsm146-endmatter.pdf"><em>Combinatorial Game Theory</em></a>. Graduate Studies in Mathematics 146, American Mathematical Society (2013).<span class="comment">可逆な選択肢の迂回と標準形を扱う教科書として参照。出版社の索引には reversible の参照頁があるが、書籍本文で M との対応を章節単位に照合したわけではない。</span></li>
+<li id="ref16">Michael Lampis &amp; Valia Mitsou. <a href="https://arxiv.org/pdf/1309.6504">The Computational Complexity of the Game of Set and its Theoretical Applications</a>. arXiv:1309.6504 (2013), LATIN 2014. <a href="https://doi.org/10.1007/978-3-642-54423-1_3">DOI</a>.<span class="comment">二人交互のSETと3-uniform hypergraph Arc Kaylesの関連を確認。一般のハイパーグラフ除去ゲームというモデル自体は既知。</span></li>
+<li id="ref17">Endre Boros, Vladimir Gurvich, Nhan Bao Ho, Kazuhisa Makino &amp; Peter Mursic. <a href="https://arxiv.org/html/1701.02819v1">Tetris Hypergraphs and Combinations of Impartial Games</a>. arXiv:1701.02819v1 (2017).<span class="comment">hypergraph Nim の定義とゲーム合成を確認。山サイズ0/1への制限に集合除去ゲームが含まれる。Tetris値や一般のゲームモデルを本稿の新規成果とはしない。</span></li>
+<li id="ref18">Richard Bean &amp; Nicholas J. Cavenagh. <a href="https://arxiv.org/html/2605.28027v1">Defining sets which intersect each Latin trade at least twice</a>. arXiv:2605.28027v1 (2026 05 27).<span class="comment">本文確認。k-strong defining set、Lemma 1、Lemma 6、Theorem 4、計算表。ヒント耐性の探索案の主要部分を既知として整理する根拠。</span></li>
+<li id="ref19">Yair Caro &amp; William F. Klostermeyer. <a href="https://combinatorialpress.com/article/jcmcc/Volume%20044/vol-044-paper%206.pdf">The Odd Domination Number of a Graph</a>. <em>J. Combin. Math. Combin. Comput.</em> 44, 65–84 (2003).<span class="comment">原論文の該当ページを確認。Theorem 2 のサイクルべき、Theorem 16 の一辺削除による最少奇支配数の変化。ライツアウトの大きな変化そのものを新規としない根拠。</span></li>
+<li id="ref20">Ahmet Batal. <a href="https://arxiv.org/html/2108.03059v2">Effects of edge addition or removal on the nullity of a graph</a>. arXiv:2108.03059v2; <em>Discrete Applied Mathematics</em> 357, 56–65 (2024).<span class="comment">本文確認。式(5)とその後の解集合対応。辺変更のランク2表現を既知として整理。</span></li>
+</ol>
+<details><summary>第2版の変更記録</summary><p>提供されたレビューを受け、反例の最小性を頂点数・辺数・連結性に分けて明記し、統合JSONの由来を説明した。追加の別名検索とループ規約の確認を記録し、操作名・添字・図の可読性を修正した。本文の日付は従来の形式を保ち、JSON内は機械処理向けの形式にした。主定理 T1 と系 W1 の仮定・結論・証明は変更していない。</p></details>
+<details><summary>第3版の変更記録</summary><p>抽象度を上げる探索から、第09節に定理 M と R を追加した。M は任意の非巡回な拡張から指定値を保護する必要十分条件、R は局所的な補集合と例外移送による等重量除去ゲームの定理である。小Nimによる必要性の反証構成、非対称な本体の具体例、独立監査・有限検査・先行研究との境界を記録した。従来の T1 と W1 の証明は維持した。新しい命題も専門家査読・証明支援系による形式検証は未実施。</p></details>
+<details><summary>第4版の変更記録：追加査読の反映</summary><p>T1 を M へ適用する際、ラベルを残存頂点数だけで定義し、対分けによらないことと、Case C の直後が別の分解で S に入る場合の扱いを明記した。M の計算検査は私有Nim追加に限ると報告範囲を正確にした。M は標準的な議論を選んだ拡張クラスの同値条件として整理する命題と位置づけ、必要性の拡張クラスへの依存を前面に出した。定理の仮定・結論・証明と検証コードの処理は変更していない。</p></details>
+<details open id="changelog-5"><summary>第5版の変更記録：査読と新規性照合の反映</summary>
+<p><strong>位置づけと構成。</strong>主結果 T1 を「命題」から「定理」に、標準的な議論の整理である M を「定理」から「命題」に改めた。冒頭に09節を含む全体の構成を書き、探索切替の記録を付録へ移した。R が T1 と一致する範囲（重み1・W = 2）と、自己同型を仮定しないことが効く範囲を明記した。</p>
+<p><strong>新規性照合。</strong>[2] の初版に、梯子へ tuft を加える証明なしの記述があることを確認し、葉一枚の場合を「既述の特殊例」とした。第4版の「P₄ に衝突し得る」という評価は、全列挙の結果「計算した範囲では n = 1 でのみ衝突」に修正した。Cram データベース、Game of Cycles、strictly matched involution の訂正記事、可逆な選択肢の標準理論を出典に加えた。</p>
+<p><strong>新しい結果。</strong>例外集合が三角形の場合の命題 K3 を証明付きで加え、奇数クリークへの予想 K、固定点が二個なら対称でも破れる反例を記録した。対応する検証コードと結果を収録した。</p>
+<p><strong>細部。</strong>ルール説明の係り方、デモの注記（「*2 を外して」）、実験図の辺が他の頂点に重ならないようにする描画、Case B の図の高さ、静的な説明文とJavaScriptの説明文の食い違い、R の検証コードの例へのコメント、本文の日付表記、参考文献番号の初出順を直した。T1・W1・M・R の仮定・結論・証明と、既存の検証コードの処理結果は変更していない。</p></details>
+<details open id="changelog-5-1"><summary>第5.1版の変更記録：追加結果の独立監査</summary>
+<p>提供された第5版をもとに、K3 の証明と R・T1 の対応を独立に確認し、第5版の追加検証コードを再実行して、収録JSONの全フィールドとの一致を確認した。K3 は証明付きの命題、この版の時点では奇数クリーク一般を未証明の予想として保持した。その後、第6版で反例を確認して撤回した。</p>
+<p>梯子の二枚・三枚の葉の記述を実際の有限検査範囲へ限定し、固定点クリークの各 (c,m) と試行数を明記した。非クリークの対照実験から必要条件を主張しないこと、例外なしの R から T1 への対応も補った。</p>
+<p>初版の tuft の記述をPDF本文で確認した。Game of Cycles の Theorem 6 の面に関する仮定、Cram データベースの収録範囲が未確認であること、訂正記事の参照番号を修正した。日付を YYYY MM DD に統一した。定理 T1・W1・M・R・K3 の結論と検証コードの処理は変更していない。これらの監査は、学術的新規性の確定や証明支援系による形式検証には当たらない。</p>
+</details>
+<details id="changelog-6"><summary>第6版・完成稿：予想Kの反証と撤回</summary>
+<p>追加査読の反例指摘を受け、K₅ と3ペアの11頂点例で g = 3（旧予想1）、K₅ と4ペアの13頂点例で g = 2（旧予想0）を確認した。残存頂点・残存辺集合の二方式で、根の値だけでなく全ての一手後の値も照合した。反例の図、完全な辺集合、再現コード、検算結果JSONを収録した。</p>
+<p>予想 K の状態を反証済み・撤回へ更新し、冒頭・本文・検査表・今後の課題をそろえた。第5版の標本内で一致した事実は履歴として保持する。T1・W1・K3・M・R の仮定・結論・証明は変更していない。今回は追加の一般化を行わず、この内容を完成稿とする。学術的新規性の確定や証明支援系による形式検証は引き続き未実施である。</p>
+</details>
+<details open id="changelog-6-1"><summary>第6.1版：新規性表記の精密化</summary>
+<p>2026 09 16 の再点検で、04節と07節の一マス欠けの扱いを修正した。欠損が端の列にある盤面は、2×(n−1) の梯子の角に葉を一枚付けた形と一致するため、既存の tuft の記述の範囲に含まれる。欠損に関する新規性の候補は内側の列の場合に限定し、その形を「相方が左右の格子をつなぐ切断点になる形」と正確に書き直した。</p>
+<p>[3] の Theorem 4.6 が扱うのは四隅のうち3か所または4か所に突起を付けた梯子であることを本文で再確認し、注記を具体化した。tuft が複数の葉を持つ場合に06節の補題を併用することも明記した。T1・W1・K3・M・R の仮定・結論・証明と、検証コード・収録JSONは変更していない（同梱の再現コード6本を再実行し、収録JSONとの一致を確認）。</p>
+</details>
+<p class="footer">このノートは、一欠損ドミノ盤の観察を一般化し、既知結果との重複を除きながら得た研究記録です。発見候補の選定・証明・計算・独立監査・文献照合・図解をAIが行い、横田さんが研究の方向を示しています。図は本稿の定義から作成。外部のスクリプト・フォント・画像を読み込まず、一つのHTMLで動作します。</p>
+</section>
+</main>
+<script type="application/json" id="embedded-downloads">{"paired": {"name": "paired_core_verify.py", "type": "text/x-python;charset=utf-8", "text": "from functools import lru_cache\nfrom itertools import combinations\nimport random,json\n\ndef sg(n,edges):\n    moves=tuple((1<<u)|(1<<v) for u,v in edges)\n    @lru_cache(None)\n    def g(mask):\n        seen={g(mask^e) for e in moves if mask&e==e}\n        x=0\n        while x in seen:x+=1\n        return x\n    return g((1<<n)-1)\n\ndef core(m,bits):\n    edges=[(2*i,2*i+1) for i in range(m)]\n    k=0\n    for i,j in combinations(range(m),2):\n        for flip in (0,1):\n            if bits>>k&1:edges.extend([(2*i,2*j+flip),(2*i+1,2*j+1-flip)])\n            k+=1\n    return edges\nreport=[]\nfor m in range(4):\n    count=0\n    for bits in range(1<<(m*(m-1))):\n        e=core(m,bits)\n        for a in range(1<<(2*m)):\n            edges=e+[(2*m,j) for j in range(2*m) if a>>j&1]\n            value=sg(2*m+1,edges)\n            assert value==m%2,(m,bits,a,value)\n            count+=1\n    report.append({'pairs':m,'exhaustive_labeled_graphs':count})\nrng=random.Random(20260915)\nfor m,counts in [(4,2000),(5,1000),(6,300),(7,30)]:\n    for _ in range(counts):\n        bits=rng.randrange(1<<(m*(m-1)));a=rng.randrange(1<<(2*m))\n        edges=core(m,bits)+[(2*m,j) for j in range(2*m) if a>>j&1]\n        assert sg(2*m+1,edges)==m%2\n    report.append({'pairs':m,'random_graphs':counts,'seed':20260915})\nprint(json.dumps(report,indent=2))\nopen('paired_core_results.json','w').write(json.dumps(report,indent=2))\n"}, "weighted": {"name": "weighted_verify.py", "type": "text/x-python;charset=utf-8", "text": "\"\"\"Independent WAK verification by direct capacity-state mex, without clone reduction.\nPython standard library only. Run: python weighted_verify.py\n\"\"\"\nfrom functools import lru_cache\nfrom itertools import product\nfrom pathlib import Path\nimport json,random\n\ndef wak_grundy(capacities,edges):\n    edges=tuple(edges)\n    @lru_cache(None)\n    def dp(caps):\n        options=set()\n        for a,b in edges:\n            if caps[a] and caps[b]:\n                nxt=list(caps);nxt[a]-=1;nxt[b]-=1\n                options.add(dp(tuple(nxt)))\n        g=0\n        while g in options:g+=1\n        return g\n    return dp(tuple(capacities)),dp.cache_info().currsize\n\ndef core_edges(m,mask):\n    edges=[(2*i,2*i+1) for i in range(m)]\n    bit=0\n    for i in range(m):\n        for j in range(i+1,m):\n            for flip in range(2):\n                if mask>>bit&1:\n                    edges.extend([(2*i,2*j+flip),(2*i+1,2*j+1-flip)])\n                bit+=1\n    return edges\n\ndef evaluate(m,c,coremask,adjmask):\n    z=2*m\n    capacities=[v for x in c for v in (x,x)]+[1]\n    edges=core_edges(m,coremask)+[(i,z) for i in range(z) if adjmask>>i&1]\n    got,states=wak_grundy(capacities,edges)\n    expected=sum(c)%2\n    return got,expected,states\n\ndef main():\n    report={'method':'capacity tuple dynamic programming with mex; no clone reduction used by verifier',\n            'seed':20260915,'exhaustive':[],'random':{},'counterexample':{},'total_checked':0,'violations':[]}\n    states=0\n    for m in (1,2):\n        checked=0;observed={}\n        for c in product(range(1,4),repeat=m):\n            for cm in range(1<<(m*(m-1))):\n                for am in range(1<<(2*m)):\n                    got,expected,numstates=evaluate(m,c,cm,am)\n                    states+=numstates;checked+=1\n                    observed[got]=observed.get(got,0)+1\n                    if got!=expected:report['violations'].append(dict(m=m,c=c,coremask=cm,adjmask=am,got=got,expected=expected))\n        report['exhaustive'].append(dict(pairs=m,capacities='each c_i in 1..3',symmetric_core_count=1<<(m*(m-1)),exception_neighbor_count=1<<(2*m),cases=checked,grundy_histogram=observed))\n        report['total_checked']+=checked\n    rng=random.Random(report['seed']);m=3;seen=set();observed={}\n    while len(seen)<200:\n        c=tuple(rng.randint(1,3) for _ in range(m));cm=rng.randrange(1<<(m*(m-1)));am=rng.randrange(1<<(2*m))\n        key=(c,cm,am)\n        if key in seen:continue\n        seen.add(key)\n        got,expected,numstates=evaluate(m,c,cm,am)\n        states+=numstates;observed[got]=observed.get(got,0)+1\n        if got!=expected:report['violations'].append(dict(m=m,c=c,coremask=cm,adjmask=am,got=got,expected=expected))\n    report['random']=dict(pairs=3,cases=200,capacities='each c_i in 1..3',sampling='uniform draws without duplicate parameter tuples',grundy_histogram=observed)\n    report['total_checked']+=200\n    g,n=wak_grundy([1,1,2],[(0,1),(0,2),(1,2)])\n    report['counterexample']=dict(graph='triangle',capacities=[1,1,2],core_pairs=[[0,1]],exception=2,actual_grundy=g,claimed_parity_if_generalized=1,option_grundy_values=[0,1])\n    report['sum_dp_states_across_cases']=states\n    dest=Path(__file__).with_name('weighted_verify.json')\n    dest.write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\\n')\n    print(json.dumps(report,indent=2,ensure_ascii=False))\n    assert not report['violations']\n    assert g==2\nif __name__=='__main__':main()\n"}, "results": {"name": "verification_results_2026-09-15.json", "type": "application/json;charset=utf-8", "text": "{\n  \"record_type\": \"combined_script_outputs\",\n  \"date\": \"2026-09-15\",\n  \"main_theorem\": [\n    {\n      \"pairs\": 0,\n      \"exhaustive_labeled_graphs\": 1\n    },\n    {\n      \"pairs\": 1,\n      \"exhaustive_labeled_graphs\": 4\n    },\n    {\n      \"pairs\": 2,\n      \"exhaustive_labeled_graphs\": 64\n    },\n    {\n      \"pairs\": 3,\n      \"exhaustive_labeled_graphs\": 4096\n    },\n    {\n      \"pairs\": 4,\n      \"random_graphs\": 2000,\n      \"seed\": 20260915\n    },\n    {\n      \"pairs\": 5,\n      \"random_graphs\": 1000,\n      \"seed\": 20260915\n    },\n    {\n      \"pairs\": 6,\n      \"random_graphs\": 300,\n      \"seed\": 20260915\n    },\n    {\n      \"pairs\": 7,\n      \"random_graphs\": 30,\n      \"seed\": 20260915\n    }\n  ],\n  \"weighted_corollary\": {\n    \"method\": \"capacity tuple dynamic programming with mex; no clone reduction used by verifier\",\n    \"seed\": 20260915,\n    \"exhaustive\": [\n      {\n        \"pairs\": 1,\n        \"capacities\": \"each c_i in 1..3\",\n        \"symmetric_core_count\": 1,\n        \"exception_neighbor_count\": 4,\n        \"cases\": 12,\n        \"grundy_histogram\": {\n          \"1\": 8,\n          \"0\": 4\n        }\n      },\n      {\n        \"pairs\": 2,\n        \"capacities\": \"each c_i in 1..3\",\n        \"symmetric_core_count\": 4,\n        \"exception_neighbor_count\": 16,\n        \"cases\": 576,\n        \"grundy_histogram\": {\n          \"0\": 320,\n          \"1\": 256\n        }\n      }\n    ],\n    \"random\": {\n      \"pairs\": 3,\n      \"cases\": 200,\n      \"capacities\": \"each c_i in 1..3\",\n      \"sampling\": \"uniform draws without duplicate parameter tuples\",\n      \"grundy_histogram\": {\n        \"1\": 102,\n        \"0\": 98\n      }\n    },\n    \"counterexample\": {\n      \"graph\": \"triangle\",\n      \"capacities\": [\n        1,\n        1,\n        2\n      ],\n      \"core_pairs\": [\n        [\n          0,\n          1\n        ]\n      ],\n      \"exception\": 2,\n      \"actual_grundy\": 2,\n      \"claimed_parity_if_generalized\": 1,\n      \"option_grundy_values\": [\n        0,\n        1\n      ]\n    },\n    \"total_checked\": 788,\n    \"violations\": [],\n    \"sum_dp_states_across_cases\": 130057\n  }\n}"}, "meta": {"name": "meta_robust_verify.py", "type": "text/x-python;charset=utf-8", "text": "\"\"\"Check the robust partial-Grundy characterization on all labeled DAGs up to 4 vertices.\nThe order is fixed; every edge goes from a larger index to a smaller index.\nOnly standard Python is required. Additional followers are private Nim heaps.\n\"\"\"\nfrom itertools import product\nfrom pathlib import Path\nimport json\nimport random\n\n\ndef grundy(edges, extra):\n    values = []\n    for i, followers in enumerate(edges):\n        # Each k in extra[i] is the value of a private Nim heap option *k.\n        options = {values[j] for j in followers} | set(extra[i])\n        value = 0\n        while value in options:\n            value += 1\n        values.append(value)\n    return values\n\n\ndef first_violation(edges, labels):\n    for s, c in labels.items():\n        inner = {labels[t] for t in edges[s] if t in labels}\n        if c in inner:\n            return ('same_label', s, None)\n        for k in range(c):\n            if k not in inner:\n                return ('missing_lower', s, k)\n        for u in edges[s]:\n            if u not in labels and not any(t in labels and labels[t] == c for t in edges[u]):\n                return ('missing_return', s, u)\n    return None\n\n\ndef main():\n    rng = random.Random(20260915)\n    report = {'seed': 20260915, 'label_range': [0, 1, 2], 'max_vertices': 4,\n              'labelled_order': 'edge i -> j allowed exactly when i > j',\n              'templates': 0, 'valid_certificates': 0, 'random_completions_checked': 0,\n              'invalid_certificates': 0, 'constructed_counterexamples': 0,\n              'violation_types': {}, 'by_vertices': []}\n    for n in range(1, 5):\n        potential = [(i, j) for i in range(n) for j in range(i)]\n        count = 0\n        for edge_mask in range(1 << len(potential)):\n            edges = [[] for _ in range(n)]\n            for bit, (i, j) in enumerate(potential):\n                if edge_mask >> bit & 1:\n                    edges[i].append(j)\n            for s_mask in range(1, 1 << n):\n                anchors = [i for i in range(n) if s_mask >> i & 1]\n                unknown = [i for i in range(n) if not (s_mask >> i & 1)]\n                for c in product(range(3), repeat=len(anchors)):\n                    labels = dict(zip(anchors, c))\n                    report['templates'] += 1\n                    count += 1\n                    violation = first_violation(edges, labels)\n                    if violation is None:\n                        report['valid_certificates'] += 1\n                        for _ in range(5):\n                            extra = [set() for _ in range(n)]\n                            for u in unknown:\n                                extra[u] = {k for k in range(7) if rng.getrandbits(1)}\n                            got = grundy(edges, extra)\n                            assert all(got[s] == value for s, value in labels.items())\n                            report['random_completions_checked'] += 1\n                    else:\n                        report['invalid_certificates'] += 1\n                        kind, s, witness = violation\n                        report['violation_types'][kind] = report['violation_types'].get(kind, 0) + 1\n                        extra = [set() for _ in range(n)]\n                        if kind == 'missing_lower':\n                            # Every unknown now has an option *k, so none has value k.\n                            for u in unknown:\n                                extra[u] = {witness}\n                        elif kind == 'missing_return':\n                            # Other unknowns cannot equal k; u is forced to k if all\n                            # anchor labels survive. Otherwise robustness already fails.\n                            k = labels[s]\n                            for u in unknown:\n                                extra[u] = set(range(k)) if u == witness else {k}\n                        assert all(k <= max(c) for opts in extra for k in opts)\n                        got = grundy(edges, extra)\n                        assert any(got[s] != value for s, value in labels.items()), (edges, labels, violation, extra, got)\n                        report['constructed_counterexamples'] += 1\n        report['by_vertices'].append({'vertices': n, 'templates': count})\n    report['violations_of_theorem'] = 0\n    report['counterexample_heap_bound'] = 'every added Nim option *k has k <= max prescribed label'\n    dest = Path(__file__).with_name('meta_robust_results.json')\n    dest.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\\n')\n    print(json.dumps(report, ensure_ascii=False, indent=2))\n\n\nif __name__ == '__main__':\n    main()\n"}, "structure": {"name": "meta_structure_verify.py", "type": "text/x-python;charset=utf-8", "text": "from functools import lru_cache\nfrom itertools import combinations,product\nimport random,json\n\ndef sg(n,edges):\n    moves=tuple(set(sum(1<<v for v in e) for e in edges))\n    @lru_cache(None)\n    def g(mask):\n        seen={g(mask^e) for e in moves if mask&e==e}\n        k=0\n        while k in seen:k+=1\n        return k\n    mask=(1<<n)-1\n    return g(mask),sorted({g(mask^e) for e in moves})\n\ndef params(r,m,q):\n    bs=[set(range(r*i,r*(i+1))) for i in range(m)]\n    ex=set(range(r*m,r*m+q))\n    orbits=[]\n    for a,b in combinations(bs,2):\n        allv=a|b\n        for e in combinations(sorted(allv),r):\n            f=tuple(sorted(allv-set(e)))\n            if set(e) not in (a,b) and e<f:orbits.append([e,f])\n    for b in bs:\n        for e in combinations(sorted(b|ex),r):\n            if set(e)&ex:orbits.append([e])\n    return [tuple(sorted(b)) for b in bs],orbits\n\ndef instance(r,m,q,bits):\n    blocks,orbits=params(r,m,q)\n    return blocks+[e for i,orb in enumerate(orbits) if bits>>i&1 for e in orb]\n\nif __name__=='__main__':\n    report={'exhaustive':[],'random':[],'examples':{},'seed':20260915}\n    for r,m,q in [(3,1,0),(3,1,1),(3,1,2),(3,2,0),(3,2,1)]:\n        bs,orbits=params(r,m,q)\n        for bits in range(1<<len(orbits)):\n            es=bs+[e for i,orb in enumerate(orbits) if bits>>i&1 for e in orb]\n            val,_=sg(r*m+q,es)\n            assert val==m%2,(r,m,q,bits,val)\n        report['exhaustive'].append({'r':r,'m':m,'q':q,'count':1<<len(orbits)})\n    rng=random.Random(20260915)\n    for r,m,q,count in [(3,2,2,500),(3,3,2,500),(3,4,2,300),(4,2,3,300),(4,3,3,300)]:\n        bs,orbits=params(r,m,q)\n        for _ in range(count):\n            bits=rng.getrandbits(len(orbits))\n            es=bs+[e for i,orb in enumerate(orbits) if bits>>i&1 for e in orb]\n            val,_=sg(r*m+q,es)\n            assert val==m%2,(r,m,q,bits,val)\n        report['random'].append({'r':r,'m':m,'q':q,'count':count})\n    # Worked examples. Blocks are A=012 and B=345 unless noted; values are recorded, not asserted.\n    # r3_transfer: exception E=67 (weight 2 < 3); 670 and 712 lie in E+A, 634 in E+B; m=2, value 0.\n    # missing_complement: 013 meets A and B, but its complement 245 is absent (condition 3 fails).\n    # exception_two_blocks: E=6 and the move 603 meets both A and B (condition 4 fails).\n    # exception_too_large: one block A=012 and E=345 with w(E)=3=W (rho<W fails); 340 and 512 touch E.\n    # missing_block: the intended block 012 is not a legal move (condition 1 fails); value 0, not 1.\n    # mixed_size: the weighted example of the text with a,b,c,d,e,z = 0..5 (sg ignores the weights).\n    examples={\n      'r3_transfer':(8,[(0,1,2),(3,4,5),(0,1,3),(2,4,5),(6,7,0),(6,3,4),(7,1,2)]),\n      'missing_complement':(6,[(0,1,2),(3,4,5),(0,1,3)]),\n      'exception_two_blocks':(7,[(0,1,2),(3,4,5),(6,0,3)]),\n      'exception_too_large':(6,[(0,1,2),(3,4,0),(5,1,2)]),\n      'missing_block':(3,[]),\n      'mixed_size':(6,[(0,1),(2,3,4),(0,2),(1,3,4),(5,0),(5,2),(5,3,4)])\n    }\n    for name,(n,es) in examples.items():\n        value,opts=sg(n,es)\n        report['examples'][name]={'n':n,'edges':es,'grundy':value,'option_values':opts}\n    # three_blocks: search for a move meeting three blocks A, B, C=678, which breaks condition 3.\n    # Optional orbits and triple moves are pruned while the value stays different from 3 mod 2 = 1.\n    bs,orbits=params(3,3,0)\n    cross3=list(product(range(3),range(3,6),range(6,9)))\n    for t in range(10000):\n        chosen=[orb for orb in orbits if rng.random()<.08]\n        es=bs+[e for orb in chosen for e in orb]+[e for e in cross3 if rng.random()<.08]\n        val,opts=sg(9,es)\n        if val!=1:\n            # Remove optional core-orbits/triple moves greedily, preserve failed value.\n            groups=chosen+[[e] for e in es[len(bs)+sum(map(len,chosen)):]]\n            change=True\n            while change:\n                change=False\n                for i in range(len(groups)):\n                    cand=groups[:i]+groups[i+1:]\n                    nv,_=sg(9,bs+[e for group in cand for e in group])\n                    if nv!=1:groups=cand;change=True;break\n            es=bs+[e for group in groups for e in group]\n            val,opts=sg(9,es)\n            report['examples']['three_blocks']={'n':9,'edges':es,'grundy':val,'option_values':opts}\n            break\n    print(json.dumps(report,indent=2))\n    open('meta_structure_results.json','w').write(json.dumps(report,indent=2))\n"}, "meta_results": {"name": "meta_verification_results_2026-09-15.json", "type": "application/json;charset=utf-8", "text": "{\n  \"record_type\": \"combined_script_outputs\",\n  \"date\": \"2026-09-15\",\n  \"robustness\": {\n    \"seed\": 20260915,\n    \"label_range\": [\n      0,\n      1,\n      2\n    ],\n    \"max_vertices\": 4,\n    \"labelled_order\": \"edge i -> j allowed exactly when i > j\",\n    \"templates\": 16857,\n    \"valid_certificates\": 523,\n    \"random_completions_checked\": 2615,\n    \"invalid_certificates\": 16334,\n    \"constructed_counterexamples\": 16334,\n    \"violation_types\": {\n      \"missing_lower\": 14070,\n      \"missing_return\": 1067,\n      \"same_label\": 1197\n    },\n    \"by_vertices\": [\n      {\n        \"vertices\": 1,\n        \"templates\": 3\n      },\n      {\n        \"vertices\": 2,\n        \"templates\": 30\n      },\n      {\n        \"vertices\": 3,\n        \"templates\": 504\n      },\n      {\n        \"vertices\": 4,\n        \"templates\": 16320\n      }\n    ],\n    \"violations_of_theorem\": 0,\n    \"counterexample_heap_bound\": \"every added Nim option *k has k <= max prescribed label\"\n  },\n  \"removal_game\": {\n    \"exhaustive\": [\n      {\n        \"r\": 3,\n        \"m\": 1,\n        \"q\": 0,\n        \"count\": 1\n      },\n      {\n        \"r\": 3,\n        \"m\": 1,\n        \"q\": 1,\n        \"count\": 8\n      },\n      {\n        \"r\": 3,\n        \"m\": 1,\n        \"q\": 2,\n        \"count\": 512\n      },\n      {\n        \"r\": 3,\n        \"m\": 2,\n        \"q\": 0,\n        \"count\": 512\n      },\n      {\n        \"r\": 3,\n        \"m\": 2,\n        \"q\": 1,\n        \"count\": 32768\n      }\n    ],\n    \"random\": [\n      {\n        \"r\": 3,\n        \"m\": 2,\n        \"q\": 2,\n        \"count\": 500\n      },\n      {\n        \"r\": 3,\n        \"m\": 3,\n        \"q\": 2,\n        \"count\": 500\n      },\n      {\n        \"r\": 3,\n        \"m\": 4,\n        \"q\": 2,\n        \"count\": 300\n      },\n      {\n        \"r\": 4,\n        \"m\": 2,\n        \"q\": 3,\n        \"count\": 300\n      },\n      {\n        \"r\": 4,\n        \"m\": 3,\n        \"q\": 3,\n        \"count\": 300\n      }\n    ],\n    \"examples\": {\n      \"r3_transfer\": {\n        \"n\": 8,\n        \"edges\": [\n          [\n            0,\n            1,\n            2\n          ],\n          [\n            3,\n            4,\n            5\n          ],\n          [\n            0,\n            1,\n            3\n          ],\n          [\n            2,\n            4,\n            5\n          ],\n          [\n            6,\n            7,\n            0\n          ],\n          [\n            6,\n            3,\n            4\n          ],\n          [\n            7,\n            1,\n            2\n          ]\n        ],\n        \"grundy\": 0,\n        \"option_values\": [\n          1\n        ]\n      },\n      \"missing_complement\": {\n        \"n\": 6,\n        \"edges\": [\n          [\n            0,\n            1,\n            2\n          ],\n          [\n            3,\n            4,\n            5\n          ],\n          [\n            0,\n            1,\n            3\n          ]\n        ],\n        \"grundy\": 2,\n        \"option_values\": [\n          0,\n          1\n        ]\n      },\n      \"exception_two_blocks\": {\n        \"n\": 7,\n        \"edges\": [\n          [\n            0,\n            1,\n            2\n          ],\n          [\n            3,\n            4,\n            5\n          ],\n          [\n            6,\n            0,\n            3\n          ]\n        ],\n        \"grundy\": 2,\n        \"option_values\": [\n          0,\n          1\n        ]\n      },\n      \"exception_too_large\": {\n        \"n\": 6,\n        \"edges\": [\n          [\n            0,\n            1,\n            2\n          ],\n          [\n            3,\n            4,\n            0\n          ],\n          [\n            5,\n            1,\n            2\n          ]\n        ],\n        \"grundy\": 2,\n        \"option_values\": [\n          0,\n          1\n        ]\n      },\n      \"missing_block\": {\n        \"n\": 3,\n        \"edges\": [],\n        \"grundy\": 0,\n        \"option_values\": []\n      },\n      \"mixed_size\": {\n        \"n\": 6,\n        \"edges\": [\n          [\n            0,\n            1\n          ],\n          [\n            2,\n            3,\n            4\n          ],\n          [\n            0,\n            2\n          ],\n          [\n            1,\n            3,\n            4\n          ],\n          [\n            5,\n            0\n          ],\n          [\n            5,\n            2\n          ],\n          [\n            5,\n            3,\n            4\n          ]\n        ],\n        \"grundy\": 0,\n        \"option_values\": [\n          1\n        ]\n      },\n      \"three_blocks\": {\n        \"n\": 9,\n        \"edges\": [\n          [\n            0,\n            1,\n            2\n          ],\n          [\n            3,\n            4,\n            5\n          ],\n          [\n            6,\n            7,\n            8\n          ],\n          [\n            1,\n            4,\n            6\n          ],\n          [\n            2,\n            5,\n            8\n          ]\n        ],\n        \"grundy\": 2,\n        \"option_values\": [\n          0,\n          1\n        ]\n      }\n    },\n    \"seed\": 20260915\n  }\n}"}, "family": {"name": "exception_family_verify.py", "type": "text/x-python;charset=utf-8", "text": "\"\"\"Checks for the fifth edition: pendant tufts on 2xn ladders and odd-clique exception sets.\nPython standard library only. Run: python exception_family_verify.py\nEvery value is computed by plain mex recursion over vertex subsets; no formula is built in.\n\"\"\"\nfrom functools import lru_cache\nfrom itertools import combinations, combinations_with_replacement, product\nfrom pathlib import Path\nimport json\nimport random\n\nSEED = 20260915\n\n\ndef sg(n, edges):\n    moves = tuple({(1 << u) | (1 << v) for u, v in edges})\n\n    @lru_cache(None)\n    def g(mask):\n        seen = {g(mask ^ e) for e in moves if mask & e == e}\n        k = 0\n        while k in seen:\n            k += 1\n        return k\n    return g((1 << n) - 1)\n\n\ndef ladder(n):\n    \"\"\"2xn grid; column i is the pair (2i, 2i+1).\"\"\"\n    return ([(2 * i, 2 * i + 1) for i in range(n)]\n            + [(2 * i, 2 * i + 2) for i in range(n - 1)]\n            + [(2 * i + 1, 2 * i + 3) for i in range(n - 1)])\n\n\ndef core(m, bits):\n    \"\"\"Pairs (2i, 2i+1) with pair edges; each bit adds one swap-invariant orbit of two edges.\"\"\"\n    edges = [(2 * i, 2 * i + 1) for i in range(m)]\n    k = 0\n    for i, j in combinations(range(m), 2):\n        for flip in (0, 1):\n            if bits >> k & 1:\n                edges += [(2 * i, 2 * j + flip), (2 * i + 1, 2 * j + 1 - flip)]\n            k += 1\n    return edges\n\n\ndef exception_set(m, x_edges, c, bits, adj):\n    \"\"\"m symmetric pairs plus an exception set X of c vertices (labels 2m..2m+c-1).\n    x_edges is the graph on X; adj chooses every X-to-pair edge independently (no symmetry).\"\"\"\n    edges = core(m, bits) + [(2 * m + a, 2 * m + b) for a, b in x_edges]\n    edges += [(2 * m + z, v) for z in range(c) for v in range(2 * m) if adj >> (z * 2 * m + v) & 1]\n    return sg(2 * m + c, edges)\n\n\ndef histogram(values):\n    out = {}\n    for v in values:\n        out[str(v)] = out.get(str(v), 0) + 1\n    return dict(sorted(out.items()))\n\n\ndef main():\n    rng = random.Random(SEED)\n    report = {'seed': SEED, 'ladder_tufts': {}, 'odd_clique_exceptions': {},\n              'controls': {}, 'strictly_matched_fixed_clique': {}, 'paw': {}}\n\n    # 1. Tufts on 2xn ladders. A tuft is a star whose centre is a grid vertex.\n    one, two, three, multi = [], [], [], []\n    for n in range(1, 9):\n        base = sg(2 * n, ladder(n))\n        assert base == n % 2\n        bad1 = sum(sg(2 * n + 1, ladder(n) + [(v, 2 * n)]) != base for v in range(2 * n))\n        pairs = list(combinations_with_replacement(range(2 * n), 2))\n        bad2 = [p for p in pairs\n                if sg(2 * n + 2, ladder(n) + [(p[0], 2 * n), (p[1], 2 * n + 1)]) != base]\n        one.append({'n': n, 'placements': 2 * n, 'changed': bad1})\n        two.append({'n': n, 'placements': len(pairs), 'changed': len(bad2), 'examples': bad2[:3]})\n        assert bad1 == 0\n        assert (len(bad2) == 0) == (n >= 2)\n    for n in range(2, 7):\n        base = n % 2\n        checked = bad = 0\n        for v, w in combinations_with_replacement(range(2 * n), 2):\n            for a, b in product(range(1, 4), repeat=2):\n                if 2 * n + a + b > 18:\n                    continue\n                edges = ladder(n) + [(v, 2 * n + i) for i in range(a)] + [(w, 2 * n + a + j) for j in range(b)]\n                checked += 1\n                bad += sg(2 * n + a + b, edges) != base\n        multi.append({'n': n, 'leaf_counts': '1..3 per tuft', 'placements': checked, 'changed': bad})\n        assert bad == 0\n        triples = list(combinations_with_replacement(range(2 * n), 3))\n        bad3 = [t for t in triples\n                if sg(2 * n + 3, ladder(n) + [(x, 2 * n + i) for i, x in enumerate(t)]) != base]\n        three.append({'n': n, 'placements': len(triples), 'changed': len(bad3), 'examples': bad3[:3]})\n        assert bad3\n    report['ladder_tufts'] = {'one_leaf': one, 'two_single_leaves': two,\n                              'two_tufts_multi_leaf': multi, 'three_single_leaves': three}\n\n    # 2. Exception set inducing K3 or K5, with arbitrary edges to the pairs.\n    K3 = list(combinations(range(3), 2))\n    K5 = list(combinations(range(5), 2))\n    k3 = []\n    for m in (0, 1, 2):\n        vals = [exception_set(m, K3, 3, bits, adj)\n                for bits in range(1 << (m * (m - 1))) for adj in range(1 << (6 * m))]\n        assert set(vals) == {(m + 1) % 2}\n        k3.append({'m': m, 'mode': 'exhaustive', 'cases': len(vals), 'values': histogram(vals)})\n    vals = [exception_set(3, K3, 3, rng.getrandbits(6), rng.getrandbits(18)) for _ in range(400)]\n    assert set(vals) == {0}\n    k3.append({'m': 3, 'mode': 'random', 'cases': 400, 'values': histogram(vals)})\n    k5 = []\n    vals = [exception_set(1, K5, 5, 0, adj) for adj in range(1 << 10)]\n    assert set(vals) == {1}\n    k5.append({'m': 1, 'mode': 'exhaustive', 'cases': len(vals), 'values': histogram(vals)})\n    for m, count in ((2, 400), (3, 100)):\n        vals = [exception_set(m, K5, 5, rng.getrandbits(m * (m - 1)), rng.getrandbits(10 * m))\n                for _ in range(count)]\n        assert set(vals) == {(m + 2) % 2}\n        k5.append({'m': m, 'mode': 'random', 'cases': count, 'values': histogram(vals)})\n    report['odd_clique_exceptions'] = {'K3_predicted': '(m+1) mod 2', 'K3': k3,\n                                       'K5_predicted': '(m+2) mod 2', 'K5': k5}\n\n    # 3. Other exception graphs on 3 or 5 vertices do not keep a single value.\n    controls = {'P3': (3, [(0, 1), (1, 2)]), 'K2+K1': (3, [(0, 1)]), '3K1': (3, []),\n                'C5': (5, [(i, (i + 1) % 5) for i in range(5)]),\n                'K5-e': (5, [e for e in K5 if e != (0, 1)]),\n                'bowtie': (5, [(0, 1), (0, 2), (1, 2), (2, 3), (2, 4), (3, 4)])}\n    for name, (c, xe) in controls.items():\n        vals = [exception_set(2, xe, c, rng.getrandbits(2), rng.getrandbits(4 * c)) for _ in range(300)]\n        controls_hist = histogram(vals)\n        assert len(controls_hist) > 1\n        report['controls'][name] = {'m': 2, 'cases': 300, 'values': controls_hist}\n\n    # 4. Strictly matched involutions: fixed-point clique C, every z in C symmetric to each pair.\n    for c in range(6):\n        rows = []\n        for m in range(0, 5 if c <= 3 else 4):\n            vals = []\n            for _ in range(200):\n                edges = core(m, rng.getrandbits(max(1, m * (m - 1))))\n                edges += [(2 * m + a, 2 * m + b) for a, b in combinations(range(c), 2)]\n                for z in range(c):\n                    for i in range(m):\n                        if rng.random() < .5:\n                            edges += [(2 * m + z, 2 * i), (2 * m + z, 2 * i + 1)]\n                vals.append(sg(2 * m + c, edges))\n            rows.append({'m': m, 'cases': 200, 'values': histogram(vals),\n                         'floor_half_order_mod2': (2 * m + c) // 2 % 2})\n            if c % 2 == 1 or c == 0:\n                assert set(vals) == {(2 * m + c) // 2 % 2}\n        report['strictly_matched_fixed_clique'][str(c)] = rows\n\n    # 5. Symmetric two-point clique already fails: the paw with a pendant at the triangle apex.\n    paw = [(0, 1), (2, 0), (2, 1), (2, 3)]  # pair {0,1}; C = {2,3}\n    report['paw'] = {'edges': paw, 'pair': [0, 1], 'fixed_clique': [2, 3],\n                     'grundy': sg(4, paw), 'floor_half_order_mod2': 0}\n    assert report['paw']['grundy'] == 2\n\n    dest = Path(__file__).with_name('exception_family_results.json')\n    dest.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\\n')\n    print(json.dumps(report, ensure_ascii=False, indent=2))\n\n\nif __name__ == '__main__':\n    main()\n"}, "family_results": {"name": "exception_family_results_2026-09-15.json", "type": "application/json;charset=utf-8", "text": "{\n  \"seed\": 20260915,\n  \"ladder_tufts\": {\n    \"one_leaf\": [\n      {\n        \"n\": 1,\n        \"placements\": 2,\n        \"changed\": 0\n      },\n      {\n        \"n\": 2,\n        \"placements\": 4,\n        \"changed\": 0\n      },\n      {\n        \"n\": 3,\n        \"placements\": 6,\n        \"changed\": 0\n      },\n      {\n        \"n\": 4,\n        \"placements\": 8,\n        \"changed\": 0\n      },\n      {\n        \"n\": 5,\n        \"placements\": 10,\n        \"changed\": 0\n      },\n      {\n        \"n\": 6,\n        \"placements\": 12,\n        \"changed\": 0\n      },\n      {\n        \"n\": 7,\n        \"placements\": 14,\n        \"changed\": 0\n      },\n      {\n        \"n\": 8,\n        \"placements\": 16,\n        \"changed\": 0\n      }\n    ],\n    \"two_single_leaves\": [\n      {\n        \"n\": 1,\n        \"placements\": 3,\n        \"changed\": 1,\n        \"examples\": [\n          [\n            0,\n            1\n          ]\n        ]\n      },\n      {\n        \"n\": 2,\n        \"placements\": 10,\n        \"changed\": 0,\n        \"examples\": []\n      },\n      {\n        \"n\": 3,\n        \"placements\": 21,\n        \"changed\": 0,\n        \"examples\": []\n      },\n      {\n        \"n\": 4,\n        \"placements\": 36,\n        \"changed\": 0,\n        \"examples\": []\n      },\n      {\n        \"n\": 5,\n        \"placements\": 55,\n        \"changed\": 0,\n        \"examples\": []\n      },\n      {\n        \"n\": 6,\n        \"placements\": 78,\n        \"changed\": 0,\n        \"examples\": []\n      },\n      {\n        \"n\": 7,\n        \"placements\": 105,\n        \"changed\": 0,\n        \"examples\": []\n      },\n      {\n        \"n\": 8,\n        \"placements\": 136,\n        \"changed\": 0,\n        \"examples\": []\n      }\n    ],\n    \"two_tufts_multi_leaf\": [\n      {\n        \"n\": 2,\n        \"leaf_counts\": \"1..3 per tuft\",\n        \"placements\": 90,\n        \"changed\": 0\n      },\n      {\n        \"n\": 3,\n        \"leaf_counts\": \"1..3 per tuft\",\n        \"placements\": 189,\n        \"changed\": 0\n      },\n      {\n        \"n\": 4,\n        \"leaf_counts\": \"1..3 per tuft\",\n        \"placements\": 324,\n        \"changed\": 0\n      },\n      {\n        \"n\": 5,\n        \"leaf_counts\": \"1..3 per tuft\",\n        \"placements\": 495,\n        \"changed\": 0\n      },\n      {\n        \"n\": 6,\n        \"leaf_counts\": \"1..3 per tuft\",\n        \"placements\": 702,\n        \"changed\": 0\n      }\n    ],\n    \"three_single_leaves\": [\n      {\n        \"n\": 2,\n        \"placements\": 20,\n        \"changed\": 4,\n        \"examples\": [\n          [\n            0,\n            1,\n            2\n          ],\n          [\n            0,\n            1,\n            3\n          ],\n          [\n            0,\n            2,\n            3\n          ]\n        ]\n      },\n      {\n        \"n\": 3,\n        \"placements\": 56,\n        \"changed\": 10,\n        \"examples\": [\n          [\n            0,\n            1,\n            2\n          ],\n          [\n            0,\n            1,\n            3\n          ],\n          [\n            0,\n            1,\n            4\n          ]\n        ]\n      },\n      {\n        \"n\": 4,\n        \"placements\": 120,\n        \"changed\": 8,\n        \"examples\": [\n          [\n            0,\n            1,\n            2\n          ],\n          [\n            0,\n            1,\n            3\n          ],\n          [\n            0,\n            1,\n            4\n          ]\n        ]\n      },\n      {\n        \"n\": 5,\n        \"placements\": 220,\n        \"changed\": 8,\n        \"examples\": [\n          [\n            0,\n            1,\n            2\n          ],\n          [\n            0,\n            1,\n            3\n          ],\n          [\n            0,\n            1,\n            4\n          ]\n        ]\n      },\n      {\n        \"n\": 6,\n        \"placements\": 364,\n        \"changed\": 8,\n        \"examples\": [\n          [\n            0,\n            1,\n            2\n          ],\n          [\n            0,\n            1,\n            3\n          ],\n          [\n            0,\n            1,\n            4\n          ]\n        ]\n      }\n    ]\n  },\n  \"odd_clique_exceptions\": {\n    \"K3_predicted\": \"(m+1) mod 2\",\n    \"K3\": [\n      {\n        \"m\": 0,\n        \"mode\": \"exhaustive\",\n        \"cases\": 1,\n        \"values\": {\n          \"1\": 1\n        }\n      },\n      {\n        \"m\": 1,\n        \"mode\": \"exhaustive\",\n        \"cases\": 64,\n        \"values\": {\n          \"0\": 64\n        }\n      },\n      {\n        \"m\": 2,\n        \"mode\": \"exhaustive\",\n        \"cases\": 16384,\n        \"values\": {\n          \"1\": 16384\n        }\n      },\n      {\n        \"m\": 3,\n        \"mode\": \"random\",\n        \"cases\": 400,\n        \"values\": {\n          \"0\": 400\n        }\n      }\n    ],\n    \"K5_predicted\": \"(m+2) mod 2\",\n    \"K5\": [\n      {\n        \"m\": 1,\n        \"mode\": \"exhaustive\",\n        \"cases\": 1024,\n        \"values\": {\n          \"1\": 1024\n        }\n      },\n      {\n        \"m\": 2,\n        \"mode\": \"random\",\n        \"cases\": 400,\n        \"values\": {\n          \"0\": 400\n        }\n      },\n      {\n        \"m\": 3,\n        \"mode\": \"random\",\n        \"cases\": 100,\n        \"values\": {\n          \"1\": 100\n        }\n      }\n    ]\n  },\n  \"controls\": {\n    \"P3\": {\n      \"m\": 2,\n      \"cases\": 300,\n      \"values\": {\n        \"1\": 270,\n        \"3\": 30\n      }\n    },\n    \"K2+K1\": {\n      \"m\": 2,\n      \"cases\": 300,\n      \"values\": {\n        \"1\": 236,\n        \"3\": 64\n      }\n    },\n    \"3K1\": {\n      \"m\": 2,\n      \"cases\": 300,\n      \"values\": {\n        \"0\": 69,\n        \"1\": 126,\n        \"3\": 105\n      }\n    },\n    \"C5\": {\n      \"m\": 2,\n      \"cases\": 300,\n      \"values\": {\n        \"0\": 248,\n        \"2\": 52\n      }\n    },\n    \"K5-e\": {\n      \"m\": 2,\n      \"cases\": 300,\n      \"values\": {\n        \"0\": 283,\n        \"2\": 17\n      }\n    },\n    \"bowtie\": {\n      \"m\": 2,\n      \"cases\": 300,\n      \"values\": {\n        \"0\": 260,\n        \"2\": 40\n      }\n    }\n  },\n  \"strictly_matched_fixed_clique\": {\n    \"0\": [\n      {\n        \"m\": 0,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 1,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 200\n        },\n        \"floor_half_order_mod2\": 1\n      },\n      {\n        \"m\": 2,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 3,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 200\n        },\n        \"floor_half_order_mod2\": 1\n      },\n      {\n        \"m\": 4,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      }\n    ],\n    \"1\": [\n      {\n        \"m\": 0,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 1,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 200\n        },\n        \"floor_half_order_mod2\": 1\n      },\n      {\n        \"m\": 2,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 3,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 200\n        },\n        \"floor_half_order_mod2\": 1\n      },\n      {\n        \"m\": 4,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      }\n    ],\n    \"2\": [\n      {\n        \"m\": 0,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 200\n        },\n        \"floor_half_order_mod2\": 1\n      },\n      {\n        \"m\": 1,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 99,\n          \"2\": 101\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 2,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 99,\n          \"3\": 101\n        },\n        \"floor_half_order_mod2\": 1\n      },\n      {\n        \"m\": 3,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 55,\n          \"2\": 145\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 4,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 71,\n          \"3\": 129\n        },\n        \"floor_half_order_mod2\": 1\n      }\n    ],\n    \"3\": [\n      {\n        \"m\": 0,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 200\n        },\n        \"floor_half_order_mod2\": 1\n      },\n      {\n        \"m\": 1,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 2,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 200\n        },\n        \"floor_half_order_mod2\": 1\n      },\n      {\n        \"m\": 3,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 4,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 200\n        },\n        \"floor_half_order_mod2\": 1\n      }\n    ],\n    \"4\": [\n      {\n        \"m\": 0,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 1,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 160,\n          \"3\": 40\n        },\n        \"floor_half_order_mod2\": 1\n      },\n      {\n        \"m\": 2,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 82,\n          \"2\": 118\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 3,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 11,\n          \"1\": 100,\n          \"3\": 89\n        },\n        \"floor_half_order_mod2\": 1\n      }\n    ],\n    \"5\": [\n      {\n        \"m\": 0,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 1,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 200\n        },\n        \"floor_half_order_mod2\": 1\n      },\n      {\n        \"m\": 2,\n        \"cases\": 200,\n        \"values\": {\n          \"0\": 200\n        },\n        \"floor_half_order_mod2\": 0\n      },\n      {\n        \"m\": 3,\n        \"cases\": 200,\n        \"values\": {\n          \"1\": 200\n        },\n        \"floor_half_order_mod2\": 1\n      }\n    ]\n  },\n  \"paw\": {\n    \"edges\": [\n      [\n        0,\n        1\n      ],\n      [\n        2,\n        0\n      ],\n      [\n        2,\n        1\n      ],\n      [\n        2,\n        3\n      ]\n    ],\n    \"pair\": [\n      0,\n      1\n    ],\n    \"fixed_clique\": [\n      2,\n      3\n    ],\n    \"grundy\": 2,\n    \"floor_half_order_mod2\": 0\n  }\n}\n"}, "k_counterexample": {"name": "odd_clique_counterexample_verify.py", "type": "text/x-python;charset=utf-8", "text": "\"\"\"Refutations of conjecture K; normal-play Arc Kayles, standard library only.\nRun: python odd_clique_counterexample_verify.py\nTwo independent state representations: remaining vertices and remaining edges.\n\"\"\"\nfrom functools import lru_cache\nfrom itertools import combinations\nfrom pathlib import Path\nimport json\n\n\ndef mex(values):\n    result = 0\n    while result in values:\n        result += 1\n    return result\n\n\ndef verify(m, attachments):\n    n = 2 * m + 5\n    pairs = [(2*i, 2*i+1) for i in range(m)]\n    clique = list(combinations(range(2*m, n), 2))\n    edges = tuple(sorted(pairs + clique + attachments))\n    assert len(set(edges)) == len(edges)\n    core = set(pairs)\n    tau = lambda v: v ^ 1\n    assert all(tuple(sorted((tau(a), tau(b)))) in core for a, b in core)\n    assert all(a < 2*m <= b < n for a, b in attachments)\n    moves = tuple((1 << a) | (1 << b) for a, b in edges)\n\n    @lru_cache(None)\n    def by_vertices(mask):\n        return mex({by_vertices(mask ^ move) for move in moves\n                    if mask & move == move})\n\n    @lru_cache(None)\n    def by_edges(remaining):\n        # The state is an immutable edge set; isolated vertices have no moves.\n        options = set()\n        for a, b in remaining:\n            child = tuple((u, v) for u, v in remaining\n                          if a not in (u, v) and b not in (u, v))\n            options.add(by_edges(child))\n        return mex(options)\n\n    full = (1 << n) - 1\n    first_moves = []\n    for edge, move in zip(edges, moves):\n        a, b = edge\n        child = tuple((u, v) for u, v in edges\n                      if a not in (u, v) and b not in (u, v))\n        value = by_vertices(full ^ move)\n        assert value == by_edges(child)\n        kind = 'pair' if edge in pairs else 'clique' if edge in clique else 'attachment'\n        first_moves.append({'edge': list(edge), 'kind': kind, 'grundy': value})\n    vertex_value, edge_value = by_vertices(full), by_edges(edges)\n    predicted = (m + 2) % 2\n    assert vertex_value == edge_value != predicted\n    return {'m': m, 'k': 2, 'vertices': n, 'pairs': pairs,\n            'clique_vertices': list(range(2*m, n)), 'attachments': attachments,\n            'edges': edges, 'prediction_of_retracted_K': predicted,\n            'grundy_by_vertices': vertex_value, 'grundy_by_edges': edge_value,\n            'first_move_value_set': sorted({row['grundy'] for row in first_moves}),\n            'first_moves': first_moves}\n\n\nif __name__ == '__main__':\n    examples = [verify(3, [(0, 6), (0, 9), (2, 7), (4, 8)]),\n                verify(4, [(0, 8), (2, 9), (4, 10), (6, 11)])]\n    report = {'status': 'conjecture_K_refuted', 'examples': examples,\n              'scope': 'two explicit counterexamples; no minimality claim'}\n    text = json.dumps(report, ensure_ascii=False, indent=2) + '\\n'\n    Path(__file__).with_name('odd_clique_counterexample_results.json').write_text(text)\n    print(text, end='')\n"}, "k_counterexample_results": {"name": "odd_clique_counterexample_results.json", "type": "application/json;charset=utf-8", "text": "{\n  \"status\": \"conjecture_K_refuted\",\n  \"examples\": [\n    {\n      \"m\": 3,\n      \"k\": 2,\n      \"vertices\": 11,\n      \"pairs\": [\n        [\n          0,\n          1\n        ],\n        [\n          2,\n          3\n        ],\n        [\n          4,\n          5\n        ]\n      ],\n      \"clique_vertices\": [\n        6,\n        7,\n        8,\n        9,\n        10\n      ],\n      \"attachments\": [\n        [\n          0,\n          6\n        ],\n        [\n          0,\n          9\n        ],\n        [\n          2,\n          7\n        ],\n        [\n          4,\n          8\n        ]\n      ],\n      \"edges\": [\n        [\n          0,\n          1\n        ],\n        [\n          0,\n          6\n        ],\n        [\n          0,\n          9\n        ],\n        [\n          2,\n          3\n        ],\n        [\n          2,\n          7\n        ],\n        [\n          4,\n          5\n        ],\n        [\n          4,\n          8\n        ],\n        [\n          6,\n          7\n        ],\n        [\n          6,\n          8\n        ],\n        [\n          6,\n          9\n        ],\n        [\n          6,\n          10\n        ],\n        [\n          7,\n          8\n        ],\n        [\n          7,\n          9\n        ],\n        [\n          7,\n          10\n        ],\n        [\n          8,\n          9\n        ],\n        [\n          8,\n          10\n        ],\n        [\n          9,\n          10\n        ]\n      ],\n      \"prediction_of_retracted_K\": 1,\n      \"grundy_by_vertices\": 3,\n      \"grundy_by_edges\": 3,\n      \"first_move_value_set\": [\n        0,\n        1,\n        2\n      ],\n      \"first_moves\": [\n        {\n          \"edge\": [\n            0,\n            1\n          ],\n          \"kind\": \"pair\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            0,\n            6\n          ],\n          \"kind\": \"attachment\",\n          \"grundy\": 2\n        },\n        {\n          \"edge\": [\n            0,\n            9\n          ],\n          \"kind\": \"attachment\",\n          \"grundy\": 2\n        },\n        {\n          \"edge\": [\n            2,\n            3\n          ],\n          \"kind\": \"pair\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            2,\n            7\n          ],\n          \"kind\": \"attachment\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            4,\n            5\n          ],\n          \"kind\": \"pair\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            4,\n            8\n          ],\n          \"kind\": \"attachment\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            6,\n            7\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            6,\n            8\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            6,\n            9\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            6,\n            10\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            7,\n            8\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            7,\n            9\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            7,\n            10\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            8,\n            9\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            8,\n            10\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            9,\n            10\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 0\n        }\n      ]\n    },\n    {\n      \"m\": 4,\n      \"k\": 2,\n      \"vertices\": 13,\n      \"pairs\": [\n        [\n          0,\n          1\n        ],\n        [\n          2,\n          3\n        ],\n        [\n          4,\n          5\n        ],\n        [\n          6,\n          7\n        ]\n      ],\n      \"clique_vertices\": [\n        8,\n        9,\n        10,\n        11,\n        12\n      ],\n      \"attachments\": [\n        [\n          0,\n          8\n        ],\n        [\n          2,\n          9\n        ],\n        [\n          4,\n          10\n        ],\n        [\n          6,\n          11\n        ]\n      ],\n      \"edges\": [\n        [\n          0,\n          1\n        ],\n        [\n          0,\n          8\n        ],\n        [\n          2,\n          3\n        ],\n        [\n          2,\n          9\n        ],\n        [\n          4,\n          5\n        ],\n        [\n          4,\n          10\n        ],\n        [\n          6,\n          7\n        ],\n        [\n          6,\n          11\n        ],\n        [\n          8,\n          9\n        ],\n        [\n          8,\n          10\n        ],\n        [\n          8,\n          11\n        ],\n        [\n          8,\n          12\n        ],\n        [\n          9,\n          10\n        ],\n        [\n          9,\n          11\n        ],\n        [\n          9,\n          12\n        ],\n        [\n          10,\n          11\n        ],\n        [\n          10,\n          12\n        ],\n        [\n          11,\n          12\n        ]\n      ],\n      \"prediction_of_retracted_K\": 0,\n      \"grundy_by_vertices\": 2,\n      \"grundy_by_edges\": 2,\n      \"first_move_value_set\": [\n        0,\n        1\n      ],\n      \"first_moves\": [\n        {\n          \"edge\": [\n            0,\n            1\n          ],\n          \"kind\": \"pair\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            0,\n            8\n          ],\n          \"kind\": \"attachment\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            2,\n            3\n          ],\n          \"kind\": \"pair\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            2,\n            9\n          ],\n          \"kind\": \"attachment\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            4,\n            5\n          ],\n          \"kind\": \"pair\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            4,\n            10\n          ],\n          \"kind\": \"attachment\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            6,\n            7\n          ],\n          \"kind\": \"pair\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            6,\n            11\n          ],\n          \"kind\": \"attachment\",\n          \"grundy\": 0\n        },\n        {\n          \"edge\": [\n            8,\n            9\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            8,\n            10\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            8,\n            11\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            8,\n            12\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            9,\n            10\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            9,\n            11\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            9,\n            12\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            10,\n            11\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            10,\n            12\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 1\n        },\n        {\n          \"edge\": [\n            11,\n            12\n          ],\n          \"kind\": \"clique\",\n          \"grundy\": 1\n        }\n      ]\n    }\n  ],\n  \"scope\": \"two explicit counterexamples; no minimality claim\"\n}\n"}}</script>
+<script>(()=>{'use strict';const data=JSON.parse(document.getElementById('embedded-downloads').textContent);document.querySelectorAll('[data-download]').forEach(b=>b.addEventListener('click',()=>{const item=data[b.dataset.download];const url=URL.createObjectURL(new Blob([item.text],{type:item.type}));const a=document.createElement('a');a.href=url;a.download=item.name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}));})();</script>
+</body></html>
