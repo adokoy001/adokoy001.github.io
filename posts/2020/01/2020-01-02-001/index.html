@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>年末年始 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="年末の水槽整理とnikki.plの改良について"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2020/01/2020-01-02-001/"><meta property="og:title" content="年末年始"><meta property="og:description" content="年末の水槽整理とnikki.plの改良について"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2020/01/2020-01-02-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>年末年始</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-01-02T02:11:56+09:00">2020-01-02T02:11:56+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-f648d6712cf8/">日常</a><a class="tag" href="/tags/entry-2b7bd33dc231/">アクアリウム</a><a class="tag" href="/tags/perl/">Perl</a><a class="tag" href="/tags/entry-bb1d385b5e0b/">ブログツール</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="年末年始">年末年始</h1>
+<p>年末年始の連休、いかがお過ごしでしょうか。</p>
+<p>私は先日購入した60cm規格水槽2本をさっそく稼働させ、余った小型水槽を整理したり汚れの溜まりまくったろ過装置のメンテナンスに大忙しです（あと、初詣やお年玉バラマキ等、お正月の通常イベントも）。</p>
+<p>ちょっと前までは淡水熱帯魚ばかりを飼っていたのですが、金魚、海水魚、海産無脊椎動物にも少しずつ手を延ばしはじめております。</p>
+<h2 id="水槽整理">水槽整理</h2>
+<ul>
+<li>17cm超のアルビノタイガーオスカーを35cm小型水槽から60cm規格水槽へ移動</li>
+<li>25cm超の金魚を45cm規格水槽（OF加工済み）から60cm規格水槽へ移動</li>
+<li>大人しい熱帯魚は60cm規格水槽2本と90cm規格水槽1本に集約完了</li>
+<li>余った35cm小型水槽は子赤（活餌）ストック水槽として稼働</li>
+<li>余った45cm規格水槽のこの先をどうするか悩み中</li>
+</ul>
+<p>水槽整理はこんな感じです。</p>
+<p>アストロノータス（オスカー類）は狂暴すぎるので単独飼育するのが基本ですが、セイルフィンプレコとだけは同居させています（まあプレコも最終的に50cm近くまで巨大化してしまうのですが）。</p>
+<h2 id="nikki-plの改良">nikki.plの改良</h2>
+<p>nikki.plは自分が使うために作ったツールではあるのですが、
+内部で使っているデータベース（Storableでリファレンスを保存しているだけ）を操作するコマンドをいくつか追加すれば「結構便利だから良かったら使ってね！」と他人にお勧めできるレベルにはなるかな～と思っています。</p>
+<p>まあその前にアーカイブページを年、月で階層分けするところからやっていきたいと思います。</p>
+<p>今のところnikki.plが提供している機能は以下のようなものです。</p>
+<ul>
+<li>簡易マークアップ記法（実装が簡易という意味）</li>
+<li>タグ付け、タグ関連ページ＆記事リンク自動生成</li>
+<li>アーカイブページ自動生成（近々、年と月で階層分けした表示に変更する予定）</li>
+<li>「前の記事」「次の記事」リンク自動生成</li>
+<li>「作成日時」「更新日時」「著者」自動挿入</li>
+<li>ページテンプレート</li>
+<li>What&#39;s new 的な最新投稿数件のタイトルとサマリとリンク自動生成</li>
+</ul>
+<p>という感じで、結構プリミティブです。が、html直書きよりは遥かにマシかなと思いますし、perl5.8以上であればcoreモジュール以外に依存していないという強みはあります。</p>
+<p>適当に作ったマークアップ記法が「見出し」「箇条書き」「コード表示」「ハイパーリンク」「画像貼り付け」のみなので、ちょっとずつ増やしていこうかな。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2019/12/2019-12-29-001/">← いい感じのアクアリウムグッズ</a><a rel="next" href="/posts/2020/01/2020-01-06-001/">連休が終わってしまった →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2024/01/2024-01-17-001/">アクアリウム再燃</a></li><li><a href="/posts/2020/10/2020-10-19-001/">実家のアクアリウムが壊滅</a></li><li><a href="/posts/2020/07/2020-07-09-001/">沖縄のコロナ</a></li><li><a href="/posts/2020/06/2020-06-05-001/">GEX ラクフィルを購入</a></li><li><a href="/posts/2020/05/2020-05-22-001/">自宅60cm水槽に生体追加</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

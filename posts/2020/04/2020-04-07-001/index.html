@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>nikki.pl あともう少し頑張ってみる · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="nikki.plのアップデート近況報告と今後の予定"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2020/04/2020-04-07-001/"><meta property="og:title" content="nikki.pl あともう少し頑張ってみる"><meta property="og:description" content="nikki.plのアップデート近況報告と今後の予定"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2020/04/2020-04-07-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>nikki.pl あともう少し頑張ってみる</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-04-07T08:14:59+09:00">2020-04-07T08:14:59+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/perl/">Perl</a><a class="tag" href="/tags/nikki-pl/">nikki.pl</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="nikki-pl-あともう少し頑張ってみる">nikki.pl あともう少し頑張ってみる</h1>
+<p>このブログを生成している静的サイトジェネレータですが、直近で以下の機能を追加しました。</p>
+<ul>
+<li>Twitter card, Open Graphの自動生成機能を強化</li>
+<li>DL,DT,DDタグの追加</li>
+<li>番号付きリストの追加</li>
+<li>ユーザー定義関数（Archiveやtagのリスト表示をカスタマイズできる）</li>
+</ul>
+<p>そろそろテーブルあたりも対応したいのですが、構文解析が複雑になりそうでちょっと厄介な感じ。</p>
+<h2 id="今後の予定">今後の予定</h2>
+<p>まずはユーザー定義関数を充実させて、その後にHTML直書き構文（コンパイルをエスケープする）を追加してゆく感じで。</p>
+<ul>
+<li>What&#39;s newの表示をカスタマイズする機能（ユーザー定義関数）</li>
+<li>特定タグを含む記事一覧の表示をカスタマイズする機能（ユーザー定義関数）</li>
+<li>HTML直書き構文の追加</li>
+<li>編集履歴を書き換える機能</li>
+<li>パラグラフタグの微妙な振る舞いを改善（バグっぽい挙動がある）</li>
+</ul>
+<p>現時点でも十分実用的だと思うので、よろしければ使ってみてください！（宣伝）</p>
+<p><a href="https://github.com/adokoy001/nikki">nikki.pl - Github.com</a></p>
+<p>ブログツールとして使い始めるために実行するコマンドは以下の通りです。</p>
+<pre><code>$ mkdir my_diary
+$ cd my_diary
+$ wget https://raw.githubusercontent.com/adokoy001/nikki/master/nikki.pl
+$ perl nikki.pl init
+$ perl nikki.pl new
+
+ ... お使いのエディタで記事のひな形を編集 ...
+
+$ perl nikki.pl gen</code></pre>
+<p><code>init</code> でブログの初期化処理、<code>new</code> で新しい記事のひな形を作成、 <code>gen</code> で静的サイトをpublic以下のディレクトリに展開します。</p>
+<p>あとはApacheやnginx等を使ってファイルを静的配信すれば完了です。</p>
+<p>ぜひ。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2020/04/2020-04-02-002/">← Post COVID-19の世界</a><a rel="next" href="/posts/2020/04/2020-04-09-001/">新型コロナウイルスに関する乱雑なまとめ →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2020/06/2020-06-08-002/">nikki.plの機能追加予定</a></li><li><a href="/posts/2020/04/2020-04-16-001/">nikki.plに新機能を追加しました。</a></li><li><a href="/posts/2020/09/2020-09-17-001/">perlでパスワードハッシュ</a></li><li><a href="/posts/2020/07/2020-07-03-001/">ひとまずnikki.plは完成</a></li><li><a href="/posts/2020/07/2020-07-02-001/">nikki.plがMarkdownに対応しました。</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

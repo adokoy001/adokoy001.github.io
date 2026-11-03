@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>システム設計のための数学 第一層: 仕様を書くための数学 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="ホーア論理と最弱事前条件、時相論理のsafety/liveness分離、Curry-Howard対応と型理論、分離論理のframe rule、代数的仕様と性質ベーステスト。仕様を形式言語に降ろすための語彙集。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-002/"><meta property="og:title" content="システム設計のための数学 第一層: 仕様を書くための数学"><meta property="og:description" content="ホーア論理と最弱事前条件、時相論理のsafety/liveness分離、Curry-Howard対応と型理論、分離論理のframe rule、代数的仕様と性質ベーステスト。仕様を形式言語に降ろすための語彙集。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-002/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>システム設計のための数学 第一層: 仕様を書くための数学</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-08-20T23:45:00+09:00">2026-08-20T23:45:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-872c1fa141b5/">数学</a><a class="tag" href="/tags/entry-088462f65b7e/">システム</a><a class="tag" href="/tags/entry-437a172d7b13/">開発</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="第一層-仕様を書くための数学">第一層: 仕様を書くための数学</h1>
+<p><a href="/posts/2026/08/2026-08-20-001/">連載序論はこちら</a>。この層は、仕様を自然言語から形式言語に降ろすための語彙。この層の選択が、後続のすべて（何が検証でき、何が自動化できるか）を決める。</p>
+<h2 id="1-1-ホーア論理と最弱事前条件-実務厚">1.1 ホーア論理と最弱事前条件 [実務厚]</h2>
+<p><strong>概念</strong>: プログラム片 C を事前条件 P・事後条件 Q で挟んだ三つ組 {P} C {Q}。「Pを満たす状態から C を実行して停止すれば Q を満たす」（部分正当性）。停止性まで込みなら全正当性。Dijkstraの最弱事前条件 wp(C, Q) は「停止まで込みでQを保証するために最低限必要な事前条件」を構文から機械的に計算する演算子で、検証条件生成の基礎（本来のwpは全正当性側であり、部分正当性側は通常wlpと呼び分ける）。</p>
+<p><strong>代表的成果</strong>: Hoare (1969)、Dijkstra『A Discipline of Programming』(1976)。ループには<strong>ループ不変条件</strong>が必要になる——これが第二層の帰納的不変条件の最小単位。</p>
+<p><strong>実務実績</strong>: Dafny（wp計算＋Z3で自動検証）、SPARK Ada（航空・防衛の認証案件で数十年の実績）、Why3、JML系。契約プログラミング（Eiffel、各言語のassert文化）はこの論理の軽量版。</p>
+<p><strong>刷新での適用</strong>: 移行バッチ・変換処理の一件単位の正当性。「この変換は残高総和を保存する」を事後条件として書き、機械検証する。</p>
+<h2 id="1-2-時相論理-ltl-ctl-実務厚-hw-実績有-sw">1.2 時相論理（LTL / CTL）[実務厚（HW）/ 実績有（SW）]</h2>
+<p><strong>概念</strong>: 「いつか」「常に」「〜まで」を演算子に持つ論理。線形時相論理LTLは一本の実行系列上の性質、計算木論理CTLは分岐する未来の上の性質を書く。実務上最も効く語彙は <strong>safety / liveness の分離</strong>（Alpern–Schneider 1985: あらゆる線形時相性質はsafety性質とliveness性質の共通部分として表せる）。safetyは「悪いことが起きない」（有限反例で反証可能）、livenessは「良いことがいつか起きる」（無限実行でしか反証できない）。この分解は検証手段の選択に直結する——有限のテストで決着できるのは実質safety側のみで、無期限のlivenessは期限を切ってsafety化しない限りテストでは反証しきれない。</p>
+<p><strong>代表的成果</strong>: Pnueli (1977)、Clarke–Emerson–Sifakisのモデル検査（いずれもチューリング賞）。公平性（fairness）——「スケジューラが特定プロセスを永遠に飢えさせない」という仮定なしにlivenessはまず証明できない。</p>
+<p><strong>実務実績</strong>: ハードウェア検証ではSVA/PSLとして完全に標準化。ソフトウェアではTLA+（LamportのTLAは時相論理の一種）がAmazon・Microsoft・MongoDB等で採用。</p>
+<p><strong>刷新での適用</strong>: 切替手順・縮退設計の仕様化。「切替中いかなる時点でも二重引落しは起きない」（safety）と「障害後、最終的に全店舗が新系に収束する」（liveness＋公平性）は種類の違う主張であり、検証手段も別になる。</p>
+<h2 id="1-3-型理論と-curry-howard-対応-実務厚-軽量版-実績有-重量版">1.3 型理論と Curry–Howard 対応 [実務厚（軽量版）/ 実績有（重量版）]</h2>
+<p><strong>概念</strong>: 「命題＝型、証明＝プログラム」。仕様を型として書けば、型検査が証明検査になる。依存型（値に依存する型:「長さnのリスト」）まで行くと任意の数学的仕様を型で表現できる。中間に篩型（refinement types:「0以上のint」のように既存型を述語で絞る）があり、SMTソルバで自動検査できる範囲に留めることで実用性を確保する。</p>
+<p><strong>代表的成果</strong>: Martin-Löf型理論、Coq/Lean/Agda。<strong>CompCert</strong>（Coqで検証されたCコンパイラ——Csmithによるファジングで、他のコンパイラが多数のバグを出す中、検証済み部分からバグが出なかったことで有名）。<strong>seL4</strong>（Isabelle/HOLで機能的正当性を証明したマイクロカーネル。C実装約8700行に対し証明約20万行・約20人年）。HACL<em>/EverCrypt（F</em>で検証された暗号ライブラリ、Firefoxに搭載）。</p>
+<p><strong>実務実績</strong>: 重量級（フル依存型）は「小さく死活的なコア」で実績。軽量級はRustの型システム（所有権・ライフタイム）として大規模普及——これは次項の分離論理の親戚が型に埋め込まれた例と見なせる。</p>
+<p><strong>刷新での適用</strong>: 金額・通貨・口座状態のような業務量を型で区別する（幽霊型・newtype戦術）だけでも、単位混同・状態遷移違反のクラス全体を消せる。費用対効果は軽量側が圧倒的に高い。</p>
+<h2 id="1-4-分離論理-実務厚">1.4 分離論理 [実務厚]</h2>
+<p><strong>概念</strong>: ヒープを扱うためのホーア論理の拡張。分離積 P ∗ Q（PとQが<strong>互いに素な</strong>ヒープ領域で成立）と <strong>frame rule</strong>（局所的な証明が、触っていない残りの世界を保ったまま大域に持ち上がる）が核。「局所推論の合成で大域の正しさを得る」という思想の最も成功した実装。並行版（CSL）はロックが守る資源の所有権移転を扱う。</p>
+<p><strong>代表的成果</strong>: Reynolds–O&#39;Hearn (2002)。研究最前線はIris（高階並行分離論理、Coq上）。RustBeltはRustの型システムの健全性をIrisで証明した。</p>
+<p><strong>実務実績</strong>: Metaの<strong>Infer</strong>が代表——分離論理ベースの静的解析を毎日のCIで回し、null参照・メモリリーク類を差分解析で検出。「証明」ではなく「バグ検出」に振ったことで産業スケールに乗った点が教訓的。</p>
+<p><strong>刷新での適用</strong>: 直接にはC/C++資産の解析。思想としては「frame rule的に、変更の影響範囲を証明可能な形で局所化する」ことがモジュール分割の設計原理になる。</p>
+<h2 id="1-5-代数的仕様と性質ベーステスト-実務厚-テスト側">1.5 代数的仕様と性質ベーステスト [実務厚（テスト側）]</h2>
+<p><strong>概念</strong>: データ型を操作と等式法則で仕様化する（例: pop(push(x, s)) = s）。始代数意味論により「法則を満たす最小のモデル」が仕様の標準的意味になる。等式推論はリファクタリングの正当性そのもの。</p>
+<p><strong>実務実績</strong>: 代数的仕様言語（CASL等）自体は普及しなかったが、<strong>性質ベーステスト（QuickCheck系）</strong>として実質的に生き残った——法則を書き、ランダム入力で反例を探す。法則の経験的検査であって証明ではないが、費用対効果が非常に高い。</p>
+<p><strong>刷新での適用</strong>: 逆生成した仕様の検収手段として最有力。「新旧システムは任意の取引列に対し同一の残高を返す」という差分性質を書き、生成した取引列で叩く——差分テストと性質ベーステストの合流点であり、現行システムをオラクルとして使う刷新戦略の数学的土台はここにある。</p>
+<hr>
+<p><strong>連載: システム設計と大規模刷新のための数学</strong></p>
+<ol>
+<li><a href="/posts/2026/08/2026-08-20-001/">序論 — 地図の全体像</a></li>
+<li>第一層: 仕様を書くための数学（この記事）</li>
+<li><a href="/posts/2026/08/2026-08-20-003/">第二層: 仕様と実装の関係の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-004/">第三層: 合成の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-005/">第四層: 不可能性と限界の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-006/">横断層: 検証を実行する手段の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-007/">総括: 実績濃淡マップと大規模刷新への適用</a></li>
+</ol>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/08/2026-08-20-001/">← システム設計と大規模刷新のための数学（序論）— 地図の全体像</a><a rel="next" href="/posts/2026/08/2026-08-20-003/">システム設計のための数学 第二層: 仕様と実装の関係 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/08/2026-08-20-007/">システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</a></li><li><a href="/posts/2026/08/2026-08-20-006/">システム設計のための数学 横断層: 検証を実行する手段</a></li><li><a href="/posts/2026/08/2026-08-20-005/">システム設計のための数学 第四層: 不可能性と限界</a></li><li><a href="/posts/2026/08/2026-08-20-004/">システム設計のための数学 第三層: 合成の数学</a></li><li><a href="/posts/2026/08/2026-08-20-003/">システム設計のための数学 第二層: 仕様と実装の関係</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

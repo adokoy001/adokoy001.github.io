@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>飲食店の待ち行列 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="飲食店の待ち行列を効率的にさばく問題の解き方について"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2019/11/2019-11-12-001/"><meta property="og:title" content="飲食店の待ち行列"><meta property="og:description" content="飲食店の待ち行列を効率的にさばく問題の解き方について"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2019/11/2019-11-12-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>飲食店の待ち行列</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2020-04-01T15:57:39+09:00">2020-04-01T15:57:39+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-28eea6fc9a61/">自動アサイン</a><a class="tag" href="/tags/entry-e1b6b18c2a94/">待ち行列</a><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a><a class="tag" href="/tags/perl/">Perl</a><a class="tag" href="/tags/automatic-assignment/">automatic-assignment</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="飲食店の待ち行列">飲食店の待ち行列</h1>
+<p>前職のちょっとした共同研究プロジェクトでデータ解析とシミュレーションをしていた時に、飲食店の待ち行列を効率的に処理する方法を開発していた。</p>
+<p>企業秘密にならない範囲かつありふれたやり方といえる部分だけリファレンスとしてここに提示しておく。</p>
+<h2 id="問題設定">問題設定</h2>
+<pre><code>  (1)  それぞれのテーブル（席）にはIDが振られており、何名まで座れるかが決められている。
+  (2)  利用客はグループの一塊として扱い、同じテーブルを利用する。
+  (3)  テーブルが空いたら、極力先着順で利用客を案内する。
+  (4)  全テーブルの最大キャパシティを超える人数のグループは、グループを分割する。</code></pre>
+<p>上記のようなシンプルなケースを想定する。
+現実の問題では、テーブルの空間的な配置も考慮して1テーブルのキャパシティをオーバーしたグループにはテーブルを連結して案内するなどの対応がとられるが、ここでは取り扱わない。</p>
+<p>某回転寿司のペ〇パー君のチェックイン-&gt;ご案内のフローを想像すれば良いだろう。</p>
+<h2 id="自動アサインの流れ">自動アサインの流れ</h2>
+<p>単純に、以下のような手法を採ればよい。</p>
+<pre><code>  (1)  テーブル毎に最大利用可能人数と最小利用可能人数を設定して識別子を割り当てる。
+  (2)  利用客の待ち行列は、到着（チェックイン）順を表すindexと利用人数、及び識別子を割り当てる。
+  (3)  テーブルが空き状態になってから経過した時間が大きい順に、空きテーブルを選択する
+  (4)  選択されたテーブルの利用可能人数の範囲に収まる利用客グループを、indexが小さい順にスキャンする
+  (5)  利用可能人数の条件に収まる利用客グループがあれば、割り当てる。なければその空きテーブルをスキップする。
+  (6)  次に空き状態になってから経過時間の大きなテーブルを選択し、(4)に戻る。</code></pre>
+<p>上記処理を全テーブルまで適用した後、「割り当てられた利用客グループとテーブルの組」、「スキップされた空きテーブル」、「割り当てられなかった利用客グループ」を戻り値として返す。</p>
+<p>「最小利用可能人数に引っ掛かって割り当てられなかった少人数の利用客グループ」については、戻り値に含まれる「スキップされた空きテーブル」に余裕があれば最小利用可能人数の条件を緩和もしくはゼロにして再度処理する。</p>
+<p>また、待ち行列を絶対的な先着順にせずに、利用人数の多い方から優先度を上げて割り当てるという手法もあり、
+順番（または待ち時間）と利用人数からスコアを算出して割り当てる順番を決定するという手法も有効である。
+この場合、実データを用いて充填率の高くなる最適なパラメタを見つける、
+もしくは、複数のパラメタセットで並行に実行して充填率の良いものを解として出力するという方法がよりプラクティカルであろう。</p>
+<p>要するに、席のジオメトリを不問とするならばこの手の問題の制約条件はかなり簡素化できるので、
+店舗内のテーブル全ての状態をプログラムが把握する必要は無く、
+ただ単に「席が空いたタイミングで、空席と待ち行列のデータだけを渡す」ことで概ねそれらしい解が得られるということ。ソルバ自体は状態を持つ必要は（基本的に）無い。</p>
+<h2 id="具体的なコード">具体的なコード</h2>
+<p>perlのコードをgithubに公開しておいた。</p>
+<p><a href="https://github.com/adokoy001/auto-assignment-solver/blob/master/solver.pl">https://github.com/adokoy001/auto-assignment-solver/blob/master/solver.pl</a></p>
+<p>いわゆるペライチPSGIアプリとして作成してあるので、Plackをインストールして以下のコマンドでHTTPのサーバーとして実行できる。</p>
+<pre><code>    $ plackup solver.pl</code></pre>
+<p>Starmanをインストールしているのであればlistenポートを8080として、以下のようにしてプロダクションモードで実行できる。</p>
+<pre><code>    $ starman --pid=solver.pid --daemonize --port 8080 solver.pl</code></pre>
+<p>HTTPサーバーのAPIとして動作するので、手持ちの案件でこのような機能要件がポッと出てきたらそのまま使ってみるのも良いかもしれない。</p>
+<h2 id="お試しサイト">お試しサイト</h2>
+<p>また、以下のサイトでデプロイしているので、試してみるとよい。</p>
+<p><a href="https://util.yokoda.okinawa">https://util.yokoda.okinawa</a></p>
+<p>textareaを拡大して以下のような形式でJSONを作成し、submitすれば待ち行列の自動アサイン結果がJSON形式で返ってくる。</p>
+<pre><code>    {
+      &quot;available_table&quot; : [
+        {&quot;table_id&quot; : 201, &quot;idle_time&quot; : 300, &quot;min_cap&quot; : 2, &quot;max_cap&quot; : 4, &quot;type&quot; : &quot;t&quot;},
+        {&quot;table_id&quot; : 202, &quot;idle_time&quot; : 200, &quot;min_cap&quot; : 4, &quot;max_cap&quot; : 6, &quot;type&quot; : &quot;l&quot;},
+        {&quot;table_id&quot; : 203, &quot;idle_time&quot; : 500, &quot;min_cap&quot; : 4, &quot;max_cap&quot; : 6, &quot;type&quot; : &quot;l&quot;},
+        {&quot;table_id&quot; : 204, &quot;idle_time&quot; : 100, &quot;min_cap&quot; : 1, &quot;max_cap&quot; : 1, &quot;type&quot; : &quot;c&quot; },
+        {&quot;table_id&quot; : 205, &quot;idle_time&quot; : 250, &quot;min_cap&quot; : 1, &quot;max_cap&quot; : 1, &quot;type&quot; : &quot;c&quot; }
+      ],
+      &quot;queue&quot; : [
+        {&quot;guest_id&quot; : 301, &quot;index&quot; : 1, &quot;use_num&quot; : 5, &quot;acceptable&quot; : { &quot;c&quot; : 0, &quot;t&quot; : 1, &quot;l&quot; : 1 }},
+        {&quot;guest_id&quot; : 302, &quot;index&quot; : 2, &quot;use_num&quot; : 2, &quot;acceptable&quot; : { &quot;c&quot; : 0, &quot;t&quot; : 1, &quot;l&quot; : 1 }},
+        {&quot;guest_id&quot; : 303, &quot;index&quot; : 3, &quot;use_num&quot; : 1, &quot;acceptable&quot; : { &quot;c&quot; : 1, &quot;t&quot; : 1, &quot;l&quot; : 1 }},
+        {&quot;guest_id&quot; : 304, &quot;index&quot; : 4, &quot;use_num&quot; : 2, &quot;acceptable&quot; : { &quot;c&quot; : 0, &quot;t&quot; : 1, &quot;l&quot; : 1 }},
+        {&quot;guest_id&quot; : 305, &quot;index&quot; : 5, &quot;use_num&quot; : 4, &quot;acceptable&quot; : { &quot;c&quot; : 0, &quot;t&quot; : 1, &quot;l&quot; : 1 }}
+      ]
+    }
+</code></pre>
+<p>available_tableが空きテーブル、queueが利用客の待ち行列。</p>
+<p>typeやacceptableについては某回転寿司チェーン等でよくあるカウンター席やテーブル席などのタイプ指定を表しており、
+利用客が「カウンター席・テーブル席のどちらでも」を選んだ時は<code>&quot;acceptable&quot; : { &quot;c&quot; : 1, &quot;t&quot; : 1}</code>などとして表現できるようにしている。</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2019/11/2019-11-01-001/">← Chatbotのプログラム</a><a rel="next" href="/posts/2019/11/2019-11-14-001/">InnoDBはHashインデックスを張ることができない →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2020/09/2020-09-17-001/">perlでパスワードハッシュ</a></li><li><a href="/posts/2020/06/2020-06-08-002/">nikki.plの機能追加予定</a></li><li><a href="/posts/2020/06/2020-06-02-001/">PerlとPHPの違い</a></li><li><a href="/posts/2020/04/2020-04-16-001/">nikki.plに新機能を追加しました。</a></li><li><a href="/posts/2019/12/2019-12-16-001/">Mojo::UserAgentを使ってアクティブチェック（外部監視）</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>
