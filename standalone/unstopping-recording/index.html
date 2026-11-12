@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>止まらない録画</title>
+<meta name="description" content="暗い病棟の廊下を、ビデオカメラを手に歩き続ける。">
+<style>
+/* 画面いっぱいの映像が1枚。操作は右下の小さなボタン3つだけ。昔の家庭用ビデオカメラの見た目に固定（暗い一色）。 */
+:root{
+  --bg:#000; --osd:#f2f2ea; --ui:#d8d8cc; --ui-bg:rgba(8,10,8,.5); --ui-line:rgba(216,216,204,.28); --focus:#ffe680; --rec:#e8281c;
+  --font:"Hiragino Sans","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;overscroll-behavior:none}
+body{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--osd);font-family:var(--font);overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;background:var(--bg);touch-action:none;cursor:grab}
+#c:active{cursor:grabbing}
+#ui{position:fixed;display:flex;gap:10px;transition:opacity .6s;
+  right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+#ui.idle{opacity:.16}
+#ui button{width:40px;height:40px;padding:0;display:grid;place-items:center;border-radius:50%;cursor:pointer;
+  background:var(--ui-bg);color:var(--ui);border:1px solid var(--ui-line)}
+#ui button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+#ui button[aria-pressed="true"]{color:var(--focus);border-color:var(--focus)}
+#ui svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+[hidden]{display:none!important}
+#msg{position:fixed;left:16px;right:16px;margin:0 auto;width:fit-content;max-width:calc(100% - 32px);bottom:calc(66px + env(safe-area-inset-bottom,0px));
+  padding:7px 12px;border-radius:6px;background:var(--ui-bg);border:1px solid var(--ui-line);color:var(--ui);font-size:13px;line-height:1.5;text-align:center;pointer-events:none}
+#nogl{position:fixed;inset:0;display:grid;place-items:center;text-align:center;line-height:1.8;font-size:15px;
+  padding-inline:max(16px,env(safe-area-inset-left,0px))}
+</style>
+</head>
+<body>
+
+<canvas id="c" aria-label="暗い廊下を歩き続けるビデオカメラの映像。ドラッグで向きを変えられます"></canvas>
+<p id="nogl" hidden>この端末では WebGL が使えないため、映像を表示できません。</p>
+<p id="msg" role="status" hidden></p>
+<div id="ui">
+  <button id="bg" type="button" aria-pressed="false" aria-label="端末の向きでカメラを向ける" title="ジャイロ" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="5" width="7" height="14" rx="1.6"/><path d="M4.5 9.5a8 8 0 0 0 0 5M19.5 9.5a8 8 0 0 1 0 5M3 8l1.5 1.5L6.2 8.2M21 16l-1.5-1.5-1.7 1.3"/></svg>
+  </button>
+  <button id="bs" type="button" aria-pressed="false" aria-label="音" title="音">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5z"/><path id="bs1" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.4 7.4 0 0 1 0 10.4"/><path id="bs0" d="M16 9.5l5 5m0-5l-5 5"/></svg>
+  </button>
+  <button id="bf" type="button" aria-pressed="false" aria-label="全画面" title="全画面">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>
+  </button>
+  <button id="bl" type="button" aria-pressed="false" aria-label="軽量モード" title="軽量モード">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19C5 10 10 5 19 5c0 9-5 14-14 14zM5 19l8-8"/></svg>
+  </button>
+</div>
+
+<script>
+/*! sasayaki.js v2 — 囁き声の合成エンジン（依存なし・外部通信なし）
+ *
+ * 雑音を、時間で動く母音の共鳴に通して囁き声を作る。音声ファイルは使わない。
+ * 単一HTMLの作品には、このファイルの中身を <script> にそのまま貼る。
+ *
+ *   const sas = Sasayaki.create(ac, { out: master, voice: 'shojo' });   // ac は AudioContext
+ *   sas.add(Sasayaki.PHRASES);                            // 意味のない10句を少しずつ焼く
+ *   sas.say();                                            // どれかを、どれかの鳴り方で
+ *   sas.say('near', { text: 'ほさな', voice: 'rojin' });  // 句・鳴り方・声を指定
+ *   sas.auto(15, 34);                                     // 15〜34秒おきに勝手に囁く
+ *
+ * 句の書き方：ひらがな・カタカナ、またはローマ字の音節を空白で区切る（'ho sa na'）。
+ *   「、」「。」と '_' は間、「っ」は短い詰まり、「ー」は母音を伸ばす、「ん」は鼻音。
+ *   囁きには声帯の振動がないので、濁音は清音と同じ音になる（が→か、ざ→さ、だ→た、ば→ぱ）。
+ * 鳴り方：'far' 遠くから長いこだまで ／ 'canon' 別の声が遅れて重なる ／ 'rev' 逆再生 ／ 'near' 耳元で乾いたまま
+ * 声：Sasayaki.VOICES の名前（otoko, onna, shonen, shojo, osanago, rojin, roba, ookii）か、
+ *   { scale, speed, breath, bright, tremor } を直接渡す。
+ * 軽量モード：create と render に lite: true。合成を 22.05kHz・共鳴3本にし、畳み込みの残響を短い遅延の輪に替える。
+ */
+(function (root) {
+'use strict';
+const SR = 32000, SR_LITE = 22050;
+// 母音の共鳴 F1,F2,F3（Hz）。大人の男性の囁きを基準にした値。N は「ん」
+const VOW = { a:[850,1400,2800], i:[330,2500,3250], u:[390,1500,2650], e:[560,2050,2850], o:[530,960,2750], N:[300,1300,2500] };
+// 子音の雑音：[中心周波数, Q, 長さ(秒), 強さ]
+const FRIC = { s:[6400,1.4,.10,.34], sh:[3300,2,.11,.4], ch:[3300,2,.07,.45], ts:[5600,1.6,.06,.4], f:[4800,.7,.08,.16],
+               k:[2000,3.5,.028,.7], t:[4700,1.6,.02,.55], p:[900,1.5,.016,.5] };
+const STOP = { k:1, t:1, p:1, ch:1, ts:1 };
+const ALIAS = { g:'k', z:'s', d:'t', b:'p', j:'ch', c:'k', l:'r', v:'f' };
+/* 声。囁きには声の高さがないので、年齢と性別は主に共鳴の位置（声道の長さ）で決まる。
+   scale  共鳴全体の倍率。声道が短いほど大きい   speed  話す速さ
+   breath 息のゆらぎ（大きいほど荒れる）          bright 高い共鳴の強さ   tremor 震え（約5.5Hz） */
+const VOICES = {
+  otoko:   { label:'男',       scale:1.00, speed:.95, breath:1,   bright:.85, tremor:0 },
+  onna:    { label:'女',       scale:1.16, speed:1,   breath:1,   bright:1.1, tremor:0 },
+  shonen:  { label:'男の子',   scale:1.29, speed:1.05,breath:1.1, bright:1,   tremor:0 },
+  shojo:   { label:'女の子',   scale:1.35, speed:1.05,breath:1,   bright:1.2, tremor:0 },
+  osanago: { label:'幼い子',   scale:1.46, speed:.88, breath:1.3, bright:1.15,tremor:0 },
+  rojin:   { label:'老人',     scale:.97,  speed:.78, breath:2.4, bright:.8,  tremor:.3 },
+  roba:    { label:'老女',     scale:1.12, speed:.8,  breath:2.2, bright:.95, tremor:.28 },
+  ookii:   { label:'大きなもの', scale:.8, speed:.72, breath:1.6, bright:.7,  tremor:.08 }
+};
+const PHRASES = ['ho sa na','ki he to ne','su mi ha e','to ko shi no _ ha ne','ha ne i so',
+                 'ke su ra _ ke su ra','shi na ho e to','mo i ka su ne','he e _ so no ha','chi ra to mo e'];
+const KANA = {};
+('あa いi うu えe おo かka きki くku けke こko さsa しshi すsu せse そso たta ちchi つtsu てte とto なna にni ぬnu ねne のno ' +
+ 'はha ひhi ふfu へhe ほho まma みmi むmu めme もmo やya ゆyu よyo らra りri るru れre ろro わwa をo んN ' +
+ 'がka ぎki ぐku げke ごko ざsa じchi ずsu ぜse ぞso だta ぢchi づtsu でte どto ばpa びpi ぶpu べpe ぼpo ぱpa ぴpi ぷpu ぺpe ぽpo ' +
+ 'ぁa ぃi ぅu ぇe ぉo').split(' ').forEach(p => { KANA[p[0]] = p.slice(1); });
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const PKEYS = ['scale', 'speed', 'breath', 'bright', 'tremor'];
+// 声の指定をまとめる。優先順は 個別の数値 ＞ voice ＞ 既定（女）
+function voiceOf(opt, base) {
+  opt = opt || {};
+  const pick = v => typeof v === 'string' ? VOICES[v] : v;
+  const o = Object.assign({ scale: 1.16, speed: 1, breath: 1, bright: 1, tremor: 0 }, pick(base), pick(opt.voice));
+  for (const k of PKEYS) if (opt[k] != null) o[k] = +opt[k];
+  delete o.label;
+  return o;
+}
+
+// 句を音節の列にする
+function parse(text) {
+  let s = String(text).replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+  if (/[ぁ-ゖー]/.test(s)) {
+    const out = [];
+    for (const ch of s) {
+      if (KANA[ch]) out.push(KANA[ch]);
+      else if ('ゃゅょ'.includes(ch) && out.length) {
+        const c = out[out.length - 1].slice(0, -1), y = { 'ゃ':'a', 'ゅ':'u', 'ょ':'o' }[ch];
+        out[out.length - 1] = (c === 'sh' || c === 'ch' ? c : c + 'y') + y;
+      }
+      else if (ch === 'っ') out.push('.');
+      else if (ch === 'ー' && out.length) { const p = out[out.length - 1]; if (/[aiueo]$/.test(p)) out.push(p.slice(-1)); }
+      else if (/[\s、。,.!?！？…_]/.test(ch)) out.push('_');
+    }
+    s = out.join(' ');
+  }
+  return s.trim().split(/\s+/).map(tok => {
+    if (tok === '_') return { p: 1 };
+    if (tok === '.') return { p: .25 };
+    if (tok === 'N' || tok === 'n') return { c: '', g: '', v: 'N' };
+    tok = tok.toLowerCase();
+    let v = tok.slice(-1), c = tok.slice(0, -1), g = '';
+    if (!VOW[v]) return null;
+    if (c.length > 1 && c.endsWith('y')) { g = 'y'; c = c.slice(0, -1); }
+    else if (c === 'y' || c === 'w') { g = c; c = ''; }
+    c = ALIAS[c] || c;
+    return { c, g, v };
+  }).filter(Boolean);
+}
+
+/* 句を合成して Float32Array（モノラル・ピーク0.9）で返す。AudioContext は要らない。
+   返り値の sampleRate に標本化周波数が入る（通常 32000、軽量 22050）。
+   opt.voice  声の名前か { scale, speed, breath, bright, tremor }。個別に opt.scale なども渡せる
+   opt.lite   軽量モード
+   opt.rand   乱数の関数（既定 Math.random）。種つきの乱数を渡すと毎回同じ波形になる */
+function render(text, opt) {
+  opt = opt || {};
+  const V = voiceOf(opt), lite = !!opt.lite, sr = lite ? SR_LITE : SR, step = lite ? 16 : 8;
+  const scale = V.scale, sp = 1 / V.speed, br = V.bright;
+  const R = opt.rand || Math.random, rnd = (a, b) => a + R() * (b - a);
+  const sy = parse(text);
+  if (!sy.some(x => x.v)) { const z = new Float32Array(1); z.sampleRate = sr; return z; }
+  // 制御点：[時刻, F1, F2, F3, 母音の強さ, 子音の強さ, 子音の中心, 子音のQ]
+  const K = []; let tt = 0, cur = VOW.a, fc = 4000, fq = 1;
+  const k = (dt, f, av, af) => { tt += dt * sp; cur = f; K.push([tt, f[0], f[1], f[2], av, af, fc, fq]); };
+  K.push([0, cur[0], cur[1], cur[2], 0, 0, fc, fq]); k(.03, cur, 0, 0);
+  sy.forEach((s, n) => {
+    if (s.p) { k(.07, cur, 0, 0); k(s.p * rnd(.2, .38), cur, 0, 0); return; }
+    const v = VOW[s.v], c = s.c, last = n === sy.length - 1 || !!sy[n + 1].p;
+    const st = rnd(.7, 1) * (s.v === 'N' ? .3 : 1);
+    const mix = v.map((x, j) => x * .6 + [420, 1800, 2700][j] * .4), F = FRIC[c];
+    if (F) {
+      fc = F[0]; fq = F[1];
+      if (STOP[c]) { k(.03, mix, 0, 0); k(.045, mix, 0, 0); k(.004, mix, 0, F[3]); k(F[2], mix, .1, F[3] * .8); k(.02, v, st * .6, 0); }
+      else { k(.03, mix, .04, 0); k(.02, mix, 0, F[3]); k(F[2], mix, 0, F[3]); k(.03, v, st * .5, 0); }
+    }
+    else if (c === 'h') { k(.03, v, .12, 0); k(.07, v, .4 * st, 0); }
+    else if (c === 'n' || c === 'm') { const nf = [300, c === 'n' ? 1500 : 1050, 2500]; k(.03, nf, .16, 0); k(.055, nf, .2, 0); k(.035, v, st * .7, 0); }
+    else if (c === 'r') { k(.025, [v[0] * .8, v[1], 1900], .22, 0); k(.03, v, st * .7, 0); }
+    else if (!s.g) k(.04, v, st * .6, 0);
+    if (s.g) { const gv = s.g === 'y' ? VOW.i : VOW.u; k(.03, gv, st * .45, 0); k(.04, gv, st * .6, 0); k(.06, v, st * .9, 0); }
+    k(.03, v, st, 0);
+    k(rnd(.07, .12) * (last ? 1.7 : 1), v, st * .85, 0);
+    k(last ? .17 : .04, v, last ? 0 : .3 * st, 0);
+  });
+  k(.06, cur, 0, 0);
+  const N = Math.ceil(tt * sr), o = new Float32Array(N);
+  // 状態変数フィルタ（帯域通過、山の高さ1）
+  const flt = () => ({ a: 0, b: 0, k: 1, a1: 0, a2: 0, a3: 0 });
+  const set = (F, f, q) => { const g = Math.tan(Math.PI * Math.min(f, sr * .45) / sr); F.k = 1 / q; F.a1 = 1 / (1 + g * (g + F.k)); F.a2 = g * F.a1; F.a3 = g * F.a2; };
+  const run = (F, x) => { const v3 = x - F.b, v1 = F.a1 * F.a + F.a2 * v3, v2 = F.b + F.a2 * F.a + F.a3 * v3; F.a = 2 * v1 - F.a; F.b = 2 * v2 - F.b; return v1 * F.k; };
+  const f1 = flt(), f2 = flt(), f3 = flt(), f4 = flt(), ff = flt();
+  const sm = 1 - Math.exp(-step / sr / .004), flc = .006 * SR / sr, g1 = .75 / Math.sqrt(br), g3 = .6 * br, g4 = .25 * br, gh = .03 * br;
+  const trem = V.tremor, tph = R() * 6.28, mask = step - 1;
+  let ki = 0, c1 = K[0][1], c2 = K[0][2], c3 = K[0][3], av = 0, af = 0, fl = 0, prev = 0, pk = 1e-6;
+  if (!lite) set(f4, 3900 * scale, 8);
+  for (let i = 0; i < N; i++) {
+    if ((i & mask) === 0) {
+      const x = i / sr; while (ki < K.length - 2 && K[ki + 1][0] <= x) ki++;
+      const A = K[ki], B = K[ki + 1], u = clamp((x - A[0]) / (B[0] - A[0] || 1), 0, 1), L = j => A[j] + (B[j] - A[j]) * u;
+      c1 += (L(1) - c1) * sm; c2 += (L(2) - c2) * sm; c3 += (L(3) - c3) * sm; af = L(5);
+      av = L(4) * (trem ? 1 + trem * Math.sin(x * 34.6 + tph + 2 * Math.sin(x * 3.1)) : 1);
+      set(f1, c1 * scale, 4.5); set(f2, c2 * scale, 8); set(f3, c3 * scale, 9); set(ff, L(6) * scale, L(7));
+    }
+    const w = R() * 2 - 1;
+    fl += ((R() * 2 - 1) - fl) * flc;
+    const x = w * (1 + fl * 5 * V.breath);
+    let s = run(f1, x) * g1 + run(f2, x) + run(f3, x) * g3;
+    if (!lite) { s += run(f4, x) * g4 + (w - prev) * gh; prev = w; }
+    s = av * s + af * run(ff, w);
+    o[i] = s; if (Math.abs(s) > pk) pk = Math.abs(s);
+  }
+  for (let i = 0; i < N; i++) o[i] *= .9 / pk;
+  o.sampleRate = sr;
+  return o;
+}
+
+// 部屋の残響の型（だんだん暗くなる雑音）。ConvolverNode の buffer に入れる
+function roomIR(ac, seconds) {
+  const sr = ac.sampleRate, sec = seconds || 3.6, L = (sr * sec) | 0, ir = ac.createBuffer(2, L, sr);
+  for (let c = 0; c < 2; c++) {
+    const d = ir.getChannelData(c); let lp = 0;
+    for (let i = 0; i < L; i++) {
+      const x = i / sr, a = .5 - .42 * Math.min(1, x / (sec * .67)); lp += ((Math.random() * 2 - 1) - lp) * a;
+      d[i] = x < .018 ? 0 : lp * Math.exp(-x * 6.9 / sec) * (1 + .6 * Math.exp(-x * 14));
+    }
+  }
+  return ir;
+}
+
+/* 鳴らす側。こだまと残響を自前で持つ。
+   opt.out    出力先の AudioNode（既定 ac.destination）
+   opt.room   作品が自分の残響を持っているなら、その入口の AudioNode。渡すと自前の残響は作らない
+   opt.level  全体の音量（既定 1）
+   opt.voice  句ごとに指定がないときの声（既定は女）。opt.scale なども同じ意味で渡せる
+   opt.lite   軽量モード。合成が軽くなり、畳み込みの残響の代わりに短い遅延3本の輪を使う */
+function create(ac, opt) {
+  opt = opt || {};
+  const lite = !!opt.lite, base = voiceOf(opt);
+  const gn = v => { const x = ac.createGain(); x.gain.value = v; return x; };
+  const biq = (t, f, q) => { const b = ac.createBiquadFilter(); b.type = t; b.frequency.value = f; b.Q.value = q; return b; };
+  const pan = v => { if (!ac.createStereoPanner) return gn(1); const p = ac.createStereoPanner(); p.pan.value = v; return p; };
+  const bus = gn(opt.level == null ? 1 : opt.level); bus.connect(opt.out || ac.destination);
+  let room = opt.room;
+  if (!room && !lite) { room = gn(1); const cv = ac.createConvolver(); cv.buffer = roomIR(ac, 3.6); const rw = gn(.5); room.connect(cv); cv.connect(rw); rw.connect(bus); }
+  if (!room && lite) {
+    room = gn(1); const lp = biq('lowpass', 2400, .5), fb = gn(.27), rw = gn(.45); lp.connect(fb); rw.connect(bus);
+    [[.061, -.5], [.089, .5], [.127, 0]].forEach(([t, p]) => { const d = ac.createDelay(.5); d.delayTime.value = t; const pp = pan(p);
+      room.connect(d); fb.connect(d); d.connect(lp); d.connect(pp); pp.connect(rw); });
+  }
+  // 長いこだま：0.73秒と1.13秒が左右を行き来し、戻るたびに暗くなる
+  const echoIn = gn(1), d1 = ac.createDelay(2), d2 = ac.createDelay(2);
+  d1.delayTime.value = .73; d2.delayTime.value = 1.13;
+  const l1 = biq('lowpass', 2300, .5), l2 = biq('lowpass', 2300, .5), h1 = biq('highpass', 350, .5), fb1 = gn(.44), fb2 = gn(.44);
+  echoIn.connect(d1); d1.connect(l1); l1.connect(h1); h1.connect(fb1); fb1.connect(d2); d2.connect(l2); l2.connect(fb2); fb2.connect(d1);
+  const p1 = pan(-.8), p2 = pan(.8), eo = gn(.7), er = gn(.35);
+  l1.connect(p1); l2.connect(p2); p1.connect(eo); p2.connect(eo); eo.connect(bus); eo.connect(er); er.connect(room);
+
+  const lib = [], cache = {}, queue = [];
+  let baking = false, timer = 0, nextAt = 0, dead = false;
+  const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const mk = d => { const b = ac.createBuffer(1, d.length, d.sampleRate); b.getChannelData(0).set(d); return b; };
+  function bake(text, o) {
+    const V = voiceOf(o, base), key = text + '|' + PKEYS.map(k => V[k]).join(',');
+    if (!cache[key]) {
+      const t0 = now(), d = render(text, Object.assign({ lite }, V)), f = mk(d);
+      let r = null;                                   // 逆再生の分は、最初に使うときに作る
+      cache[key] = { text, f, get r() { return r || (r = mk(Object.assign(d.slice().reverse(), { sampleRate: d.sampleRate }))); } };
+      api.lastBake = { ms: now() - t0, seconds: d.length / d.sampleRate };
+    }
+    return cache[key];
+  }
+  function pump() { const j = queue.shift(); if (!j || dead) { baking = false; return; } lib.push(bake(j[0], j[1])); setTimeout(pump, 30); }
+  function play(buf, T, o) {
+    const s = ac.createBufferSource(); s.buffer = buf; s.playbackRate.value = o.rate || 1;
+    const f = biq('lowpass', o.lp || 9000, .5), e = gn(o.vol); s.connect(f); f.connect(e);
+    const tail = pan(o.pan || 0); e.connect(tail);
+    const send = (v, dst) => { if (v > 0) { const x = gn(v); tail.connect(x); x.connect(dst); } };
+    send(o.dry, bus); send(o.echo, echoIn); send(o.rev, room);
+    s.start(T); s.onended = () => { try { tail.disconnect(); e.disconnect(); } catch (_) {} };
+  }
+  const r2 = (a, b) => a + Math.random() * (b - a);
+  const api = {
+    lite, bus, room, lastBake: null,
+    get count() { return lib.length; },
+    /* 句を登録する。30msに1句ずつ焼くので演奏を止めない。
+       文字列、[文字列, 声の名前か scale の数値]、それらの配列。o には声の指定を渡せる */
+    add(p, o) {
+      const pair = Array.isArray(p) && p.length === 2 && typeof p[0] === 'string' && (typeof p[1] === 'number' || !!VOICES[p[1]]);
+      if (Array.isArray(p) && !pair) { p.forEach(x => api.add(x, o)); return api; }
+      const oo = Object.assign({}, o, pair ? (typeof p[1] === 'number' ? { scale: p[1] } : { voice: p[1] }) : null);
+      queue.push([pair ? p[0] : p, oo]); if (!baking) { baking = true; setTimeout(pump, 30); }
+      return api;
+    },
+    /* 囁く。kind を省くと 遠く5割・重なる2割・逆再生16%・耳元14%。
+       o.text 句を指定（未登録ならその場で焼いて覚える）  o.voice 声（scale などの個別指定も可）
+       o.vol 音量の倍率（既定1）  o.pan 左右（-1〜1。省くとどちらか）  o.delay 何秒後に鳴らすか
+       まだ1句も焼けていなければ false を返す */
+    say(kind, o) {
+      o = o || {};
+      const pick = () => lib[(Math.random() * lib.length) | 0];
+      const w = o.text ? bake(o.text, o) : pick(); if (!w || dead) return false;
+      const T = ac.currentTime + .05 + (o.delay || 0), v = o.vol == null ? 1 : o.vol, r = Math.random();
+      const side = o.pan == null ? (Math.random() < .5 ? -1 : 1) : Math.sign(o.pan) || 1, wd = o.pan == null ? 1 : Math.abs(o.pan);
+      kind = kind || (r < .5 ? 'far' : r < .7 ? 'canon' : r < .86 ? 'rev' : 'near');
+      if (kind === 'near') play(w.f, T, { vol: .14 * v, pan: side * (o.pan == null ? .92 : wd), dry: 1, echo: .25, rev: .2, rate: r2(.97, 1.03) });
+      else if (kind === 'rev') play(w.r, T, { vol: .5 * v, pan: side * .4 * wd, dry: .3, echo: .8, rev: 1, lp: 3600, rate: .94 });
+      else {
+        play(w.f, T, { vol: .5 * v, pan: side * .5 * wd, dry: .35, echo: 1, rev: .8, lp: 3400, rate: r2(.93, 1.03) });
+        if (kind === 'canon') play((lib.length ? pick() : w).f, T + r2(.25, .5), { vol: .42 * v, pan: -side * .7 * wd, dry: .3, echo: .9, rev: .9, lp: 3000, rate: r2(.88, .96) });
+      }
+      return true;
+    },
+    // min〜max 秒おきに勝手に囁く。first は最初の一回までの秒数
+    auto(min, max, first) {
+      api.stop(); nextAt = ac.currentTime + (first == null ? r2(min, max) : first);
+      timer = setInterval(() => { if (ac.state === 'running' && ac.currentTime >= nextAt) { api.say(); nextAt = ac.currentTime + r2(min, max); } }, 250);
+      return api;
+    },
+    stop() { clearInterval(timer); timer = 0; return api; },
+    // 片づける。通常と軽量を切り替えるときは、これを呼んでから create し直す
+    dispose() { dead = true; api.stop(); queue.length = 0; try { bus.disconnect(); } catch (_) {} }
+  };
+  return api;
+}
+
+const Sasayaki = { create, render, parse, roomIR, voiceOf, VOICES, PHRASES, SR, SR_LITE, VOW, FRIC };
+if (typeof module !== 'undefined' && module.exports) module.exports = Sasayaki; else root.Sasayaki = Sasayaki;
+})(typeof self !== 'undefined' ? self : this);
+</script>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const cv=$('c');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TOUCH=matchMedia('(pointer: coarse)').matches;
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let lite=(()=>{const v=store.get('tomaranai-lite');return v==null?(TOUCH||(navigator.hardwareConcurrency||8)<=4):v==='1'})();
+// 録画の開始時刻。初めて開いた瞬間を覚えておき、カウンターはそこからの経過を出す（閉じている間も録画は続いていたことになる）
+let FIRST=+store.get('tomaranai-first')||0;
+if(!FIRST||FIRST>Date.now()){FIRST=Date.now();store.set('tomaranai-first',String(FIRST))}
+let cuts=clampI(+store.get('tomaranai-cuts')|0,0,40);
+function clampI(x,a,b){return x<a?a:x>b?b:x}
+const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(x,a,b)=>x<a?a:x>b?b:x,mix=(a,b,t)=>a+(b-a)*t,ease=(dt,tau)=>1-Math.exp(-dt/tau);
+const fr=x=>x-Math.floor(x);
+function h11(p){p=fr(p*.1031);p*=p+33.33;p*=p+p;return fr(p)}            // シェーダーと同じ式
+function nz(x){const i=Math.floor(x),f=x-i,u=f*f*(3-2*f);return mix(h11(i*1.37+11.1),h11((i+1)*1.37+11.1),u)}
+const W=1,H=2.6,SEG=5,BASE=.72,STEP=.56,I0=10,KM=1024;
+const kmod=k=>((k%KM)+KM)%KM;
+
+/* ---------- シェーダー ---------- */
+const VS='attribute vec2 a;varying vec2 vUv;void main(){vUv=a*.5+.5;gl_Position=vec4(a,0.,1.);}';
+const HP='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n';
+// 1本目：廊下。箱の内側なので光線と平面の交点を式で解く（球体追跡はしない）
+const FS1=HP+`
+uniform vec2 uRes;uniform vec3 uCam;uniform mat3 uRot;uniform float uFov,uKB,uT,uExpo,uSeed,uFill;
+uniform vec4 uLight,uExit,uFig,uDoor,uPr;uniform vec3 uLp,uCall;uniform float uKill;
+const float W=1.,H=2.6,SEG=5.;
+float gSpot,gD2,gSkin,gHead;
+float h11(float p){p=fract(p*.1031);p*=p+33.33;p*=p+p;return fract(p);}
+float h21(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(h21(i),h21(i+vec2(1.,0.)),f.x),mix(h21(i+vec2(0.,1.)),h21(i+vec2(1.,1.)),f.x),f.y);}
+float fbm(vec2 p){return vn(p)*.55+vn(p*2.3+7.1)*.3+vn(p*5.1+3.7)*.15;}
+// 天井の蛍光灯：ほとんどは切れている。点いているものの半分はときどき落ちる
+float lampOn(float kr){
+  float k=mod(uKB+kr,1024.);
+  if(abs(kr-uKill)<.5||h11(k+uSeed*13.7+91.)>uExit.z)return 0.;
+  if(h11(k*1.7+3.1)<.5)return .8;
+  return .12+.88*smoothstep(.36,.5,vn(vec2(uT*1.2+k*7.3,k)));
+}
+// 扉：0 なし 1 閉 2 すき間 3 開
+float doorSt(float kr,float s){
+  if(uDoor.z>.5&&abs(kr-uDoor.x)<.5&&s*uDoor.y>0.)return uDoor.z<1.5?3.:(uDoor.z<2.5?2.:1.);
+  float h=h11(mod(uKB+kr,1024.)*2.+s*.5+7.3);
+  return h<.2?0.:(h<.9?1.:(h<.95?2.:3.));
+}
+float seg2(vec2 p,vec2 a,vec2 b,float ra,float rb){vec2 pa=p-a,ba=b-a;float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);return length(pa-ba*h)-mix(ra,rb,h);}
+// 人の形。少しだけ背が高く、腕が膝近くまである。うつむいて、わずかに揺れている
+float figD(vec2 p){
+  float hh=uFig.z,sh=hh-.31,hip=hh*.52,kn=hh*.27,wa=hh*.62;
+  p.x+=.012*sin(uT*.6)*(p.y/hh)+(p.y-hip)*.015;
+  p.y-=.004*sin(uT*1.1)*smoothstep(hip,sh,p.y);
+  float ax=abs(p.x);vec2 q=vec2(ax,p.y);
+  float dh=length((p-vec2(.012,hh-.118))*vec2(1.3,1.))-.112;
+  float d=min(dh,seg2(q,vec2(0.,hh-.2),vec2(0.,sh+.02),.05,.058));
+  d=min(d,seg2(q,vec2(.04,sh+.03),vec2(.185,sh-.03),.045,.05));
+  float w=p.y>wa?mix(.15,.19,clamp((p.y-wa)/(sh-.05-wa),0.,1.)):mix(.17,.15,clamp((p.y-hip)/(wa-hip),0.,1.));
+  d=min(d,max(ax-w,max(p.y-(sh-.02),hip-.03-p.y)));
+  d=min(d,seg2(q,vec2(.095,hip),vec2(.085,kn),.082,.06));
+  d=min(d,seg2(q,vec2(.085,kn),vec2(.078,.07),.058,.04));
+  d=min(d,length((q-vec2(.085,.035))*vec2(1.,1.6))-.055);
+  d=min(d,seg2(q,vec2(.215,sh-.05),vec2(.248,wa+.02),.05,.04));
+  d=min(d,seg2(q,vec2(.248,wa+.02),vec2(.255,hh*.445),.04,.03));
+  float dhand=length((q-vec2(.257,hh*.4))*vec2(1.,.55))-.034;
+  d=min(d,dhand);
+  gHead=smoothstep(0.,-.015,dh);
+  gSkin=max(smoothstep(.008,-.008,dhand),gHead*smoothstep(hh-.1,hh-.18,p.y)*.5);
+  return d;
+}
+// いつもカメラのほうを向いている板。光線との交点と、板の上の座標
+float figHit(vec3 o,vec3 d,out vec2 lp){
+  vec2 n2=normalize(uCam.xz-uFig.xy);float dn=dot(d.xz,n2);lp=vec2(9.);
+  if(abs(dn)<1e-5)return -1.;
+  float tf=dot(uFig.xy-o.xz,n2)/dn;vec3 q=o+d*tf;
+  lp=vec2(dot(q.xz-uFig.xy,vec2(n2.y,-n2.x)),q.y);return tf;
+}
+vec3 lightAt(vec3 p,vec3 n,float room){
+  vec3 L=uLp-p;float d2=dot(L,L);vec3 l=L*inversesqrt(d2);
+  float sp=smoothstep(.87,.985,dot(-l,uLight.xyz));sp=sp*sp+.003;
+  gSpot=sp;gD2=d2;
+  float ndl=max(dot(n,l),0.),shd=1.;
+  // 人の形が落とす影（ライトはレンズの少し右上にあるので、影は左下にずれて見える）
+  if(uFig.w>0.){vec2 lp;float tf=figHit(p,L,lp);if(tf>.03&&tf<.97)shd=1.-smoothstep(.02,-.02,figD(lp))*uFig.w;}
+  vec3 c=(vec3(1.,.87,.68)*uLight.w*sp/(d2+.06)+vec3(.8,.9,1.)*uFill/(d2+.3))*ndl*shd;
+  if(room<.5){
+    float kr=floor(p.z/SEG);
+    for(int i=-1;i<=1;i++){
+      float kk=kr+float(i),on=lampOn(kk);
+      if(on>0.){vec3 LL=vec3(0.,H-.04,(kk+.5)*SEG)-p;float dd=dot(LL,LL);
+        c+=vec3(.55,.9,.72)*on*(1.6*max(dot(n,LL*inversesqrt(dd)),0.)+.12)/(dd+.25);}
+    }
+    for(int i=0;i<2;i++){
+      vec3 LE=vec3(0.,2.2,uCam.z+(i==0?1.:-1.)*uExit.x)-p;float de=dot(LE,LE);
+      c+=vec3(.08,.85,.3)*uExit.y*.2*(max(dot(n,LE*inversesqrt(de)),0.)+.2)/(de+1.5);
+    }
+    float dk=2.-mod(uKB+kr,4.);
+    vec3 LR=vec3(W-.09,2.05,(kr+dk)*SEG+.7)-p;float dr=dot(LR,LR);
+    c+=vec3(1.,.05,.02)*.1*(max(dot(n,LR*inversesqrt(dr)),0.)+.25)/(dr+.12);
+  }
+  return c;
+}
+vec3 wallCol(vec3 p,float s,float kr,float st,out float gl){
+  float zt=p.z+mod(uKB,64.)*SEG,zl=p.z-kr*SEG,y=p.y;gl=0.;
+  float g=fbm(vec2(zt*.7+s*31.,y*.9));
+  vec3 c=mix(vec3(.25,.37,.33),vec3(.58,.56,.47),smoothstep(1.14,1.16,y));
+  c*=.6+.55*g;
+  c*=1.-.4*smoothstep(.6,.85,vn(vec2(zt*9.+s*5.,y*.3)))*smoothstep(.9,2.6,y);
+  c*=mix(.5,1.,smoothstep(0.,.012,abs(y-1.15)));
+  if(y>.8&&y<.89)c=vec3(.2,.12,.065)*(.6+.7*smoothstep(.8,.89,y));
+  else if(y>.74&&y<=.8)c*=.5;
+  c*=.65+.35*smoothstep(.1,.6,y);
+  if(y<.1)c=vec3(.035);
+  float k=mod(uKB+kr,1024.);
+  if(s>0.&&mod(k,4.)==2.){vec2 b=abs(vec2(zl-.7,y-1.25))-vec2(.27,.36);
+    if(max(b.x,b.y)<0.)c=vec3(.3,.045,.035)*(.6+.5*g)*(max(b.x,b.y)>-.03?.5:1.);}
+  if(s<0.&&h11(k*3.1+5.)<.3){vec2 b=abs(vec2(zl-3.8,y-1.52))-vec2(.16,.22);
+    if(max(b.x,b.y)<0.)c=vec3(.6,.58,.5)*(.7+.3*step(.35,fract(y*24.)))*(.7+.4*g);}
+  if(st>.5){
+    float zc=s<0.?1.5:3.5,dz=zl-zc;
+    if(abs(dz)<.52&&y<2.07){
+      if(abs(dz)>.45||y>2.)c=vec3(.12,.1,.085);
+      else{
+        c=vec3(.4,.37,.3)*(.75+.35*vn(vec2(zt*2.,y*13.)))*(.8+.3*g);
+        if(y<.25)c=vec3(.26,.26,.25)*(.7+.4*g);
+        vec2 w=abs(vec2(dz-.2,y-1.52))-vec2(.07,.27);
+        if(max(w.x,w.y)<0.){c=vec3(.025,.03,.035);gl=1.;}
+        if(length(vec2(dz+.34,(y-1.)*2.2))<.045){c=vec3(.45,.43,.36);gl=.5;}
+        if(st>1.5&&st<2.5){
+          float gap=(uDoor.z>.5&&abs(kr-uDoor.x)<.5&&s*uDoor.y>0.)?uDoor.w:.05;
+          if(dz<-.45+gap)c=vec3(0.);
+        }
+      }
+    }
+    vec2 b=abs(vec2(dz-.68,y-1.6))-vec2(.09,.045);
+    if(max(b.x,b.y)<0.)c=vec3(.62,.62,.56)*(.55+.45*step(.4,fract(zl*40.)));
+  }
+  return c;
+}
+vec3 ceilCol(vec3 p,float kr,out vec3 em){
+  float zt=p.z+mod(uKB,64.)*SEG;vec2 t=vec2(p.x+W,zt)/.6,f=fract(t),i=floor(t);
+  vec3 c=vec3(.5,.49,.44)*(.7+.4*fbm(vec2(p.x*1.3,zt*1.1)));
+  c*=mix(.5,1.,smoothstep(0.,.03,min(min(f.x,1.-f.x),min(f.y,1.-f.y))));
+  c*=1.-.5*smoothstep(.55,.8,vn(vec2(p.x*.9+5.,zt*.5)));
+  if(h21(i+3.)<.035)c=vec3(.004);
+  em=vec3(0.);
+  float zl=p.z-kr*SEG;vec2 q=abs(vec2(p.x,zl-2.5))-vec2(.15,.62);
+  if(max(q.x,q.y)<0.){
+    float on=lampOn(kr),tube=smoothstep(.05,.02,abs(abs(p.x)-.07));
+    c=mix(vec3(.16),vec3(.42),tube);em=vec3(.7,1.,.84)*on*(.5+2.5*tube)*2.2;
+  }
+  return c;
+}
+vec3 floorCol(vec3 p,float t,out float gloss){
+  float zt=p.z+mod(uKB,64.)*SEG;vec2 q=vec2(p.x+W,zt)/.5,i=floor(q),f=fract(q);
+  float fd=smoothstep(15.,6.,t);
+  vec3 c=mix(vec3(.3,.33,.27),vec3(.23,.27,.235),mod(i.x+i.y,2.));
+  c=mix(vec3(.265,.3,.25),c,fd);
+  c*=mix(1.,mix(.55,1.,smoothstep(0.,.03,min(min(f.x,1.-f.x),min(f.y,1.-f.y)))),fd);
+  float g=fbm(vec2(p.x*2.1,zt*1.4));c*=.68+.5*g;
+  float ln=smoothstep(.05,.038,abs(p.x+.55))*smoothstep(.3,.55,vn(vec2(zt*1.7,3.)));
+  c=mix(c,vec3(.42,.09,.07)*(.7+.4*g),ln*.85);
+  c*=.75+.25*smoothstep(W,W-.35,abs(p.x));
+  gloss=.3+.7*smoothstep(.35,.7,vn(vec2(p.x*3.,zt*.8)+9.));
+  if(uFig.w>0.){vec2 dd=p.xz-uFig.xy;c*=1.-.6*uFig.w*exp(-dot(dd,dd)/.035);}
+  if(uPr.w>0.&&p.z>uPr.x&&p.z<uPr.y){
+    // 濡れた裸足の跡。0.5m ごとに左右交互
+    float i=floor(p.z*2.),sd=mod(i,2.)*2.-1.;
+    vec2 ft=vec2((p.x-uPr.z-sd*.095)*sd,(fract(p.z*2.)-.45)*.5)/1.3;
+    float e=length(vec2(ft.x/mix(.028,.044,smoothstep(-.1,.05,ft.y)),ft.y/.1))-1.;
+    float toes=min(length(ft-vec2(-.024,.118)),min(length(ft-vec2(-.002,.128)),length(ft-vec2(.02,.12))))-.011;
+    float m=max(smoothstep(.1,-.1,e)*smoothstep(-.03,.0,abs(ft.y+.01)-.018+ft.x*.3),smoothstep(.005,-.005,toes))*uPr.w*fd*(.5+.5*h11(i+3.));
+    c*=1.-.8*m;gloss=mix(gloss,2.2,m);
+  }
+  return c;
+}
+vec3 render(vec3 ro,vec3 rd){
+  rd.x=abs(rd.x)<1e-4?1e-4:rd.x;rd.y=abs(rd.y)<1e-4?1e-4:rd.y;rd.z=abs(rd.z)<1e-4?1e-4:rd.z;
+  float tY=rd.y<0.?-ro.y/rd.y:(H-ro.y)/rd.y,sx=sign(rd.x),sz=sign(rd.z),tX=(sx*W-ro.x)/rd.x,t;
+  vec3 p,n,alb,em=vec3(0.);float gloss=0.,room=0.,glass=0.;
+  if(tY<tX){
+    t=tY;p=ro+rd*t;float kr=floor(p.z/SEG);
+    if(rd.y<0.){n=vec3(0.,1.,0.);alb=floorCol(p,t,gloss);}
+    else{n=vec3(0.,-1.,0.);alb=ceilCol(p,kr,em);}
+  }else{
+    t=tX;p=ro+rd*t;n=vec3(-sx,0.,0.);
+    float kr=floor(p.z/SEG),st=doorSt(kr,sx),zc=sx<0.?1.5:3.5,z0=kr*SEG+zc;
+    if(st>2.5&&abs(p.z-z0)<.45&&p.y<2.){
+      // 開いた戸口：枠の厚みを抜けて、奥の病室の箱へ
+      room=1.;
+      float tJ=(sx*(W+.14)-ro.x)/rd.x;vec3 pj=ro+rd*tJ;
+      if(abs(pj.z-z0)>.45||pj.y>2.||pj.y<0.){
+        float tz=(z0+sz*.45-ro.z)/rd.z,ty=rd.y>0.?(2.-ro.y)/rd.y:-ro.y/rd.y;
+        if(tz<ty){t=tz;n=vec3(0.,0.,-sz);alb=vec3(.12,.1,.085);}
+        else{t=ty;n=vec3(0.,-sign(rd.y),0.);alb=rd.y>0.?vec3(.12,.1,.085):vec3(.2,.22,.18);}
+        p=ro+rd*t;
+      }else{
+        float t1=(sx*(W+3.4)-ro.x)/rd.x,t2=(z0+sz*1.5-ro.z)/rd.z,t3=rd.y<0.?-ro.y/rd.y:(H-ro.y)/rd.y;
+        t=min(t1,min(t2,t3));p=ro+rd*t;
+        if(t1<=t2&&t1<=t3){
+          n=vec3(-sx,0.,0.);alb=vec3(.42,.42,.36)*(.55+.55*fbm(p.zy*1.3));
+          vec2 w=abs(vec2(p.z-z0,p.y-1.6))-vec2(.75,.55);
+          if(max(w.x,w.y)<0.){
+            // 夜の窓。桟だけが黒い
+            float bar=step(.03,abs(p.z-z0))*step(.03,abs(p.y-1.6));
+            alb=vec3(.02);em=vec3(.01,.016,.028)*bar*(.7+.5*vn(p.zy*3.));glass=.4;
+          }
+        }
+        else if(t2<=t3){n=vec3(0.,0.,-sz);alb=vec3(.4,.4,.35)*(.55+.55*fbm(p.xy*1.3));}
+        else if(rd.y<0.){n=vec3(0.,1.,0.);alb=vec3(.2,.22,.19)*(.55+.55*fbm(p.xz*2.));}
+        else{n=vec3(0.,-1.,0.);alb=vec3(.34);}
+      }
+    }else alb=wallCol(p,sx,kr,st,glass);
+  }
+  vec3 col=alb*lightAt(p,n,room)+em;
+  if(glass>0.)col+=glass*vec3(1.,.9,.75)*uLight.w*gSpot*pow(max(dot(n,-rd),0.),90.)*.25/(gD2+.06);
+  if(room<.5){
+    if(n.y>.5){
+      // 床の映り込み：非常口の緑の帯と、点いている蛍光灯
+      vec3 r=vec3(rd.x,-rd.y,rd.z);float fres=(.02+.75*pow(1.-max(-rd.y,0.),5.))*gloss;
+      float t2=(uCam.z+sz*uExit.x-p.z)/r.z;vec3 q=p+r*t2;
+      float sk=exp(-pow(q.x/(.44+.025*t2),2.))*exp(-pow((q.y-2.22)/(.16+.07*t2),2.));
+      if(uFig.w>0.){vec2 lp;float tf=figHit(p,r,lp);if(tf>0.&&tf<t2)sk*=1.-smoothstep(.03,-.03,figD(lp))*uFig.w;}
+      col+=vec3(.1,.95,.38)*uExit.y*sk*fres*.9;
+      float t3=(H-p.y)/r.y;q=p+r*t3;float kq=floor(q.z/SEG),on=lampOn(kq);
+      if(on>0.){float dz=q.z-(kq+.5)*SEG;
+        col+=vec3(.7,1.,.84)*on*fres*2.2*exp(-pow(q.x/(.16+.03*t3),2.))*exp(-pow(dz/(.62+.1*t3),2.));}
+    }
+    // 非常口の誘導灯：いつも同じ距離にある
+    for(int i=0;i<2;i++){
+      float tE=(uCam.z+(i==0?1.:-1.)*uExit.x-ro.z)/rd.z;
+      if(tE>0.&&tE<t){
+        vec3 q=ro+rd*tE;vec2 e=abs(q.xy-vec2(0.,2.22))-vec2(.44,.16);
+        if(max(e.x,e.y)<0.){
+          float pic=step(abs(q.x+.14),.13)*step(abs(q.y-2.22),.1);
+          col=vec3(.12,.95,.4)*uExit.y*(1.1+1.6*pic);t=tE;
+        }else{vec2 e2=max(e,0.);col+=vec3(.06,.8,.3)*uExit.y*.012/(dot(e2,e2)*6.+.05);}
+      }
+    }
+    // 消火栓の赤い灯
+    float base=2.-mod(uKB,4.);
+    for(int i=-2;i<=3;i++){
+      vec3 v=vec3(W-.09,2.05,(base+4.*float(i))*SEG+.7)-ro;float tc=dot(v,rd);
+      if(tc>0.&&tc<t+.2){vec3 c2=v-rd*tc;col+=vec3(1.,.07,.03)*(.0009/(dot(c2,c2)+.0006));}
+    }
+    // ナースコールの灯（戸口の上の橙色）
+    if(uCall.z>0.){
+      vec3 v=vec3(uCall.y*(W-.04),2.2,uCall.x*SEG+(uCall.y<0.?1.5:3.5))-ro;float tc=dot(v,rd);
+      if(tc>0.&&tc<t+.2){vec3 c2=v-rd*tc;col+=vec3(1.,.55,.12)*uCall.z*(.0014/(dot(c2,c2)+.0008));}
+    }
+  }
+  if(uFig.w>0.){
+    vec2 lp;float tf=figHit(ro,rd,lp);
+    if(tf>0.&&tf<t){
+      float fd2=figD(lp),cv=smoothstep(.012,-.012,fd2)*uFig.w;
+      if(cv>0.){
+        float sk=gSkin,hd=gHead;
+        vec3 cl=mix(vec3(.028,.03,.036),vec3(.05,.05,.052),step(.5,lp.y/uFig.z))*(.65+.6*vn(vec2(lp.x*38.,lp.y*5.)));
+        cl=mix(cl,vec3(.012),hd);cl=mix(cl,vec3(.25,.225,.21),sk);
+        vec2 n2=normalize(uCam.xz-uFig.xy);
+        vec3 fl=lightAt(ro+rd*tf,vec3(n2.x,0.,n2.y),step(W,abs(uFig.x)));
+        col=mix(col,cl*fl*(.25+.75*smoothstep(0.,.06,-fd2)),cv);
+      }
+    }
+  }
+  return col;
+}
+void main(){
+  vec2 uv=(gl_FragCoord.xy-.5*uRes)/(.5*uRes.y);
+  vec3 col=render(uCam,normalize(uRot*vec3(uv*uFov,1.)))*uExpo;
+  col=1.-exp(-col*1.25);
+  gl_FragColor=vec4(sqrt(col),1.);
+}`;
+// 2本目：カメラとテープ。レンズの歪み、ピント、色のにじみ、粒子、走査線、乱れ、画面の文字
+const FS2=HP+`
+uniform sampler2D uScene,uOsd;uniform vec2 uRes,uSRes,uSmear;uniform float uFrame,uBlur,uGain,uGlitch,uRoll,uSnow;
+varying vec2 vUv;
+float hh(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+vec3 dec(vec2 u){vec3 c=texture2D(uScene,u).rgb;return c*c;}
+void main(){
+  vec2 uv=vUv;float blank=0.;
+  if(uRoll!=0.){float y=uv.y+uRoll;blank=step(fract(y),.05);uv.y=fract(y);}
+  float line=floor(uv.y*uSRes.y);
+  float j=(hh(vec2(line,uFrame))-.5)*.0011*(1.+uGain);
+  float gband=0.;
+  if(uGlitch>0.){
+    float b=floor(uv.y*11.+uFrame*.31),r=hh(vec2(b,floor(uFrame*.4)));
+    gband=step(1.-uGlitch*.4,r);
+    j+=gband*((hh(vec2(b,uFrame))-.5)*.14+.01*sin(uv.y*90.+uFrame*2.))*uGlitch;
+  }
+  float hs=smoothstep(.03,0.,uv.y);
+  j+=hs*(.018+.012*sin(uFrame*.9))+hs*(hh(vec2(line,uFrame+9.))-.5)*.05;
+  vec2 tuv=vec2(uv.x+j,uv.y);
+  vec2 c=tuv-.5;float asp=uRes.x/uRes.y;vec2 cc=vec2(c.x*asp,c.y);float r2=dot(cc,cc);
+  vec2 suv=.5+c*(1.+.07*r2)*.93;
+  vec2 px=1./uSRes,br=vec2(uBlur+.75,uBlur+.3)*px;
+  vec3 col=dec(suv)*2.;
+  for(int i=0;i<6;i++){float a=float(i)*1.0472+.4;col+=dec(suv+vec2(cos(a),sin(a))*br);}
+  col/=8.;
+  vec3 cl=(dec(suv+vec2(2.2,0.)*px)+dec(suv+vec2(5.,0.)*px)+dec(suv-vec2(1.8,0.)*px))/3.;
+  float Y=dot(col,vec3(.299,.587,.114)),Yc=dot(cl,vec3(.299,.587,.114));
+  col=vec3(Y)+(cl-Yc)*mix(1.05,.4,uGain);
+  col+=vec3(.1,.85,.35)*uSmear.y*exp(-pow((tuv.x-uSmear.x)/.0035,2.));
+  col*=step(0.,suv.x)*step(suv.x,1.)*step(0.,suv.y)*step(suv.y,1.);
+  col*=1.-.45*smoothstep(.2,1.1,r2);
+  col*=vec3(.97,1.,.93);
+  col=pow(max(col,0.),vec3(.4545));
+  col=col*.93+.035;
+  vec4 o=texture2D(uOsd,vec2(tuv.x,1.-tuv.y));col=mix(col,o.rgb,o.a*.9);
+  vec2 np=floor(tuv*uSRes),nq=floor(np*vec2(.25,.5));
+  float n=hh(np+uFrame*17.3)-.5,n2=hh(nq+uFrame*29.1)-.5,n3=hh(nq+uFrame*41.7)-.5;
+  float na=.03+.2*uGain;
+  col+=n*na*(1.15-.5*Y)+vec3(n2,-.5*(n2+n3),n3)*na*.55;
+  if(uGlitch>0.){col=mix(col,vec3(dot(col,vec3(.333))),gband*.8);col+=gband*(hh(np*vec2(.2,1.)+uFrame)-.3)*.35*uGlitch;}
+  col+=.4*step(.9992-uGlitch*.01,hh(vec2(line,floor(uFrame*.5)+3.)))*step(hh(vec2(floor(tuv.x*40.),line)),.25);
+  col*=.9+.1*step(.5,fract(uv.y*uSRes.y*.5+.5*mod(uFrame,2.)));
+  col=mix(col,vec3(hh(np+uFrame*7.)*.75+.08),uSnow);
+  col*=1.-blank;
+  gl_FragColor=vec4(col,1.);
+}`;
+
+/* ---------- WebGL ---------- */
+let gl,P1,P2,fbo,sceneTex,osdTex,SW=0,SH=0,ASP=1,FOV=.5,OU=3,resScale=1,frame=0;
+const ocv=document.createElement('canvas'),octx=ocv.getContext('2d');
+let osdKey='';
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s}
+function prog(fs){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));
+  gl.bindAttribLocation(p,0,'a');gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+  const u={},n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);
+  for(let i=0;i<n;i++){const nm=gl.getActiveUniform(p,i).name;u[nm]=gl.getUniformLocation(p,nm)}
+  return{p,u}}
+function tex(){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t}
+function setupGL(){
+  gl=cv.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'high-performance'});
+  if(!gl)return false;
+  P1=prog(FS1);P2=prog(FS2);
+  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  sceneTex=tex();osdTex=tex();fbo=gl.createFramebuffer();SW=SH=0;osdKey='';
+  return true;
+}
+function resize(){
+  const cw=cv.clientWidth||innerWidth,ch=cv.clientHeight||innerHeight,dpr=Math.min(devicePixelRatio||1,2);
+  let w=cw*dpr,h=ch*dpr;const k=Math.min(1,Math.sqrt((lite?9e5:2.1e6)*resScale/(w*h)));
+  w=Math.max(2,Math.round(w*k));h=Math.max(2,Math.round(h*k));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}
+  ASP=w/h;FOV=clamp(.62/ASP,.42,1);
+  const lines=lite?300:400;let sw,s2;
+  if(ASP>=1){s2=lines;sw=Math.round(lines*ASP)}else{sw=lines;s2=Math.round(lines/ASP)}
+  const m=Math.max(sw,s2);if(m>960){sw=Math.round(sw*960/m);s2=Math.round(s2*960/m)}
+  if(sw!==SW||s2!==SH){
+    SW=sw;SH=s2;
+    gl.bindTexture(gl.TEXTURE_2D,sceneTex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,SW,SH,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,sceneTex,0);
+    ocv.width=SW;ocv.height=SH;OU=Math.max(2,Math.round(Math.min(SW,SH)/150));osdKey='';
+  }
+}
+
+/* ---------- ジャイロ ---------- */
+const G={on:false,n:0,az:0,az0:null,pit:0,roll:0,off:0};
+const D2R=Math.PI/180;
+function onOri(e){
+  if(e.alpha==null||e.beta==null||e.gamma==null)return;
+  const a=e.alpha*D2R,b=e.beta*D2R,g=e.gamma*D2R,cA=Math.cos(a),sA=Math.sin(a),cB=Math.cos(b),sB=Math.sin(b),cG=Math.cos(g),sG=Math.sin(g);
+  // 背面カメラの向き（端末の -Z）を、東・北・上の座標で
+  const dx=-(cA*sG+sA*sB*cG),dy=-(sA*sG-cA*sB*cG),dz=-cB*cG,hz=Math.hypot(dx,dy);
+  G.pit=Math.asin(clamp(dz,-1,1));
+  if(hz>.25){
+    G.az=Math.atan2(dx,dy);
+    // 画面の上の向きから、カメラの軸まわりの傾きを出す（画面の回転も見る）
+    const o=((screen.orientation&&screen.orientation.angle)||window.orientation||0)*D2R,ex=Math.sin(o),ey=Math.cos(o);
+    const ux=(cA*cG-sA*sB*sG)*ex-sA*cB*ey,uy=(sA*cG+cA*sB*sG)*ex+cA*cB*ey,uz=-cB*sG*ex+sB*ey;
+    const rx=dy/hz,ry=-dx/hz;
+    G.roll=-Math.atan2(ux*rx+uy*ry,ux*ry*dz-uy*rx*dz+uz*(rx*dy-ry*dx));
+  }
+  if(G.az0==null)G.az0=G.az;
+  G.n++;
+}
+function gyroOff(){G.on=false;removeEventListener('deviceorientation',onOri);S.lastInput=S.t-3;syncUI()}
+let msgT=0;
+function say(t){const m=$('msg');m.textContent=t;m.hidden=false;clearTimeout(msgT);msgT=setTimeout(()=>{m.hidden=true},4200)}
+function gyroToggle(){
+  if(G.on){gyroOff();return}
+  const DO=window.DeviceOrientationEvent,go=()=>{
+    G.n=0;G.az0=null;G.off=S.yawU;addEventListener('deviceorientation',onOri);G.on=true;syncUI();
+    setTimeout(()=>{if(G.on&&!G.n){gyroOff();say('端末の向きを読めません。許可されていないか、埋め込みの画面では使えません。')}},1600);
+  };
+  if(DO&&typeof DO.requestPermission==='function'){
+    // iOS：タップの中で許可を求める
+    DO.requestPermission().then(r=>{if(r==='granted')go();else say('端末の向きを読めません。許可されていないか、埋め込みの画面では使えません。')}).catch(()=>say('端末の向きを読めません。許可されていないか、埋め込みの画面では使えません。'));
+  }else go();
+}
+
+/* ---------- 状態 ---------- */
+const S={t:0,z:0,phase:0,speed:BASE,bm:1,hurry:0,stepT:9,foot:1,
+  yawU:0,pitU:0,rollU:0,lastInput:-99,yawA:0,yawAT:0,yawTau:.4,
+  light:1,lightT:1,dip:0,nextDip:rnd(18,40),expo:1.02,blur:0,blurT:0,
+  level:0,beat:null,nextBeat:13,lastBeat:'',nBeats:0,peekOk:8,seed:cuts%50,glitch:0,roll:0,snow:0,
+  fig:{mode:0,side:1,x:0,z:0,h:2.05,vis:0,visT:0,tau:.5,rel:null},
+  box:{on:0,lock:0,t:0,p:[0,0,0]},
+  door:{k:-99,side:1,mode:0,gap:0},
+  D:Math.min(62,30+2*cuts),lampP:Math.max(.05,.16-.01*cuts),
+  aeW:0,pr:{z0:0,z1:0,x:0,w:0,done:1},call:{k:0,side:1,on:0},kill:-9999,play:0,moving:1,exFoot:1,exPh:0,exPer:.69,exLeft:0,exVol:.2,exClose:0,exGrow:0,fear:0,duck:1};
+const doorZ=d=>d.k*SEG+(d.side<0?1.5:3.5);
+function doorStJS(k,s){const h=h11(kmod(k)*2+s*.5+7.3);return h<.2?0:h<.9?1:h<.95?2:3}
+function lampJS(k){const q=kmod(k);if(k===S.kill)return 0;if(h11(q+S.seed*13.7+91)>S.lampP)return 0;return h11(q*1.7+3.1)<.5?.8:.6}
+
+/* ---------- 音 ---------- */
+let ac=null,sas=null,userMuted=false;
+const A={on:false};
+['setOn','step','shuffle','pivot','bare','knock','callTone','tink','chime','phone','click','latch','beep','whisper','glitch','snow','far','breath','breath2','frame','relite'].forEach(k=>{A[k]=()=>{}});
+const WH=[['ho sa na','onna'],['ki he to ne','roba'],['su mi ha e','onna'],['to ko shi no _ ha ne','rojin'],['shi na ho e to','onna'],
+  ['ha ne i so','shojo'],['ke su ra _ ke su ra','osanago'],['he e _ so no ha','shojo'],['su mi ha e','osanago'],
+  ['mo i ka su ne','otoko'],['chi ra to mo e','ookii'],['ho sa na','ookii']];
+const WORDS=[['ねえ','osanago'],['こっち','shojo'],['うしろ','onna'],['まだ','roba'],['いるよ','osanago']];
+function initAudio(){
+  if(ac)return;
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+  try{ac=new AC({latencyHint:'playback'})}catch(e){ac=new AC()}
+  const sr=ac.sampleRate;
+  const G=v=>{const x=ac.createGain();x.gain.value=v;return x};
+  const BQ=(t,f,q,g)=>{const b=ac.createBiquadFilter();b.type=t;b.frequency.value=f;if(q!=null)b.Q.value=q;if(g!=null)b.gain.value=g;return b};
+  const PAN=v=>{if(!ac.createStereoPanner)return G(1);const p=ac.createStereoPanner();p.pan.value=clamp(v,-1,1);return p};
+  const OSC=(type,f)=>{const o=ac.createOscillator();o.type=type;o.frequency.value=f;o.start();return o};
+  // 出口
+  const outG=G(0),comp=ac.createDynamicsCompressor(),shp=ac.createWaveShaper();
+  comp.threshold.value=-18;comp.ratio.value=4;comp.attack.value=.008;comp.release.value=.25;
+  const cu=new Float32Array(1025);for(let i=0;i<1025;i++){const x=i/512-1;cu[i]=Math.tanh(x*1.6)/Math.tanh(1.6)*.95}
+  shp.curve=cu;outG.connect(comp);comp.connect(shp);shp.connect(ac.destination);
+  // カメラのマイクとテープ：帯域を狭め、回転むらで音程をわずかに揺らす
+  const camIn=G(1),wow=ac.createDelay(.1),camG=G(1);wow.delayTime.value=.014;
+  const hp=BQ('highpass',85,.7),pk=BQ('peaking',2300,.9,3.5),lp=BQ('lowpass',7800,.6);
+  camIn.connect(hp);hp.connect(pk);pk.connect(lp);lp.connect(wow);wow.connect(camG);camG.connect(outG);
+  [[.57,.00045],[7.1,.00005]].forEach(([f,d])=>{const g=G(d);OSC('sine',f).connect(g);g.connect(wow.delayTime)});
+  // 廊下の残響：長い尾と、向かい合う壁のあいだの細かい反復
+  function corridorIR(sec){
+    const L=(sr*sec)|0,b=ac.createBuffer(2,L,sr);
+    for(let c=0;c<2;c++){
+      const d=b.getChannelData(c);let l=0;
+      for(let i=0;i<L;i++){const x=i/sr,a=.55-.45*Math.min(1,x/(sec*.6));l+=((Math.random()*2-1)-l)*a;
+        d[i]=x<.004?0:l*Math.exp(-x*6.9/sec)*(1+1.2*Math.exp(-x*9))}
+      for(let n=1;n<40;n++){const i=(n*.01166*(c?1.013:1)*sr)|0,j=(n*.01516*sr)|0;
+        if(i<L)d[i]+=(n%2?1:-1)*.55*Math.exp(-n*.16);if(j<L)d[j]+=.3*Math.exp(-n*.2)}
+    }
+    return b;
+  }
+  const roomIn=G(1),cvn=ac.createConvolver(),wet=G(.5);cvn.buffer=corridorIR(lite?1.5:3);
+  roomIn.connect(cvn);cvn.connect(wet);wet.connect(camIn);
+  const nb=ac.createBuffer(1,sr*2,sr);{const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+  const NS=rate=>{const s=ac.createBufferSource();s.buffer=nb;s.loop=true;s.playbackRate.value=rate||1;s.start();return s};
+  // 床：空気、蛍光灯の唸り、低い唸り。マイクの自動音量（静かになると持ち上がる）を通る
+  const floorG=G(1),agcG=G(1);floorG.connect(agcG);agcG.connect(camIn);
+  {const a=BQ('highpass',1800,.5),b=BQ('lowpass',9000,.5),g=G(.0065);NS(1).connect(a);a.connect(b);b.connect(g);g.connect(agcG)}
+  {const a=BQ('lowpass',160,.5),g=G(.085);NS(.5).connect(a);a.connect(g);g.connect(floorG);
+   const lg=G(.04);OSC('sine',.05).connect(lg);lg.connect(g.gain)}
+  {const a=BQ('bandpass',420,1.2),g=G(.006);NS(.8).connect(a);a.connect(g);g.connect(floorG)}
+  const humG=G(.5);humG.connect(floorG);
+  [[120,.012],[240,.004],[360,.0025]].forEach(([f,v])=>{const g=G(v);OSC('sine',f).connect(g);g.connect(humG)});
+  const buzzG=G(0);{const a=BQ('bandpass',2600,1.5);OSC('sawtooth',120).connect(a);a.connect(buzzG);buzzG.connect(floorG);
+    const w=G(.25);buzzG.connect(w);w.connect(roomIn)}
+  const droneG=G(0);droneG.connect(floorG);
+  {const g=G(.5);OSC('sine',46).connect(g);OSC('sine',46.37).connect(g);g.connect(droneG);
+   const a=BQ('lowpass',150,.7),g2=G(.25);OSC('sawtooth',92).connect(a);a.connect(g2);g2.connect(droneG)}
+  // 焼き込む音。足音は部品（踵・爪先・擦れ・きしみ・衣擦れ）に分けて焼き、一歩ごとに組み合わせを変える
+  const bake=(len,fn)=>{const n=(sr*len)|0,b=ac.createBuffer(1,n,sr),d=b.getChannelData(0);fn(d,n);
+    let pk=1e-6;for(let i=0;i<n;i++)pk=Math.max(pk,Math.abs(d[i]));
+    const g=.8/pk,fo=Math.min(n,(sr*.004)|0);for(let i=0;i<n;i++)d[i]*=g;for(let i=0;i<fo;i++)d[n-1-i]*=i/fo;return b};
+  const op=fc=>1-Math.exp(-6.283*fc/sr);
+  // 減衰する正弦の束（床や扉の鳴り）
+  const modes=(d,n,t0,list)=>{const i0=(t0*sr)|0;for(const [f,dec,a] of list){const ph=Math.random()*6.283,w=6.283*f/sr;
+    for(let i=i0;i<n;i++){const k=i-i0,e=Math.exp(-k/sr*dec);if(e<.001)break;d[i]+=a*e*Math.sin(w*k+ph)*Math.min(1,k/8)}}};
+  const sweep=(d,n,t0,f0,f1,k,dec,a)=>{const i0=(t0*sr)|0;for(let i=i0;i<n;i++){const t=(i-i0)/sr,e=Math.exp(-t*dec);if(e<.001)break;
+    d[i]+=a*e*Math.sin(6.283*(f1*t+(f0-f1)/k*(1-Math.exp(-k*t))))}};
+  // 帯域を絞った雑音に包絡をかける（lo=0 なら低域通過）。包絡が負を返したら終わり
+  const band=(d,n,t0,lo,hi,env,a)=>{const i0=(t0*sr)|0,ka=op(lo||1),kb2=op(hi);let l1=0,l2=0;
+    for(let i=i0;i<n;i++){const e=env((i-i0)/sr);if(e<0)break;const w=Math.random()*2-1;l1+=(w-l1)*ka;l2+=(w-l2)*kb2;d[i]+=a*e*(lo?l2-l1:l2)}};
+  const SND={heel:[],toe:[],scuff:[],squeak:[],cloth:[],bheel:[],bslap:[],peel:[],knock:[]},jobs=[];
+  const add=(key,cnt,len,fn)=>{for(let v=0;v<cnt;v++)jobs.push(()=>SND[key].push(bake(len,fn)))};
+  const pick=a=>a[(Math.random()*a.length)|0];
+  add('heel',6,.3,(d,n)=>{const f=rnd(.9,1.12);                     // 硬い踵がリノリウムに当たる
+    band(d,n,0,2500,9000,t=>t>.02?-1:Math.exp(-t*700),.5);
+    modes(d,n,0,[[235*f,55,.5],[470*f,85,.34],[980*f,150,.2],[2050*f,240,.1]]);
+    sweep(d,n,0,100,58,32,30,.75);band(d,n,0,0,650,t=>t>.12?-1:Math.exp(-t*65),.9)});
+  add('toe',6,.22,(d,n)=>{const f=rnd(.9,1.15);                      // 少し遅れて爪先
+    band(d,n,0,0,1300,t=>t>.1?-1:Math.exp(-t*80),.8);band(d,n,0,1800,6000,t=>t>.03?-1:Math.exp(-t*300),.2);
+    modes(d,n,0,[[330*f,95,.22],[690*f,130,.12]]);sweep(d,n,0,140,92,40,50,.3)});
+  add('scuff',4,.2,(d,n)=>{const du=rnd(.09,.16),w1=rnd(150,260),w2=rnd(60,110);   // 靴底の擦れ
+    band(d,n,0,900,4200,t=>t>du?-1:Math.pow(Math.sin(Math.PI*t/du),.6)*(.6+.25*Math.sin(6.283*w1*t)+.15*Math.sin(6.283*w2*t)),1)});
+  add('squeak',3,.15,(d,n)=>{const du=rnd(.07,.12),f0=rnd(1400,1900),f1=f0*rnd(1.2,1.5);let ph=0;   // ゴム底のきしみ
+    for(let i=0;i<n;i++){const t=i/sr;if(t>du)break;ph+=6.283*(f0+(f1-f0)*Math.pow(t/du,.7)+60*Math.sin(220*t))/sr;
+      d[i]=(Math.sin(ph)+.4*Math.sin(2*ph)+.18*Math.sin(3*ph))*Math.pow(Math.sin(Math.PI*t/du),2)*(.7+.3*Math.sin(1068*t))}});
+  add('cloth',3,.3,(d,n)=>{const du=rnd(.2,.27);band(d,n,0,1800,7000,t=>t>du?-1:Math.pow(Math.sin(Math.PI*t/du),1.5),1)});
+  add('bheel',4,.3,(d,n)=>{sweep(d,n,0,rnd(80,95),55,26,26,.9);band(d,n,0,0,380,t=>t>.15?-1:Math.exp(-t*45),.7)});   // 裸足の踵
+  add('bslap',5,.2,(d,n)=>{const f=rnd(.9,1.15);                     // 足裏が床に貼りつく
+    band(d,n,0,450,2800,t=>t>.09?-1:Math.min(1,t/.002)*Math.exp(-t*42),.9);modes(d,n,0,[[270*f,75,.25],[540*f,110,.1]]);
+    [rnd(.005,.008),rnd(.012,.016),rnd(.02,.026)].forEach(t0=>band(d,n,t0,3000,10000,t=>t>.004?-1:Math.exp(-t*900),.3*rnd(.5,1)));
+    const tt=rnd(.03,.04);band(d,n,tt,0,1500,t=>t>.02?-1:Math.exp(-t*220),.28);band(d,n,tt+.012,0,1500,t=>t>.02?-1:Math.exp(-t*220),.2)});
+  add('peel',3,.09,(d,n)=>{const du=rnd(.05,.07);                    // 足裏が剥がれる
+    band(d,n,0,1500,7000,t=>t>du?-1:Math.pow(t/du,2.2),.35);band(d,n,du,600,3000,t=>t>.01?-1:Math.exp(-t*400),.6)});
+  add('knock',3,.25,(d,n)=>{const f=rnd(.92,1.1);                    // 扉を内側から叩く
+    modes(d,n,0,[[165*f,38,.6],[310*f,55,.4],[620*f,90,.18]]);band(d,n,0,0,500,t=>t>.06?-1:Math.exp(-t*90),.5)});
+  (function run(){const j=jobs.shift();if(j){j();setTimeout(run,10)}})();
+  function hit(buf,o){
+    if(!A.on||!buf)return;
+    const T=ac.currentTime+.01+(o.delay||0),s=ac.createBufferSource(),f=BQ('lowpass',o.lp||12000,.5),e=G(o.vol),p=PAN(o.pan||0);
+    s.buffer=buf;s.playbackRate.value=o.rate||1;s.connect(f);f.connect(e);e.connect(p);
+    const d=G(o.dry==null?1:o.dry);p.connect(d);d.connect(o.direct?outG:camIn);
+    if(o.wet){const w=G(o.wet);p.connect(w);w.connect(roomIn)}
+    s.start(T,o.off||0,o.dur);s.onended=()=>{try{p.disconnect();e.disconnect()}catch(_){}};
+  }
+  function tone(type,f0,f1,dur,vol,o){
+    if(!A.on)return;o=o||{};
+    const T=ac.currentTime+.01+(o.delay||0),os=ac.createOscillator(),e=G(0),p=PAN(o.pan||0);os.type=type;
+    os.frequency.setValueAtTime(f0,T);if(f1!==f0)os.frequency.exponentialRampToValueAtTime(f1,T+dur);
+    e.gain.setValueAtTime(0,T);e.gain.linearRampToValueAtTime(vol,T+(o.att||.004));e.gain.exponentialRampToValueAtTime(.0005,T+dur);
+    os.connect(e);e.connect(p);const d=G(o.dry==null?1:o.dry);p.connect(d);d.connect(camIn);
+    if(o.wet){const w=G(o.wet);p.connect(w);w.connect(roomIn)}
+    os.start(T);os.stop(T+dur+.05);os.onended=()=>{try{p.disconnect()}catch(_){}};
+  }
+  const nhit=(ft,freq,q,dur,vol,o)=>{o=o||{};
+    if(!A.on)return;
+    const T=ac.currentTime+.01+(o.delay||0),s=ac.createBufferSource(),f=BQ(ft,freq,q),e=G(0),p=PAN(o.pan||0);
+    s.buffer=nb;s.loop=true;s.connect(f);f.connect(e);e.connect(p);
+    e.gain.setValueAtTime(vol,T);e.gain.exponentialRampToValueAtTime(.0005,T+dur);
+    const d=G(o.dry==null?1:o.dry);p.connect(d);d.connect(o.direct?outG:camIn);
+    if(o.wet){const w=G(o.wet);p.connect(w);w.connect(roomIn)}
+    s.start(T,Math.random());s.stop(T+dur+.05);s.onended=()=>{try{p.disconnect()}catch(_){}};
+  };
+  function mkSas(){sas=Sasayaki.create(ac,{out:camIn,room:roomIn,level:.38,voice:'onna',lite});sas.add(WH)}
+  mkSas();
+  let breathAt=0,whAt=ac.currentTime+rnd(20,34),farAt=ac.currentTime+rnd(25,50);
+  Object.assign(A,{
+    setOn(v){A.on=v;outG.gain.setTargetAtTime(v?1.6:0,ac.currentTime,.25)},
+    step(v){
+      S.foot=-S.foot;const f=S.foot,hollow=Math.random()<.06;
+      const gap=clamp(.1/v,.075,.165)+rnd(-.008,.01),r=(f<0?1:.955)*rnd(.95,1.06);
+      hit(pick(SND.heel),{vol:.28*v*(hollow?1.25:1),rate:r*(hollow?.78:1),pan:f*.12,dry:.75,wet:.55});
+      hit(pick(SND.toe),{vol:.17*v*rnd(.75,1.1),rate:r*rnd(.95,1.05),pan:f*.12,dry:.75,wet:.5,delay:gap});
+      if(Math.random()<(v<.8?.5:.3))hit(pick(SND.scuff),{vol:.045*rnd(.6,1.2),rate:rnd(.9,1.15),pan:f*.15,dry:.8,wet:.35,delay:gap+rnd(.1,.16)});
+      if(Math.random()<.08)hit(pick(SND.squeak),{vol:.03*rnd(.6,1.1),rate:rnd(.9,1.12),pan:f*.15,dry:.7,wet:.5,delay:gap*.6});
+      hit(pick(SND.cloth),{vol:.011*v,rate:rnd(.85,1.2),pan:-f*.2,dry:1,delay:.28/v});
+      nhit('lowpass',240,.7,.05,.018*v,{dry:1});
+    },
+    shuffle(){hit(pick(SND.scuff),{vol:.05,rate:.85,dry:.8,wet:.35,delay:.22});hit(pick(SND.toe),{vol:.08,rate:.92,dry:.75,wet:.45,delay:.5})},
+    pivot(){hit(pick(SND.scuff),{vol:.07,rate:.8,dry:.8,wet:.4});hit(pick(SND.squeak),{vol:.04,rate:.85,dry:.7,wet:.5,delay:.12});hit(pick(SND.toe),{vol:.1,dry:.75,wet:.45,delay:.42})},
+    bare(v,close){
+      const pan=rnd(-.25,.25),lp=700+4200*close,dry=.1+.75*close,wet=1.1-.6*close,r=rnd(.93,1.05);
+      hit(pick(SND.bheel),{vol:v*.8,rate:r,pan,lp:500+1500*close,dry,wet});
+      hit(pick(SND.bslap),{vol:v,rate:r,pan,lp,dry,wet,delay:rnd(.06,.085)});
+      if(close>.3)hit(pick(SND.peel),{vol:v*.3*close,rate:rnd(.9,1.1),pan,lp,dry,wet:.3,delay:Math.max(.2,S.exPer-.13)});
+    },
+    knock(pan){for(let i=0;i<3;i++)hit(pick(SND.knock),{vol:.5*(i?rnd(.7,.95):1),rate:rnd(.96,1.04),pan,lp:1400,dry:.55,wet:.6,delay:i*rnd(.3,.36)})},
+    callTone(v,pan){tone('sine',988,988,.5,.05*v,{pan,dry:.3,wet:.8,att:.01});tone('sine',784,784,.7,.05*v,{pan,dry:.3,wet:.8,att:.01,delay:.42})},
+    tink(){tone('sine',3100,2900,.25,.025,{wet:.8,dry:.5});nhit('highpass',4000,.7,.02,.04,{wet:.6});tone('sine',120,60,.3,.06,{wet:.6})},
+    chime(){const pan=rnd(-.4,.4),ns=Math.random()<.5?[523,659,784,1047]:[1047,784,659,523],bad=Math.random()<.3;   // 館内放送のチャイムだけが鳴り、あとは何も言わない
+      ns.forEach((f,i)=>{const q=bad&&i===3;if(q)f*=.955;
+        tone('sine',f,q?f*.97:f,1.5,.045,{pan,dry:.03,wet:1,att:.006,delay:i*.55});tone('sine',f*2.76,f*2.76,.5,.008,{pan,dry:.02,wet:1,delay:i*.55})});
+      nhit('bandpass',1500,.7,3.2,.006,{pan,dry:.03,wet:1,delay:2.4})},
+    phone(){                                                          // 遠くの電話。途中で誰かが取る
+      if(!A.on)return;
+      const T=ac.currentTime+.05,o1=ac.createOscillator(),o2=ac.createOscillator(),lf=ac.createOscillator(),lg=G(.5),g=G(.5),e=G(0),p=PAN(rnd(-.5,.5)),d=G(.03);
+      o1.frequency.value=1280;o2.frequency.value=1610;lf.type='square';lf.frequency.value=20;
+      o1.connect(g);o2.connect(g);lf.connect(lg);lg.connect(g.gain);g.connect(e);e.connect(p);p.connect(roomIn);p.connect(d);d.connect(camIn);
+      const n=Math.random()<.5?3:2;
+      for(let i=0;i<n;i++){const a=T+i*3;e.gain.setValueAtTime(.012,a);e.gain.setValueAtTime(0,a+(i===n-1?rnd(.3,.7):1))}
+      [o1,o2,lf].forEach(o=>{o.start(T);o.stop(T+n*3)});o1.onended=()=>{try{p.disconnect()}catch(_){}};
+    },
+    click(){nhit('highpass',2500,.7,.012,.07);tone('sine',1700,900,.02,.03)},
+    latch(pan,far){const l=far?1500:6000;nhit('bandpass',1800,2,.03,far?.06:.1,{pan,wet:.9});
+      tone('sine',170,85,.12,far?.2:.3,{pan,wet:1.1,dry:far?.3:.8});nhit('lowpass',l,.6,.09,.08,{pan,wet:.9,delay:.02})},
+    beep(){tone('square',2850,2850,.05,.03);tone('square',2850,2850,.05,.03,{delay:.09})},
+    whisper(kind,o){
+      if(!A.on||!sas)return;o=o||{};const L=S.level;
+      const ok=v=>L>=4||(L>=2?v!=='ookii'&&v!=='otoko':v==='onna'||v==='roba'||v==='rojin');
+      let w;
+      if(kind==='near'&&L>=3&&Math.random()<.45)w=WORDS[(Math.random()*WORDS.length)|0];
+      else{const c=WH.filter(x=>ok(x[1]));w=c[(Math.random()*c.length)|0]}
+      sas.say(kind,{text:w[0],voice:w[1],vol:(o.vol||1)*(kind==='near'?2.4:1),pan:o.pan,delay:o.delay});
+    },
+    glitch(dur){const T=ac.currentTime;camG.gain.cancelScheduledValues(T);camG.gain.setValueAtTime(.22,T);camG.gain.setValueAtTime(1,T+dur);
+      wow.delayTime.setTargetAtTime(.03,T,.04);wow.delayTime.setTargetAtTime(.014,T+dur,.08);
+      nhit('lowpass',3000,.5,dur,.08,{direct:1})},
+    snow(dur){const T=ac.currentTime;nhit('highpass',700,.5,dur,.22,{direct:1});
+      camG.gain.cancelScheduledValues(T);camG.gain.setValueAtTime(0,T);camG.gain.setValueAtTime(0,T+dur+.25);camG.gain.linearRampToValueAtTime(1,T+dur+.5)},
+    far(){const r=Math.random(),pan=rnd(-.6,.6);
+      if(r>.84){A.chime();return}
+      if(r>.68){A.phone();return}
+      if(r<.28){tone('sine',75,42,.5,.4,{pan,dry:.05,wet:1});nhit('lowpass',400,.6,.25,.2,{pan,dry:.05,wet:1})}
+      else if(r<.48){for(let i=0;i<3;i++)tone('sine',140,90,.09,.22,{pan,dry:.04,wet:1,delay:i*rnd(.4,.5)})}
+      else{const f=rnd(300,420);tone('sawtooth',f,f*1.18,.9,.012,{pan,dry:.05,wet:1,att:.3});tone('sawtooth',f*2.03,f*2.3,.7,.006,{pan,dry:.05,wet:1,att:.2})}},
+    breath(v,dur,o){
+      if(!A.on)return;o=o||{};
+      const f1=o.f1||1050,f2=o.f2||640,T=ac.currentTime+.02+(o.delay||0),s=ac.createBufferSource(),f=BQ('bandpass',f1,.9),e=G(0),p=PAN(o.pan==null?.12:o.pan);
+      s.buffer=nb;s.loop=true;s.connect(f);f.connect(e);e.connect(p);p.connect(camIn);
+      if(o.wet){const w=G(o.wet);p.connect(w);w.connect(roomIn)}
+      f.frequency.setValueAtTime(f1,T);f.frequency.setValueAtTime(f2,T+dur*.5);
+      e.gain.setValueAtTime(0,T);e.gain.linearRampToValueAtTime(v,T+dur*.3);e.gain.linearRampToValueAtTime(0,T+dur*.46);
+      e.gain.setValueAtTime(0,T+dur*.52);e.gain.linearRampToValueAtTime(v*.8,T+dur*.66);e.gain.linearRampToValueAtTime(0,T+dur);
+      s.start(T,Math.random());s.stop(T+dur+.05);s.onended=()=>{try{p.disconnect()}catch(_){}};
+    },
+    // 毎フレーム：状態に合わせて床の音量を動かし、息・囁き・遠い物音の番を回す
+    frame(lampNear){
+      if(!A.on||ac.state!=='running')return;
+      const T=ac.currentTime,L=Math.min(S.level,7.5);
+      droneG.gain.setTargetAtTime(.004+.03*Math.pow(L/7.5,1.5),T,1.5);
+      buzzG.gain.setTargetAtTime(.02*lampNear,T,.12);humG.gain.setTargetAtTime(.5+1.5*lampNear,T,.2);
+      floorG.gain.setTargetAtTime(S.duck,T,.3);
+      agcG.gain.setTargetAtTime(S.speed<.15?1.6:1,T,S.speed<.15?1.4:.25);
+      if(T>breathAt){const per=3.7-1.7*S.fear;A.breath(.022+.04*S.fear,per*.82);breathAt=T+per}
+      if(T>whAt&&!S.beat){const r=Math.random();A.whisper(r<.55?'far':r<.75?'canon':(L>=4&&r>.9)?'near':'rev');whAt=T+rnd(24,50)*(1-.07*L)}
+      if(T>farAt){A.far();farAt=T+rnd(35,80)}
+    },
+    breath2(){for(let i=0;i<2;i++)A.breath(.05,3.6,{f1:520,f2:330,pan:-.75,wet:.25,delay:i*4.3})},   // 自分のものではない息
+    relite(){cvn.buffer=corridorIR(lite?1.5:3);if(sas)sas.dispose();mkSas()},
+    tap:shp
+  });
+}
+function startAudio(){
+  if(userMuted)return;initAudio();if(!ac)return;
+  if(ac.state!=='running')ac.resume().catch(()=>{});
+  A.setOn(true);syncUI();
+}
+
+/* ---------- 出来事 ---------- */
+function startBeat(type,o){S.beat=Object.assign({type,t:0},o);S.lastBeat=type;S.nBeats++}
+function endBeat(gap){S.beat=null;S.bm=1;S.blurT=0;S.aeW=0;S.nextBeat=S.t+(gap||rnd(16,30)*(1-.06*Math.min(S.level,6)))}
+function pickBeat(){
+  const L=S.level;
+  if(L>=7){startBeat('capture');return}
+  const c=[['box',3],['glitch',1]];
+  if(S.nBeats>0)c.push(['door',2]);
+  if(S.nBeats>0)c.push(['call',1.5],['lampout',1.4]);
+  if(L>=.5)c.push(['far',2],['drop',2.5]);
+  if(L>=1)c.push(['stop',2.5],['room',2]);
+  if(L>=1.5)c.push(['knock',2]);
+  if(L>=2&&!S.pr.w)c.push(['prints',1.6]);
+  if(L>=2.5)c.push(['lurk',2.2]);
+  const ok=S.nBeats?c.filter(x=>x[0]!==S.lastBeat):[c[0]];
+  let r=Math.random()*ok.reduce((s,x)=>s+x[1],0);
+  for(const x of ok){r-=x[1];if(r<=0){startBeat(x[0]);return}}
+  startBeat(ok[0][0]);
+}
+const kBase=()=>Math.floor(S.z/SEG);
+function setFig(o){Object.assign(S.fig,{mode:0,side:1,x:0,h:2.05,rel:null,tau:.5},o)}
+function director(dt){
+  const b=S.beat,L=S.level,F=S.fig,B=S.box;
+  if(!b){
+    if(S.t>=S.nextBeat)pickBeat();
+    else if(S.t>S.peekOk){
+      // たまたま開いている扉の前では、通りがけにカメラを向ける
+      const k0=kBase();
+      for(let k=k0;k<=k0+1;k++)for(const s of[-1,1])if(doorStJS(k,s)===3&&!(S.door.mode&&S.door.k===k&&S.door.side===s)){
+        const zD=k*SEG+(s<0?1.5:3.5),d=zD-S.z;
+        if(d>1.5&&d<2&&!S.beat){if(Math.random()<.6)startBeat('peek',{zD,side:s});else S.peekOk=S.t+4}
+      }
+    }
+    return;
+  }
+  b.t+=dt;const t=b.t;
+  switch(b.type){
+  case'box':                       // 顔検出の枠が、何もない暗がりを捉える
+    if(!b.i){b.i=1;b.dur=rnd(2.8,4.4);b.d=rnd(8,14);b.x=rnd(-.6,.6);b.y=1.72+.07*Math.min(L,6);b.vx=rnd(-.08,.08);B.on=1;B.lock=0;B.t=0}
+    b.d-=.22*dt;b.x+=b.vx*dt;B.p=[b.x,b.y,S.z+b.d];
+    S.blurT=t<.4?2.6:t<.85?.3:t<1.15?1.5:0;
+    if(t>1.15&&!B.lock){B.lock=1;A.on&&A.beep()}
+    if(t>b.dur){B.on=0;S.level+=.6;endBeat()}
+    break;
+  case'far':                       // 非常口の灯の手前に立つ影
+    if(!b.i){b.i=1;b.dur=rnd(9,14);setFig({x:rnd(-.22,.22),h:2.05+.03*L,rel:S.D-rnd(4,6),visT:1,tau:1.2})}
+    if(t>b.dur)F.visT=0;
+    if(t>b.dur+2.5){S.level+=.7;endBeat()}
+    break;
+  case'drop':                      // ライトが落ち、感度が上がる
+    if(!b.i){b.i=1;b.dur=rnd(2.6,4.4);S.lightT=0;S.bm=.5;A.on&&A.click();b.linger=L>=4&&Math.random()<.35;
+      b.wh=Math.random()<.6?rnd(1,1.8):99}
+    if(t>.9&&L>=2&&!b.f){b.f=1;setFig({x:rnd(-.16,.16),z:S.z+Math.max(3.2,rnd(5.5,8)-.45*L),h:2.05+.04*Math.min(L,6),visT:.95,tau:.7})}
+    if(t>b.wh){b.wh=99;A.whisper(Math.random()<.5?'rev':'near',{vol:1.2})}
+    if(b.f&&F.z-S.z<1.6){F.visT=0;F.tau=.08}
+    if(t>b.dur-.35&&!b.linger){F.visT=0;F.tau=.1}
+    if(t>b.dur&&!b.on){b.on=1;S.lightT=1;S.bm=1;A.on&&A.click()}
+    if(b.linger&&t>b.dur+.3&&!b.g){b.g=1;F.visT=0;F.vis=0;S.glitch=.8;b.gt=.3;A.on&&A.glitch(.3)}
+    if(b.g){b.gt-=dt;if(b.gt<0)S.glitch=0}
+    if(t>b.dur+.9){S.glitch=0;S.fear=Math.min(1,S.fear+.4);S.level+=1;endBeat()}
+    break;
+  case'stop':                      // 立ち止まって聞く。足音がひとつ多い
+    if(!b.i){b.i=1;b.dur=rnd(5,7.5);S.bm=0;b.back=L>=2&&Math.random()<.6;b.dir=Math.random()<.5?1:-1;
+      if(L>=1){S.exLeft=2+(Math.random()<.5?1:0);S.exVol=.16+.03*L;S.exClose=.15;S.exGrow=0}
+      b.wh=Math.random()<.7?rnd(2.4,3.2):99}
+    if(t>1.3&&!b.l){b.l=1;if(b.back){S.yawAT=Math.PI*b.dir;S.yawTau=.45;if(!G.on)A.pivot()}else{S.yawAT=.45*b.dir;S.yawTau=.9}}
+    if(L>=4&&t>2&&!b.b2){b.b2=1;A.breath2()}
+    if(!b.back&&t>3.2&&!b.l2){b.l2=1;S.yawAT=-.3*b.dir}
+    if(b.back&&t>2.4&&L>=3&&!b.b){b.b=1;B.on=1;B.lock=0;B.t=0;B.p=[rnd(-.4,.4),1.85+.06*Math.min(L,6),S.z-Math.max(2.4,8-L)];b.bt=t}
+    if(b.b&&!B.lock&&t>b.bt+.8){B.lock=1;A.on&&A.beep()}
+    if(b.back&&t>2&&L>=5&&!b.f){b.f=1;setFig({x:rnd(-.2,.2),z:S.z-(S.D-6),h:2.2,visT:1,tau:.8})}
+    if(t>b.wh){b.wh=99;A.whisper('near',{pan:-b.dir*.9,vol:1.1})}
+    if(t>b.dur-1.2&&!b.r){b.r=1;S.yawAT=0;S.yawTau=.4;B.on=0;F.visT=0;F.tau=.3}
+    if(t>b.dur){S.hurry=S.t+12;S.fear=Math.min(1,S.fear+.5);S.level+=1;endBeat()}
+    break;
+  case'door':                      // すき間のあいた扉が、近づくと閉まる
+    if(!b.i){b.i=1;S.door={k:kBase()+3,side:Math.random()<.5?-1:1,mode:2,gap:.1};b.zD=doorZ(S.door)}
+    if(S.z>b.zD-5.2&&!b.c){b.c=1;b.ct=0}
+    if(b.c&&S.door.mode===2){b.ct+=dt;S.door.gap=.1*Math.max(0,1-b.ct/.45);
+      if(b.ct>=.45){S.door.mode=3;A.on&&A.latch(S.door.side*.6,false);S.yawAT=S.door.side*.5;S.yawTau=.3;S.bm=.6;b.e=t}}
+    if(b.e&&t>b.e+1.6&&!b.r){b.r=1;S.yawAT=0;S.yawTau=.5;S.bm=1}
+    if(S.z>b.zD+1&&b.e){S.yawAT=0;S.level+=.6;endBeat()}
+    break;
+  case'room':{                     // 開いた病室。通りがけに、中へカメラを向け続ける
+    if(!b.i){b.i=1;S.door={k:kBase()+3,side:Math.random()<.5?-1:1,mode:1,gap:0};b.zD=doorZ(S.door);
+      b.fig=L>=2&&Math.random()<.45;b.emp=!b.fig&&L>=1&&Math.random()<.5;
+      b.tp=[S.door.side*(W+2),1.9,b.zD];
+      if(b.fig){setFig({mode:1,side:S.door.side,x:S.door.side*(W+2),z:b.zD+rnd(-.35,.35),h:2.05+.04*Math.min(L,6),visT:1,tau:.05});b.tp=[S.door.side*(W+2),F.h-.11,F.z]}
+      else if(b.emp)b.tp=[S.door.side*(W+rnd(1.6,2.6)),rnd(1.7,2),b.zD+rnd(-.4,.4)]}
+    const dzr=b.zD-S.z;
+    if(dzr<2.3&&dzr>-1){
+      if(!b.g){b.g=1;S.bm=.5;S.yawTau=.28;S.aeW=2.4}
+      S.yawAT=Math.atan2(b.tp[0],b.tp[2]-S.z);
+      const see=Math.abs(S.z+(b.tp[2]-S.z)*W/Math.abs(b.tp[0])-b.zD)<.4;      // 戸口ごしに見通せるか
+      if((b.fig||b.emp)&&see){
+        if(!B.on){B.on=1;B.lock=0;B.t=0;b.bt=t}
+        B.p=b.tp;if(!B.lock&&t>b.bt+.6){B.lock=1;A.on&&A.beep()}
+      }else B.on=0;
+    }
+    if(dzr<=-1&&!b.r){b.r=1;S.yawAT=0;S.yawTau=.35;B.on=0;S.aeW=0;S.bm=b.fig?1.25:1}
+    if(S.z>b.zD+2.5){
+      // 通り過ぎたあとで、後ろの扉が閉まる
+      F.visT=0;F.vis=0;S.door.mode=3;A.on&&A.latch(-S.door.side*.3,true);
+      if(b.fig){S.hurry=S.t+8;S.fear=Math.min(1,S.fear+.4)}
+      S.level+=b.fig?.9:.5;endBeat();
+    }
+    break}
+  case'glitch':                    // テープの乱れ。直ったあと、点いている蛍光灯が入れ替わっている
+    if(!b.i){b.i=1;b.dur=rnd(.3,.7);S.glitch=rnd(.5,.9)*(RM?.5:1);A.on&&A.glitch(b.dur)}
+    if(t>b.dur){S.glitch=0;S.seed=(S.seed+1)%50;S.kill=-9999;S.level+=.2;endBeat(rnd(8,14))}
+    break;
+  case'lurk':                      // 先の戸口から半身を出しているものが、近づくと引っこむ
+    if(!b.i){b.i=1;b.sd=Math.random()<.5?-1:1;S.door={k:kBase()+3,side:b.sd,mode:1,gap:0};b.zD=doorZ(S.door);
+      setFig({mode:1,side:b.sd,x:b.sd*(W-.04),z:b.zD-.22,h:2.1+.03*Math.min(L,6),visT:1,tau:.05})}
+    if(!b.w&&S.z>b.zD-4.6)b.w=t;
+    if(b.w&&!b.c){const u=clamp((t-b.w)/.55,0,1);F.x=b.sd*(W-.04+u*u);
+      if(u>=1){b.c=t;F.visT=0;F.vis=0;S.door.mode=2;S.door.gap=.3;A.on&&A.bare(.16,.55)}}
+    if(b.c&&S.door.mode===2){S.door.gap=.3*clamp(1-(t-b.c-.25)/.5,0,1);
+      if(S.door.gap<=0){S.door.mode=3;A.on&&A.latch(b.sd*.6,false);S.yawAT=b.sd*.5;S.yawTau=.3;S.bm=.55;b.e=t}}
+    if(b.e&&t>b.e+1.8&&!b.r){b.r=1;S.yawAT=0;S.yawTau=.5;S.bm=1}
+    if(b.e&&S.z>b.zD+1){S.yawAT=0;S.fear=Math.min(1,S.fear+.5);S.hurry=S.t+6;S.level+=.9;endBeat()}
+    break;
+  case'call':{                     // ナースコールの灯とチャイム。近づくと止む
+    if(!b.i){b.i=1;b.sd=Math.random()<.5?-1:1;S.door={k:kBase()+3,side:b.sd,mode:3,gap:0};b.zD=doorZ(S.door);S.call={k:S.door.k,side:b.sd,on:0};b.nt=0}
+    const d=b.zD-S.z;
+    if(!b.q){S.call.on=(t%1.6)<.8?1:.1;
+      if(t>b.nt){b.nt=t+2.4;A.on&&A.callTone(clamp(1.6/(1+d*d/30),.15,1.3),b.sd*clamp(1.5/Math.max(d,1),.15,.8))}
+      if(d<2.4){b.q=t;S.call.on=0;S.yawAT=b.sd*.5;S.yawTau=.35;S.bm=.6}}
+    if(b.q&&t>b.q+1.8&&!b.r){b.r=1;S.yawAT=0;S.yawTau=.5;S.bm=1}
+    if(b.q&&d<-1){S.yawAT=0;S.level+=.5;endBeat()}
+    break}
+  case'knock':                     // 通りがけに、閉まった扉の内側から叩く音。カメラは顔を探すが、合わない
+    if(!b.i){b.i=1;b.sd=Math.random()<.5?-1:1;S.door={k:kBase()+2,side:b.sd,mode:3,gap:0};b.zD=doorZ(S.door)}
+    if(!b.k&&S.z>b.zD-.5){b.k=t;A.on&&A.knock(b.sd*.85);S.bm=.12;S.yawAT=b.sd*1.35;S.yawTau=.22;
+      B.on=1;B.lock=0;B.t=0;B.p=[b.sd*W,1.52,b.zD+.2];b.wh=Math.random()<.5?t+1.6:1e9}
+    if(b.k){S.blurT=((t-b.k)%1.1)<.5?2.2:.3;
+      if(t>b.wh){b.wh=1e9;A.whisper('near',{pan:b.sd*.9,vol:.9})}
+      if(t>b.k+3&&!b.r){b.r=1;B.on=0;S.yawAT=0;S.yawTau=.35;S.bm=1.2;S.hurry=S.t+7}
+      if(t>b.k+3.8){S.fear=Math.min(1,S.fear+.4);S.level+=.8;endBeat()}}
+    break;
+  case'lampout':                   // 行く手の蛍光灯が、近づくと消える
+    if(!b.i){b.i=1;b.k=null;for(let k=kBase()+2;k<=kBase()+9;k++)if(k!==S.kill&&lampJS(k)>0){b.k=k;break}
+      if(b.k==null){S.beat=null;S.nBeats--;startBeat('box');break}}
+    if(!b.o&&(b.k+.5)*SEG-S.z<6.5){b.o=t;S.kill=b.k;A.on&&A.tink()}
+    if(b.o&&t>b.o+1.5){S.level+=.4;endBeat(rnd(9,15))}
+    break;
+  case'prints':{                   // 濡れた裸足の跡が、先へ続いて途切れる
+    const z0=Math.ceil((S.z+7)*2)/2;S.pr={z0,z1:z0+Math.round(rnd(14,20)),x:(Math.random()<.5?-1:1)*rnd(.25,.45),w:1,done:0};
+    S.level+=.7;endBeat(rnd(10,16));
+    break}
+  case'peek':
+    if(!b.i){b.i=1;S.yawTau=.3;S.bm=.7;S.aeW=2.4}
+    S.yawAT=Math.atan2(b.side*(W+2),b.zD-S.z);
+    if(S.z>b.zD+.6){S.yawAT=0;S.yawTau=.4;S.peekOk=S.t+6;const nb=S.nextBeat;endBeat();S.nextBeat=Math.max(nb,S.t+3);S.nBeats--}
+    break;
+  case'capture':                   // 追いつかれる
+    if(!b.i){b.i=1;S.bm=0;b.dir=Math.random()<.5?1:-1;S.exLeft=6;S.exVol=.2;S.exClose=.1;S.exGrow=1;S.exPer=.58}
+    if(t>3.6)S.duck=.12;
+    if(t>4.6&&!b.l){b.l=1;S.yawAT=Math.PI*b.dir;S.yawTau=1.1}
+    if(t>7.4&&!b.b){b.b=1;B.on=1;B.lock=0;B.t=0;B.p=[.1,1.66,S.z-1.6]}
+    if(t>8.3&&!B.lock&&b.b){B.lock=1;A.on&&A.beep()}
+    if(t>8.9&&!b.w){b.w=1;A.whisper('near',{pan:.9,vol:1.4})}
+    if(t>9.6&&!b.d){b.d=1;S.lightT=0;A.on&&A.click();setFig({x:.1,z:S.z-1.5,h:2.3,visT:1,tau:.5})}
+    if(t>11.4&&!b.s){b.s=1;S.snow=1;S.glitch=1;S.roll=RM?0:.37;A.on&&A.snow(.55)}
+    if(t>11.95){
+      // カット。録画は続いているが、非常口は遠くなり、灯りは減る
+      S.snow=0;S.glitch=0;S.roll=0;S.yawA=S.yawAT=0;S.yawU=S.pitU=0;S.light=S.lightT=1;S.expo=1.02;
+      S.fig.vis=S.fig.visT=0;B.on=0;S.level=0;S.duck=1;S.exPer=.69;S.exGrow=0;S.fear=.6;
+      cuts=Math.min(40,cuts+1);store.set('tomaranai-cuts',String(cuts));
+      S.D=Math.min(62,30+2*cuts);S.lampP=Math.max(.05,.16-.01*cuts);S.seed=(S.seed+7)%50;S.kill=-9999;S.door.mode=0;S.call.on=0;S.pr.w=0;S.play=3.5;
+      endBeat(rnd(24,30));
+    }
+    break;
+  }
+}
+
+/* ---------- 1コマぶん進める ---------- */
+function tick(dt){
+  S.t+=dt;
+  const target=BASE*S.bm*(S.t<S.hurry?1.28:1);
+  S.speed+=(target-S.speed)*ease(dt,target<S.speed?.3:.6);
+  S.z+=S.speed*dt;
+  const p0=Math.floor(S.phase/Math.PI);S.phase+=S.speed/STEP*Math.PI*dt;S.stepT+=dt;
+  if(Math.floor(S.phase/Math.PI)!==p0&&S.speed>.12){S.stepT=0;A.on&&A.step(clamp(S.speed/BASE,.5,1.3))}
+  if(S.speed>.25)S.moving=1;else if(S.moving&&S.speed<.08){S.moving=0;A.on&&A.shuffle()}       // 立ち止まると、体重を移す音
+  // もうひとつの足音
+  const exOn=S.level>=1.5&&S.speed>.3&&!(S.beat&&S.beat.type==='capture');
+  if(S.exLeft>0||exOn){
+    S.exPh+=dt/(S.exPer*(S.exFoot>0?1.1:.9));                        // 左右で間隔が違う（片足をかばう歩き方）
+    if(S.exPh>=1){S.exPh-=1;S.exFoot=-S.exFoot;
+      if(S.exLeft>0){A.on&&A.bare(S.exVol,S.exClose);S.exLeft--;if(S.exGrow){S.exVol=Math.min(.45,S.exVol*1.24);S.exClose=Math.min(1,S.exClose+.17)}}
+      else A.on&&A.bare(.09+.03*Math.min(S.level,6),.12);
+    }
+  }
+  // 向き：手で動かしたぶんは、放すと少しして正面へ戻る
+  if(G.on&&G.az0!=null){
+    // ジャイロ：端末がそのままカメラになる。出来事によるカメラの振り向きは止める（振り返るのは見る人）
+    let d=G.az-G.az0+G.off-S.yawU;d=Math.atan2(Math.sin(d),Math.cos(d));
+    const k=ease(dt,.08);S.yawU+=d*k;S.pitU+=(clamp(G.pit,-.75,.75)-S.pitU)*k;S.rollU+=(clamp(G.roll,-.6,.6)-S.rollU)*k;
+    S.lastInput=S.t;
+  }else{
+    if(S.t-S.lastInput>4){S.yawU-=S.yawU*ease(dt,1.4);S.pitU-=S.pitU*ease(dt,1.4)}
+    S.rollU-=S.rollU*ease(dt,.5);
+  }
+  S.yawA+=((G.on?0:S.yawAT)-S.yawA)*ease(dt,S.yawTau);
+  // ライト：接触の悪さでときどき一瞬沈む
+  if(S.t>S.nextDip){S.dip=.16;S.nextDip=S.t+rnd(18,50)}
+  S.dip=Math.max(0,S.dip-dt);
+  S.light+=(S.lightT-S.light)*ease(dt,S.lightT<S.light?.05:.14);
+  S.blur+=(S.blurT-S.blur)*ease(dt,.18);
+  S.fear=Math.max(0,S.fear-dt/40);
+  const F=S.fig;F.vis+=(F.visT-F.vis)*ease(dt,F.tau);if(F.vis<.004&&F.visT===0)F.vis=0;
+  if(F.rel!=null)F.z=S.z+F.rel;
+  if(S.box.on)S.box.t+=dt;
+  if(S.play>0)S.play-=dt;
+  {const P=S.pr;if(P.w){if(!P.done&&S.z>P.z1-1.3){P.done=1;A.on&&A.bare(.2,.85)}if(S.z>P.z1+8)P.w=0}}
+  director(dt);
+  // 自動露出：近くに点いた蛍光灯や壁があると絞り、暗いと感度を上げる
+  const fx=Math.abs(Math.sin(S.yawU+S.yawA)),dW=Math.min(8,fx>.05?W/fx:99);
+  const lite_=S.light*(S.dip>0?.45:1);
+  let lum=lite_*((!G.on&&S.aeW)||clamp(22/(dW*dW+2.2),1,9)),near=0;
+  const k0=kBase();
+  for(let k=k0-1;k<=k0+2;k++){const on=lampJS(k);if(on){const d=(k+.5)*SEG-S.z;lum+=on*1.3/(1+d*d/4.8);near=Math.max(near,on/(1+d*d/2.6))}}
+  const te=Math.min(RM?7:11,1.05/(.03+lum));
+  S.expo+=(te-S.expo)*ease(dt,te<S.expo?.24:.9);
+  S.lampNear=near;
+  A.on&&A.frame(near);
+}
+
+/* ---------- カメラ ---------- */
+function camera(){
+  const t=S.t,rm=(RM?.35:1)*(G.on?.35:1),sp=Math.min(S.speed/BASE,1.3),ph=S.phase;
+  const jolt=-Math.exp(-S.stepT*7)*Math.cos(S.stepT*19);
+  const yaw=S.yawU+S.yawA+((nz(t*.9)-.5)*.08+(nz(t*2.7+80)-.5)*.02+Math.sin(ph)*.012*sp)*rm;
+  const pit=clamp(S.pitU,-.75,.75)-(G.on?0:.05)+((nz(t*.9+40)-.5)*.055+(nz(t*2.7+120)-.5)*.016+jolt*.013*sp)*rm;
+  const roll=S.rollU+(Math.sin(ph)*.014*sp+(nz(t*.5+200)-.5)*.035)*rm;
+  const pos=[(Math.sin(ph)*.03*sp+.12*Math.sin(t*.11))*rm,1.44-Math.cos(ph*2)*.022*sp*rm,S.z-kBase()*SEG];
+  const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pit),sp2=Math.sin(pit),cr=Math.cos(roll),sr=Math.sin(roll);
+  const f=[sy*cp,sp2,cy*cp],r0=[cy,0,-sy],u0=[-sy*sp2,cp,-cy*sp2];
+  const r=[r0[0]*cr+u0[0]*sr,r0[1]*cr+u0[1]*sr,r0[2]*cr+u0[2]*sr],u=[u0[0]*cr-r0[0]*sr,u0[1]*cr-r0[1]*sr,u0[2]*cr-r0[2]*sr];
+  return{pos,r,u,f};
+}
+function project(p,cam){
+  const vx=p[0]-cam.pos[0],vy=p[1]-cam.pos[1],vz=p[2]-S.z;
+  const zc=vx*cam.f[0]+vy*cam.f[1]+vz*cam.f[2];if(zc<.2)return null;
+  const sx=(vx*cam.r[0]+vy*cam.r[1]+vz*cam.r[2])/(zc*FOV)/ASP*.5,sy=(vx*cam.u[0]+vy*cam.u[1]+vz*cam.u[2])/(zc*FOV)*.5;
+  const q=1/(.93*(1+.07*(sx*sx*ASP*ASP+sy*sy)));
+  return[.5+sx*q,.5+sy*q,zc];
+}
+
+/* ---------- 画面の文字（5×7の点で描く） ---------- */
+const GLY={'0':'01110100011001110101110011000101110','1':'00100011000010000100001000010001110','2':'01110100010000100010001000100011111',
+'3':'11110000010000101110000010000111110','4':'00010001100101010010111110001000010','5':'11111100001111000001000011000101110',
+'6':'00110010001000011110100011000101110','7':'11111000010001000100010000100001000','8':'01110100011000101110100011000101110',
+'9':'01110100011000101111000010001001100',':':'00000001000010000000001000010000000','.':'00000000000000000000000000011000110',
+'R':'11110100011000111110101001001010001','E':'11111100001000011110100001000011111','C':'01110100011000010000100001000101110',
+'S':'01111100001000001110000010000111110','L':'10000100001000010000100001000011111','A':'01110100011000111111100011000110001','Y':'10001100010101000100001000010000100','P':'11110100011000111110100001000010000',' ':'00000000000000000000000000000000000'};
+function text(s,x,y,u,col){
+  const c=octx;
+  for(let pass=0;pass<2;pass++){
+    c.fillStyle=pass?col:'rgba(0,0,0,.75)';const o=pass?0:u*.7;
+    for(let i=0;i<s.length;i++){const g=GLY[s[i]];if(!g)continue;
+      for(let k=0;k<35;k++)if(g[k]==='1')c.fillRect(x+o+(i*6+k%5)*u,y+o+((k/5)|0)*u,u,u)}
+  }
+}
+const p2=n=>(n<10?'0':'')+n;
+function osd(cam){
+  const B=S.box,bp=B.on?project(B.p,cam):null,sec=Math.floor(S.t),bl=(S.t%1)<.6;
+  const key=sec+'|'+bl+'|'+(bp?1:0)+'|'+(S.play>0);
+  if(key===osdKey&&!bp)return;
+  osdKey=key;
+  const c=octx,w=SW,h=SH,u=OU,m=5*u,ink='#f2f2ea';
+  c.clearRect(0,0,w,h);
+  const tot=Math.max(0,Math.floor((Date.now()-FIRST)/1000)),now=new Date();
+  if(S.play>0){        // カットの直後だけ、再生の表示になる
+    c.fillStyle=ink;c.beginPath();c.moveTo(m+u,m);c.lineTo(m+6*u,m+3.5*u);c.lineTo(m+u,m+7*u);c.fill();text('PLAY',m+8*u,m,u,ink);
+  }else{
+    if(bl){c.fillStyle='#e8281c';c.beginPath();c.arc(m+3*u,m+3.5*u,2.7*u,0,6.3);c.fill()}
+    text('REC',m+8*u,m,u,ink);
+  }
+  text(Math.floor(tot/3600)+':'+p2(Math.floor(tot/60)%60)+':'+p2(tot%60),m,m+10*u,u,ink);
+  // 電池：減っていくが、最後の一目盛りから先は減らない
+  const bars=tot<600?3:tot<1500?2:1,bx=w-m-15*u,by=m;
+  if(bars>1||(S.t%1.4)<.8){
+    c.fillStyle=ink;c.fillRect(bx,by,14*u,u);c.fillRect(bx,by+6*u,14*u,u);c.fillRect(bx,by,u,7*u);c.fillRect(bx+13*u,by,u,7*u);c.fillRect(bx+14*u,by+2*u,u,3*u);
+    for(let i=0;i<bars;i++)c.fillRect(bx+2*u+i*3.7*u,by+2*u,2.7*u,3*u);
+  }
+  text('SP',bx-14*u,m,u,ink);
+  const d1=now.getFullYear()+'.'+p2(now.getMonth()+1)+'.'+p2(now.getDate()),d2=p2(now.getHours())+':'+p2(now.getMinutes())+':'+p2(now.getSeconds());
+  text(d1,m,h-m-18*u-Math.round(h*.02),u,ink);
+  text(d2,m,h-m-8*u-Math.round(h*.02),u,ink);
+  if(bp&&bp[0]>.03&&bp[0]<.97&&bp[1]>.05&&bp[1]<.95){
+    // 顔検出の枠
+    let sz=clamp(.5/(bp[2]*FOV)*h*.5,7*u,h*.6);
+    let x=bp[0]*w,y=(1-bp[1])*h;
+    if(!B.lock){sz*=1.25+.25*Math.sin(B.t*14);x+=(nz(S.t*9)-.5)*4*u;y+=(nz(S.t*9+50)-.5)*4*u}
+    const l=sz*.28,lw=B.lock?u*1.2:u,x0=Math.round(x-sz/2),y0=Math.round(y-sz/2),x1=Math.round(x+sz/2),y1=Math.round(y+sz/2);
+    for(let pass=0;pass<2;pass++){
+      const o=pass?0:u*.7;c.fillStyle=pass?(B.lock?'#ffe680':ink):'rgba(0,0,0,.7)';
+      [[x0,y0,1,1],[x1,y0,-1,1],[x0,y1,1,-1],[x1,y1,-1,-1]].forEach(([px,py,dx,dy])=>{
+        c.fillRect(Math.min(px,px+dx*l)+o,py-(dy<0?lw:0)+o,l,lw);c.fillRect(px-(dx<0?lw:0)+o,Math.min(py,py+dy*l)+o,lw,l)});
+    }
+  }
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,osdTex);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,ocv);
+}
+
+/* ---------- 描く ---------- */
+function draw(){
+  resize();frame=(frame+1)%1024;
+  const cam=camera(),kb=kBase(),F=S.fig,D=S.door,u=P1.u;
+  const exitB=1-.5*clamp((nz(S.t*.6+7)-.74)/.08,0,1);
+  let la=[cam.f[0]-cam.u[0]*.05,cam.f[1]-cam.u[1]*.05,cam.f[2]-cam.u[2]*.05];const ll=Math.hypot(la[0],la[1],la[2]);la=la.map(x=>x/ll);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.viewport(0,0,SW,SH);gl.useProgram(P1.p);
+  gl.uniform2f(u.uRes,SW,SH);gl.uniform3f(u.uCam,cam.pos[0],cam.pos[1],cam.pos[2]);
+  gl.uniformMatrix3fv(u.uRot,false,[cam.r[0],cam.r[1],cam.r[2],cam.u[0],cam.u[1],cam.u[2],cam.f[0],cam.f[1],cam.f[2]]);
+  gl.uniform1f(u.uFov,FOV);gl.uniform1f(u.uKB,kmod(kb));gl.uniform1f(u.uT,S.t%3600);gl.uniform1f(u.uExpo,S.expo);
+  gl.uniform1f(u.uSeed,S.seed);gl.uniform1f(u.uFill,.012+.075*(1-S.light));
+  gl.uniform4f(u.uLight,la[0],la[1],la[2],I0*S.light*(S.dip>0?.45:1)*(.95+.05*nz(S.t*9))*(1-.035*Math.min(S.level,7)));
+  gl.uniform3f(u.uLp,cam.pos[0]+cam.r[0]*.07+cam.u[0]*.06,cam.pos[1]+cam.r[1]*.07+cam.u[1]*.06,cam.pos[2]+cam.r[2]*.07+cam.u[2]*.06);
+  gl.uniform4f(u.uPr,S.pr.z0-kb*SEG,S.pr.z1-kb*SEG,S.pr.x,S.pr.w);gl.uniform3f(u.uCall,S.call.k-kb,S.call.side,S.call.on);gl.uniform1f(u.uKill,S.kill-kb);
+  gl.uniform4f(u.uExit,S.D,exitB,S.lampP,0);
+  gl.uniform4f(u.uFig,F.x,F.z-kb*SEG,F.h,F.vis);
+  gl.uniform4f(u.uDoor,D.k-kb,D.side,D.mode,D.gap);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  osd(cam);
+  // 誘導灯の縦の光の筋（古い撮像素子のスミア）
+  let smx=0,smi=0;
+  for(const s of[1,-1]){const q=project([0,2.22,S.z+s*S.D],cam);
+    if(q&&q[0]>0&&q[0]<1&&q[1]>-.2&&q[1]<1.2){
+      let blk=0;if(F.vis>0&&F.mode===0&&(F.z-S.z)*s>0&&Math.abs(F.z-S.z)<S.D)blk=F.vis*clamp((F.h-2.06)/.32,0,1)*(Math.abs(F.x)<.35?1:0);
+      smx=q[0];smi=.008*exitB*(1-blk)*Math.min(S.expo,4)}}
+  const v=P2.u;
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,cv.width,cv.height);gl.useProgram(P2.p);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sceneTex);gl.uniform1i(v.uScene,0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,osdTex);gl.uniform1i(v.uOsd,1);
+  gl.uniform2f(v.uRes,cv.width,cv.height);gl.uniform2f(v.uSRes,SW,SH);gl.uniform2f(v.uSmear,smx,smi);
+  gl.uniform1f(v.uFrame,frame);gl.uniform1f(v.uBlur,S.blur);
+  gl.uniform1f(v.uGain,Math.pow(clamp((S.expo-1.3)/9.7,0,1),.6));
+  gl.uniform1f(v.uGlitch,S.glitch);gl.uniform1f(v.uRoll,S.roll?fr(S.roll+S.t*1.7):0);gl.uniform1f(v.uSnow,S.snow);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+}
+
+/* ---------- 起動と操作 ---------- */
+try{if(!setupGL()){$('nogl').hidden=false;$('ui').hidden=true;return}}
+catch(e){$('nogl').hidden=false;$('nogl').textContent='映像の準備に失敗しました。';$('ui').hidden=true;console.error(e);return}
+let last=0,slow=0,lost=false;
+function loop(now){
+  requestAnimationFrame(loop);
+  if(lost||document.hidden||S.hold)return;
+  if(now-last<31)return;                       // 毎秒30コマ（ビデオと同じ）
+  const dt=Math.min(.1,(now-last)/1000);last=now;
+  const t0=performance.now();
+  tick(dt);draw();
+  // 重い端末では出力の解像度を下げる
+  slow=slow*.95+(performance.now()-t0>26?1:0)*.05;
+  if(slow>.6&&resScale>.36){resScale*=.75;slow=0}
+}
+requestAnimationFrame(loop);
+cv.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true});
+cv.addEventListener('webglcontextrestored',()=>{try{setupGL();lost=false}catch(e){}});
+let away=0;
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){away=Date.now();if(ac&&ac.state==='running')ac.suspend().catch(()=>{})}
+  else{last=performance.now();if(ac&&A.on)ac.resume().catch(()=>{});
+    // 目を離していたあいだに、少し近づいている
+    if(away&&Date.now()-away>20000&&!S.beat){S.level+=1;startBeat('glitch')}}
+});
+// 向きを変える
+let drag=null;
+cv.addEventListener('pointerdown',e=>{startAudio();drag={x:e.clientX,y:e.clientY};try{cv.setPointerCapture(e.pointerId)}catch(_){}wake()});
+cv.addEventListener('pointermove',e=>{
+  wake();if(!drag)return;
+  const k=2*FOV*ASP/(cv.clientWidth||innerWidth)*.9;
+  if(G.on)G.off-=(e.clientX-drag.x)*k;                    // ジャイロ中のドラッグは、正面の向きの合わせ直し
+  else{S.yawU-=(e.clientX-drag.x)*k;S.pitU=clamp(S.pitU+(e.clientY-drag.y)*k,-.7,.7)}
+  drag.x=e.clientX;drag.y=e.clientY;S.lastInput=S.t;
+});
+const up=()=>{drag=null;if(!G.on)S.yawU=Math.atan2(Math.sin(S.yawU),Math.cos(S.yawU))};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+addEventListener('keydown',e=>{
+  const d={ArrowLeft:[-.12,0],ArrowRight:[.12,0],ArrowUp:[0,.08],ArrowDown:[0,-.08]}[e.key];
+  if(!d)return;e.preventDefault();S.yawU+=d[0];S.pitU=clamp(S.pitU+d[1],-.7,.7);S.lastInput=S.t;wake();
+});
+// ボタン
+const ui=$('ui'),bs=$('bs'),bf=$('bf'),bl=$('bl'),bg=$('bg');let idleT=0;
+function wake(){ui.classList.remove('idle');clearTimeout(idleT);idleT=setTimeout(()=>ui.classList.add('idle'),3500)}
+function syncUI(){
+  bs.setAttribute('aria-pressed',String(A.on));$('bs1').style.display=A.on?'':'none';$('bs0').style.display=A.on?'none':'';
+  bl.setAttribute('aria-pressed',String(lite));bg.setAttribute('aria-pressed',String(G.on));
+  bf.setAttribute('aria-pressed',String(!!(document.fullscreenElement||document.webkitFullscreenElement)));
+}
+bs.addEventListener('click',()=>{
+  if(A.on){userMuted=true;A.setOn(false);syncUI()}else{userMuted=false;startAudio()}
+  wake();
+});
+const fsEl=document.documentElement,reqFS=fsEl.requestFullscreen||fsEl.webkitRequestFullscreen;
+if(!reqFS)bf.hidden=true;
+bf.addEventListener('click',()=>{
+  try{
+    if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen).call(document);
+    else{const r=reqFS.call(fsEl);if(r&&r.catch)r.catch(()=>{})}
+  }catch(_){}
+  wake();
+});
+document.addEventListener('fullscreenchange',syncUI);document.addEventListener('webkitfullscreenchange',syncUI);
+bl.addEventListener('click',()=>{lite=!lite;store.set('tomaranai-lite',lite?'1':'0');resScale=1;if(ac)A.relite();syncUI();wake()});
+// ジャイロのボタンは、タッチ端末で、枠の方針がセンサーを禁じていないときだけ出す
+{const fp=document.featurePolicy||document.permissionsPolicy;let ok=TOUCH&&'DeviceOrientationEvent' in window;
+  try{if(ok&&fp&&fp.allowsFeature&&(!fp.allowsFeature('gyroscope')||!fp.allowsFeature('accelerometer')))ok=false}catch(_){}
+  bg.hidden=!ok}
+bg.addEventListener('click',()=>{startAudio();gyroToggle();wake()});
+// 眺めているあいだ画面が消えないように（断られてもそのまま）
+let wl=null;
+function keepAwake(){try{if(navigator.wakeLock&&!wl&&!document.hidden)navigator.wakeLock.request('screen').then(x=>{wl=x;x.addEventListener('release',()=>{wl=null})}).catch(()=>{})}catch(_){}}
+addEventListener('pointerdown',keepAwake);document.addEventListener('visibilitychange',()=>{if(!document.hidden)keepAwake()});
+syncUI();wake();
+window.__rk={S,A,G,tick,draw,startBeat,camera,gyroToggle};
+})();
+</script>
+</body>
+</html>
