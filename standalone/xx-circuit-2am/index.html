@@ -1021,6 +1021,15 @@ vec3 mat(float m,float par,bool back){
     if(h21(floor(vUv*vec2(2.,3.))+par)<.06)discard;
     return c;
   }
+  if(m>24.5){                                 // 排気口の火：銃口の炎のような、一瞬の星形。芯は白く、外は橙
+    float r=length(vUv),a=atan(vUv.y,vUv.x),sd=vM.z;
+// 形：長さも向きもばらばらな、ごつごつした芯から、短く鋭い針が出る。片側だけ少し長い。出るたびに変わる（三角関数だけで作るので軽い）
+    float asy=.55+.45*sin(a+sd*2.3);
+    float lob=min(1.,.3*(.82+.18*sin(a*3.+sd*5.))+asy*(.5*pow(abs(sin(a*3.5+sd*1.7)),12.)+.3*pow(abs(sin(a*2.+sd*4.1)),20.))+.2*pow(abs(sin(a*5.5+sd*.9)),8.)*(.5+.5*sin(a*2.+sd)));
+    float fl=pow(max(1.-r/lob,0.),1.4),core=exp(-r*r*10.);
+    gA=clamp((fl+core)*par*1.6,0.,1.);if(gA<.02)discard;
+    gEm=mix(vec3(1.,.36,.06),vec3(1.,.93,.7),clamp(core*1.6+fl*.35,0.,1.))*par*7.*(fl+core*2.);return vec3(0.);
+  }
   if(m>23.5){                                 // 追ってくるものの口：口角の上がった、細い三日月。近いほど、はっきり白い
     float k=1.-vUv.x*vUv.x;if(k<=0.)discard;
     float dd=abs(vUv.y-(.4-.75*k))-.36*pow(k,.7);
@@ -1752,7 +1761,11 @@ function drawDyn(S){
     const w0=P([-.98,-.13,-3.2]),w1=P([.98,-.2,-3.2]);c.fillRect(w0[0],w0[1],w1[0]-w0[0],w1[1]-w0[1]);                                           // 後ろの羽根
     for(const sx of[-.98,.98]){const e0=P([sx,-.07,-3.2]),e1=P([sx,-.42,-3.2]);c.fillRect(e0[0]-3,e0[1],6,e1[1]-e0[1])}                           // 翼端板
     for(const sx of[-.3,.3]){const e0=P([sx,-.2,-3.2]),e1=P([sx,-.3,-2.4]);c.fillRect(e0[0]-2,e0[1],4,e1[1]-e0[1])}                               // 支柱
-    if(fl>.02){const g=c.createRadialGradient(w/2,h+8,4,w/2,h+8,130);g.addColorStop(0,'rgba(255,180,70,'+clamp(fl,0,1)+')');g.addColorStop(1,'rgba(255,90,10,0)');c.fillStyle=g;c.fillRect(0,0,w,h)}
+    // 排気口の火：尾の両端から、銃口の炎のように一瞬だけ噴く（ごつごつした芯から、短く鋭い針。出るたびに形が違う）
+    if(fl>.02)for(const sx of[-.6,.6]){const q=P([sx,-.55,-3.6]),R=q[2]*.62*(.45+.55*fl)*(.75+.25*Math.sin(S.flSeed*(sx>0?3.1:5.3))),sd=S.flSeed+(sx>0?2:0);
+      const g=c.createRadialGradient(q[0],q[1],1,q[0],q[1],R);g.addColorStop(0,'rgba(255,246,205,'+clamp(fl*1.4,0,1)+')');g.addColorStop(.3,'rgba(255,170,55,'+clamp(fl,0,1)*.9+')');g.addColorStop(1,'rgba(255,80,10,0)');
+      const lob=a=>Math.min(1,.3*(.82+.18*Math.sin(a*3+sd*5))+(.55+.45*Math.sin(a+sd*2.3))*(.5*Math.pow(Math.abs(Math.sin(a*3.5+sd*1.7)),12)+.3*Math.pow(Math.abs(Math.sin(a*2+sd*4.1)),20))+.2*Math.pow(Math.abs(Math.sin(a*5.5+sd*.9)),8)*(.5+.5*Math.sin(a*2+sd)));
+      c.fillStyle=g;c.beginPath();for(let k=0;k<=140;k++){const a=k/140*6.2832-3.1416,rr=R*lob(a);c.lineTo(q[0]+rr*Math.cos(a),q[1]+rr*Math.sin(a))}c.fill()}
     c.restore()}
   gl.bindTexture(gl.TEXTURE_2D,dynTex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,dcv);
 }
@@ -1761,7 +1774,7 @@ function drawDyn(S){
    すべて合成。エンジン（ロータリーの物理モデル）、タイヤと路面、風、雨、ワイパー、雷鳴、段差、計器の音、息、囁き。録音した素材は使わない。 */
 let ac=null,sas=null,userMuted=false;
 const A={on:false};
-['setOn','frame','bump','thump','scrape','knock','doorThunk','chime','ding','beep','relay','whisper','ear','laugh','gasp','radio','radioVoice','radioTune','radioWhisper','click','pass','relite','sputter','behind','creak','wipe','thunder','shift','pit'].forEach(k=>{A[k]=()=>{}});
+['setOn','frame','bump','thump','scrape','knock','doorThunk','chime','ding','beep','relay','whisper','ear','laugh','gasp','radio','radioVoice','radioTune','radioWhisper','click','pass','relite','sputter','behind','creak','wipe','thunder','shift','pit','afire'].forEach(k=>{A[k]=()=>{}});
 const WH=[['ho sa na','onna'],['ki he to ne','roba'],['su mi ha e','onna'],['shi na ho e to','onna'],['ha ne i so','shojo'],['ke su ra _ ke su ra','osanago'],
   ['he e _ so no ha','shojo'],['su mi ha e','osanago'],['ha ne i so','shonen'],['ki he to ne','osanago'],['chi ra to mo e','shojo'],['mo i ka su ne','otoko'],['ho sa na','ookii']];
 // 意味のある言葉。ひとり乗りの操縦席で聞こえるはずのない、ふつうの言葉だけ（怖がらせる言葉は入れない）
@@ -2002,6 +2015,12 @@ function initAudio(){
   const add=(key,cnt,len,fn)=>{for(let v=0;v<cnt;v++)jobs.push(()=>SND[key].push(bake(len,VOX[key]?(d,n)=>{fn(d,n);amRadio(d,n)}:fn)))};
   const pick=a=>a[(Math.random()*a.length)|0];
   const thud=(d,n,t0,spec)=>spec.forEach(([lo,hi,dec,g])=>band(d,n,t0,lo,hi,t=>t>6/dec?-1:Math.min(1,t/.0012)*Math.exp(-t*dec),g));
+  // 排気の火の破裂音：鋭い立ち上がりの雑音、こもった胴鳴り、下がっていく低い一発。ときどき二連発
+  SND.bang=[];add('bang',4,.34,(d,n)=>{const k=rnd(.85,1.2),f0=rnd(62,84),dbl=Math.random()<.4?(rnd(.012,.024)*sr)|0:0,kb=op(650);let bd=0;
+    for(let i=0;i<n;i++){let y=0;const w=Math.random()*2-1;bd+=(w-bd)*kb;
+      for(const o of dbl?[0,dbl]:[0]){if(i<o)continue;const u=(i-o)/sr,g=o?.6:1;
+        y+=g*(w*Math.exp(-u*260*k)*.8+bd*Math.exp(-u*45)*2.4+Math.sin(6.283*f0*u*(1+.8*Math.exp(-u*40)))*Math.exp(-u*28))}
+      d[i]=y}});
   add('thud',5,.3,(d,n)=>{const k=rnd(.85,1.2);thud(d,n,0,[[0,130,26,1.6],[130,420,55*k,.8],[420,1600,150*k,.22]]);sweep(d,n,0,82,52,50,40,.5)});    // タイヤが段差を越える
   add('rattle',4,.16,(d,n)=>{const c=rnd(2,5)|0;for(let i=0;i<c;i++)band(d,n,rnd(0,.09),1800,6500,t=>t>.012?-1:Math.exp(-t*380),rnd(.4,1))});             // 内装のびびり
   add('roof',3,.5,(d,n)=>{thud(d,n,0,[[0,200,20,1.6],[200,700,45,.6],[700,2500,140,.15]]);modes(d,n,0,[[138*rnd(.9,1.1),26,.5],[262*rnd(.9,1.1),40,.3],[410,60,.12]])});   // 屋根の鉄板
@@ -2219,6 +2238,21 @@ function initAudio(){
       hit(b,{vol:1,to:radIn,dry:1});duck(b.duration+.2,.75);
       return b.duration;
     },
+    /* 排気の火の音：火が見えるのと同時に、乾いた破裂音。そのあと、まわりから跳ね返ってくる。
+       擁壁の側からは、壁までの往復ぶん遅れて、はっきり一発。木立の側からは、ぼやけて短く。谷の側からは、ずっと遅れて、遠く小さく。
+       隧道の中では、両側の壁からすぐ返り、長い残響がつく */
+    afire(k){
+      const b=pick(SND.bang);if(!b||!A.on)return;
+      const v=.5*k,r=rnd(.9,1.12);
+      hit(b,{vol:v,rate:r,pan:rnd(-.2,.2),lp:5200,wet:.2});
+      if(S.tun>.5){hit(b,{vol:v*1.2,rate:r,to:tunIn,lp:4200});
+        for(const sd of[-1,1])hit(b,{vol:v*.5,rate:r,pan:sd*.75,delay:2*(HW+.65-sd*S.lat)/343,lp:2600});return}
+      const a=sm(Math.floor(S.s/DS));
+      for(const sd of[-1,1]){const c=sd<0?a.L:a.R,d=Math.max(2,EDGE-sd*S.lat);
+        if(c.w>.5){hit(b,{vol:v*.45,rate:r,pan:sd*.8,delay:2*d/343,lp:2600,wet:.3});hit(b,{vol:v*.16,rate:r,pan:-sd*.5,delay:2*d/343+2*EDGE/343,lp:1500})}
+        else if(c.g)hit(b,{vol:v*.11,rate:r*.97,pan:sd*.6,delay:rnd(.32,.55),lp:900,wet:.6});
+        else hit(b,{vol:v*.14,rate:r,pan:sd*.7,delay:2*(d+c.f+rnd(1,5))/343,lp:1400,wet:.7})}
+    },
     // 変速：ドグが抜けて、噛む音（音源の中で鳴る）
     shift(up){rotSend({clk:1})},
     frame(dt){
@@ -2317,7 +2351,7 @@ function startAudio(){
 const S={t:0,s:44,v:27,lat:0,latV:0,aLong:0,aLat:0,kNow:0,
   yawU:0,pitU:0,rollU:0,lastInput:-99,yawA:0,yawAT:0,yawTau:.6,pitA:0,pitAT:0,gaze:0,steer:0,
   roll:0,rollV:0,pitch:0,pitchV:0,heave:0,heaveV:0,zf:0,vf:0,zr:0,vr:0,prf:null,prr:0,headX:0,headY:0,headZ:0,heaveLP:0,sagR:0,
-  rpm:4300,rpmShow:4300,gear:3,shiftT:0,cutT:0,blipT:0,thr:.3,thr0:.3,thrA:.3,brk:0,lift:0,load:.3,engOn:1,sput:0,surf:1,tun:0,leak:0,heat:.3,flame:0,
+  rpm:4300,rpmShow:4300,gear:3,shiftT:0,cutT:0,blipT:0,thr:.3,thr0:.3,thrA:.3,brk:0,lift:0,load:.3,engOn:1,sput:0,surf:1,tun:0,leak:0,heat:.3,flame:0,flameP:0,flSeed:0,
   head:1,headT:1,dip:0,flick:0,nextDip:rnd(50,90),brakeL:0,brake:0,bm:1,
   expo:1,fog:.004,fogT:.004,cabL:0,cabLT:0,hazOn:0,tunOff:-1e4,tunAhead:1e4,
   phase:0,chaseAt:30,level:0,fear:0,beat:null,nextBeat:11,lastBeat:'',nBeats:0,hist:[],
@@ -2608,7 +2642,8 @@ function tick(dt){
   // 排気の火：全開から足を戻した瞬間と、戻しているあいだ、ときどき
   if(S.thr0>.8&&thr<.2&&S.rpm>6000)S.flame=1;
   if(thr<.05&&S.rpm>5500&&Math.random()<dt*5)S.flame=Math.max(S.flame,rnd(.35,.85));
-  S.thr0=thr;S.flame*=Math.exp(-dt/.09);if(S.flame<.01)S.flame=0;
+  if(S.flame>S.flameP+.05){S.flSeed=Math.random()*100;A.afire(S.flame)}       // 火が出るたびに、形が変わる
+  S.thr0=thr;S.flame*=Math.exp(-dt/.09);S.flameP=S.flame;if(S.flame<.01)S.flame=0;
   S.thr+=(thr-S.thr)*ease(dt,.07);S.brk+=(brk-S.brk)*ease(dt,.06);
   // 加減速：エンジンの力（全開のトルク×開度）はタイヤの限界まで。そこから空気抵抗、エンジンブレーキ、ブレーキ、勾配を引く
   rNow=S.v*RAT[S.gear];
@@ -2759,6 +2794,10 @@ function buildDyn(cam){
         const tail=!o.rear&&d<-1.5,hi=o.rear&&S.mir.high,r=Math.max(.11,dist*.0032)*(tail?.7:hi?1.6:o.rear?1:1.25);
         for(const sd of o.bike?[0]:[-1,1])mb.board([w[0]+rt[0]*sd*.62,w[1]+(o.bike?.86:tail?.8:.66),w[2]+rt[2]*sd*.62],v3.mul(rt,r),[0,r,0],[-1,-1,1,1],20,o.on*(hi?2.2:1),tail?1:0,n)}     // バイクは灯りがひとつ
     }
+    if(!pass&&S.flame>.03)for(const sd of[-1,1]){         // 排気口の火（尾の両端）
+      const w=v3.sub(v3.add(cam.rest,v3.basis(cam.body,[sd*.6,-.55,-3.6])),cam.pos),l=Math.hypot(w[0],w[2])||1,rt=[w[2]/l,0,-w[0]/l],n=[-w[0]/l,0,-w[2]/l];
+      const r=.62*(.45+.55*S.flame)*(.75+.25*Math.sin(S.flSeed*(sd>0?3.1:5.3)));
+      mb.board(w,v3.mul(rt,r),[0,r,0],[-1,1,1,-1],25,S.flame*(RM?.5:1),S.flSeed+(sd>0?2:0),n)}
     if(!pass)n0=mb.a.length/12;
   }
   dynBuf=dynBuf||gl.createBuffer();return{n0,n:mb.a.length?mb.upload(dynBuf):0};
