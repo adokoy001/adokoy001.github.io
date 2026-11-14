@@ -707,7 +707,9 @@ void main(){
     vec3 la=tx(uGl.xy+vec2(uGl.z,0.)),lb=tx(uGl.xy-vec2(uGl.z,0.));
     float I=uGl.w*smoothstep(.2,.6,max(max(la.r,la.g),max(lb.r,lb.g)));
     if(I>0.){
-      vec2 dd=(vUv-uGl.xy)*vec2(uRes.x/uRes.y,1.);float r2=dot(dd,dd),gs=.03+.075*I,an=atan(dd.y,dd.x);
+      vec2 dd=(vUv-uGl.xy)*vec2(uRes.x/uRes.y,1.),up2=normalize(vec2(uHR.y,uHU.y)+1e-5);
+      dd=vec2(dot(dd,vec2(up2.y,-up2.x)),dot(dd,up2));        // 光の筋は、車にとっての水平に伸びる（端末を傾けて見ていても）
+      float r2=dot(dd,dd),gs=.03+.075*I,an=atan(dd.y,dd.x);
       float halo=pow(1.+r2/(gs*gs),-1.4),streak=exp(-abs(dd.y)*(70.-30.*I))/(1.+abs(dd.x)*5.);
       float spike=(pow(abs(cos(an*2.+.5)),60.)+.6*pow(abs(cos(an*3.-.3)),90.))/(1.+r2*22.);
       c+=vec3(1.,.96,.86)*I*(halo*1.2+streak*.5+spike*.4)+vec3(.9,.93,1.)*I*.02;
@@ -1693,13 +1695,15 @@ const S={t:0,s:44,v:10.5,lat:-1.45,aLong:0,aLat:0,kNow:0,
   mir:{fol:0,folD:60,high:0,fig:0,figX:0,figK:0,lean:0,win:0,tun:0,tunOff:0,road:0,roadX:0,roadWas:false,roadEnd:0,obj:null},zoom:1,zoomT:1,
   wbm:1,rain:0,wet:0,drops:0,dropS:0,ovc:0,fl:0,flAz:0,flBolt:0,flSeed:0,flFig:0,wOn:0,wp:0,wSpd:1,wSince:0,rph:0,
   trafT:rnd(15,35),brakeHold:0,att:null,hut:0,objs:[],odo:0,clockT:0,radLv:0,fade:0,black:0,hold:0,tempBG:null,loopQ:0};
-const G={on:false,n:0,az:0,az0:null,pit:0,roll:0,off:0};
+const G={on:false,n:0,az:0,az0:null,pit:0,roll:0,off:0,oa:0,snap:0};
 const D2R=Math.PI/180;
 GEN.hutFig=()=>S.level>=2.6&&Math.random()<.5;        // 小屋の窓に誰かの影が立つかどうか
 GEN.guideN=()=>S.level<4?3:Math.min(9,3+Math.floor(S.level-3));        // 峠までの距離は減らない。そのうち増える
 function tunLeft(){const i0=Math.floor(S.s/DS);for(let i=i0;i<i0+200;i++)if(!sm(i).tun)return(i-i0)*DS;return 400}
 
-/* ---------- ジャイロ ---------- */
+/* ---------- ジャイロ ----------
+   見る向きは、端末の背中が向いている向き。端末をその軸まわりに回したぶん（縦に持つか、横に持つか、その途中か）は、絵を逆に回して打ち消すので、
+   景色はいつも水平のまま。画面の自動回転が入っていても切ってあっても、縦でも横でも同じように見える */
 function onOri(e){
   if(e.alpha==null||e.beta==null||e.gamma==null)return;
   const a=e.alpha*D2R,b=e.beta*D2R,g=e.gamma*D2R,cA=Math.cos(a),sA=Math.sin(a),cB=Math.cos(b),sB=Math.sin(b),cG=Math.cos(g),sG=Math.sin(g);
@@ -1707,7 +1711,9 @@ function onOri(e){
   G.pit=Math.asin(clamp(dz,-1,1));
   if(hz>.25){
     G.az=Math.atan2(dx,dy);
-    const o=((screen.orientation&&screen.orientation.angle)||window.orientation||0)*D2R,ex=Math.sin(o),ey=Math.cos(o);
+    // 画面がどちら向きに回っているか。window.orientation（左へ倒すと90、右へ倒すと-90）を先に見る。こちらは、端末の向きの値と組み合わせる決まりが古くから定まっている
+    const oa=typeof window.orientation==='number'?window.orientation:(screen.orientation&&screen.orientation.angle)||0,o=oa*D2R,ex=Math.sin(o),ey=Math.cos(o);
+    if(oa!==G.oa){G.oa=oa;G.snap=1}                 // 画面そのものが回った：傾きを追いかけずに、すぐ合わせる
     const ux=(cA*cG-sA*sB*sG)*ex-sA*cB*ey,uy=(sA*cG+cA*sB*sG)*ex+cA*cB*ey,uz=-cB*sG*ex+sB*ey;
     const rx=dy/hz,ry=-dx/hz;
     G.roll=-Math.atan2(ux*rx+uy*ry,ux*ry*dz-uy*rx*dz+uz*(rx*dy-ry*dx));
@@ -1715,13 +1721,13 @@ function onOri(e){
   if(G.az0==null)G.az0=G.az;
   G.n++;
 }
-function gyroOff(){G.on=false;removeEventListener('deviceorientation',onOri);S.lastInput=S.t-3;syncUI()}
+function gyroOff(){G.on=false;removeEventListener('deviceorientation',onOri);S.rollU=Math.atan2(Math.sin(S.rollU),Math.cos(S.rollU));S.lastInput=S.t-3;syncUI()}
 let msgT=0;
 function say(t){const m=$('msg');m.textContent=t;m.hidden=false;clearTimeout(msgT);msgT=setTimeout(()=>{m.hidden=true},4200)}
 function gyroToggle(){
   if(G.on){gyroOff();return}
   const DO=window.DeviceOrientationEvent,ng='端末の向きを読めません。許可されていないか、埋め込みの画面では使えません。',go=()=>{
-    G.n=0;G.az0=null;G.off=S.yawU;addEventListener('deviceorientation',onOri);G.on=true;syncUI();
+    G.n=0;G.az0=null;G.off=S.yawU;G.snap=1;addEventListener('deviceorientation',onOri);G.on=true;syncUI();
     setTimeout(()=>{if(G.on&&!G.n){gyroOff();say(ng)}},1600);
   };
   if(DO&&typeof DO.requestPermission==='function')DO.requestPermission().then(r=>{if(r==='granted')go();else say(ng)}).catch(()=>say(ng));
@@ -2056,7 +2062,10 @@ function tick(dt){
   // 向き：手で動かしたぶんは、放すと少しして正面へ戻る。視線は曲がる先へ寄る
   if(G.on&&G.az0!=null){
     let d=G.az-G.az0+G.off-S.yawU;d=Math.atan2(Math.sin(d),Math.cos(d));
-    const k=ease(dt,.08);S.yawU+=d*k;S.pitU+=(clamp(G.pit,-.75,.75)-S.pitU)*k;S.rollU+=(clamp(G.roll,-.6,.6)-S.rollU)*k;S.lastInput=S.t;
+    const k=ease(dt,.08);S.yawU+=d*k;S.pitU+=(clamp(G.pit,-1.2,1.2)-S.pitU)*k;
+    let dr=G.roll-S.rollU;dr=Math.atan2(Math.sin(dr),Math.cos(dr));         // 傾きは止めずに、ぜんぶ追う（以前は±34°で止めていたので、横に持つと絵が斜めのまま固まった）
+    if(G.snap){S.rollU+=dr;G.snap=0}else S.rollU+=dr*k;
+    S.lastInput=S.t;
   }else{
     if(S.t-S.lastInput>4){S.yawU-=S.yawU*ease(dt,1.4);S.pitU-=S.pitU*ease(dt,1.4)}
     S.rollU-=S.rollU*ease(dt,.5);
@@ -2134,12 +2143,14 @@ function camera(){
   const pos=v3.add(rest,v3.basis(body,eye));
   // 頭の向き（車体に対して）
   const yaw=S.yawU+S.yawA+S.gaze+(nz(t*.7)-.5)*.014*rm;
-  const pit=clamp(S.pitU,-.75,.75)+S.pitA-.02-.13*clamp((1-ASP)*2,0,1)+(nz(t*.6+40)-.5)*.01*rm-S.pitchV*.02*rm;
+  // 端末を横に倒して持っているぶん（0〜1）。画面が回らない設定のまま横に持っても、横長の眺めになるようにする
+  const side=G.on?Math.sin(S.rollU)**2:0;
+  const pit=clamp(S.pitU,-1.2,1.2)+S.pitA-.02-.13*clamp((1-ASP)*2,0,1)*(1-side)+(nz(t*.6+40)-.5)*.01*rm-S.pitchV*.02*rm;
   const roll=S.rollU-S.roll*.5*rm;
   const cy=Math.cos(yaw),sy=Math.sin(yaw),c2=Math.cos(pit),s2=Math.sin(pit),c3=Math.cos(roll),s3=Math.sin(roll);
   const lf=[sy*c2,s2,cy*c2],r0=[cy,0,-sy],u0=[-sy*s2,c2,-cy*s2];
   const lr=[r0[0]*c3+u0[0]*s3,r0[1]*c3+u0[1]*s3,r0[2]*c3+u0[2]*s3],lu=[u0[0]*c3-r0[0]*s3,u0[1]*c3-r0[1]*s3,u0[2]*c3-r0[2]*s3];
-  return{pos,rest,body,eye,lr,lu,lf,r:v3.basis(body,lr),u:v3.basis(body,lu),f:v3.basis(body,lf),p};
+  return{pos,rest,body,eye,lr,lu,lf,r:v3.basis(body,lr),u:v3.basis(body,lu),f:v3.basis(body,lf),p,side};
 }
 
 /* ---------- 動くもの（人影、目、ほかの車） ---------- */
@@ -2174,7 +2185,7 @@ function draw(){
   const half=!lite||(dynTick++&1)===0;             // メーターとミラーの絵は、軽量モードでは1コマおき
   if(half)drawDyn(S);
   gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,1);gl.clearDepth(1);gl.depthMask(true);
-  const fv=FOV/S.zoom,fl=S.fl*(1-S.tun),expo=S.expo,cc=Math.floor(Math.floor(S.s/DS)/CH);
+  const fv=mix(FOV,clamp(ASP,.56,.8)/ASP,cam.side)/S.zoom,fl=S.fl*(1-S.tun),expo=S.expo,cc=Math.floor(Math.floor(S.s/DS)/CH);      // 横に倒して持つと、そのぶん視野を回す
   // 灯り：0 は尾灯。残り2つは、非常点滅灯・ほかの車・近い街灯の順に選ぶ
   const tail=rel([CAR_X,-.5,-2.1]);PLb.set([tail[0],tail[1],tail[2],0],0);PCb.set([1,.07,.03],0);
   const cand=[];
@@ -2320,7 +2331,7 @@ let wl=null;
 function keepAwake(){try{if(navigator.wakeLock&&!wl&&!document.hidden)navigator.wakeLock.request('screen').then(x=>{wl=x;x.addEventListener('release',()=>{wl=null})}).catch(()=>{})}catch(_){}}
 addEventListener('pointerdown',keepAwake);document.addEventListener('visibilitychange',()=>{if(!document.hidden)keepAwake()});
 syncUI();wake();
-window.__nt={scv,get HUTS(){return HUTS},WX,WXK,wxStart,wxClear,strike,S,A,G,IC,GEN,tick,draw,startBeat,endBeat,camera,sm,at,cut,get RD0(){return RD0},get PROPS(){return PROPS},get LAMPS(){return LAMPS},CHK};
+window.__nt={scv,onOri,gyroToggle,get HUTS(){return HUTS},WX,WXK,wxStart,wxClear,strike,S,A,G,IC,GEN,tick,draw,startBeat,endBeat,camera,sm,at,cut,get RD0(){return RD0},get PROPS(){return PROPS},get LAMPS(){return LAMPS},CHK};
 })();
 </script>
 </body>
