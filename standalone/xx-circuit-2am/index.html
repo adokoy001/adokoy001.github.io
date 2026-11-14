@@ -1754,8 +1754,8 @@ function drawDyn(S){
   // --- 屋根の鏡 ---
   // 透明なところに、別に描いた後ろの景色が見える（draw の中）。手前の車体（エンジンの覆いと後ろの羽根）だけ、影として重ねる。
   // ブレーキを踏むと尾灯の赤に、排気が火を噴くと橙に染まる。形は、車体の寸法を、鏡の向こうの目から見た位置に写して決める
-  {const [x,y,w,h]=DYN.mir,P=MIR.P,br=S.brakeL,fl=S.flame;c.save();c.beginPath();c.rect(x,y,w,h);c.clip();c.clearRect(x,y,w,h);c.translate(x,y);
-    c.fillStyle='rgb('+Math.round(3+30*br+26*fl)+','+Math.round(2+2*br+9*fl)+','+Math.round(2+br+2*fl)+')';
+  {const [x,y,w,h]=DYN.mir,P=MIR.P,br=S.brakeL,fl=S.flame,gw=S.flGlow;c.save();c.beginPath();c.rect(x,y,w,h);c.clip();c.clearRect(x,y,w,h);c.translate(x,y);
+    c.fillStyle='rgb('+Math.round(3+30*br+26*gw)+','+Math.round(2+2*br+9*gw)+','+Math.round(2+br+2*gw)+')';
     const a=P([-.98,-.36,-2.4]),b=P([.98,-.36,-2.4]),m=P([0,-.2,-2.4]);
     c.beginPath();c.moveTo(-4,h+2);c.lineTo(a[0]-30,a[1]+6);c.quadraticCurveTo(m[0],2*m[1]-a[1],b[0]+30,b[1]+6);c.lineTo(w+4,h+2);c.fill();           // エンジンの覆い
     const w0=P([-.98,-.13,-3.2]),w1=P([.98,-.2,-3.2]);c.fillRect(w0[0],w0[1],w1[0]-w0[0],w1[1]-w0[1]);                                           // 後ろの羽根
@@ -2351,7 +2351,7 @@ function startAudio(){
 const S={t:0,s:44,v:27,lat:0,latV:0,aLong:0,aLat:0,kNow:0,
   yawU:0,pitU:0,rollU:0,lastInput:-99,yawA:0,yawAT:0,yawTau:.6,pitA:0,pitAT:0,gaze:0,steer:0,
   roll:0,rollV:0,pitch:0,pitchV:0,heave:0,heaveV:0,zf:0,vf:0,zr:0,vr:0,prf:null,prr:0,headX:0,headY:0,headZ:0,heaveLP:0,sagR:0,
-  rpm:4300,rpmShow:4300,gear:3,shiftT:0,cutT:0,blipT:0,thr:.3,thr0:.3,thrA:.3,brk:0,lift:0,load:.3,engOn:1,sput:0,surf:1,tun:0,leak:0,heat:.3,flame:0,flameP:0,flSeed:0,
+  rpm:4300,rpmShow:4300,gear:3,shiftT:0,cutT:0,blipT:0,thr:.3,thr0:.3,thrA:.3,brk:0,lift:0,load:.3,engOn:1,sput:0,surf:1,tun:0,leak:0,heat:.3,flame:0,flGlow:0,flameP:0,flSeed:0,
   head:1,headT:1,dip:0,flick:0,nextDip:rnd(50,90),brakeL:0,brake:0,bm:1,
   expo:1,fog:.004,fogT:.004,cabL:0,cabLT:0,hazOn:0,tunOff:-1e4,tunAhead:1e4,
   phase:0,chaseAt:30,level:0,fear:0,beat:null,nextBeat:11,lastBeat:'',nBeats:0,hist:[],
@@ -2642,8 +2642,9 @@ function tick(dt){
   // 排気の火：全開から足を戻した瞬間と、戻しているあいだ、ときどき
   if(S.thr0>.8&&thr<.2&&S.rpm>6000)S.flame=1;
   if(thr<.05&&S.rpm>5500&&Math.random()<dt*5)S.flame=Math.max(S.flame,rnd(.35,.85));
-  if(S.flame>S.flameP+.05){S.flSeed=Math.random()*100;A.afire(S.flame)}       // 火が出るたびに、形が変わる
-  S.thr0=thr;S.flame*=Math.exp(-dt/.09);S.flameP=S.flame;if(S.flame<.01)S.flame=0;
+  // 炎そのものは一瞬（出たコマはそのまま、次のコマで4割、その次でほぼ消える。1発は数十ミリ秒）。路面を照らす橙の光は、少しだけ長く残す
+  if(S.flame>S.flameP+.05){S.flSeed=Math.random()*100;A.afire(S.flame)}else S.flame*=Math.exp(-dt/.018);       // 火が出るたびに、形が変わる
+  S.flGlow=Math.max(S.flGlow*Math.exp(-dt/.04),S.flame);S.thr0=thr;if(S.flame<.01)S.flame=0;S.flameP=S.flame;
   S.thr+=(thr-S.thr)*ease(dt,.07);S.brk+=(brk-S.brk)*ease(dt,.06);
   // 加減速：エンジンの力（全開のトルク×開度）はタイヤの限界まで。そこから空気抵抗、エンジンブレーキ、ブレーキ、勾配を引く
   rNow=S.v*RAT[S.gear];
@@ -2797,7 +2798,7 @@ function buildDyn(cam){
     if(!pass&&S.flame>.03)for(const sd of[-1,1]){         // 排気口の火（尾の両端）
       const w=v3.sub(v3.add(cam.rest,v3.basis(cam.body,[sd*.6,-.55,-3.6])),cam.pos),l=Math.hypot(w[0],w[2])||1,rt=[w[2]/l,0,-w[0]/l],n=[-w[0]/l,0,-w[2]/l];
       const r=.62*(.45+.55*S.flame)*(.75+.25*Math.sin(S.flSeed*(sd>0?3.1:5.3)));
-      mb.board(w,v3.mul(rt,r),[0,r,0],[-1,1,1,-1],25,S.flame*(RM?.5:1),S.flSeed+(sd>0?2:0),n)}
+      mb.board(w,v3.mul(rt,r),[0,r,0],[-1,1,1,-1],25,S.flame*(RM?.45:.85),S.flSeed+(sd>0?2:0),n)}
     if(!pass)n0=mb.a.length/12;
   }
   dynBuf=dynBuf||gl.createBuffer();return{n0,n:mb.a.length?mb.upload(dynBuf):0};
@@ -2819,7 +2820,7 @@ function draw(){
   for(const o of S.objs)if(o.t==='car'&&o.on>0){const q=wpt(o.s,o.lat,.66);cand.push({p:v3.sub(q,cam.pos),c:[1,.95,.85],w:(o.bike?80:150)*o.on,k:1e6})}
   for(const l of LAMPS){if(l.dead)continue;const q=[l.x-cam.pos[0],l.y-cam.pos[1],l.z-cam.pos[2]];
     cand.push({p:q,c:[.72,.95,1],w:30*(l.fl&&nz(S.t*l.fl)>.78?.3:1),k:1/(v3.dot(q,q)+1)})}
-  if(S.flame>.03)cand.push({p:rel([0,-.62,-3.1]),c:[1,.5,.12],w:240*S.flame*(RM?.35:1),k:9e9});       // 排気の火が、後ろの路面を橙に照らす
+  if(S.flGlow>.03)cand.push({p:rel([0,-.62,-3.1]),c:[1,.5,.12],w:200*S.flGlow*(RM?.35:1),k:9e9});       // 排気の火が、後ろの路面を橙に照らす
   if(S.P.glare>.02&&S.P.obj){const o=S.P.obj;cand.push({p:v3.sub(wpt(o.s,o.lat,1.05),cam.pos),c:[.95,.97,1],w:520*S.P.glare*(RM?.5:1),k:8e9})}
   cand.sort((a,b)=>b.k-a.k);
   for(let i=0;i<2;i++){const c=cand[i];if(c){PLb.set([c.p[0],c.p[1],c.p[2],c.w],4+i*4);PCb.set(c.c,3+i*3)}else PLb.set([0,-999,0,0],4+i*4)}
@@ -2864,7 +2865,7 @@ function draw(){
   let ln=0;for(const l of LAMPS){if(l.dead)continue;const dx=l.x-cam.pos[0],dz=l.z-cam.pos[2];ln=Math.max(ln,1/(1+(dx*dx+dz*dz)/60))}
   const hz=S.hazOn?.04:0;
   gl.uniform3f(ui_.uCab,.02+.2*S.cabL+.08*S.tun+.15*ln+.032*S.head+hz+.12*fl,.022+.17*S.cabL+.04*S.tun+.18*ln+.03*S.head+hz*.5+.14*fl,.03+.12*S.cabL+.012*S.tun+.2*ln+.026*S.head+hz*.07+.2*fl);
-  const bk=S.flame*(RM?.25:.7);gl.uniform3f(ui_.uBack,bk,bk*.5,bk*.12);
+  const bk=S.flGlow*(RM?.25:.6);gl.uniform3f(ui_.uBack,bk,bk*.5,bk*.12);
   gl.uniform3f(ui_.uGlow,.1*IC.dash,.14*IC.dash,.13*IC.dash);gl.uniform3f(ui_.uHoodL,.5*S.head+.02+.3*fl,.47*S.head+.025+.36*fl,.42*S.head+.035+.5*fl);
   gl.uniform3fv(ui_.uEye,e);gl.uniform1f(ui_.uExpo,expo);gl.uniform1f(ui_.uDash,1.6);
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,dynTex);gl.uniform1i(ui_.uDyn,1);
