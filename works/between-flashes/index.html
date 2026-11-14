@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>稲光のあいだ</title>
+<meta name="description" content="雨と雷の夜、暗い部屋の窓から外を見る。">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;background:#000;overflow:hidden;overscroll-behavior:none}
+body{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;cursor:default}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+#ui{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:10px;opacity:0;transition:opacity .9s;pointer-events:none}
+#ui.show{opacity:1;pointer-events:auto}
+#ui button{width:40px;height:40px;border:0;border-radius:50%;background:rgba(14,12,12,.55);color:rgba(255,255,255,.62);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+#ui button:hover{color:rgba(255,255,255,.9)}
+#ui button.on{color:rgba(255,220,180,.95)}
+#ui svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#veil{position:fixed;inset:0;background:#000;pointer-events:none;transition:opacity 5s ease-out}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="veil"></div>
+<div id="ui">
+  <button id="bGyro" title="" aria-label="gyro" hidden>
+    <svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M3 9c-1 2-1 4 0 6M21 9c1 2 1 4 0 6"/><circle cx="12" cy="12" r="1"/></svg>
+  </button>
+  <button id="bSound" aria-label="sound">
+    <svg viewBox="0 0 24 24"><g id="iMute"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M19 9l-4 6M15 9l4 6"/></g><g id="iSnd" hidden><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></g></svg>
+  </button>
+  <button id="bFull" aria-label="fullscreen">
+    <svg viewBox="0 0 24 24"><g id="iFs"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></g><g id="iFsX" hidden><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></g></svg>
+  </button>
+  <button id="bLite" aria-label="lite">
+    <svg viewBox="0 0 24 24"><path d="M20 4c-6 0-11 3-13 9l-3 7 7-3c6-2 9-7 9-13z"/><path d="M4 20l9-9"/></svg>
+  </button>
+</div>
+<script>
+const FRAG = `precision highp float;
+uniform vec2 uRes;
+uniform float uTime;      // seconds, wrapped (noise/anim)
+uniform float uRain;      // seconds, wrapped separately (drops)
+uniform vec3 uCamPos;
+uniform vec2 uCamRot;     // yaw, pitch
+uniform float uFov;       // vertical fov in radians
+uniform float uFlash;     // total sky flash brightness
+uniform float uFlashIn;   // flash light reaching the room (diffuse)
+uniform vec3 uFlashDir;   // direction toward the brightest ground strike (unit, world)
+uniform float uFlashDirI; // its direct intensity through the window
+uniform vec4 uF0, uF1, uF2; // flash sources: az, el, radius, intensity
+uniform vec3 uFK;         // their kinds: 0 in-cloud, 1 cloud-to-ground, 2 beyond horizon
+uniform float uBolt;      // bolt visibility 0..1
+uniform vec4 uBoltP;      // az, el_top, seed, branchiness
+uniform vec3 uBoltQ;      // el_bottom, branch brightness, width
+uniform float uExpo;      // exposure multiplier (dark adaptation after a near flash)
+uniform float uEmber;     // ember light intensity 0..1.5
+uniform float uEmberF;    // flicker 0.6..1.3
+uniform vec4 uFig;        // x, z, visible(0/1), height scale
+uniform vec4 uFigOut;     // x, y, z, visible
+uniform float uEyes;      // 0 open .. 1 closed
+uniform vec3 uFogOwn;     // u, v, amount
+uniform vec3 uFogNext;    // u, v, amount (someone beside you)
+uniform vec3 uFogOut;     // u, v, amount (outside pane)
+uniform vec3 uClock;      // hour angle, minute angle, pendulum angle
+uniform vec3 uKnock;      // u, v, seconds since knock (large if none)
+uniform float uDread;     // 0..1 (pulls exposure, grain)
+uniform float uMuffle;    // 0..1 (room darkens slightly when eyes close etc)
+uniform float uLite;
+uniform float uRM;        // reduced motion
+uniform float uSteps;     // primary march steps
+uniform float uSteps2;    // reflection march steps
+uniform float uDbg;
+
+#ifndef MARCH_N
+#define MARCH_N 96
+#endif
+#ifndef SHAD_N
+#define SHAD_N 14
+#endif
+#ifndef FIG_N
+#define FIG_N 26
+#endif
+#define BM 0.12
+#define PI 3.14159265
+#define GLASSZ -3.9
+#define GROUNDY -28.0
+
+// ---------- hashing / noise ----------
+float hash1(vec2 p){ vec3 p3 = fract(vec3(p.xyx)*0.1031); p3 += dot(p3, p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+float hash1(vec3 p3){ p3 = fract(p3*0.1031); p3 += dot(p3, p3.zyx+31.32); return fract((p3.x+p3.y)*p3.z); }
+vec2 hash2(vec2 p){ vec3 p3 = fract(vec3(p.xyx)*vec3(.1031,.1030,.0973)); p3 += dot(p3, p3.yzx+33.33); return fract((p3.xx+p3.yz)*p3.zy); }
+float vnoise(vec2 p){
+  vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+  return mix(mix(hash1(i), hash1(i+vec2(1,0)), f.x), mix(hash1(i+vec2(0,1)), hash1(i+vec2(1,1)), f.x), f.y);
+}
+float vnoise(vec3 p){
+  vec3 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+  return mix(mix(mix(hash1(i), hash1(i+vec3(1,0,0)), f.x), mix(hash1(i+vec3(0,1,0)), hash1(i+vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash1(i+vec3(0,0,1)), hash1(i+vec3(1,0,1)), f.x), mix(hash1(i+vec3(0,1,1)), hash1(i+vec3(1,1,1)), f.x), f.y), f.z);
+}
+float fbm2(vec2 p){ return 0.5*vnoise(p) + 0.25*vnoise(p*2.03+1.7); }
+float fbm3(vec2 p){ return 0.5*vnoise(p) + 0.25*vnoise(p*2.03+1.7) + 0.125*vnoise(p*4.1+3.1); }
+float ss(float a, float b, float x){ float t = clamp((x - a)/(b - a), 0.0, 1.0); return t*t*(3.0 - 2.0*t); }
+mat2 rot2(float a){ float c=cos(a), s=sin(a); return mat2(c,s,-s,c); }
+
+// ---------- SDF primitives ----------
+float sdBox(vec3 p, vec3 b){ vec3 q = abs(p)-b; return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0); }
+float sdBox2(vec2 p, vec2 b){ vec2 q = abs(p)-b; return length(max(q,0.0)) + min(max(q.x,q.y),0.0); }
+float sdSph(vec3 p, float r){ return length(p)-r; }
+float sdCyl(vec3 p, float h, float r){ vec2 d = abs(vec2(length(p.xz),p.y)) - vec2(r,h); return min(max(d.x,d.y),0.0) + length(max(d,0.0)); }
+float sdCaps(vec3 p, vec3 a, vec3 b, float r){ vec3 pa=p-a, ba=b-a; float h=clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0); return length(pa-ba*h)-r; }
+float sdCone(vec3 p, float h, float r1, float r2){ // capped cone, y from -h to h, r1 at bottom
+  vec2 q = vec2(length(p.xz), p.y);
+  vec2 k1 = vec2(r2,h), k2 = vec2(r2-r1,2.0*h);
+  vec2 ca = vec2(q.x-min(q.x,(q.y<0.0)?r1:r2), abs(q.y)-h);
+  vec2 cb = q - k1 + k2*clamp(dot(k1-q,k2)/dot(k2,k2),0.0,1.0);
+  float s = (cb.x<0.0 && ca.y<0.0) ? -1.0 : 1.0;
+  return s*sqrt(min(dot(ca,ca),dot(cb,cb)));
+}
+float sdTorXY(vec3 p, float R, float r){ vec2 q = vec2(length(p.xy)-R, p.z); return length(q)-r; }
+float sdTorXZ(vec3 p, float R, float r){ vec2 q = vec2(length(p.xz)-R, p.y); return length(q)-r; }
+float sdEll(vec3 p, vec3 r){ float k0 = length(p/r); float k1 = length(p/(r*r)); return k0*(k0-1.0)/k1; }
+
+// ---------- window shape (2D, xy on the wall) ----------
+float winMask2D(vec2 p){ // <0 inside opening
+  float rect = sdBox2(p - vec2(0.0, 2.075), vec2(1.15, 1.225)); // y 0.85..3.3
+  float arch = max(length(p - vec2(0.0, 3.3)) - 1.15, 3.3 - p.y);
+  return min(rect, arch);
+}
+float mullion2D(vec2 p){ // <0 on stone mullion/tracery
+  float v = sdBox2(p - vec2(0.0, 2.105), vec2(0.045, 1.26));
+  float h1 = sdBox2(p - vec2(0.0, 1.70), vec2(1.2, 0.035));
+  float h2 = sdBox2(p - vec2(0.0, 2.55), vec2(1.2, 0.035));
+  float ring = abs(length(p - vec2(0.0, 3.75)) - 0.45) - 0.045;
+  float d = min(min(v,h1), min(h2,ring));
+  // small inner cusps of the arch (two quarter-arcs meeting the ring)
+  float cl = abs(length(p - vec2(-0.62, 3.05)) - 0.58) - 0.035; cl = max(cl, 3.3 - p.y); cl = max(cl, p.x + 0.05);
+  float cr = abs(length(p - vec2( 0.62, 3.05)) - 0.58) - 0.035; cr = max(cr, 3.3 - p.y); cr = max(cr, -p.x + 0.05);
+  d = min(d, min(cl, cr));
+  return d;
+}
+
+// ---------- figure ----------
+float sdFigure(vec3 p, float hs){ // base at origin, faces -z, height ~1.9*hs
+  p.y /= hs;
+  float skirt = sdCone(p - vec3(0.0, 0.52, 0.0), 0.52, 0.44, 0.17);
+  // soft folds in the skirt
+  skirt += 0.012*sin(atan(p.x, p.z + 1e-4)*9.0 + p.y*2.0) * ss(1.0, 0.1, p.y);
+  float torso = sdCaps(p, vec3(0.0, 1.0, 0.0), vec3(0.0, 1.46, 0.0), 0.165);
+  float shoulders = sdEll(p - vec3(0.0, 1.47, 0.0), vec3(0.24, 0.075, 0.12));
+  float neck = sdCyl(p - vec3(0.0, 1.55, 0.0), 0.08, 0.05);
+  float head = sdEll(p - vec3(0.0, 1.72, 0.01), vec3(0.095, 0.125, 0.105));
+  float hair = sdEll(p - vec3(0.0, 1.75, -0.03), vec3(0.105, 0.135, 0.11));
+  hair = max(hair, -(p.z - 0.02)); // hair only toward the back
+  float armL = sdCaps(p, vec3(-0.21, 1.42, 0.0), vec3(-0.25, 0.86, 0.04), 0.045);
+  float armR = sdCaps(p, vec3( 0.21, 1.42, 0.0), vec3( 0.25, 0.86, 0.04), 0.045);
+  float d = min(min(skirt, torso), min(shoulders, neck));
+  d = min(d, min(head, hair));
+  d = min(d, min(armL, armR));
+  return d * hs;
+}
+
+// ---------- globals for the march ----------
+float gFigOn = 0.0;
+vec3 gFigPos = vec3(0.0);
+float gShadow = 0.0; // 1 while tracing shadows: small objects are skipped
+
+vec2 opU(vec2 a, vec2 b){ return a.x < b.x ? a : b; }
+
+// Materials: 1 shell, 2 stone(mullion/embrasure), 3 curtain, 4 chair fabric, 5 wood,
+// 6 brass, 7 ember, 8 figure dress, 9 clock face, 10 mantel stone, 11 figure skin, 12 canvas, 13 door
+vec2 map(vec3 p){
+  // free space: room ∪ opening ∪ door recess ∪ fireplace recess
+  float dRoom = sdBox(p - vec3(0.0, 2.6, 1.0), vec3(4.0, 2.6, 4.0));
+  float dOpen = max(winMask2D(p.xy), abs(p.z + 3.6) - 0.72);
+  float dDoor = sdBox(p - vec3(-2.6, 1.15, 5.06), vec3(0.52, 1.15, 0.1));
+  float dFire = sdBox(p - vec3(-3.85, 0.55, 1.0), vec3(0.3, 0.5, 0.6));
+  float shell = -min(min(dRoom, dOpen), min(dDoor, dFire));
+  vec2 r = vec2(shell, 1.0);
+  float b;
+
+  // mullions, tracery, sill
+  b = sdBox(p - vec3(0.0, 2.6, -3.6), vec3(1.4, 2.0, 0.8));
+  if (b < BM){
+    float m = max(mullion2D(p.xy), abs(p.z - GLASSZ) - 0.12);
+    m = max(m, winMask2D(p.xy));
+    float sill = sdBox(p - vec3(0.0, 0.78, -3.42), vec3(1.34, 0.07, 0.5));
+    r = opU(r, vec2(min(m, sill), 2.0));
+  } else r = opU(r, vec2(b, 2.0));
+
+  // fireplace: mantel, embers, grate
+  b = sdBox(p - vec3(-3.75, 0.75, 1.0), vec3(0.4, 0.8, 1.1));
+  if (b < BM){
+    vec3 q = p - vec3(-3.78, 0.7, 1.0);
+    float mant = sdBox(q, vec3(0.24, 0.7, 0.95));
+    float open = sdBox(q - vec3(-0.1, -0.1, 0.0), vec3(0.4, 0.5, 0.56));
+    mant = max(mant, -open);
+    float top = sdBox(q - vec3(0.02, 0.73, 0.0), vec3(0.3, 0.035, 1.02));
+    r = opU(r, vec2(min(mant, top), 10.0));
+    if (gShadow < 0.5){
+      float emb = sdBox(p - vec3(-3.88, 0.1, 1.0), vec3(0.14, 0.07, 0.34)) + 0.03*vnoise(p.xz*22.0 + p.y*9.0);
+      r = opU(r, vec2(emb, 7.0));
+      float bars = sdBox(vec3(mod(p.z - 1.0 + 0.1, 0.2) - 0.1, p.y - 0.16, p.x + 3.62), vec3(0.012, 0.16, 0.012));
+      bars = max(bars, abs(p.z - 1.0) - 0.5);
+      r = opU(r, vec2(bars, 6.0));
+    }
+  } else r = opU(r, vec2(b, 10.0));
+
+  // curtains and rod
+  b = sdBox(p - vec3(0.0, 2.7, -2.78), vec3(2.2, 2.3, 0.2));
+  if (b < BM){
+    vec3 q = p - vec3(-1.68, 2.6, -2.78);
+    float tq = (q.y + 1.0)*2.2; float tie = 1.0 - 0.32*exp(-tq*tq);
+    vec3 qq = q; qq.x /= tie;
+    float c = sdBox(qq, vec3(0.26, 2.25, 0.1)) + 0.03*sin(qq.x*24.0 + qq.y*1.5);
+    vec3 qq2 = p - vec3(1.68, 2.6, -2.78); qq2.x /= tie;
+    float c2 = sdBox(qq2, vec3(0.26, 2.25, 0.1)) + 0.03*sin(qq2.x*24.0 - qq2.y*1.5);
+    r = opU(r, vec2(min(c, c2)*0.8, 3.0));
+    float rod = sdCyl((p - vec3(0.0, 4.9, -2.8)).yxz, 2.1, 0.025);
+    r = opU(r, vec2(rod, 6.0));
+  } else r = opU(r, vec2(b, 3.0));
+
+  // armchair near the window, facing it
+  b = sdBox(p - vec3(1.75, 0.7, -0.9), vec3(0.45, 0.72, 0.5));
+  if (b < BM){
+    vec3 q = p - vec3(1.75, 0.0, -0.9);
+    float seat = sdBox(q - vec3(0.0, 0.32, 0.0), vec3(0.36, 0.14, 0.34));
+    float back = sdBox(q - vec3(0.0, 0.85, 0.36), vec3(0.36, 0.5, 0.07));
+    float arms = sdBox(vec3(abs(q.x) - 0.33, q.y - 0.62, q.z - 0.02), vec3(0.05, 0.12, 0.33));
+    float ch = min(min(seat, back), arms) - 0.015;
+    r = opU(r, vec2(ch, 4.0));
+    float legs = sdBox(vec3(abs(q.x) - 0.3, q.y - 0.1, abs(q.z) - 0.28), vec3(0.03, 0.1, 0.03));
+    r = opU(r, vec2(legs, 5.0));
+  } else r = opU(r, vec2(b, 4.0));
+
+  // small round table with an unlit candelabrum
+  b = sdBox(p - vec3(-1.5, 0.6, -1.1), vec3(0.4, 0.65, 0.4));
+  if (b < BM){
+    vec3 q = p - vec3(-1.5, 0.0, -1.1);
+    float top = sdCyl(q - vec3(0.0, 0.74, 0.0), 0.02, 0.32);
+    float stem = sdCyl(q - vec3(0.0, 0.37, 0.0), 0.37, 0.035);
+    float foot = sdCone(q - vec3(0.0, 0.03, 0.0), 0.03, 0.2, 0.08);
+    r = opU(r, vec2(min(min(top, stem), foot), 5.0));
+    if (gShadow < 0.5){
+      float cs = sdCyl(q - vec3(0.0, 0.9, 0.0), 0.14, 0.012);
+      float cb = sdCone(q - vec3(0.0, 0.78, 0.0), 0.02, 0.07, 0.03);
+      float ca = sdTorXZ(q - vec3(0.0, 1.03, 0.0), 0.09, 0.012);
+      float cn = sdCyl(vec3(abs(q.x) - 0.09, q.y - 1.1, q.z), 0.07, 0.014);
+      cn = min(cn, sdCyl(vec3(q.x, q.y - 1.1, abs(q.z) - 0.09), 0.07, 0.014));
+      r = opU(r, vec2(min(min(cs, cb), min(ca, cn)), 6.0));
+    }
+  } else r = opU(r, vec2(b, 5.0));
+
+  // long-case clock against the back wall
+  b = sdBox(p - vec3(2.7, 1.15, 4.78), vec3(0.35, 1.2, 0.3));
+  if (b < BM){
+    vec3 q = p - vec3(2.7, 0.0, 4.78);
+    float body = sdBox(q - vec3(0.0, 1.1, 0.0), vec3(0.24, 1.1, 0.18));
+    float hood = sdBox(q - vec3(0.0, 2.0, 0.0), vec3(0.3, 0.3, 0.22));
+    float face = sdCyl((q - vec3(0.0, 2.0, -0.23)).xzy, 0.012, 0.19);
+    float pane = sdBox(q - vec3(0.0, 1.0, -0.185), vec3(0.14, 0.55, 0.01));
+    float wood = max(min(body, hood), -pane);
+    r = opU(r, vec2(wood, 5.0));
+    if (gShadow < 0.5){
+      r = opU(r, vec2(face, 9.0));
+      vec3 pv = q - vec3(0.0, 1.55, -0.1);
+      pv.xy = rot2(uClock.z) * pv.xy;
+      float rodp = sdCaps(pv, vec3(0.0), vec3(0.0, -0.5, 0.0), 0.006);
+      float bob = sdCyl((pv - vec3(0.0, -0.5, 0.0)).xzy, 0.012, 0.06);
+      r = opU(r, vec2(min(rodp, bob), 6.0));
+    }
+  } else r = opU(r, vec2(b, 5.0));
+
+  // the figure (only in the reflection)
+  if (gFigOn > 0.5){
+    vec3 q = p - gFigPos;
+    if (length(q.xz) < 1.2 && q.y > -0.1 && q.y < 2.5){
+      r = opU(r, vec2(sdFigure(q, uFig.w), 8.0));
+    } else {
+      r = opU(r, vec2(length(vec3(q.x, max(q.y - 1.2, 0.0), q.z)) - 1.0, 8.0));
+    }
+  }
+  if (gShadow > 0.5) return r; // nothing below casts a shadow worth tracing
+  // chandelier
+  b = sdBox(p - vec3(0.5, 4.2, 0.8), vec3(0.7, 0.5, 0.7));
+  if (b < BM){
+    vec3 q = p - vec3(0.5, 3.95, 0.8);
+    float ring = sdTorXZ(q, 0.55, 0.03);
+    float stem = sdCyl(q - vec3(0.0, 0.6, 0.0), 0.65, 0.02);
+    float ball = sdSph(q - vec3(0.0, -0.1, 0.0), 0.11);
+    float a = atan(q.z, q.x + 1e-5); float sec = PI/3.0;
+    float an = floor(a/sec + 0.5)*sec;
+    vec3 qa = q; qa.xz = rot2(-an) * qa.xz;
+    float arm = sdCaps(qa, vec3(0.0, -0.1, 0.0), vec3(0.55, 0.0, 0.0), 0.014);
+    qa.x -= 0.55;
+    float cup = sdCyl(qa - vec3(0.0, 0.06, 0.0), 0.06, 0.035);
+    float candle = sdCyl(qa - vec3(0.0, 0.2, 0.0), 0.11, 0.016);
+    r = opU(r, vec2(min(min(ring, stem), min(ball, min(cup, min(candle, arm)))), 6.0));
+  } else r = opU(r, vec2(b, 6.0));
+
+  // portrait on the right wall
+  b = sdBox(p - vec3(3.95, 2.5, 1.0), vec3(0.1, 0.85, 0.7));
+  if (b < BM){
+    vec3 q = p - vec3(3.96, 2.5, 1.0);
+    float frame = sdBox(q, vec3(0.045, 0.78, 0.6));
+    float canvas = sdBox(q - vec3(-0.02, 0.0, 0.0), vec3(0.035, 0.68, 0.5));
+    r = opU(r, vec2(max(frame, -canvas), 6.0));
+    r = opU(r, vec2(sdBox(q - vec3(0.01, 0.0, 0.0), vec3(0.01, 0.68, 0.5)), 12.0));
+  } else r = opU(r, vec2(b, 6.0));
+
+  // door panel (in the recess)
+  r = opU(r, vec2(sdBox(p - vec3(-2.6, 1.15, 5.1), vec3(0.5, 1.12, 0.02)), 13.0));
+
+  return r;
+}
+
+vec3 calcNormal(vec3 p){
+  vec2 e = vec2(0.0015, -0.0015);
+  return normalize(e.xyy*map(p + e.xyy).x + e.yyx*map(p + e.yyx).x + e.yxy*map(p + e.yxy).x + e.xxx*map(p + e.xxx).x);
+}
+
+// ---------- marching ----------
+vec3 march(vec3 ro, vec3 rd, float tmax, float steps){
+  float t = 0.0; float m = -1.0; float it = 0.0; float lastM = -1.0; bool past = false;
+  for (int i = 0; i < MARCH_N; i++){
+    if (float(i) >= steps) break;
+    vec3 p = ro + rd*t;
+    vec2 h = map(p); lastM = h.y;
+#ifdef LITE
+    if (h.x < 0.0025 * (1.0 + t*0.8)){ m = h.y; it = float(i); break; }
+#else
+    if (h.x < 0.0012 * (1.0 + t*0.6)){ m = h.y; it = float(i); break; }
+#endif
+    t += h.x * 0.92;
+    if (t > tmax){ m = -1.0; past = true; break; }
+  }
+  // out of steps while still inside: shade the last point rather than leave a black hole
+  if (m < 0.0 && !past) m = lastM;
+  return vec3(t, m, it);
+}
+float softShadow(vec3 ro, vec3 rd, float tmax, float steps, float k){
+  float res = 1.0; float t = 0.12;
+  gShadow = 1.0;
+  for (int i = 0; i < SHAD_N; i++){
+    if (float(i) >= steps) break;
+    float h = map(ro + rd*t).x;
+    res = min(res, k*h/t);
+    t += clamp(h, 0.08, 0.6);
+    if (res < 0.02 || t > tmax) break;
+  }
+  gShadow = 0.0;
+  return clamp(res, 0.0, 1.0);
+}
+float calcAO(vec3 p, vec3 n){
+  float ao = 0.0;
+  ao += (0.08 - clamp(map(p + n*0.08).x, 0.0, 0.08));
+  ao += (0.3 - clamp(map(p + n*0.3).x, 0.0, 0.3)) * 0.4;
+  return clamp(1.0 - ao*3.0, 0.0, 1.0);
+}
+
+// ---------- outside ----------
+#define OUTERZ -4.3
+float angDist(float az, float el, float az2, float el2){
+  float da = az - az2; da -= 6.2831853*floor(da/6.2831853 + 0.5);
+  return length(vec2(da*cos(el2), el - el2));
+}
+// up to three simultaneous flash sources: (az, el, radius, intensity); kind 0 = inside cloud, 1 = cloud to ground, 2 = beyond the horizon
+float flashSky(float az, float el, float cloud, vec4 f, float kind){
+  if (f.w < 0.001) return 0.0;
+  float d = angDist(az, el, f.x, f.y);
+  float g = exp(-(d*d)/(f.z*f.z));
+  float horiz = exp(-max(el, 0.0)*9.0);
+  if (kind > 1.5) return f.w * (0.15*horiz + 0.85*g*horiz) * (0.6 + 0.6*cloud);
+  if (kind > 0.5){
+    float da = az - f.x; da -= 6.2831853*floor(da/6.2831853 + 0.5);
+    float de = el - f.y;
+    float gw = exp(-(da*da)/(f.z*f.z*2.0) - (de*de)/(f.z*f.z*0.5));
+    return f.w * (0.06 + 0.3*gw) * (0.3 + 1.1*cloud) * (0.7 + 0.5*horiz);
+  }
+  // inside the cloud: a blob lit from within, bright core, cloud bulges in front stay darker
+  float core = exp(-(d*d)/(f.z*f.z*0.25));
+  float detail = vnoise(vec2(az*9.0, el*15.0 + 2.0));
+  return f.w * (0.1 + 0.4*g*(0.6 + 0.6*cloud) + 1.1*core*(0.2 + 0.5*cloud + 0.5*detail)) * (0.8 + 0.3*horiz);
+}
+float boltGlow(float az, float el){
+  if (uBolt < 0.001) return 0.0;
+  float d = 10.0; float dd = 10.0;
+  vec2 a = vec2(uBoltP.x, uBoltP.y);
+  float n = 12.0;
+  float dy = (uBoltP.y - uBoltQ.x)/n;
+  float tort = 0.11*clamp((uBoltP.y - uBoltQ.x)*2.5, 0.3, 1.0);
+  for (int i = 0; i < 12; i++){
+    float fi = float(i);
+    float z1 = (hash1(vec2(uBoltP.z, fi*1.7)) - 0.5) * tort * (1.0 + 0.5*hash1(vec2(fi, uBoltP.z)));
+    vec2 b = vec2(a.x + z1, a.y - dy);
+    vec2 pa = vec2(az, el) - a, ba = b - a;
+    float h = clamp(dot(pa, ba)/dot(ba, ba), 0.0, 1.0);
+    d = min(d, length(pa - ba*h));
+    if ((i == 3 || i == 6 || i == 8) && uBoltP.w > 0.5){
+      float sgn = sign(z1 + 0.0007);
+      vec2 c = b + vec2(0.5*tort*sgn*(1.0 + fi*0.2), -dy*(2.0 + fi*0.3));
+      vec2 bb = c - b, pb = vec2(az, el) - b;
+      float hh = clamp(dot(pb, bb)/dot(bb, bb), 0.0, 1.0);
+      dd = min(dd, length(pb - bb*hh));
+      vec2 c2 = c + vec2(0.3*tort*sgn, -dy*1.5);
+      vec2 bb2 = c2 - c, pc = vec2(az, el) - c;
+      float h2 = clamp(dot(pc, bb2)/dot(bb2, bb2), 0.0, 1.0);
+      dd = min(dd, length(pc - bb2*h2) + 0.001);
+    }
+    a = b;
+  }
+  float w = uBoltQ.z;
+  float core = exp(-d*d/(w*w*2.5)) * 1.0 + exp(-d*90.0) * 0.22;
+  float br = (exp(-dd*dd/(w*w*1.2)) * 0.6 + exp(-dd*120.0) * 0.1) * uBoltQ.y;
+  return core + br;
+}
+float streaks(float az, float el, float t){
+  float s1 = vnoise(vec2(az*90.0, el*8.0 + t*3.2));
+  float s2 = vnoise(vec2(az*160.0 + 7.0, el*14.0 + t*5.1));
+#ifdef LITE
+  return ss(0.78, 0.96, s1) * 0.8 + ss(0.8, 0.98, s2) * 0.55;
+#else
+  float s3 = vnoise(vec2(az*55.0 + 3.0, el*5.0 + t*2.3));
+  return ss(0.78, 0.96, s1) * 0.7 + ss(0.8, 0.98, s2) * 0.45 + ss(0.84, 0.99, s3) * 0.5;
+#endif
+}
+float cloudDen(float az, float el){
+#ifdef LITE
+  return fbm2(vec2(az*2.2, el*4.5 + 0.2) + vec2(uTime*0.006, 0.0)) * 1.15;
+#else
+  return fbm3(vec2(az*2.2, el*4.5 + 0.2) + vec2(uTime*0.006, 0.0));
+#endif
+}
+vec3 skyCol(vec3 rd, float az, float el){
+  float horiz = exp(-max(el, 0.0)*7.0);
+  vec3 base = vec3(0.0025, 0.003, 0.0045) * (1.0 + 1.8*horiz);
+  if (uDbg > 1.5) return vec3(boltGlow(az, el)*2.0 + 0.02);
+  float c = cloudDen(az, el);
+  float lit = flashSky(az, el, c, uF0, uFK.x) + flashSky(az, el, c, uF1, uFK.y) + flashSky(az, el, c, uF2, uFK.z);
+  base += lit * vec3(0.78, 0.84, 1.0);
+  base += boltGlow(az, el) * uBolt * vec3(0.9, 0.93, 1.0) * 8.0;
+  return base;
+}
+float flashLobe(vec3 rd){
+  float s = 0.0;
+  s += uF0.w * (0.35 + 0.65*max(dot(rd, vec3(sin(uF0.x)*cos(uF0.y), sin(uF0.y), -cos(uF0.x)*cos(uF0.y))), 0.0));
+  s += uF1.w * (0.35 + 0.65*max(dot(rd, vec3(sin(uF1.x)*cos(uF1.y), sin(uF1.y), -cos(uF1.x)*cos(uF1.y))), 0.0));
+  s += uF2.w * (0.35 + 0.65*max(dot(rd, vec3(sin(uF2.x)*cos(uF2.y), sin(uF2.y), -cos(uF2.x)*cos(uF2.y))), 0.0));
+  return s;
+}
+vec3 water(vec3 rd, vec3 n, vec3 fl){
+  vec3 rr = reflect(rd, n);
+  vec3 refl = skyCol(rr, atan(rr.x, -rr.z + 1e-5), atan(rr.y, max(length(rr.xz), 1e-4)));
+  float fr = 0.03 + 0.97*pow(1.0 - max(-rd.y, 0.0), 5.0);
+  return refl * (0.5 + 0.5*fr) + fl*0.004;
+}
+vec3 outside(vec3 ro, vec3 rd){
+  float az = atan(rd.x, -rd.z + 1e-5);
+  float hl = max(length(rd.xz), 1e-4);
+  float el = atan(rd.y, hl);
+  vec3 sky = skyCol(rd, az, el);
+  vec3 col = sky;
+  float dist = 3000.0;
+  float amb = 0.003;
+  float fl = flashLobe(rd);
+  vec3 L = uFlashDir;
+  // the tower's own wall below the window (outer face at z = OUTERZ)
+  if (rd.z < -1e-4){
+    float tw = (OUTERZ - ro.z)/rd.z;
+    vec3 wp = ro + rd*tw;
+    if (winMask2D(wp.xy) > 0.0 && wp.y > GROUNDY){
+      float blk = ss(0.0, 0.02, abs(fract(wp.y/0.36) - 0.5)*0.36 - 0.012) * ss(0.0, 0.02, abs(fract((wp.x + floor(wp.y/0.36)*0.33)/0.72) - 0.5)*0.72 - 0.012);
+      vec3 alb = vec3(0.17, 0.165, 0.15) * (0.75 + 0.4*vnoise(wp.xy*5.0)) * (0.55 + 0.45*blk);
+      alb *= 0.6 + 0.4*ss(-2.0, 2.0, wp.y); // wet, darker below the sill
+      col = alb * (amb + fl*1.4*max(dot(vec3(0.0, 0.0, -1.0), L), 0.2)); dist = tw;
+    }
+  }
+  // ground: moat by the wall, meadow, a track, a river in the distance
+  if (rd.y < -1e-4){
+    float tg = (GROUNDY - ro.y)/rd.y;
+    if (tg < dist){
+      vec3 gp = ro + rd*tg;
+      float dz = OUTERZ - gp.z; // distance out from the wall
+      float moat = ss(13.0, 11.5, dz) * step(0.5, dz);
+      float riverC = 190.0 + 25.0*vnoise(vec2(gp.x*0.01 + 1.0, 0.0)) + 8.0*vnoise(vec2(gp.x*0.05, 1.0));
+      float river = ss(16.0, 11.0, abs(dz - riverC));
+      float track = ss(2.6, 1.8, abs(gp.x - 3.0*sin(dz*0.05))) * step(13.0, dz) * step(dz, 170.0);
+      vec3 alb = mix(vec3(0.045, 0.06, 0.03), vec3(0.07, 0.075, 0.04), vnoise(gp.xz*0.9));
+      alb = mix(alb, vec3(0.17, 0.16, 0.14), track);
+      vec3 n = vec3(0.0, 1.0, 0.0);
+      vec3 lit = alb * (amb + fl*1.8);
+      float wet = max(moat, river);
+      col = mix(lit, water(rd, n, vec3(fl)), wet);
+      dist = tg;
+    }
+  }
+  // forest bands and hills as silhouettes at fixed horizontal distances
+  { float Lx = 1200.0; float s = Lx/hl; if (s < dist){ float y = ro.y + rd.y*s;
+      float top = GROUNDY + 140.0 + 260.0*vnoise(vec2(az*0.9 + 4.0, 0.0)) + 60.0*vnoise(vec2(az*3.5, 0.7));
+      if (y < top){ col = vec3(0.0025, 0.003, 0.0045) + vec3(0.03, 0.035, 0.05)*fl; dist = s; } } }
+  { float Lx = 420.0; float s = Lx/hl; if (s < dist){ float y = ro.y + rd.y*s;
+      float top = GROUNDY + 34.0 + 70.0*vnoise(vec2(az*1.3 + 2.0, 0.0)) + 18.0*vnoise(vec2(az*5.0, 0.5));
+      if (y < top){ col = vec3(0.0025, 0.003, 0.0045) + vec3(0.045, 0.05, 0.06)*fl*(0.5 + 0.5*vnoise(vec2(az*20.0, y*0.3))); dist = s; } } }
+  { float Lx = 150.0; float s = Lx/hl; if (s < dist){ float y = ro.y + rd.y*s;
+      float top = GROUNDY + 18.0 + 10.0*vnoise(vec2(az*2.5 + 1.0, 0.0)) + 4.0*vnoise(vec2(az*12.0, 0.3));
+      float edge = 1.2*vnoise(vec2(az*40.0, y*0.8));
+      if (y < top - edge){ col = vec3(0.0025, 0.003, 0.004) + vec3(0.06, 0.075, 0.05)*fl*(0.4 + 0.6*vnoise(vec2(az*30.0, y*1.0))); dist = s; } } }
+  { float Lx = 60.0; float s = Lx/hl; if (s < dist){ float y = ro.y + rd.y*s;
+      float gap = ss(0.3, 0.4, vnoise(vec2(az*1.1 + 5.0, 0.0)));
+      float top = GROUNDY + 12.0 + 7.0*vnoise(vec2(az*4.0 + 1.0, 0.0)) + 2.5*vnoise(vec2(az*19.0, 0.3));
+      top = mix(GROUNDY - 1.0, top, gap);
+      float edge = 0.8*vnoise(vec2(az*40.0, y*1.5));
+      if (y < top - edge){ col = vec3(0.002, 0.0028, 0.002) + vec3(0.07, 0.09, 0.05)*fl*(0.4 + 0.6*vnoise(vec2(az*30.0, y*2.0))); dist = s; } } }
+  // figure outside (only within its bounding sphere)
+  if (uFigOut.w > 0.5){
+    vec3 fc = uFigOut.xyz + vec3(0.0, 1.0, 0.0);
+    vec3 oc = ro - fc; float bq = dot(oc, rd); float cq = dot(oc, oc) - 1.21;
+    float disc = bq*bq - cq;
+    if (disc > 0.0){
+      float t0 = -bq - sqrt(disc);
+      if (t0 > 0.0 && t0 < dist){
+        float t = t0;
+        for (int i = 0; i < FIG_N; i++){
+          vec3 p = ro + rd*t - uFigOut.xyz;
+          float h = sdFigure(p, 1.0);
+          if (h < 0.004*(1.0 + t*0.05)){ dist = t;
+            vec3 p2 = ro + rd*t - uFigOut.xyz;
+            float face = step(1.58, p2.y) * step(p2.z, 0.02);
+            col = mix(vec3(0.004, 0.004, 0.006), vec3(0.3, 0.26, 0.24)*(amb*6.0 + fl*1.6), face);
+            break; }
+          t += h;
+          if (t > t0 + 2.4) break;
+        }
+      }
+    }
+  }
+  // rain haze and streaks
+  vec3 fogC = vec3(0.003, 0.0035, 0.005) + vec3(0.1, 0.11, 0.13)*fl;
+  if (dist < 2500.0) col = mix(col, fogC, 1.0 - exp(-dist*0.0016));
+  float st = streaks(az, el, uRain);
+  col += st * (vec3(0.5, 0.55, 0.65)*(0.003 + fl*0.18) + vec3(0.3, 0.14, 0.05)*uEmber*0.025);
+  return col;
+}
+
+// ---------- materials ----------
+vec3 woodGrain(vec2 q, vec3 base){
+  float g = vnoise(vec2(q.x*2.5, q.y*40.0)) * 0.6 + vnoise(vec2(q.x*9.0, q.y*90.0)) * 0.4;
+  return base * (0.75 + 0.5*g);
+}
+vec3 stoneWall(vec2 w, vec3 p){
+  float row = floor(w.y/0.34);
+  float stag = mod(row, 2.0)*0.36;
+  float colI = floor((w.x + stag)/0.72);
+  float h = hash1(vec2(row, colI));
+  float mortar = ss(0.0, 0.025, abs(fract(w.y/0.34) - 0.5)*0.34 - 0.014) * ss(0.0, 0.025, abs(fract((w.x + stag)/0.72) - 0.5)*0.72 - 0.014);
+  vec3 a = vec3(0.16, 0.15, 0.13) * (0.7 + 0.6*h) * (0.8 + 0.4*vnoise(w*7.0));
+  a = mix(vec3(0.07, 0.065, 0.06), a, mortar);
+  a *= 0.55 + 0.45*ss(-0.2, 1.4, w.y); // damp near the floor
+  return a;
+}
+vec3 albedoShell(vec3 p, vec3 n, inout float spec, inout float gloss){
+  spec = 0.0; gloss = 0.0;
+  if (n.y > 0.9 && p.y < 0.2){ // floor: wide planks
+    vec2 q = p.xz;
+    float row = floor(q.y/0.24);
+    float stag = mod(row, 3.0)*0.7;
+    float col = floor((q.x + stag)/1.8);
+    float h = hash1(vec2(row, col));
+    vec3 base = mix(vec3(0.15, 0.09, 0.05), vec3(0.085, 0.05, 0.03), h);
+    vec3 a = woodGrain(vec2(q.x + h*7.0, q.y + h*3.0), base);
+    float seam = ss(0.0, 0.008, abs(fract(q.y/0.24) - 0.5)*0.24 - 0.006) * ss(0.0, 0.008, abs(fract((q.x + stag)/1.8) - 0.5)*1.8 - 0.005);
+    a *= 0.5 + 0.5*seam;
+    vec2 rq = (q - vec2(0.35, 0.4)) / vec2(2.3, 1.55);
+    float rr = length(rq);
+    if (rr < 1.0){
+      float border = ss(0.86, 0.9, rr);
+      float pat = ss(0.45, 0.55, 0.5 + 0.5*sin(q.x*14.0)*sin(q.y*14.0));
+      vec3 rugc = mix(vec3(0.2, 0.03, 0.03), vec3(0.26, 0.11, 0.05), pat*0.5);
+      rugc = mix(rugc, vec3(0.1, 0.07, 0.03), border);
+      a = rugc; spec = 0.0; gloss = 0.0;
+    } else { spec = 0.3; gloss = 60.0; }
+    return a;
+  }
+  if (n.y < -0.9){ // ceiling: beams over plaster
+    float beam = step(fract(p.x/0.95 + 0.1), 0.24);
+    return mix(vec3(0.13, 0.12, 0.1), woodGrain(vec2(p.z, p.x), vec3(0.07, 0.045, 0.03)), beam);
+  }
+  if (p.z < -2.96 && abs(p.x) < 1.4 && p.y > 0.6){ // embrasure
+    return vec3(0.13, 0.125, 0.115) * (0.8 + 0.3*vnoise(p.xy*6.0 + p.z*3.1));
+  }
+  if (p.x < -3.55 && abs(p.z - 1.0) < 0.7 && p.y < 1.2){ return vec3(0.05, 0.045, 0.04); } // sooty firebox
+  vec2 w = abs(n.x) > 0.5 ? vec2(p.z, p.y) : vec2(p.x, p.y);
+  // tapestry on the back wall
+  if (n.z < -0.5 && p.z > 4.9 && abs(p.x - 0.6) < 1.25 && p.y > 1.1 && p.y < 3.95){
+    vec2 t = vec2(p.x - 0.6, p.y - 2.5);
+    float loz = abs(fract(t.x/0.42 + t.y/0.42) - 0.5) + abs(fract(t.x/0.42 - t.y/0.42) - 0.5);
+    float lat = ss(0.08, 0.04, abs(loz - 0.5));
+    float border = ss(1.1, 1.2, abs(t.x)) + ss(1.3, 1.4, abs(t.y));
+    vec3 a = mix(vec3(0.2, 0.05, 0.045), vec3(0.3, 0.22, 0.08), lat*0.7);
+    a = mix(a, vec3(0.1, 0.09, 0.05), clamp(border, 0.0, 1.0));
+    a *= 0.8 + 0.4*vnoise(t*40.0);
+    return a;
+  }
+  vec3 a = stoneWall(w, p);
+  if (p.y > 4.95) a = vec3(0.12, 0.11, 0.09); // top course
+  return a;
+}
+vec3 albedo(vec3 p, vec3 n, float mat, inout float spec, inout float gloss, inout vec3 emis){
+  emis = vec3(0.0); spec = 0.0; gloss = 0.0;
+  if (mat < 1.5) return albedoShell(p, n, spec, gloss);
+  if (mat < 2.5) return vec3(0.3, 0.28, 0.25) * (0.8 + 0.3*vnoise(p.xy*7.0 + p.z*3.3));
+  if (mat < 3.5){ spec = 0.08; gloss = 4.0; return vec3(0.2, 0.025, 0.035) * (0.85 + 0.3*vnoise(p.xy*12.0 + p.z*5.0)); }
+  if (mat < 4.5){ spec = 0.08; gloss = 10.0; return vec3(0.045, 0.055, 0.032) * (0.8 + 0.4*vnoise(p.xy*14.0 + p.z*6.0)); }
+  if (mat < 5.5){ spec = 0.3; gloss = 24.0; return woodGrain(vec2(p.y, p.x + p.z), vec3(0.13, 0.075, 0.04)); }
+  if (mat < 6.5){ spec = 0.6; gloss = 40.0; return vec3(0.1, 0.09, 0.08); }
+  if (mat < 7.5){
+    float gl = vnoise(p*30.0 + vec3(0.0, uTime*0.6, 0.0));
+    float hot = ss(0.35, 0.8, gl);
+    emis = mix(vec3(0.08, 0.01, 0.0), vec3(1.0, 0.32, 0.06), hot) * uEmber * uEmberF * 1.6;
+    return vec3(0.03, 0.02, 0.02);
+  }
+  if (mat < 8.5){ // figure
+    vec3 q = p - gFigPos; q.y /= uFig.w;
+    float face = step(1.58, q.y) * step(q.z, 0.015) * step(q.y, 1.9);
+    float hands = step(q.y, 0.95) * step(0.86, q.y) * step(0.18, abs(q.x));
+    spec = 0.05; gloss = 3.0;
+    vec3 skin = vec3(0.62, 0.52, 0.45);
+    return mix(vec3(0.03, 0.028, 0.034), skin, max(face, hands));
+  }
+  if (mat < 9.5){ // clock face
+    vec2 q = vec2(p.x - 2.7, p.y - 2.0);
+    float r = length(q);
+    float ang = atan(-q.x, q.y); // clockwise from 12, seen from the room
+    float tick = ss(0.012, 0.004, abs(mod(ang + PI/12.0, PI/6.0) - PI/12.0)*r) * step(0.15, r) * step(r, 0.175);
+    vec2 hdir = vec2(-sin(uClock.x), cos(uClock.x));
+    vec2 mdir = vec2(-sin(uClock.y), cos(uClock.y));
+    float hh = clamp(dot(q, hdir), 0.0, 0.11); float hd = length(q - hdir*hh);
+    float mh = clamp(dot(q, mdir), 0.0, 0.165); float md = length(q - mdir*mh);
+    float hands = max(ss(0.011, 0.006, hd), ss(0.007, 0.003, md));
+    float ring = ss(0.004, 0.0, abs(r - 0.185) - 0.004);
+    vec3 a = vec3(0.72, 0.66, 0.52) * (0.9 + 0.15*vnoise(q*40.0));
+    a = mix(a, vec3(0.03), max(max(tick, hands), ring));
+    spec = 0.1; gloss = 20.0;
+    return a;
+  }
+  if (mat < 10.5){ spec = 0.4; gloss = 40.0; return vec3(0.12, 0.1, 0.1) * (0.7 + 0.6*ss(0.4, 0.6, vnoise(p.zy*5.0 + p.x*2.0))); }
+  if (mat < 12.5){ // canvas: a dark painting with a faint pale shape
+    vec2 q = vec2(p.z - 1.0, p.y - 2.5);
+    float oval = ss(0.26, 0.05, length(q/vec2(0.18, 0.25) - vec2(0.0, 0.5)) - 0.6);
+    return mix(vec3(0.05, 0.04, 0.03), vec3(0.16, 0.12, 0.09), oval*0.5) * (0.8 + 0.4*vnoise(q*25.0));
+  }
+  // plank door with iron bands
+  { vec2 w = vec2(p.x + 2.6, p.y);
+    float plank = ss(0.0, 0.01, abs(fract(w.x/0.14) - 0.5)*0.14 - 0.006);
+    float band = step(abs(w.y - 0.6), 0.05) + step(abs(w.y - 1.7), 0.05);
+    spec = 0.15; gloss = 16.0;
+    vec3 a = woodGrain(vec2(w.y, w.x), vec3(0.09, 0.055, 0.03)) * (0.6 + 0.4*plank);
+    return mix(a, vec3(0.06, 0.055, 0.05), clamp(band, 0.0, 1.0)); }
+}
+
+// window as light source
+vec3 winLight(vec3 p, vec3 n, float pass){
+  vec3 res = vec3(0.0);
+  // diffuse sky through the opening
+  vec3 wc = vec3(sign(p.x + 0.01)*0.55, 2.1, GLASSZ);
+  vec3 tw = wc - p; float d = length(tw); vec3 dir = tw/d;
+  float cosS = max(dot(n, dir), 0.0), cosW = max(-dir.z, 0.0);
+  if (cosS > 0.0 && cosW > 0.0){
+#ifdef LITE
+    float occ = 1.0;
+#else
+    float occ = (d < 7.0 && pass < 0.5) ? softShadow(p + n*0.05, dir, d - 0.1, 5.0, 6.0) : 1.0;
+#endif
+    float sa = 6.0 * cosS * cosW / (d*d + 1.5);
+    res += (vec3(0.003, 0.0035, 0.005)*1.5 + vec3(0.8, 0.85, 1.0)*uFlashIn*0.8) * sa * occ;
+  }
+  // direct lightning through the aperture
+  if (uFlashDirI > 0.003 && uFlashDir.z < -0.08){
+    vec3 L = uFlashDir;
+    float cosL = dot(n, L);
+    if (cosL > 0.0){
+      float t = (GLASSZ - p.z)/L.z;
+      vec3 q = p + L*t;
+      if (winMask2D(q.xy) < 0.0 && mullion2D(q.xy) > 0.0){
+#ifdef LITE
+        float occ = 1.0;
+#else
+        float occ = softShadow(p + n*0.05, L, t - 0.1, pass < 0.5 ? 9.0 : 4.0, 10.0);
+#endif
+        res += vec3(0.85, 0.9, 1.0) * uFlashDirI * 1.3 * cosL * occ;
+      }
+    }
+  }
+  return res;
+}
+
+vec3 shade(vec3 p, vec3 n, float mat, vec3 rd, float pass){
+  float spec, gloss; vec3 emis;
+  vec3 alb = albedo(p, n, mat, spec, gloss, emis);
+  vec3 v = -rd;
+  vec3 col = emis;
+#ifdef LITE
+  float ao = 1.0;
+#else
+  float ao = pass < 0.5 ? calcAO(p, n) : 1.0;
+#endif
+  // embers
+  vec3 Lp = vec3(-3.42, 0.45, 1.0);
+  vec3 tl = Lp - p; float dl = length(tl); vec3 l = tl/dl;
+  float ndl = max(dot(n, l), 0.0);
+  vec3 emberC = vec3(1.0, 0.42, 0.12) * uEmber * uEmberF * 4.5 / (0.35 + dl*dl*0.5);
+  if (ndl > 0.0 && uEmber > 0.002){
+#ifdef LITE
+    float sh = pass < 0.5 ? softShadow(p + n*0.05, l, dl - 0.15, 5.0, 7.0) : 1.0;
+#else
+    float sh = softShadow(p + n*0.05, l, dl - 0.15, pass < 0.5 ? 10.0 : 4.0, 9.0);
+#endif
+    vec3 h = normalize(l + v);
+    float sp = pow(max(dot(n, h), 0.0), gloss) * spec;
+    col += emberC * sh * (alb*ndl + sp);
+  }
+  // bounce fill from the fire (wrapped, unshadowed, short range)
+  col += alb * emberC * 0.06 * max(dot(n, l)*0.5 + 0.5, 0.0) * exp(-dl*0.25);
+  // window light (sky + lightning)
+  vec3 wl = winLight(p, n, pass);
+  col += alb * wl;
+  // floor varnish reflecting the window
+  if (spec > 0.0 && gloss > 50.0 && mat < 1.5){
+    vec3 rr = reflect(rd, n);
+    if (rr.z < -0.01){
+      float t = (GLASSZ - p.z)/rr.z; vec3 q = p + rr*t;
+      if (winMask2D(q.xy) < 0.0 && mullion2D(q.xy) > 0.0){
+        float fr = 0.03 + 0.5*pow(1.0 - max(dot(n, v), 0.0), 4.0);
+        col += (vec3(0.003, 0.0035, 0.005) + vec3(0.8, 0.85, 1.0)*uFlashIn*1.1) * fr * 0.8;
+      }
+    }
+  }
+  // rim for fabrics / figure
+  if (mat > 2.5 && mat < 3.5) col += vec3(0.3, 0.08, 0.1) * pow(1.0 - max(dot(n, v), 0.0), 3.0) * (wl.r*0.5 + emberC.r*0.08);
+  if (mat > 7.5 && mat < 8.5) col += vec3(0.6, 0.5, 0.45) * pow(1.0 - max(dot(n, v), 0.0), 3.0) * (emberC.r*0.2 + wl.r*0.3);
+  // ambient
+  col += alb * vec3(0.004, 0.0045, 0.006);
+  col *= 0.35 + 0.65*ao;
+  return col;
+}
+
+// ---------- glass ----------
+vec3 dropLayer(vec2 uv, float t, vec2 cs, float dens, float rmin, float rmax, float moving){
+  vec2 id = floor(uv/cs);
+  vec2 n = hash2(id + 17.0);
+  float act = step(1.0 - dens, n.x);
+  float ph = moving > 0.5 ? fract(t*(0.05 + n.y*0.07) + n.y*7.0) : 0.5;
+  // stop-and-go
+  ph = ph - 0.12*sin(ph*PI*3.0 + n.x*6.0);
+  vec2 c = (id + vec2(0.5 + (n.x - 0.5)*0.5, 1.0 - clamp(ph, 0.0, 1.0))) * cs;
+  float r = rmin + n.y*(rmax - rmin);
+  vec2 d = uv - c; d.y *= 0.9;
+  // knock wobble
+  float tk = uKnock.z;
+  if (tk < 2.5){ float dd = length(uv - uKnock.xy); d += 0.004*sin(dd*45.0 - tk*28.0)*exp(-tk*2.5)*exp(-dd*2.5)*vec2(1.0, 1.5); }
+  float ld = length(d);
+  float m = ss(r, r*0.75, ld) * act;
+  vec2 nrm = (ld > 1e-5) ? d/ld * (1.0 - ld/r) : vec2(0.0);
+  float trail = 0.0;
+  if (moving > 0.5){
+    float above = step(c.y, uv.y) * step(uv.y, (id.y + 1.0)*cs.y);
+    float tn = vnoise(vec2(uv.x*320.0, uv.y*90.0 + n.x*10.0));
+    trail = ss(0.0045, 0.001, abs(uv.x - c.x)) * above * step(0.62, tn) * act * (0.6 + 0.4*n.y);
+  }
+  return vec3(nrm*m, m + trail*0.7);
+}
+vec3 drops(vec2 uv, float t){
+  vec3 a = dropLayer(uv, t, vec2(0.07, 0.3), 0.5, 0.006, 0.013, 1.0);
+  vec3 b = dropLayer(uv + vec2(0.04, 0.1), t*0.8, vec2(0.13, 0.5), 0.3, 0.009, 0.018, 1.0);
+#ifdef LITE
+  return vec3(a.xy + b.xy, max(a.z, b.z));
+#else
+  vec3 c = dropLayer(uv + floor(t*0.3)*0.37, 0.0, vec2(0.024, 0.026), 0.22, 0.002, 0.0045, 0.0);
+  vec2 nrm = a.xy + b.xy + c.xy*0.5;
+  return vec3(nrm, max(max(a.z, b.z), c.z*0.8));
+#endif
+}
+float leadMask(vec2 uv, float pxs){
+  vec2 q = rot2(PI/4.0) * uv * (1.0/0.17);
+  vec2 f = abs(fract(q) - 0.5);
+  float d = (0.5 - max(f.x, f.y)) * 0.17 / 1.4142;
+  float w = max(0.0035, pxs*1.1);
+  return ss(w, w*0.5, d);
+}
+float fogPatch(vec2 uv, vec3 fp){
+  if (fp.z < 0.001) return 0.0;
+  float d = length((uv - fp.xy) / vec2(0.19, 0.15));
+  float e = 0.75 + 0.25*vnoise(uv*40.0);
+  return ss(1.0, 0.25, d/e) * fp.z;
+}
+vec3 reflDir(vec3 rd, vec3 dr){
+  vec3 rdr = reflect(rd, vec3(0.0, 0.0, 1.0));
+  return normalize(rdr + vec3(dr.xy*0.25, 0.0));
+}
+vec3 glassShade(vec3 gp, vec3 rd, float t, vec3 dr, vec3 refC){
+  vec2 uv = gp.xy;
+  float pxs = t*uFov/uRes.y;
+  float lead = leadMask(uv, pxs);
+  float fogIn = clamp(fogPatch(uv, uFogOwn) + fogPatch(uv, uFogNext), 0.0, 1.0);
+  float fogOut = fogPatch(uv, uFogOut);
+  // transmitted
+  vec3 rdt = normalize(rd + vec3(-dr.xy*0.5, 0.0));
+  vec3 outC = outside(gp + vec3(0.0, 0.0, -0.01), rdt);
+  float cosT = max(-rd.z, 0.0);
+  float F = 0.26 + 0.74*pow(1.0 - cosT, 5.0);
+  F = mix(F, 0.3, dr.z*0.6); // droplets reflect more (lens)
+  float grime = 0.82 + 0.18*vnoise(uv*7.0 + 3.0);
+  vec3 col = outC*(1.0 - F)*grime + refC*F;
+  if (uDbg > 0.5 && uDbg < 1.5) col = refC*2.0;
+  // scatter from fog (breath)
+  vec3 Lp = vec3(-3.42, 0.45, 1.0);
+  float dl = length(Lp - gp);
+  vec3 emberAt = vec3(1.0, 0.42, 0.12) * uEmber * uEmberF * 4.5 / (0.35 + dl*dl*0.5);
+  vec3 scat = (emberAt*0.08 + vec3(0.8, 0.85, 1.0)*uFlash*0.35 + vec3(0.003, 0.0035, 0.005)) * vec3(0.7, 0.72, 0.75);
+  col = mix(col, scat, max(fogIn*0.9, fogOut*0.7));
+  // droplets catch the light
+  vec2 tl = normalize((Lp - gp).xy);
+  float hi = dr.z * (0.35 + 0.65*max(dot(normalize(dr.xy + 1e-5), tl), 0.0));
+  col += hi * (emberAt*0.05 + vec3(0.8, 0.85, 1.0)*uFlash*0.3 + vec3(0.003, 0.0035, 0.005)*2.0);
+  // lead cames
+  col = mix(col, vec3(0.0008, 0.0008, 0.001) + emberAt*0.012, lead);
+  return col;
+}
+
+void main(){
+  vec2 fc = gl_FragCoord.xy;
+  vec2 uv = (fc - 0.5*uRes) / uRes.y;
+  float th = tan(uFov*0.5);
+  vec3 rd = normalize(vec3(uv.x*th*2.0, uv.y*th*2.0, -1.0));
+  rd.yz = rot2(uCamRot.y) * rd.yz;
+  rd.xz = rot2(uCamRot.x) * rd.xz;
+  vec3 ro = uCamPos;
+  gFigOn = 0.0;
+  float tG = (rd.z < -1e-5) ? (GLASSZ - ro.z)/rd.z : 1e5;
+  vec3 h = march(ro, rd, min(tG, 30.0), uSteps);
+  // one shading site for both the room and its reflection
+  vec3 sp = vec3(0.0), srd = rd, gp = vec3(0.0), dr = vec3(0.0);
+  float sm = -1.0, pass = 0.0; bool glass = false;
+  if (h.y > 0.0){ sp = ro + rd*h.x; sm = h.y; }
+  else if (tG < 30.0){
+    gp = ro + rd*tG;
+    if (winMask2D(gp.xy) < 0.0){
+      glass = true;
+      dr = drops(gp.xy, uRain);
+      srd = reflDir(rd, dr);
+      gFigOn = uFig.z; gFigPos = vec3(uFig.x, 0.0, uFig.y);
+      vec3 h2 = march(gp + vec3(0.0, 0.0, 0.004), srd, 26.0, uSteps2);
+      if (h2.y > 0.0){ sp = gp + vec3(0.0, 0.0, 0.004) + srd*h2.x; sm = h2.y; pass = 1.0; }
+    }
+  }
+  vec3 shaded = vec3(0.0);
+  if (sm > 0.0){ vec3 sn = calcNormal(sp); shaded = shade(sp, sn, sm, srd, pass); }
+  gFigOn = 0.0;
+  vec3 col = glass ? glassShade(gp, rd, tG, dr, shaded) : shaded;
+  if (uDbg > 2.5) col = vec3(min(boltGlow(uv.x*1.2, uv.y*1.2 + 0.25), 1.0))*0.3;
+  // exposure & tonemap
+  float expo = 2.4 * (1.0 - 0.25*uDread) * uExpo;
+  col *= expo;
+  col = (col*(2.51*col + 0.03)) / (col*(2.43*col + 0.59) + 0.14);
+  col = pow(max(col, 0.0), vec3(1.0/1.9));
+  // grain
+  float g = hash1(vec3(fc*0.37, mod(uTime*60.0, 997.0)));
+  col += (g - 0.5) * (0.022 + 0.03*uDread) * (1.0 - col.g*0.5);
+  // vignette & eyelids
+  vec2 vq = (fc/uRes - 0.5) * vec2(uRes.x/uRes.y, 1.0);
+  col *= 1.0 - 0.45*dot(vq, vq);
+  float lid = ss(0.0, 0.14, (1.0 - abs(uv.y*2.0)) - uEyes*1.05);
+  col *= lid;
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+// ---------------- audio ----------------
+const AUDIO = (() => {
+  let ctx = null, lite = false, running = false, muted = true;
+  let master, comp, ceil, floorBus, duck, muffle, fxBus, rev, revGain, dry;
+  let noiseA, noiseB, bufPatter, bufTick, bufTock, bufPops = [], bufCreaks = [];
+  let drone = null, breath = null, windBusy = false;
+  let lis = {x: 0, z: 0, yaw: 0};
+  let clockOn = true, nextTick = 0, tickPhase = 0, nextDrip = 0, nextPop = 0, nextWind = 0;
+  let emberLv = 1, dread = 0;
+  const SR = 32000;
+
+  function pan2(x, z){ // world → [pan -1..1, distance]
+    const dx = x - lis.x, dz = z - lis.z;
+    const d = Math.hypot(dx, dz);
+    // camera looks along -z at yaw 0; right = +x
+    const ang = Math.atan2(dx, -dz) - lis.yaw;
+    return [Math.max(-1, Math.min(1, Math.sin(ang)*0.9)), d, Math.cos(ang)];
+  }
+  function mkPan(p){
+    if (ctx.createStereoPanner){ const n = ctx.createStereoPanner(); n.pan.value = p; return n; }
+    const n = ctx.createGain(); return n;
+  }
+  function mkNoise(sec, seed){
+    const b = ctx.createBuffer(1, Math.floor(ctx.sampleRate*sec), ctx.sampleRate);
+    const d = b.getChannelData(0); let s = seed;
+    for (let i = 0; i < d.length; i++){ s = (s*1664525 + 1013904223) >>> 0; d[i] = (s/4294967296)*2 - 1; }
+    return b;
+  }
+  function loopSrc(buf, rate){ const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; if (rate) s.playbackRate.value = rate; return s; }
+  function bakeIR(sec, stereo){
+    const n = Math.floor(ctx.sampleRate*sec);
+    const b = ctx.createBuffer(stereo ? 2 : 1, n, ctx.sampleRate);
+    for (let c = 0; c < b.numberOfChannels; c++){
+      const d = b.getChannelData(c); let s = 7 + c*131;
+      for (let i = 0; i < n; i++){
+        s = (s*1664525 + 1013904223) >>> 0; const r = (s/4294967296)*2 - 1;
+        const t = i/ctx.sampleRate;
+        let e = Math.exp(-t*3.4);
+        if (t < 0.08) e *= 0.35 + 0.65*(t/0.08);
+        d[i] = r*e*0.5;
+      }
+    }
+    return b;
+  }
+  // baked one-shots (computed in JS, Float32)
+  function bake(sec, fn){
+    const n = Math.floor(SR*sec); const b = ctx.createBuffer(1, n, SR); const d = b.getChannelData(0);
+    fn(d, n); let mx = 1e-6; for (let i = 0; i < n; i++) mx = Math.max(mx, Math.abs(d[i]));
+    for (let i = 0; i < n; i++) d[i] /= mx; return b;
+  }
+  function rng(seed){ let s = seed>>>0; return () => { s = (s*1664525 + 1013904223) >>> 0; return s/4294967296; }; }
+  function biquadBP(f, q){ // simple resonant 2-pole (per-sample)
+    let a1, a2, b0, y1 = 0, y2 = 0;
+    const set = (ff, qq) => { const w = 2*Math.PI*ff/SR, r = Math.exp(-w/(2*qq)); a1 = -2*r*Math.cos(w); a2 = r*r; b0 = (1 - r)*Math.sqrt(1 + a2 - 2*r*Math.cos(2*w) + 1e-9) + 1e-6; };
+    set(f, q);
+    return { set, run: x => { const y = b0*x - a1*y1 - a2*y2; y2 = y1; y1 = y; return y; } };
+  }
+  function bakeAll(){
+    const r = rng(42);
+    bufPatter = bake(6.0, (d, n) => {
+      for (let k = 0; k < 520; k++){
+        const p = Math.floor(r()*n), f = 2200 + r()*2800, dec = 0.0015 + r()*0.004, a = 0.3 + r()*0.7;
+        const L = Math.floor(dec*5*SR);
+        for (let i = 0; i < L && p + i < n; i++){ const t = i/SR; d[p + i] += a*Math.sin(2*Math.PI*f*t)*Math.exp(-t/dec)*(r() - 0.5 + 0.5); }
+      }
+    });
+    const tickFn = (f1, f2, nz) => (d, n) => {
+      const q = rng(9); const bp = biquadBP(f2, 6);
+      for (let i = 0; i < n; i++){ const t = i/SR; const click = (q()*2 - 1)*Math.exp(-t/0.0015)*nz; d[i] = Math.sin(2*Math.PI*f1*t)*Math.exp(-t/0.012)*0.8 + bp.run(click)*0.9 + Math.sin(2*Math.PI*f2*t)*Math.exp(-t/0.03)*0.3; }
+    };
+    bufTick = bake(0.12, tickFn(1750, 2600, 1.0));
+    bufTock = bake(0.14, tickFn(1350, 1900, 0.8));
+    for (let v = 0; v < 3; v++) bufPops.push(bake(0.05, (d, n) => { const q = rng(100 + v); const bp = biquadBP(2400 + v*900, 4); for (let i = 0; i < n; i++){ const t = i/SR; d[i] = bp.run((q()*2 - 1)*Math.exp(-t/(0.002 + v*0.002))); } }));
+    for (let v = 0; v < 3; v++) bufCreaks.push(bake(0.6 + v*0.15, (d, n) => {
+      const q = rng(300 + v*7); const bp = biquadBP(380 + v*70, 11); let nextI = 0, per = 0.016;
+      const dur = n/SR;
+      for (let i = 0; i < n; i++){
+        const t = i/SR; const u = t/dur;
+        per = 0.016 - 0.011*Math.min(1, u*1.6) + 0.004*(q() - 0.5)*0.3;
+        bp.set(380 + v*70 + 160*u + 40*Math.sin(t*23), 11 + 4*u);
+        let x = 0; if (i >= nextI){ x = (0.6 + 0.4*q())*(1 - 0.5*u); nextI = i + Math.floor(per*SR); }
+        const env = Math.min(1, t/0.05)*Math.exp(-Math.max(0, u - 0.55)*7);
+        d[i] = bp.run(x)*env;
+      }
+    }));
+  }
+  function build(){
+    master = ctx.createGain(); master.gain.value = 0.9;
+    comp = ctx.createDynamicsCompressor(); comp.threshold.value = -16; comp.knee.value = 8; comp.ratio.value = 5; comp.attack.value = 0.006; comp.release.value = 0.35;
+    ceil = ctx.createWaveShaper(); { const c = new Float32Array(2049); for (let i = 0; i < 2049; i++){ const x = (i/1024 - 1)*2.0; const ax = Math.abs(x); let y = ax <= 0.6 ? ax : 0.6 + 0.38*(1 - Math.exp(-(ax - 0.6)/0.38)); c[i] = Math.sign(x)*Math.min(y, 0.95); } ceil.curve = c; ceil.oversample = 'none'; }
+    master.connect(comp); comp.connect(ceil); ceil.connect(ctx.destination);
+    rev = ctx.createConvolver(); rev.buffer = bakeIR(1.4, false); revGain = ctx.createGain(); revGain.gain.value = 0.35;
+    rev.connect(revGain); revGain.connect(master);
+    fxBus = ctx.createGain(); fxBus.connect(master); fxBus.connect(rev);
+    duck = ctx.createGain(); muffle = ctx.createBiquadFilter(); muffle.type = 'lowpass'; muffle.frequency.value = 18000; muffle.Q.value = 0.3;
+    floorBus = ctx.createGain(); floorBus.connect(muffle); muffle.connect(duck); duck.connect(master); duck.connect(rev);
+    noiseA = mkNoise(4.1, 11); noiseB = mkNoise(5.3, 23);
+    bakeAll();
+    // rain layers (through a bus so a near strike can make the rain beat harder)
+    // heard through a thick wall and a leaded window: the whole rain bed is gently lowpassed
+    rainBus = ctx.createGain(); rainBus.gain.value = 1.0;
+    const rainLp = ctx.createBiquadFilter(); rainLp.type = 'lowpass'; rainLp.frequency.value = 4200; rainLp.Q.value = 0.5;
+    rainBus.connect(rainLp); rainLp.connect(floorBus);
+    const mk = (buf, type, f, q, g, rate) => { const s = loopSrc(buf, rate); const fl = ctx.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q; const gn = ctx.createGain(); gn.gain.value = g; s.connect(fl); fl.connect(gn); gn.connect(rainBus); s.start(); return {s, fl, gn}; };
+    mk(noiseA, 'bandpass', 5200, 0.5, 0.008, 1.0);
+    mk(noiseB, 'bandpass', 1500, 0.7, 0.012, 0.97);
+    mk(noiseA, 'lowpass', 420, 0.5, 0.024, 0.83);
+    for (let i = 0; i < 2; i++){ const s = loopSrc(bufPatter, i ? 0.93 : 1.0); const p = mkPan(i ? 0.5 : -0.5); const g = ctx.createGain(); g.gain.value = 0.02; const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5000; s.connect(lp); lp.connect(g); g.connect(p); p.connect(rainBus); s.start(i*1.7); }
+    // ember bed
+    { const s = loopSrc(noiseB, 0.5); const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 140; const g = ctx.createGain(); g.gain.value = 0.0; const p = mkPan(-0.6); s.connect(lp); lp.connect(g); g.connect(p); p.connect(floorBus); s.start(); emberBed = g; }
+    // drone
+    { drone = ctx.createGain(); drone.gain.value = 0.005; const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 170; lp.Q.value = 0.5;
+      [[55, 'sine', 0.5], [55.15, 'sine', 0.5], [110.1, 'sawtooth', 0.12]].forEach(([f, ty, g]) => { const o = ctx.createOscillator(); o.type = ty; o.frequency.value = f; const gg = ctx.createGain(); gg.gain.value = g; o.connect(gg); gg.connect(lp); o.start(); });
+      lp.connect(drone); drone.connect(floorBus); }
+    buildValley();
+    const t = ctx.currentTime;
+    nextTick = t + 0.3; nextDrip = t + 1.0; nextPop = t + 0.8; nextWind = t + 18 + Math.random()*20;
+  }
+  let emberBed = null, rainBus = null, thIn = null;
+  // The valley: one shared bus every thunder goes through. A handful of always-on nodes,
+  // so a strike costs one noise source and two oscillators however long its echoes last.
+  function buildValley(){
+    thIn = ctx.createBiquadFilter(); thIn.type = 'highpass'; thIn.frequency.value = 24; thIn.Q.value = 0.6; // nothing below hearing eats headroom
+    // dry
+    const dry = ctx.createGain(); dry.gain.value = 0.7; thIn.connect(dry); dry.connect(master);
+    // sub-harmonic enhancer: distort the band below 110 Hz so its harmonics (70-260 Hz) carry the weight on small speakers
+    { const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 110; lp.Q.value = 0.6;
+      const pre = ctx.createGain(); pre.gain.value = 5.0;
+      const sh = ctx.createWaveShaper(); const n = 1025, c = new Float32Array(n);
+      for (let i = 0; i < n; i++){ const x = i/(n - 1)*2 - 1; c[i] = Math.tanh(2.2*x + 0.35*x*x); } sh.curve = c;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 70; hp.Q.value = 0.6;
+      const lp2 = ctx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 320; lp2.Q.value = 0.5;
+      const g = ctx.createGain(); g.gain.value = 0.16;
+      thIn.connect(lp); lp.connect(pre); pre.connect(sh); sh.connect(hp); hp.connect(lp2); lp2.connect(g); g.connect(master); }
+    // discrete echoes off the hills and the far ridge: later ones duller and softer, alternating sides
+    { const pre = ctx.createBiquadFilter(); pre.type = 'lowpass'; pre.frequency.value = 900; thIn.connect(pre);
+      [[1.15, 1400, 0.40, 0.7], [2.05, 600, 0.30, -0.75], [3.3, 360, 0.22, 0.35], [4.9, 240, 0.15, -0.45]].forEach(([d, f, g, p]) => {
+        const dl = ctx.createDelay(6.0); dl.delayTime.value = d;
+        const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = f; lp.Q.value = 0.5;
+        const gg = ctx.createGain(); gg.gain.value = g; const pn = mkPan(p);
+        pre.connect(dl); dl.connect(lp); lp.connect(gg); gg.connect(pn); pn.connect(master);
+      }); }
+    // long diffuse tail: four lowpassed feedback combs (mutually prime lengths), decay ~10 s in the low band
+    { const pre = ctx.createBiquadFilter(); pre.type = 'lowpass'; pre.frequency.value = 520; pre.Q.value = 0.5;
+      const inG = ctx.createGain(); inG.gain.value = 0.15; thIn.connect(pre); pre.connect(inG);
+      const T60 = 10.0;
+      [[0.307, -0.8], [0.431, 0.8], [0.587, -0.55], [0.733, 0.55]].forEach(([d, p]) => {
+        const dl = ctx.createDelay(1.0); dl.delayTime.value = d;
+        const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380; lp.Q.value = 0.5;
+        const fb = ctx.createGain(); fb.gain.value = Math.pow(10, -3*d/T60);
+        inG.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl);
+        const pn = mkPan(p); lp.connect(pn); pn.connect(master);
+      }); }
+  }
+
+  async function start(liteFlag){
+    if (ctx) return running;
+    lite = !!liteFlag;
+    try {
+      ctx = new (window.AudioContext || window.webkitAudioContext)({latencyHint: 'playback'});
+      build();
+      if (ctx.state !== 'running') await ctx.resume();
+      running = ctx.state === 'running';
+    } catch (e){ running = false; }
+    return running;
+  }
+  function setLite(flag){
+    if (!ctx || lite === !!flag) { lite = !!flag; return; }
+    const was = running; try { ctx.close(); } catch (e){}
+    ctx = null; running = false; drone = null; breath = null; emberBed = null; rainBus = null; thIn = null; bufPops = []; bufCreaks = [];
+    if (was && !muted) start(flag);
+    lite = !!flag;
+  }
+  function setMuted(m){ muted = m; if (!ctx) return; if (m) ctx.suspend(); else ctx.resume(); }
+  function latency(){ return ctx ? ((ctx.outputLatency || 0) + (ctx.baseLatency || 0)) : 0; }
+  function now(){ return ctx ? ctx.currentTime : 0; }
+
+  function play(buf, when, gain, pan, bus, rate){
+    const s = ctx.createBufferSource(); s.buffer = buf; if (rate) s.playbackRate.value = rate;
+    const g = ctx.createGain(); g.gain.value = gain; const p = mkPan(pan);
+    s.connect(g); g.connect(p); p.connect(bus || fxBus); s.onended = () => { try { s.disconnect(); g.disconnect(); p.disconnect(); } catch (e){} };
+    s.start(when);
+  }
+  function update(dt, lx, lz, yaw){
+    if (!ctx || !running) return;
+    lis.x = lx; lis.z = lz; lis.yaw = yaw;
+    const t = ctx.currentTime, ahead = t + 0.5;
+    if (emberBed) emberBed.gain.setTargetAtTime(0.02*emberLv, t, 0.3);
+    if (drone) drone.gain.setTargetAtTime(0.005 + 0.028*dread, t, 0.5);
+    // clock
+    const cp = pan2(2.7, 4.78);
+    if (nextTick < t - 0.3) nextTick = t + 0.2;
+    if (nextDrip < t - 1.0) nextDrip = t + 0.5;
+    if (nextPop < t - 1.0) nextPop = t + 0.5;
+    while (clockOn && nextTick < ahead){
+      play(tickPhase ? bufTock : bufTick, nextTick, 0.024/(1 + cp[1]*0.12), cp[0]*0.8, floorBus);
+      tickPhase ^= 1; nextTick += 1.0;
+    }
+    if (!clockOn) nextTick = Math.max(nextTick, ahead);
+    // drips
+    while (nextDrip < ahead){
+      // a faint drip somewhere on the sill: lower, rarer, and muffled with the rain
+      const o = ctx.createOscillator(); const f0 = 1100 + Math.random()*700; o.frequency.setValueAtTime(f0, nextDrip); o.frequency.exponentialRampToValueAtTime(f0*0.6, nextDrip + 0.07);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, nextDrip); g.gain.exponentialRampToValueAtTime(0.003 + Math.random()*0.0025, nextDrip + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, nextDrip + 0.08);
+      const p = mkPan(Math.random()*1.4 - 0.7); o.connect(g); g.connect(p); p.connect(rainBus || fxBus); o.start(nextDrip); o.stop(nextDrip + 0.11); o.onended = () => { try { o.disconnect(); g.disconnect(); p.disconnect(); } catch (e){} };
+      nextDrip += 1.2 + Math.random()*3.2;
+    }
+    // ember pops
+    const fp = pan2(-3.8, 1.0);
+    while (nextPop < ahead){
+      if (emberLv > 0.05 && bufPops.length) play(bufPops[Math.floor(Math.random()*3)], nextPop, (0.01 + Math.random()*0.03)*emberLv/(1 + fp[1]*0.15), fp[0], fxBus, 0.8 + Math.random()*0.6);
+      nextPop += 0.3 + Math.random()*2.4/Math.max(0.2, emberLv);
+    }
+    // wind
+    if (nextWind < t){ wind(); nextWind = t + 35 + Math.random()*55; }
+  }
+  function wind(){
+    if (!ctx || windBusy) return; windBusy = true;
+    const t = ctx.currentTime, dur = 5 + Math.random()*5;
+    const s = loopSrc(noiseA, 0.9); const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.7;
+    lp.frequency.setValueAtTime(160, t); lp.frequency.linearRampToValueAtTime(700, t + dur*0.45); lp.frequency.linearRampToValueAtTime(140, t + dur);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.11, t + dur*0.45); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(lp); lp.connect(g); g.connect(floorBus); s.start(t); s.stop(t + dur + 0.1);
+    s.onended = () => { windBusy = false; try { s.disconnect(); lp.disconnect(); g.disconnect(); } catch (e){} };
+    // window rattle near the peak
+    rattle(t + dur*0.3, 4 + Math.floor(Math.random()*8), 1.0);
+  }
+  function curve(n, fn){ const c = new Float32Array(n); for (let i = 0; i < n; i++) c[i] = Math.max(0.0001, fn(i/(n - 1))); return c; }
+  function tail(nodes){ return () => { for (const n of nodes){ try { n.disconnect(); } catch (e){} } }; }
+  // thunder: kind 'cg' (cloud to ground) or 'ic' (inside the cloud), km distance, azRel bearing from the view, delay seconds
+  function thunder(kind, km, azRel, delay){
+    if (!ctx || !running || !thIn) return;
+    const t = ctx.currentTime + Math.max(0.05, delay);
+    const near = Math.exp(-km/2.5);
+    const ic = kind === 'ic';
+    const width = ic ? 0.3 : 0.45 + 0.5*near;
+    const pan = Math.max(-1, Math.min(1, Math.sin(azRel)*width));
+    const dur = (ic ? 8 : 5) + Math.random()*8 + (1 - near)*8;
+    // rolling: a first peak, then bursts from farther parts of the channel arriving later
+    const nB = 3 + Math.floor(Math.random()*5);
+    const bursts = []; for (let i = 0; i < nB; i++) bursts.push([0.06 + Math.random()*0.7, 0.3 + Math.random()*0.6, 0.02 + Math.random()*0.07]);
+    const atk = ic ? 0.4 + Math.random()*0.8 : 0.015 + 0.5*(1 - near)*(1 - near);
+    const pk = ic ? 0.2 + 0.25*near : 0.3 + 0.65*near;
+    const env = curve(128, u => {
+      const tt = u*dur; let v = tt < atk ? tt/atk : Math.exp(-(tt - atk)/(dur*0.3));
+      for (const b of bursts){ const d = (u - b[0])/b[2]; v += b[1]*Math.exp(-d*d)*Math.exp(-u*1.2); }
+      return v*pk;
+    });
+    // the sub band swells more slowly and lasts longer: the ground rumble under the roll
+    const subEnv = curve(64, u => { const tt = u*dur*1.15; const a = 0.25 + 0.6*(1 - near); return (tt < a ? tt/a : Math.exp(-(tt - a)/(dur*0.42)))*(0.55 + 0.45*near); });
+    const s = loopSrc(noiseB, 0.6 + Math.random()*0.3);
+    // body: lowpass closes over the roll
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.7;
+    const f0 = ic ? 80 + 220*near : 110 + 750*near*near;
+    lp.frequency.setValueAtTime(f0, t); lp.frequency.exponentialRampToValueAtTime(50, t + dur);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.setValueCurveAtTime(env, t + 0.001, dur);
+    const pn = mkPan(pan);
+    s.connect(lp); lp.connect(g); g.connect(pn); pn.connect(thIn);
+    // sub: resonant lowpass around 45 Hz from the same noise
+    const sl = ctx.createBiquadFilter(); sl.type = 'lowpass'; sl.frequency.value = 48; sl.Q.value = 1.4;
+    const sg = ctx.createGain(); sg.gain.setValueAtTime(0.0001, t); sg.gain.setValueCurveAtTime(subEnv, t + 0.001, dur*1.15);
+    const sk = ctx.createGain(); sk.gain.value = ic ? 1.15 : 1.7;
+    s.connect(sl); sl.connect(sk); sk.connect(sg); sg.connect(thIn);
+    s.start(t); s.stop(t + dur*1.15 + 0.1); s.onended = tail([s, lp, g, pn, sl, sk, sg]);
+    // pressure: the low thump of the shock front (two detuned sines dropping in pitch)
+    if (!ic || near > 0.5){
+      const amp = (ic ? 0.2 : 0.42)*near + 0.05;
+      [[46, 27, 1.0], [58, 33, 0.6]].forEach(([fa, fb, k]) => {
+        const o = ctx.createOscillator(); o.frequency.setValueAtTime(fa, t); o.frequency.exponentialRampToValueAtTime(fb, t + 1.4);
+        const og = ctx.createGain(); const a = 0.008 + 0.25*(1 - near);
+        og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(amp*k, t + a); og.gain.exponentialRampToValueAtTime(0.0001, t + a + 1.8 + 1.5*near);
+        o.connect(og); og.connect(thIn); o.start(t); o.stop(t + a + 3.5); o.onended = tail([o, og]);
+      });
+    }
+    if (ic || km > 2.6) return;
+    // crack: a sharp transient whose highpass sweeps down, then a tearing crackle
+    { const c = loopSrc(noiseA, 1.3); const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.Q.value = 0.7;
+      hp.frequency.setValueAtTime(5000, t); hp.frequency.exponentialRampToValueAtTime(700, t + 0.08);
+      const gg = ctx.createGain(); const cg = 1.0*near*near; gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(cg + 0.01, t + 0.003); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.07 + 0.22*near);
+      const pp = mkPan(pan); c.connect(hp); hp.connect(gg); gg.connect(pp); pp.connect(thIn); c.start(t); c.stop(t + 0.5); c.onended = tail([c, hp, gg, pp]); }
+    { const c = loopSrc(noiseB, 1.1); const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 0.9;
+      const tearDur = 0.3 + 0.7*near;
+      const tear = curve(120, u => { let v = 0; for (let k = 0; k < 24; k++){ const c0 = hash01(k*7.3 + km); const d = (u - c0)/0.012; v += Math.exp(-d*d); } return v*Math.exp(-u*2.2)*0.55*near*near; });
+      const gg = ctx.createGain(); gg.gain.setValueAtTime(0.0001, t + 0.03); gg.gain.setValueCurveAtTime(tear, t + 0.031, tearDur);
+      const pp = mkPan(pan); c.connect(bp); bp.connect(gg); gg.connect(pp); pp.connect(thIn); c.start(t); c.stop(t + tearDur + 0.1); c.onended = tail([c, bp, gg, pp]); }
+  }
+  function hash01(x){ const s = Math.sin(x*12.9898)*43758.5453; return s - Math.floor(s); }
+  function rattle(at, n, strength){
+    if (!ctx) return;
+    const wp = pan2(0, -3.9); let tt = at;
+    for (let i = 0; i < n; i++){
+      tt += 0.025 + Math.random()*0.11;
+      const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(70 + Math.random()*40, tt); o.frequency.exponentialRampToValueAtTime(45, tt + 0.04);
+      const gg = ctx.createGain(); gg.gain.setValueAtTime(0.0001, tt); gg.gain.exponentialRampToValueAtTime((0.05 + Math.random()*0.05)*strength, tt + 0.003); gg.gain.exponentialRampToValueAtTime(0.0001, tt + 0.05);
+      const p = mkPan(wp[0]*0.5 + (Math.random() - 0.5)*0.3); o.connect(gg); gg.connect(p); p.connect(fxBus); o.start(tt); o.stop(tt + 0.07);
+      o.onended = tail([o, gg, p]);
+    }
+  }
+  // a near strike: the window shakes with the crack and the rain beats harder for a while
+  function nearHit(delay, km){
+    if (!ctx || !running) return;
+    const t = ctx.currentTime + Math.max(0.05, delay);
+    const near = Math.exp(-km/2.5);
+    rattle(t + 0.02, 6 + Math.floor(near*10), 0.6 + near);
+    if (rainBus){ const g = rainBus.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(1.0 + 0.6*near, t + 2.5); g.linearRampToValueAtTime(1.0, t + 14 + 10*near); }
+  }
+  function creak(x, z, strength){
+    if (!ctx || !running || !bufCreaks.length) return;
+    const pp = pan2(x, z); const g = (0.08 + 0.1*strength)/(1 + pp[1]*0.35);
+    play(bufCreaks[Math.floor(Math.random()*3)], ctx.currentTime + 0.05 + Math.random()*0.4, g, pp[0], fxBus, 0.85 + Math.random()*0.3);
+  }
+  function knockIn(){
+    if (!ctx || !running) return;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(110, t + 0.05);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+    o.connect(g); g.connect(fxBus); o.start(t); o.stop(t + 0.12); o.onended = () => { try { o.disconnect(); g.disconnect(); } catch (e){} };
+    const c = loopSrc(noiseA, 1.0); const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 1.2;
+    const gg = ctx.createGain(); gg.gain.setValueAtTime(0.25, t); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.02);
+    c.connect(bp); bp.connect(gg); gg.connect(fxBus); c.start(t); c.stop(t + 0.05); c.onended = () => { try { c.disconnect(); bp.disconnect(); gg.disconnect(); } catch (e){} };
+  }
+  function knockOut(count, delay, pan){
+    if (!ctx || !running) return;
+    let t = ctx.currentTime + delay;
+    for (let i = 0; i < count; i++){
+      const o = ctx.createOscillator(); o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.08);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+      const p = mkPan(pan); o.connect(lp); lp.connect(g); g.connect(p); p.connect(fxBus); o.start(t); o.stop(t + 0.2); o.onended = () => { try { o.disconnect(); lp.disconnect(); g.disconnect(); p.disconnect(); } catch (e){} };
+      t += 0.36 + Math.random()*0.1;
+    }
+  }
+  function breathStart(){
+    if (!ctx || !running || breath) return;
+    const s = loopSrc(noiseA, 0.95); const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 650; bp.Q.value = 0.8;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200;
+    const env = ctx.createGain(); env.gain.value = 0.0001;
+    const dl = ctx.createDelay(0.01); dl.delayTime.value = 0.00045; const gl = ctx.createGain(); gl.gain.value = 0.5; const pR = mkPan(0.75), pL = mkPan(-0.75);
+    s.connect(bp); bp.connect(lp); lp.connect(env); env.connect(pR); env.connect(dl); dl.connect(gl); gl.connect(pL);
+    const out = ctx.createGain(); out.gain.value = 0.0001; pR.connect(out); pL.connect(out); out.connect(master); s.start();
+    out.gain.setTargetAtTime(1.2, ctx.currentTime, 1.5);
+    const per = 3.4; let next = ctx.currentTime + 0.5;
+    const timer = setInterval(() => { if (!ctx) return; const t = ctx.currentTime; while (next < t + 1.0){ env.gain.setValueAtTime(0.005, next); env.gain.linearRampToValueAtTime(0.3, next + 1.0); env.gain.linearRampToValueAtTime(0.005, next + 1.5); env.gain.setValueAtTime(0.005, next + 1.75); env.gain.linearRampToValueAtTime(0.45, next + 2.4); env.gain.linearRampToValueAtTime(0.005, next + per - 0.05); next += per; } }, 300);
+    breath = {s, out, timer, env};
+  }
+  function breathStop(){
+    if (!ctx || !breath) return;
+    const b = breath; breath = null; clearInterval(b.timer);
+    b.out.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.4);
+    setTimeout(() => { try { b.s.stop(); b.s.disconnect(); b.out.disconnect(); } catch (e){} }, 2500);
+  }
+  function clockSet(on, t0){ if (on && ctx){ nextTick = (t0 != null) ? t0 : ctx.currentTime + 0.6; tickPhase = 0; } clockOn = on; }
+  function duckAll(sec, depth){ if (!ctx) return; const t = ctx.currentTime; duck.gain.cancelScheduledValues(t); duck.gain.setValueAtTime(duck.gain.value, t); duck.gain.linearRampToValueAtTime(depth, t + 0.03); duck.gain.setValueAtTime(depth, t + sec); duck.gain.linearRampToValueAtTime(1.0, t + sec + 4.0); }
+  function muffleSet(x, sec){ if (!ctx) return; muffle.frequency.setTargetAtTime(18000 - 16600*x, ctx.currentTime, sec || 1.5); }
+  function setEmber(x){ emberLv = x; }
+  function setDread(x){ dread = x; }
+  function isRunning(){ return running; }
+  return {_dbg: () => ({running, breath: !!breath, st: ctx && ctx.state, muted, env: breath && breath.env.gain.value, out: breath && breath.out.gain.value, t: ctx && ctx.currentTime}), start, setLite, setMuted, latency, now, update, thunder, nearHit, creak, knockIn, knockOut, breathStart, breathStop, clockSet, duckAll, muffleSet, setEmber, setDread, wind, isRunning};
+})();
+
+// ---------------- main ----------------
+(() => {
+const canvas = document.getElementById('c');
+const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const LS_Q = 'inabikari-quality'; // 'high' opts into the full renderer; anything else is the light one
+let lite = (() => { try { return localStorage.getItem(LS_Q) !== 'high'; } catch (e){} return true; })();
+
+// ---- GL ----
+let gl = canvas.getContext('webgl2', {antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'high-performance'});
+let isGL2 = !!gl;
+if (!gl) gl = canvas.getContext('webgl', {antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'high-performance'}) || canvas.getContext('experimental-webgl');
+if (!gl){ document.body.style.background = '#050406'; return; }
+const VS = isGL2 ? '#version 300 es\nin vec2 a;void main(){gl_Position=vec4(a,0.,1.);}' : 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+function fragSrc(isLite){
+  const defs = isLite ? '#define LITE\n' : '';
+  if (isGL2) return '#version 300 es\n' + defs + '#define MARCH_N int(steps)\n#define SHAD_N int(steps)\n#define FIG_N int(uSteps2)\n' + FRAG.replace('precision highp float;', 'precision highp float;\nout vec4 fragColor;').split('gl_FragColor').join('fragColor');
+  return defs + (isLite ? '#define MARCH_N 52\n#define SHAD_N 6\n#define FIG_N 30\n' : '') + FRAG;
+}
+const UNIFORMS = ['uRes','uTime','uRain','uCamPos','uCamRot','uFov','uFlash','uFlashIn','uFlashDir','uFlashDirI','uF0','uF1','uF2','uFK','uBolt','uBoltP','uBoltQ','uExpo','uEmber','uEmberF','uFig','uFigOut','uEyes','uFogOwn','uFogNext','uFogOut','uClock','uKnock','uDread','uMuffle','uLite','uRM','uSteps','uSteps2','uDbg'];
+// two programs: the light one is compiled at once, the full one only when asked for
+let progs = {}, curProg = null, U = {}, vbuf = null, parExt = null, glLost = false;
+function sh(type, src){ const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+function makeProg(isLite){
+  const p = {prog: gl.createProgram(), isLite, ready: false, failed: false, U: {}, aLoc: 0};
+  p.vs = sh(gl.VERTEX_SHADER, VS); p.fs = sh(gl.FRAGMENT_SHADER, fragSrc(isLite));
+  gl.attachShader(p.prog, p.vs); gl.attachShader(p.prog, p.fs); gl.linkProgram(p.prog);
+  return p;
+}
+function setupGL(){
+  parExt = gl.getExtension('KHR_parallel_shader_compile');
+  vbuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  progs = {lite: makeProg(true), hq: lite ? null : makeProg(false)}; curProg = null;
+}
+function poll(p){ // true once usable; compiles in the background where the driver allows it
+  if (!p || p.failed) return false;
+  if (p.ready) return true;
+  if (parExt && !gl.getProgramParameter(p.prog, parExt.COMPLETION_STATUS_KHR)) return false;
+  if (!gl.getProgramParameter(p.prog, gl.LINK_STATUS)){ p.failed = true; console.error(gl.getShaderInfoLog(p.fs) || gl.getProgramInfoLog(p.prog)); return false; }
+  p.aLoc = gl.getAttribLocation(p.prog, 'a');
+  UNIFORMS.forEach(n => p.U[n] = gl.getUniformLocation(p.prog, n));
+  p.ready = true; return true;
+}
+function activeProgram(){
+  if (!lite && !progs.hq) progs.hq = makeProg(false);
+  const want = lite ? progs.lite : progs.hq;
+  const p = poll(want) ? want : poll(progs.lite) ? progs.lite : poll(progs.hq) ? progs.hq : null;
+  if (p && p !== curProg){
+    gl.useProgram(p.prog); gl.bindBuffer(gl.ARRAY_BUFFER, vbuf);
+    gl.enableVertexAttribArray(p.aLoc); gl.vertexAttribPointer(p.aLoc, 2, gl.FLOAT, false, 0, 0);
+    curProg = p; U = p.U;
+  }
+  return p;
+}
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); glLost = true; });
+canvas.addEventListener('webglcontextrestored', () => { glLost = false; rs = Math.min(rs, rsMax*0.6); setupGL(); resize(); });
+setupGL();
+
+// ---- resolution ----
+// a pixel budget per quality level; the dynamic scaler works below it
+const DPR = Math.min(window.devicePixelRatio || 1, ('ontouchstart' in window) ? 1.5 : 2);
+let rs = 0.5, rsMax = 1.0, W = 1, H = 1;
+function computeRsMax(){
+  const px = Math.max(1, innerWidth*innerHeight*DPR*DPR);
+  rsMax = Math.max(0.25, Math.min(lite ? 1.0 : 1.6, Math.sqrt((lite ? 3.3e5 : 2.2e6)/px)));
+}
+computeRsMax(); rs = rsMax*0.75;
+function resize(){
+  if (!fovTouched) cam.tFov = defaultFov();
+  computeRsMax();
+  rs = Math.max(0.25, Math.min(rs, rsMax));
+  const w = Math.max(1, Math.floor(innerWidth*DPR*rs)), h = Math.max(1, Math.floor(innerHeight*DPR*rs));
+  if (w !== W || h !== H){ W = w; H = h; canvas.width = W; canvas.height = H; gl.viewport(0, 0, W, H); }
+}
+addEventListener('resize', resize);
+
+// ---- camera ----
+const cam = {x: 0.45, y: 1.6, z: -2.0, yaw: 0, pitch: 0.0, tYaw: 0, tPitch: 0.0, fov: 66*Math.PI/180, tFov: 66*Math.PI/180, vYaw: 0, vPitch: 0};
+const FOV_MIN = 20*Math.PI/180, FOV_MAX = 110*Math.PI/180;
+let fovTouched = false;
+function defaultFov(){ const asp = innerWidth/Math.max(1, innerHeight); return Math.min(FOV_MAX, Math.max(66*Math.PI/180, 2*Math.atan(Math.tan(27*Math.PI/180)/asp))); }
+cam.fov = cam.tFov = defaultFov();
+// portrait screens: turn toward the window's centre and tilt up a little so the arch fits
+if (innerWidth < innerHeight){ cam.yaw = cam.tYaw = -0.23; cam.pitch = cam.tPitch = 0.14; }
+let lastInput = -1e9, idle = {active: false, t0: 0, from: 0, to: 0, phase: 0, next: 60 + Math.random()*40};
+
+// ---- gyro ----
+const gyro = {on: false, avail: ('DeviceOrientationEvent' in window), yaw: 0, pitch: 0, offYaw: 0, offPitch: 0, has: false};
+function onOrient(e){
+  if (e.alpha === null || e.alpha === undefined) return;
+  const d = Math.PI/180, a = e.alpha*d, b = e.beta*d, g = e.gamma*d;
+  // quaternion from ZXY euler (alpha, beta, gamma) as in the device spec
+  const cA = Math.cos(a/2), sA = Math.sin(a/2), cB = Math.cos(b/2), sB = Math.sin(b/2), cG = Math.cos(g/2), sG = Math.sin(g/2);
+  // q = qz(alpha) * qx(beta) * qy(gamma)
+  let qw = cA*cB*cG - sA*sB*sG, qx = cA*sB*cG - sA*cB*sG, qy = cA*cB*sG + sA*sB*cG, qz = sA*cB*cG + cA*sB*sG;
+  // screen orientation
+  const so = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+  const ha = -so*d/2, cs = Math.cos(ha), ss = Math.sin(ha);
+  // multiply by rotation about device z by -so
+  let w2 = qw*cs - qz*ss, x2 = qx*cs + qy*ss, y2 = qy*cs - qx*ss, z2 = qz*cs + qw*ss;
+  // device -z (screen back) → world; the device frame: x right, y up (top), z out of screen
+  // rotate vector v=(0,0,-1) by q
+  const vx = 0, vy = 0, vz = -1;
+  const tx = 2*(y2*vz - z2*vy), ty = 2*(z2*vx - x2*vz), tz = 2*(x2*vy - y2*vx);
+  const fx = vx + w2*tx + (y2*tz - z2*ty), fy = vy + w2*ty + (z2*tx - x2*tz), fz = vz + w2*tz + (x2*ty - y2*tx);
+  // world frame of the device API: x east, y north, z up. our scene: y up, forward -z.
+  // map: east→x, up→y, north→-z
+  const wx = fx, wy = fz, wz = -fy;
+  const yaw = Math.atan2(wx, -wz), pitch = Math.asin(Math.max(-1, Math.min(1, wy)));
+  if (!gyro.has){ gyro.has = true; gyro.offYaw = cam.tYaw - yaw; gyro.offPitch = cam.tPitch - pitch; }
+  gyro.yaw = yaw; gyro.pitch = pitch;
+}
+async function gyroToggle(){
+  if (gyro.on){ gyro.on = false; removeEventListener('deviceorientation', onOrient); gyro.has = false; setBtn('bGyro', false); return; }
+  try {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function'){ const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') return; }
+    gyro.has = false; addEventListener('deviceorientation', onOrient); gyro.on = true; setBtn('bGyro', true);
+  } catch (e){}
+}
+
+// ---- UI ----
+const ui = document.getElementById('ui'); let uiTimer = 0;
+function showUI(){ ui.classList.add('show'); clearTimeout(uiTimer); uiTimer = setTimeout(() => ui.classList.remove('show'), 4000); }
+function setBtn(id, on){ const b = document.getElementById(id); if (b) b.classList.toggle('on', !!on); }
+const bGyro = document.getElementById('bGyro'); if (gyro.avail && ('ontouchstart' in window)) bGyro.hidden = false;
+bGyro.addEventListener('click', e => { e.stopPropagation(); gyroToggle(); showUI(); });
+let soundOn = false;
+function updSound(){ document.getElementById('iMute').toggleAttribute('hidden', soundOn); document.getElementById('iSnd').toggleAttribute('hidden', !soundOn); }
+async function toggleSound(){
+  if (!soundOn){ const ok = await AUDIO.start(lite); if (!ok) return; AUDIO.setMuted(false); soundOn = true; onAudioStarted(); }
+  else { AUDIO.setMuted(true); soundOn = false; }
+  updSound();
+}
+document.getElementById('bSound').addEventListener('click', e => { e.stopPropagation(); toggleSound(); showUI(); });
+function toggleFull(){
+  const el = document.documentElement;
+  if (!document.fullscreenElement && !document.webkitFullscreenElement){ (el.requestFullscreen || el.webkitRequestFullscreen || function(){}).call(el); }
+  else { (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document); }
+}
+function updFull(){ const f = !!(document.fullscreenElement || document.webkitFullscreenElement); document.getElementById('iFs').toggleAttribute('hidden', f); document.getElementById('iFsX').toggleAttribute('hidden', !f); }
+document.addEventListener('fullscreenchange', updFull); document.addEventListener('webkitfullscreenchange', updFull);
+document.getElementById('bFull').addEventListener('click', e => { e.stopPropagation(); toggleFull(); showUI(); });
+function setLite(v){ lite = v; try { localStorage.setItem(LS_Q, v ? 'lite' : 'high'); } catch (e){} setBtn('bLite', lite); computeRsMax(); rs = rsMax*(lite ? 0.75 : 0.5); resize(); }
+document.getElementById('bLite').addEventListener('click', e => { e.stopPropagation(); setLite(!lite); showUI(); });
+setBtn('bLite', lite); updSound();
+addEventListener('pointermove', showUI, {passive: true});
+
+// ---- input ----
+const ptr = {down: false, id: -1, x0: 0, y0: 0, x: 0, y: 0, t0: 0, moved: false, lx: 0, ly: 0, lt: 0, vx: 0, vy: 0};
+const pinch = {on: false, d0: 0, f0: 0};
+const pts = new Map();
+let eyesTarget = 0, longTimer = 0;
+function userInput(){ lastInput = perfNow(); if (idle.active){ idle.active = false; } idle.next = T + 45 + Math.random()*50; }
+canvas.addEventListener('pointerdown', e => {
+  userInput(); showUI();
+  pts.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  if (pts.size === 2){ const a = [...pts.values()]; pinch.on = true; pinch.d0 = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); pinch.f0 = cam.tFov; clearTimeout(longTimer); ptr.down = false; return; }
+  if (pts.size > 2) return;
+  ptr.down = true; ptr.id = e.pointerId; ptr.x0 = ptr.x = ptr.lx = e.clientX; ptr.y0 = ptr.y = ptr.ly = e.clientY; ptr.t0 = perfNow(); ptr.lt = ptr.t0; ptr.moved = false; ptr.vx = ptr.vy = 0;
+  cam.vYaw = cam.vPitch = 0;
+  clearTimeout(longTimer); longTimer = setTimeout(() => { if (ptr.down && !ptr.moved){ eyesTarget = 1; onEyesClose(); } }, 420);
+  try { canvas.setPointerCapture(e.pointerId); } catch (x){}
+});
+canvas.addEventListener('pointermove', e => {
+  const p = pts.get(e.pointerId); if (p){ p.x = e.clientX; p.y = e.clientY; }
+  if (pinch.on && pts.size >= 2){ const a = [...pts.values()]; const d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); cam.tFov = Math.max(FOV_MIN, Math.min(FOV_MAX, pinch.f0*pinch.d0/Math.max(10, d))); fovTouched = true; userInput(); return; }
+  if (!ptr.down || e.pointerId !== ptr.id) return;
+  const dx = e.clientX - ptr.x0, dy = e.clientY - ptr.y0;
+  if (!ptr.moved && Math.hypot(dx, dy) > 7){ ptr.moved = true; clearTimeout(longTimer); if (eyesTarget > 0){ eyesTarget = 0; onEyesOpen(); } }
+  if (!ptr.moved) return;
+  const k = cam.fov/innerHeight;
+  const mx = e.clientX - ptr.x, my = e.clientY - ptr.y;
+  cam.tYaw -= mx*k; cam.tPitch += my*k;
+  cam.tPitch = Math.max(-0.55, Math.min(0.6, cam.tPitch));
+  if (gyro.on){ gyro.offYaw -= mx*k; gyro.offPitch += my*k; }
+  const t = perfNow(); const dt = Math.max(1, t - ptr.lt)/1000;
+  ptr.vx = ptr.vx*0.5 + (-mx*k/dt)*0.5; ptr.vy = ptr.vy*0.5 + (my*k/dt)*0.5;
+  ptr.x = e.clientX; ptr.y = e.clientY; ptr.lt = t; userInput();
+});
+function pointerEnd(e){
+  pts.delete(e.pointerId);
+  if (pinch.on && pts.size < 2){ pinch.on = false; }
+  if (!ptr.down || e.pointerId !== ptr.id) return;
+  ptr.down = false; clearTimeout(longTimer);
+  if (eyesTarget > 0){ eyesTarget = 0; onEyesOpen(); return; }
+  if (!ptr.moved){ onTap(e.clientX, e.clientY); return; }
+  cam.vYaw = Math.max(-3, Math.min(3, ptr.vx)); cam.vPitch = Math.max(-3, Math.min(3, ptr.vy));
+}
+canvas.addEventListener('pointerup', pointerEnd); canvas.addEventListener('pointercancel', pointerEnd);
+canvas.addEventListener('wheel', e => { e.preventDefault(); userInput(); cam.tFov = Math.max(FOV_MIN, Math.min(FOV_MAX, cam.tFov*Math.exp(e.deltaY*0.0012))); fovTouched = true; }, {passive: false});
+addEventListener('keydown', e => {
+  if (e.repeat && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+  userInput(); showUI();
+  switch (e.key){
+    case 'ArrowLeft': cam.vYaw -= 0.5; break;
+    case 'ArrowRight': cam.vYaw += 0.5; break;
+    case 'ArrowUp': cam.vPitch += 0.35; break;
+    case 'ArrowDown': cam.vPitch -= 0.35; break;
+    case '+': case '=': cam.tFov = Math.max(FOV_MIN, cam.tFov*0.85); fovTouched = true; break;
+    case '-': case '_': cam.tFov = Math.min(FOV_MAX, cam.tFov/0.85); fovTouched = true; break;
+    case 'l': case 'L': forceLightning(); break;
+    case 'k': case 'K': onTap(innerWidth*0.5, innerHeight*0.5); break;
+    case ' ': case 'e': case 'E': if (eyesTarget === 0){ eyesTarget = 1; onEyesClose(); } e.preventDefault(); break;
+    case 'f': case 'F': toggleFull(); break;
+    case 'm': case 'M': toggleSound(); break;
+    case 'g': case 'G': gyroToggle(); break;
+  }
+});
+addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'e' || e.key === 'E'){ if (eyesTarget > 0){ eyesTarget = 0; onEyesOpen(); } } });
+function perfNow(){ return performance.now(); }
+
+// ray from a screen point → glass uv (or null)
+function screenToGlass(sx, sy){
+  const uvx = (sx*DPR*rs - 0.5*W)/H, uvy = (0.5*H - sy*DPR*rs)/H;
+  const th = Math.tan(cam.fov*0.5);
+  let x = uvx*th*2, y = uvy*th*2, z = -1;
+  const l = Math.hypot(x, y, z); x /= l; y /= l; z /= l;
+  let cy = Math.cos(cam.pitch), sy_ = Math.sin(cam.pitch);
+  let y2 = cy*y - sy_*z, z2 = sy_*y + cy*z; y = y2; z = z2;
+  const cyw = Math.cos(cam.yaw), syw = Math.sin(cam.yaw);
+  let x3 = cyw*x - syw*z, z3 = syw*x + cyw*z; x = x3; z = z3;
+  if (z >= -1e-4) return null;
+  const t = (-3.9 - cam.z)/z;
+  const gx = cam.x + x*t, gy = cam.y + y*t;
+  // window mask (rect + arch)
+  const inRect = Math.abs(gx) < 1.15 && gy > 0.85 && gy < 3.3;
+  const inArch = gy >= 3.3 && Math.hypot(gx, gy - 3.3) < 1.15;
+  if (!(inRect || inArch)) return null;
+  return [gx, gy];
+}
+
+// ---- state ----
+let DBG = 0, RS_FIXED = 0, FRAME_CAP = 1, lastDraw = -1e9, slowRuns = 0, fastRuns = 0;
+let T = 0, lastT = perfNow(), paused = false, hiddenAt = 0, frames = 0, ftAcc = 0, lastRealT = perfNow();
+const FIG_PATH = [[-2.6, 4.7], [-1.6, 4.4], [-0.5, 4.1], [0.9, 3.6], [-0.2, 3.0], [0.6, 2.3], [0.3, 1.5], [0.45, 0.0]];
+const fig = {phase: 'wait', stage: -1, x: 0, z: 0, vis: 0, hs: 1.0, hsBase: 1.0, waitUntil: 22 + Math.random()*15, unobs: false, unobsSince: 0, stepped: false, climaxT: 0, cycle: 0, goneAt: 0, forcedAt: -1};
+const storm = {next: 7 + Math.random()*6, events: [], km: 5, dir: [0, 0.45, -0.9], dirI: 0, bolt: 0, boltP: [0, 0.25, 0, 0], boltQ: [0, 0.5, 0.004], boltEv: null, flash: 0, flashIn: 0, F: [[0,0,1,0],[0,0,1,0],[0,0,1,0]], K: [0,0,0], count: 0, dazzle: 0, lastT0: -100, lastKm: 5, shakes: []};
+const outFig = {vis: 0, x: 0, z: -20};
+const knock = {times: [], uv: [0, 1.5], t: 1e3, replyAt: -1, cooldownUntil: 0, fogUntil: -1, fogUV: [0, 1.5]};
+const ember = {v: 0.0, target: 1.0, f: 1.0, ft: 1.0, nextF: 0, drift: 1.0};
+const eyes = {v: 0};
+let dread = 0, dreadT = 0, muffle = 0;
+let clockStopped = false, stoppedTotal = 0, stoppedAt = 0, clockT0 = 0, pendFrozen = 0, breathNextAmt = 0, fogNextOn = false;
+const nextBreath = {on: false, since: 0};
+let lookAwaySince = -1;
+
+function wrapA(a){ return a - Math.round(a/(2*Math.PI))*2*Math.PI; }
+function smooth(a, b, x){ x = Math.max(0, Math.min(1, (x - a)/(b - a))); return x*x*(3 - 2*x); }
+
+// ---- lightning ----
+// kinds: 'ic' inside the cloud, 'cg' cloud to ground, 'far' beyond the horizon (no thunder)
+function stormKm(){ return 2.2 + 2.6*Math.cos(T*2*Math.PI/600 + 1.0); }
+function newStrike(km, forced, kindArg){
+  const t0 = T;
+  const azStorm = -0.25 + 0.5*Math.sin(T/300);
+  let kind = kindArg;
+  if (!kind){
+    const r = Math.random();
+    const farP = 0.1 + 0.15*Math.min(1, km/6), cgP = 0.5*Math.exp(-km/5) + 0.15;
+    kind = r < farP ? 'far' : r < farP + cgP ? 'cg' : 'ic';
+  }
+  if (forced) kind = 'cg';
+  const ev = {kind, t0, km, strokes: [], az: 0, el: 0, r: 0.3, drift: 0, thunderAt: -1};
+  if (kind === 'far'){
+    ev.az = azStorm + (Math.random() - 0.5)*2.6; ev.el = 0.02; ev.r = 0.5 + Math.random()*0.5;
+    const I = 0.12 + 0.25*Math.random(); const n = 1 + Math.floor(Math.random()*3); let tt = t0;
+    for (let i = 0; i < n; i++){ ev.strokes.push([tt, I*(0.6 + 0.4*Math.random()), 0.05, 0.25 + 0.2*Math.random()]); tt += 0.15 + Math.random()*0.5; }
+  } else if (kind === 'ic'){
+    ev.az = forced ? (Math.random() - 0.5)*0.6 : azStorm + (Math.random() - 0.5)*1.6;
+    const cloudEl = Math.atan(1.1/Math.max(0.6, km)); // cloud layer 1.1 km up
+    ev.el = Math.min(1.1, cloudEl + 0.08 + Math.random()*0.25); ev.r = 0.2 + 0.3*Math.random();
+    const I = (0.2 + 0.5*Math.exp(-km/4))*(0.8 + 0.4*Math.random());
+    const n = 2 + Math.floor(Math.random()*5); let tt = t0;
+    for (let i = 0; i < n; i++){ ev.strokes.push([tt, I*(0.35 + 0.65*Math.random()), 0.02 + 0.03*Math.random(), 0.06 + 0.16*Math.random(), (Math.random() - 0.5)*0.12]); tt += 0.05 + Math.random()*0.35; }
+    ev.thunderAt = t0 + km*2.9 + 0.6 + Math.random()*1.2;
+  } else {
+    ev.az = forced ? (Math.random() - 0.5)*0.6 : azStorm + (Math.random() - 0.5)*1.5;
+    ev.el = Math.atan(0.9/Math.max(0.5, km)); // glow sits at the cloud base above the channel
+    ev.r = 0.12 + 0.16*Math.exp(-km/3);
+    const I = 0.45 + 0.75*Math.exp(-km/3.2);
+    if (RM){ ev.strokes.push([t0, I*0.55, 0.15, 0.45]); }
+    else {
+      const n = 1 + (Math.random() < 0.7 ? 1 : 0) + (Math.random() < 0.45 ? 1 : 0) + (Math.random() < 0.25 ? 1 : 0);
+      let tt = t0;
+      for (let i = 0; i < n; i++){
+        const Ii = i === 0 ? I : I*(0.4 + 0.5*Math.random());
+        ev.strokes.push([tt, Ii, 0.008, 0.045 + 0.03*Math.random()]);
+        if (Math.random() < 0.35) ev.strokes.push([tt + 0.02, Ii*0.22, 0.02, 0.12 + 0.2*Math.random()]); // continuing current
+        tt += 0.05 + Math.random()*0.12;
+      }
+    }
+    ev.thunderAt = t0 + km*2.9 + 0.1;
+    if (!RM && km > 0.7 && Math.abs(ev.az) < 0.95 && (Math.random() < 0.75 || forced)){
+      const elTop = Math.atan(1.0/Math.max(0.5, km)) * (0.85 + 0.3*Math.random());
+      const elBot = -Math.atan(0.026/Math.max(0.5, km));
+      storm.boltP = [ev.az, elTop, Math.floor(Math.random()*1000), Math.random() < 0.7 ? 1 : 0];
+      storm.boltQ = [elBot, 0.35 + 0.5*Math.random(), 0.0035 + 0.006*Math.exp(-km/2)];
+      storm.boltEv = ev; storm.bolt = 0;
+    }
+    // dark adaptation lost after a near flash
+    if (km < 1.3) storm.dazzle = Math.max(storm.dazzle, 0.85); else if (km < 3) storm.dazzle = Math.max(storm.dazzle, 0.35);
+    if (km < 1.6 && soundOn) AUDIO.nearHit(ev.thunderAt - T, km);
+  }
+  if (kind === 'ic' && km < 2.0) storm.dazzle = Math.max(storm.dazzle, 0.2);
+  if (kind !== 'far' && soundOn) AUDIO.thunder(kind, km, ev.az - cam.yaw, ev.thunderAt - T);
+  // the ground shakes when the thunder arrives (sound or not), only for near strikes
+  if (kind !== 'far' && km < 3.2 && !RM){ const near = Math.exp(-km/2.5); storm.shakes.push([ev.thunderAt, (kind === 'ic' ? 0.45 : 1.0)*0.014*near*near, 1.2 + 2.0*near, Math.random()*100]); if (storm.shakes.length > 4) storm.shakes.shift(); }
+  storm.events.push(ev); if (storm.events.length > 6) storm.events.shift();
+  storm.km = km; storm.lastT0 = t0; storm.lastKm = km; storm.count++;
+  // figure outside, seen only in a ground flash
+  if (!forced && T > 50 && kind === 'cg'){
+    if (outFig.vis){ if (Math.random() < 0.55){ outFig.x = (Math.random() - 0.5)*40; outFig.z = -(16 + Math.random()*40); } else outFig.vis = 0; }
+    else if (Math.random() < 0.3){ outFig.vis = 1; outFig.x = (Math.random() - 0.5)*40; outFig.z = -(16 + Math.random()*40); }
+  }
+  return ev;
+}
+function forceLightning(){ newStrike(Math.max(0.5, Math.min(9, stormKm() + (Math.random() - 0.5)*2)), false); storm.next = T + 6 + Math.random()*14; }
+function evalFlash(){
+  // per-event intensity; fill the three brightest sources
+  const live = [];
+  let total = 0, inRoom = 0, bestI = 0, bestEv = null;
+  for (const ev of storm.events){
+    let f = 0, drift = 0;
+    for (const s of ev.strokes){ const dt = T - s[0]; if (dt < 0) continue; const rise = Math.min(1, dt/s[2]); const v = s[1]*rise*Math.exp(-Math.max(0, dt - s[2])/s[3]); f += v; if (s.length > 4) drift = s[4]; }
+    if (f < 0.002) continue;
+    ev.drift += (drift - ev.drift)*0.2;
+    live.push([f, ev]);
+    total += f;
+    inRoom += f * (ev.kind === 'far' ? 0.12 : ev.kind === 'ic' ? 0.55 : 1.0);
+    if (ev.kind === 'cg' && f > bestI){ bestI = f; bestEv = ev; }
+  }
+  live.sort((a, b) => b[0] - a[0]);
+  for (let i = 0; i < 3; i++){
+    if (i < live.length){ const [f, ev] = live[i]; storm.F[i] = [ev.az + ev.drift, ev.el, ev.r, Math.min(2.5, f)]; storm.K[i] = ev.kind === 'ic' ? 0 : ev.kind === 'cg' ? 1 : 2; }
+    else { storm.F[i] = [0, 0, 1, 0]; storm.K[i] = 0; }
+  }
+  if (bestEv){ const a = bestEv.az, e = bestEv.el; storm.dir = [Math.sin(a)*Math.cos(e), Math.sin(e), -Math.cos(a)*Math.cos(e)]; storm.dirI = Math.min(2.5, bestI); }
+  else storm.dirI = 0;
+  // bolt: lit with the first stroke of its event, flickers with later strokes, afterglow
+  if (storm.boltEv){
+    const ev = storm.boltEv; let b = 0;
+    for (const s of ev.strokes){ const dt = T - s[0]; if (dt < 0 || s[2] > 0.012) continue; b = Math.max(b, Math.exp(-dt/0.05) + 0.25*Math.exp(-dt/0.25)); }
+    storm.bolt = Math.min(1.3, b);
+    if (T > ev.t0 + 1.2) storm.boltEv = null;
+  } else storm.bolt = 0;
+  storm.flash = Math.min(2.5, total); storm.flashIn = Math.min(2.5, inRoom);
+}
+
+// ---- figure ----
+function figSetPos(i){ fig.stage = i; fig.x = FIG_PATH[i][0]; fig.z = FIG_PATH[i][1]; fig.vis = 1; fig.hs = fig.hsBase*(1.0 + 0.28*i/(FIG_PATH.length - 1)); if (i === FIG_PATH.length - 1){ fig.x = cam.x; fig.z = cam.z + 0.55; } }
+function figStep(fromFlash){
+  if (fig.phase === 'wait'){
+    if (T < fig.waitUntil) return;
+    fig.phase = 'approach'; fig.hsBase = 0.98 + Math.random()*0.07; figSetPos(0);
+    if (soundOn && Math.random() < 0.5) AUDIO.creak(fig.x, fig.z, 0.3);
+    return;
+  }
+  if (fig.phase !== 'approach') return;
+  const n = FIG_PATH.length, r = Math.random();
+  let ns = fig.stage;
+  if (r < 0.1) ns = fig.stage; else if (r < 0.2 && fig.stage + 2 < n) ns = fig.stage + 2; else ns = Math.min(n - 1, fig.stage + 1);
+  if (ns !== fig.stage){ figSetPos(ns); if (soundOn) AUDIO.creak(fig.x, fig.z, ns/n); }
+  if (fig.stage === n - 1) onBehind();
+}
+function onBehind(){
+  fig.phase = 'behind'; fig.climaxT = T; dreadT = 1.0;
+  if (soundOn){ AUDIO.breathStart(); AUDIO.muffleSet(0.55, 2.0); }
+  clockStop();
+  nextBreath.on = true; nextBreath.since = T;
+  fig.forcedAt = T + 7 + Math.random()*7;
+}
+function onVanish(){
+  fig.phase = 'gone'; fig.vis = 0; fig.goneAt = T; ember.target = 0.0; nextBreath.on = false;
+  if (soundOn){ AUDIO.breathStop(); setTimeout(() => AUDIO.duckAll(1.6, 0.0), (storm.lastKm*2.9 + 0.1)*1000); }
+}
+function clockStop(){ if (clockStopped) return; clockStopped = true; stoppedAt = T; pendFrozen = pendAngle(); if (soundOn) AUDIO.clockSet(false); }
+function clockStart(){ if (!clockStopped) return; clockStopped = false; stoppedTotal += T - stoppedAt; clockT0 = T + 0.6; if (soundOn) AUDIO.clockSet(true, AUDIO.now() + 0.6); }
+function pendAngle(){
+  if (clockStopped) return pendFrozen;
+  const lat = (soundOn && AUDIO.isRunning()) ? AUDIO.latency() : 0;
+  return 0.13*Math.cos(Math.PI*(T - clockT0 - lat));
+}
+function onAudioStarted(){ clockT0 = T + 0.6; if (!clockStopped) AUDIO.clockSet(true, AUDIO.now() + 0.6); AUDIO.setEmber(ember.v); if (fig.phase === 'behind') { AUDIO.breathStart(); AUDIO.muffleSet(0.55, 0.5); } }
+
+// ---- eyes / tap ----
+function onEyesClose(){}
+function onEyesOpen(){}
+function onTap(sx, sy){
+  const uv = screenToGlass(sx, sy);
+  if (!uv) return;
+  knock.uv = uv; knock.t = 0;
+  if (soundOn) AUDIO.knockIn();
+  knock.times.push(T); knock.times = knock.times.filter(t => T - t < 4.5);
+  if (knock.times.length >= 3 && knock.replyAt < 0 && T > knock.cooldownUntil && T > 30 && fig.phase !== 'gone'){
+    knock.times = [];
+    if (Math.random() < 0.7){ knock.replyAt = T + 2.5 + Math.random()*4; knock.fogUV = [uv[0], uv[1]]; }
+    knock.cooldownUntil = T + 45;
+  }
+}
+
+// ---- visibility ----
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden){ paused = true; hiddenAt = T; if (soundOn) AUDIO.setMuted(true); }
+  else { paused = false; lastT = perfNow(); if (soundOn) AUDIO.setMuted(false); if (T - hiddenAt > 20 && fig.phase === 'approach' && Math.random() < 0.8) figStep(false); }
+});
+
+// ---- loop ----
+const veil = document.getElementById('veil');
+function frame(){
+  requestAnimationFrame(frame);
+  if (paused) return;
+  const now = perfNow(); let dt = (now - lastT)/1000; lastT = now;
+  if (dt > 0.1) dt = 0.1; if (dt < 0) dt = 0;
+  T += dt;
+  const tS = T/1000;
+
+  // storm
+  if (T > storm.next){
+    const km = Math.max(0.45, Math.min(9, stormKm() + (Math.random() - 0.5)*2.4));
+    const ev = newStrike(km, false);
+    // cloud flashes come in clusters
+    const cluster = ev.kind === 'ic' && Math.random() < 0.5;
+    storm.next = T + (cluster ? 1.5 + Math.random()*4 : 5 + Math.random()*18 + km*1.2);
+  }
+  if (fig.phase === 'behind' && fig.forcedAt > 0 && T > fig.forcedAt){ fig.forcedAt = -1; newStrike(0.45 + Math.random()*0.25, true); storm.next = T + 25 + Math.random()*20; fig.phase = 'vanishing'; }
+  evalFlash();
+  storm.dazzle *= Math.exp(-dt/5.5);
+  if (fig.phase === 'vanishing' && storm.flash > 0.5) onVanish();
+  if (outFig.vis && storm.flash < 0.02 && T > storm.lastT0 + 0.6) outFig.vis = 0;
+
+  // phases after the vanish
+  if (fig.phase === 'gone' && T > fig.goneAt + 20){ fig.phase = 'relight'; ember.target = 1.0; dreadT = 0.15; if (soundOn) AUDIO.muffleSet(0.0, 3.0); }
+  if (fig.phase === 'relight' && T > fig.goneAt + 27){ clockStart(); fig.phase = 'wait'; fig.waitUntil = T + 30 + Math.random()*40; fig.cycle++; dreadT = 0; }
+
+  // unobserved intervals → the figure moves
+  const away = Math.abs(wrapA(cam.yaw)) > 1.15;
+  const byFlash = storm.flashIn > 0.22;
+  const unobs = byFlash || eyes.v > 0.8 || away;
+  if (unobs && !fig.unobs){ fig.unobs = true; fig.unobsSince = T; fig.stepped = false; }
+  if (!unobs && fig.unobs) fig.unobs = false;
+  if (fig.unobs && !fig.stepped && (byFlash || T - fig.unobsSince > 0.8)){ fig.stepped = true; figStep(byFlash); }
+
+  // knock reply
+  if (knock.replyAt > 0 && T > knock.replyAt){
+    knock.replyAt = -1;
+    if (soundOn) AUDIO.knockOut(2 + (Math.random() < 0.4 ? 1 : 0), 0.05, Math.max(-1, Math.min(1, (knock.fogUV[0] - cam.x)*0.6)));
+    knock.fogUntil = T + 17;
+  }
+  knock.t += dt;
+
+  // embers
+  ember.v += (ember.target - ember.v)*(1 - Math.exp(-dt/(ember.target > ember.v ? 4.0 : 0.6)));
+  if (T > ember.nextF){ ember.ft = 0.78 + Math.random()*0.5; ember.nextF = T + 0.07 + Math.random()*0.25; }
+  ember.f += (ember.ft - ember.f)*(1 - Math.exp(-dt/0.07));
+  ember.drift = 0.9 + 0.1*Math.sin(T*0.37) + 0.05*Math.sin(T*0.11 + 2.0);
+  const emberOut = ember.v*ember.drift;
+
+  // dread
+  const stageD = fig.phase === 'approach' ? 0.08 + 0.5*fig.stage/FIG_PATH.length : (fig.phase === 'behind' || fig.phase === 'vanishing') ? 1.0 : 0;
+  dread += ((Math.max(stageD, dreadT)) - dread)*(1 - Math.exp(-dt/3.0));
+
+  // eyes
+  eyes.v += (eyesTarget - eyes.v)*(1 - Math.exp(-dt/(eyesTarget > eyes.v ? 0.22 : 0.16)));
+
+  // breath fog
+  const bp = (T % 4.4)/4.4;
+  const ownAmt = 0.75*(bp < 0.3 ? 0 : bp < 0.5 ? (bp - 0.3)/0.2 : Math.max(0, 1 - (bp - 0.5)/0.45));
+  let nextAmt = 0;
+  if (nextBreath.on){ const np = ((T - nextBreath.since) % 3.1)/3.1; nextAmt = (np < 0.35 ? 0 : np < 0.52 ? (np - 0.35)/0.17 : Math.max(0, 1 - (np - 0.52)/0.42)) * Math.min(1, (T - nextBreath.since)/3); }
+  breathNextAmt += (nextAmt - breathNextAmt)*(1 - Math.exp(-dt/0.25));
+  let outAmt = 0;
+  if (knock.fogUntil > T){ const op = (T % 3.6)/3.6; outAmt = (op < 0.3 ? 0 : op < 0.5 ? (op - 0.3)/0.2 : Math.max(0, 1 - (op - 0.5)/0.45)) * Math.min(1, (knock.fogUntil - T)/3) * 0.9; }
+
+  // idle glance (not when the gyro drives the view)
+  if (!gyro.on && (now - lastInput) > 25000 && tS*1000 > idle.next && !idle.active && fig.phase !== 'behind'){
+    idle.active = true; idle.t0 = T; idle.from = cam.tYaw; idle.to = cam.tYaw + (Math.random() < 0.5 ? 1 : -1)*(1.0 + Math.random()*1.9); idle.next = tS*1000 + 50 + Math.random()*60;
+  }
+  if (idle.active){
+    const u = T - idle.t0;
+    let k = u < 6 ? smooth(0, 6, u) : u < 10 ? 1 : u < 16 ? 1 - smooth(10, 16, u) : 0;
+    cam.tYaw = idle.from + (idle.to - idle.from)*k;
+    if (u > 16){ idle.active = false; }
+  }
+
+  // camera: the viewer leans toward the glass as the figure approaches
+  const leanT = fig.phase === 'approach' ? fig.stage/(FIG_PATH.length - 1) : (fig.phase === 'behind' || fig.phase === 'vanishing') ? 1.0 : 0.0;
+  const zGoal = -2.0 - 0.7*leanT;
+  cam.z += (zGoal - cam.z)*(1 - Math.exp(-dt/(leanT > 0 ? 25.0 : 6.0)));
+  if (fig.phase === 'behind' || fig.phase === 'vanishing'){ fig.x = cam.x; fig.z = cam.z + 0.55; }
+  if (gyro.on && gyro.has){ cam.tYaw = gyro.yaw + gyro.offYaw; cam.tPitch = Math.max(-0.6, Math.min(0.7, gyro.pitch + gyro.offPitch)); }
+  else {
+    cam.tYaw += cam.vYaw*dt; cam.tPitch += cam.vPitch*dt;
+    const dmp = Math.exp(-dt*2.2); cam.vYaw *= dmp; cam.vPitch *= dmp;
+    cam.tPitch = Math.max(-0.55, Math.min(0.6, cam.tPitch));
+    if (cam.tPitch === -0.55 || cam.tPitch === 0.6) cam.vPitch = 0;
+  }
+  // thunder shake: a jolt and a fading tremor
+  let shY = 0, shP = 0;
+  for (const s of storm.shakes){
+    const u = T - s[0]; if (u < 0 || u > s[2]*3) continue;
+    const a = s[1]*(u < 0.03 ? u/0.03 : Math.exp(-(u - 0.03)/(s[2]*0.45)));
+    shY += a*(0.6*Math.sin(u*41 + s[3]) + 0.4*Math.sin(u*23 + s[3]*1.7));
+    shP += a*(0.6*Math.sin(u*37 + s[3]*0.3) + 0.4*Math.sin(u*17 + s[3]*2.3) - 0.3*Math.exp(-u*6.0));
+  }
+  cam.yaw += (cam.tYaw - cam.yaw)*(1 - Math.exp(-dt/0.13));
+  cam.pitch += (cam.tPitch - cam.pitch)*(1 - Math.exp(-dt/0.13));
+  cam.fov += (cam.tFov - cam.fov)*(1 - Math.exp(-dt/0.25));
+  const swayP = RM ? 0 : 0.004*Math.sin(T*2*Math.PI/4.4) + 0.002*Math.sin(T*0.53);
+  const swayY = RM ? 0 : 0.0025*Math.sin(T*0.41 + 1.0);
+
+  // audio
+  if (soundOn){ AUDIO.update(dt, cam.x, cam.z, cam.yaw); AUDIO.setEmber(emberOut); AUDIO.setDread(dread); }
+
+  // clock
+  const d = new Date(); const secs = d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds() + d.getMilliseconds()/1000 - stoppedTotal - (clockStopped ? (T - stoppedAt) : 0);
+  const hourA = ((secs/3600) % 12)/12*2*Math.PI, minA = ((secs/60) % 60)/60*2*Math.PI;
+
+  // draw (lite at 30 fps, full at 60 fps)
+  const P = glLost ? null : activeProgram();
+  if (!P) return;
+  const capMs = P.isLite ? 1000/30 : 1000/60;
+  if (FRAME_CAP && now - lastDraw < capMs - 4) return;
+  const drawGap = now - lastDraw; lastDraw = now;
+  resize();
+  gl.uniform2f(U.uRes, W, H);
+  gl.uniform1f(U.uTime, T % 600);
+  gl.uniform1f(U.uRain, (RM ? T*0.5 : T) % 1000);
+  gl.uniform3f(U.uCamPos, cam.x, cam.y, cam.z);
+  gl.uniform2f(U.uCamRot, cam.yaw + swayY + shY, cam.pitch + swayP + shP);
+  gl.uniform1f(U.uFov, cam.fov);
+  gl.uniform1f(U.uFlash, storm.flash);
+  gl.uniform1f(U.uFlashIn, storm.flashIn);
+  gl.uniform3f(U.uFlashDir, storm.dir[0], storm.dir[1], storm.dir[2]);
+  gl.uniform1f(U.uFlashDirI, storm.dirI);
+  gl.uniform4f(U.uF0, storm.F[0][0], storm.F[0][1], storm.F[0][2], storm.F[0][3]);
+  gl.uniform4f(U.uF1, storm.F[1][0], storm.F[1][1], storm.F[1][2], storm.F[1][3]);
+  gl.uniform4f(U.uF2, storm.F[2][0], storm.F[2][1], storm.F[2][2], storm.F[2][3]);
+  gl.uniform3f(U.uFK, storm.K[0], storm.K[1], storm.K[2]);
+  gl.uniform1f(U.uBolt, storm.bolt);
+  gl.uniform4f(U.uBoltP, storm.boltP[0], storm.boltP[1], storm.boltP[2], storm.boltP[3]);
+  gl.uniform3f(U.uBoltQ, storm.boltQ[0], storm.boltQ[1], storm.boltQ[2]);
+  gl.uniform1f(U.uExpo, 1.0 - 0.92*storm.dazzle);
+  gl.uniform1f(U.uEmber, emberOut);
+  gl.uniform1f(U.uEmberF, ember.f);
+  gl.uniform4f(U.uFig, fig.x, fig.z, fig.vis, fig.hs);
+  gl.uniform4f(U.uFigOut, outFig.x, -4.0, outFig.z, outFig.vis);
+  gl.uniform1f(U.uEyes, eyes.v);
+  gl.uniform3f(U.uFogOwn, 0.45, 1.5, ownAmt);
+  gl.uniform3f(U.uFogNext, -0.6, 1.58, breathNextAmt);
+  gl.uniform3f(U.uFogOut, knock.fogUV[0], knock.fogUV[1], outAmt);
+  gl.uniform3f(U.uClock, hourA, minA, pendAngle());
+  gl.uniform3f(U.uKnock, knock.uv[0], knock.uv[1], knock.t);
+  gl.uniform1f(U.uDread, dread);
+  gl.uniform1f(U.uMuffle, muffle);
+  gl.uniform1f(U.uLite, lite ? 1 : 0);
+  gl.uniform1f(U.uRM, RM ? 1 : 0);
+  gl.uniform1f(U.uSteps, P.isLite ? 52 : 84);
+  gl.uniform1f(U.uSteps2, P.isLite ? 30 : 40);
+  gl.uniform1f(U.uDbg, DBG);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  // dynamic resolution, judged by the gap between draws against the cap
+  if (drawGap < 500){ ftAcc += drawGap; frames++; }
+  if (frames >= 24 && !RS_FIXED){
+    const avg = ftAcc/frames; ftAcc = 0; frames = 0;
+    if (avg > capMs*1.3){ fastRuns = 0; rs *= avg > capMs*2 ? 0.75 : 0.87; resize(); }
+    else if (avg < capMs*1.1){ if (++fastRuns >= 2 && rs < rsMax){ fastRuns = 0; rs = Math.min(rsMax, rs*1.07); resize(); } }
+    else fastRuns = 0;
+  }
+  if (veil && veil.style.opacity !== '0'){ veil.style.opacity = '0'; }
+}
+resize(); showUI();
+requestAnimationFrame(frame);
+})();
+
+</script>
+</body>
+</html>

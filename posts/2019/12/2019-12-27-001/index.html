@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>ブログツール nikki.pl を作った · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="Perl5.8以上であればコアモジュール以外のモジュールに一切依存しない、簡素なブログツールを作った。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2019/12/2019-12-27-001/"><meta property="og:title" content="ブログツール nikki.pl を作った"><meta property="og:description" content="Perl5.8以上であればコアモジュール以外のモジュールに一切依存しない、簡素なブログツールを作った。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2019/12/2019-12-27-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>ブログツール nikki.pl を作った</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2019-12-27T22:54:54+09:00">2019-12-27T22:54:54+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/perl/">Perl</a><a class="tag" href="/tags/entry-bb1d385b5e0b/">ブログツール</a><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="ブログツール-nikki-pl">ブログツール nikki.pl</h1>
+<p>長らくRijiを使っているが、ちょっとリスペクトして似たような機能を持ったブログツールをやっつけで書いてみた。</p>
+<p>目指したのはコアモジュール以外のモジュールに依存しないこと。</p>
+<p>markdownからhtmlに変換する処理を実装するのは面倒くさそうだったので、
+超簡単なマークアップﾗﾝｷﾞｯｼﾞ（ほとんど置換するだけ）にした。拡張子は.nk。</p>
+<p>よろしければ使ってみてください。</p>
+<p><a href="https://github.com/adokoy001/nikki">nikki.pl github</a></p>
+<p>エンジョイ！！</p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="next" href="/posts/2019/12/2019-12-29-001/">いい感じのアクアリウムグッズ →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2020/09/2020-09-17-001/">perlでパスワードハッシュ</a></li><li><a href="/posts/2020/06/2020-06-08-002/">nikki.plの機能追加予定</a></li><li><a href="/posts/2020/06/2020-06-02-001/">PerlとPHPの違い</a></li><li><a href="/posts/2020/04/2020-04-16-001/">nikki.plに新機能を追加しました。</a></li><li><a href="/posts/2019/12/2019-12-16-001/">Mojo::UserAgentを使ってアクティブチェック（外部監視）</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

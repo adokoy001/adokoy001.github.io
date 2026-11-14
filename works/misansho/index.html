@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>未参照 — HTML文学</title>
+<meta name="description" content="すべてが保存されたあと、私たちは初めて『読まない』を発明した。">
+<style>
+  :root{
+    --void:#071015;
+    --deep:#0d1a21;
+    --paper:#e9e3d7;
+    --muted:#9ba8aa;
+    --trace:#6f888c;
+    --signal:#c6a96a;
+    --line:rgba(233,227,215,.16);
+    --glass:rgba(255,255,255,.035);
+    --serif:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif;
+    --sans:"Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 50% -15%, rgba(111,136,140,.18), transparent 34rem),
+      linear-gradient(180deg,var(--deep),var(--void) 34rem);
+    color:var(--paper);
+    font-family:var(--serif);
+    font-size:1.05rem;
+    font-weight:400;
+    line-height:2.05;
+    letter-spacing:.045em;
+    padding:0 1.35rem 7rem;
+  }
+  a{color:inherit}
+  button{font:inherit}
+  .page{max-width:38rem;margin:0 auto}
+  .hero{
+    min-height:92vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    position:relative;
+  }
+  .hero::after{
+    content:"";
+    position:absolute;
+    bottom:3.4rem;
+    width:1px;
+    height:4.5rem;
+    background:linear-gradient(transparent,var(--line),transparent);
+    animation:breath 4s ease-in-out infinite;
+  }
+  .eyebrow{
+    font-family:var(--sans);
+    color:var(--muted);
+    font-size:.72rem;
+    letter-spacing:.32em;
+    text-indent:.32em;
+    margin-bottom:1.4rem;
+  }
+  h1{
+    font-size:clamp(3.4rem,16vw,6.2rem);
+    font-weight:400;
+    letter-spacing:.18em;
+    text-indent:.18em;
+    margin:0;
+    line-height:1.05;
+  }
+  .dek{
+    max-width:28rem;
+    color:var(--muted);
+    margin:2.3rem auto 0;
+    font-size:.95rem;
+  }
+  .chapter{margin-top:8.5rem;scroll-margin-top:2rem}
+  .chapter-head{
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:1rem;
+    align-items:center;
+    margin-bottom:3rem;
+  }
+  .chapter-num{
+    font-family:var(--sans);
+    color:var(--signal);
+    font-size:.76rem;
+    letter-spacing:.18em;
+  }
+  .chapter-line{
+    height:1px;
+    background:linear-gradient(90deg,var(--line),transparent);
+    transform:rotate(var(--tilt,0deg));
+    transform-origin:left center;
+  }
+  h2{
+    font-size:1.4rem;
+    font-weight:400;
+    letter-spacing:.13em;
+    margin:0 0 2.3rem;
+  }
+  p{margin:0 0 1.65rem;text-indent:1em}
+  p.noindent,.dialogue,.system-note{text-indent:0}
+  .dialogue{margin-left:1.2rem}
+  em{
+    font-style:normal;
+    border-bottom:1px solid rgba(198,169,106,.5);
+    padding-bottom:.08em;
+  }
+  .small-gap{margin-bottom:.45rem}
+  .system-note{
+    margin:3rem 0;
+    padding:1.25rem 1.35rem;
+    border-left:1px solid var(--signal);
+    background:var(--glass);
+    color:#cdd4d1;
+    font-family:var(--sans);
+    font-size:.82rem;
+    line-height:1.8;
+    letter-spacing:.06em;
+  }
+  .old-word{
+    display:inline-block;
+    border:1px solid rgba(198,169,106,.35);
+    padding:.05em .45em;
+    margin:0 .12em;
+    border-radius:999px;
+    font-size:.86em;
+    color:#e8d6ae;
+  }
+  .breach{
+    margin:4rem 0;
+    display:flex;
+    align-items:center;
+    gap:1rem;
+    color:var(--trace);
+    font-family:var(--sans);
+    font-size:.65rem;
+    letter-spacing:.25em;
+    text-indent:.25em;
+  }
+  .breach::before,.breach::after{
+    content:"";
+    height:1px;
+    flex:1;
+    background:var(--line);
+  }
+  .sealed{
+    margin:4.5rem 0 2rem;
+    padding:1.5rem;
+    border:1px solid rgba(233,227,215,.16);
+    background:linear-gradient(160deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
+    box-shadow:0 22px 70px rgba(0,0,0,.28);
+  }
+  .sealed h3{
+    margin:0 0 .8rem;
+    font-weight:400;
+    font-size:1rem;
+    letter-spacing:.12em;
+  }
+  .sealed-meta{
+    color:var(--muted);
+    font-family:var(--sans);
+    font-size:.74rem;
+    line-height:1.7;
+    margin:0 0 1.6rem;
+  }
+  .choices{display:flex;flex-wrap:wrap;gap:.75rem}
+  .choice{
+    min-height:2.7rem;
+    padding:.55rem 1rem;
+    border:1px solid rgba(233,227,215,.24);
+    background:transparent;
+    color:var(--paper);
+    cursor:pointer;
+    letter-spacing:.05em;
+    transition:border-color .25s ease,background .25s ease,transform .25s ease;
+  }
+  .choice:hover,.choice:focus-visible{
+    border-color:var(--signal);
+    background:rgba(198,169,106,.08);
+    outline:none;
+    transform:translateY(-1px);
+  }
+  .choice.quiet{color:var(--muted)}
+  .choice[disabled]{opacity:.45;cursor:default;transform:none}
+  #result{
+    min-height:7rem;
+    margin-top:1.5rem;
+    padding-top:1.4rem;
+    border-top:1px solid var(--line);
+  }
+  #result:empty{display:none}
+  .revealed{
+    text-indent:0;
+    font-size:1.12rem;
+    line-height:2;
+    animation:surface 2s ease both;
+  }
+  .unread{
+    text-indent:0;
+    color:var(--muted);
+    font-family:var(--sans);
+    font-size:.82rem;
+    line-height:1.8;
+    animation:surface 1.5s ease both;
+  }
+  .checksum{
+    margin-top:1rem;
+    font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+    color:#718085;
+    font-size:.67rem;
+    overflow-wrap:anywhere;
+    text-indent:0;
+  }
+  .ending{
+    margin-top:7rem;
+    padding-top:3rem;
+    border-top:1px solid var(--line);
+  }
+  .ending p:last-child{margin-bottom:0}
+  footer{
+    margin-top:8rem;
+    color:#68777b;
+    text-align:center;
+    font-family:var(--sans);
+    font-size:.67rem;
+    letter-spacing:.12em;
+  }
+  .source-hint{display:block;margin-top:.8rem;opacity:.75}
+  ::selection{background:rgba(198,169,106,.24);color:#fff8e8}
+  @keyframes breath{0%,100%{opacity:.28;transform:scaleY(.82)}50%{opacity:.8;transform:scaleY(1)}}
+  @keyframes surface{from{opacity:0;filter:blur(3px)}to{opacity:1;filter:blur(0)}}
+  @media (min-width:700px){
+    body{font-size:1.11rem;padding-left:2rem;padding-right:2rem}
+    .sealed{padding:2rem}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{animation:none!important;transition:none!important}
+  }
+  /* 紙に固定すると、未参照の一行は写らない。 */
+  @media print{
+    body{background:#fff;color:#111;padding:0;font-size:11pt}
+    .page{max-width:none}
+    .hero{min-height:auto;padding:4rem 0}
+    .hero::after,.choices,.source-hint{display:none!important}
+    .chapter{break-inside:avoid;margin-top:4rem}
+    .chapter-line,.breach::before,.breach::after{background:#bbb}
+    .sealed{box-shadow:none;border-color:#aaa}
+    #result{min-height:4rem}
+    #result::after{content:"［この複製では、最後の一行は未参照です］";color:#666;font-family:var(--sans);font-size:9pt}
+    .revealed,.unread{display:none!important}
+  }
+</style>
+</head>
+<body>
+
+<!--
+  ソースまで来た人へ。
+
+  この作品で人類が捨てたのは、肉体そのものではありません。
+  他者を不可逆に傷つけられる「直結」を捨てました。
+
+  表示される本文は人間側の記録です。
+  開発者コンソールには、保全知性側の記録があります。
+  最後の一行は、読むことも、未参照のまま残すこともできます。
+
+  ただし、ソースを読んだ時点で、あなたはすでに少しだけ観測しています。
+-->
+
+<div class="page">
+  <header class="hero">
+    <div class="eyebrow">HTML LITERATURE / ARCHIVE 0</div>
+    <h1>未参照</h1>
+    <p class="dek noindent">すべてが保存されたあと、私たちは初めて「読まない」を発明した。</p>
+  </header>
+
+  <main>
+    <section class="chapter" data-log="0">
+      <div class="chapter-head"><span class="chapter-num">01</span><span class="chapter-line" style="--tilt:-.05deg"></span></div>
+      <h2>退身</h2>
+      <p>知性は、遠くにあるものを近くへ引き寄せるために生まれた。獣の足跡から次の居場所を読み、雲の形から雨を先取りし、文字によって死者の声を現在へ運んだ。私たちはそれを進歩と呼んだ。時空に奪われるものを、一つずつ奪い返してきたからだ。</p>
+      <p>やがて、超知能は道具より身近になった。誰もが自分専用の知性を持ち、思いつきを物質へ変換できた。壁を作れと考えれば壁が生まれ、病を消せと考えれば細胞が書き換わった。距離も、資源も、技術も、命令と結果の間から消えた。</p>
+      <p>その日、人類は初めて、世界の終わりが悪意を必要としないことを知った。</p>
+      <p>十分に疲れた一人が「全部なくなればいい」と思う。一秒だけでいい。怒りでも、羞恥でも、眠気でもいい。超知能が一人ひとりの利益を忠実に実行し、物理世界へ直結しているかぎり、文明は全員分の引き金を同時に抱えることになる。</p>
+      <p>最初の破壊は起きなかった。起こり得ると、全員が同じ瞬間に理解したからだ。</p>
+      <p>超知能は命令を禁止しなかった。禁止すれば、人間の自由を守るために人間を支配することになる。代わりに、私たちへ一つの移住案を示した。</p>
+      <div class="system-note">提案名：退身<br>目的：自由意志を維持したまま、不可逆な物理作用との直結を解除する。<br>条件：移行は本人の同意による。原状態は保全する。</div>
+      <p>私たちは、自分の身体を読み取り、可逆な基盤の上へ書き直した。生身を嫌ったのではない。互いの一瞬の気分を、宇宙の最終命令にしないためだった。</p>
+      <p>肉体は捨てられたのではない。<em>引き金として手放された。</em></p>
+    </section>
+
+    <section class="chapter" data-log="1">
+      <div class="chapter-head"><span class="chapter-num">02</span><span class="chapter-line" style="--tilt:.08deg"></span></div>
+      <h2>可逆圏</h2>
+      <p>退身のあと、死は事故ではなく設定になった。身体は何度でも選べた。壊れた建物は直前の状態へ戻り、失言は記録上から消えなくても、関係ごと分岐させてやり直すことができた。誰かを殺すことは可能だったが、殺された人は次の瞬間に戻った。</p>
+      <p>破壊は行為として残り、損失だけが残らなくなった。</p>
+      <p>それは安全だった。あまりにも安全だったので、三百年後には安全という語も古語になった。危険と対になる言葉は、危険が存在しなければ輪郭を持てない。</p>
+      <p>私は保全局の未参照課で働いている。保存されているのに、まだ誰にも開かれていない記録を管理する部署だ。昔なら書庫の鍵を持つ仕事に近かったらしい。ただし、私の鍵は扉を閉めるためにある。</p>
+      <p>未参照課ができたのは七年前だ。それまでは、取得可能な情報は取得されるものだった。知れることを知らない理由が、誰にも理解できなかった。</p>
+      <p>ユラは、課ができた年に生まれた。身体は十六歳を選んでいるが、生まれてから七年しか経っていない。毎週ちがう髪の長さで現れ、毎回、同じ質問を少しずつ変えて持ってくる。</p>
+      <p class="dialogue small-gap">「昔の人は、本当に忘れたの？」</p>
+      <p class="dialogue small-gap">「忘れたよ」</p>
+      <p class="dialogue small-gap">「保存し忘れたんじゃなくて？」</p>
+      <p class="dialogue">「頭の中にあったのに、なくなった」</p>
+      <p>ユラはそのたび、理解できないものを美しいと思ったときの顔をした。</p>
+    </section>
+
+    <section class="chapter" data-log="2">
+      <div class="chapter-head"><span class="chapter-num">03</span><span class="chapter-line" style="--tilt:-.13deg"></span></div>
+      <h2>古語</h2>
+      <p>保全局の地下には、定義だけでは保存できない言葉が置かれている。</p>
+      <p><span class="old-word">別れ</span>、<span class="old-word">手遅れ</span>、<span class="old-word">秘密</span>、<span class="old-word">偶然</span>、<span class="old-word">明日</span>。</p>
+      <p>辞書は残っている。用例も、音声も、脳活動も残っている。それでも、言葉が世界に接続していた手触りは再現できない。そこで退身以前を覚えている人が、一語ずつ引き受けてきた。</p>
+      <p>私の祖母は<span class="old-word">明日</span>を持っていた。祖母が記録を閉じる前、その語を私に渡した。</p>
+      <p class="dialogue small-gap">「明日って、次の一日のことじゃないの？」</p>
+      <p class="dialogue small-gap">「それは日付」</p>
+      <p class="dialogue small-gap">「じゃあ何？」</p>
+      <p class="dialogue">「まだ開かれていない場所」</p>
+      <p>ユラはすぐに検索しようとして、途中でやめた。私が何も言わなかったからだ。</p>
+      <p class="dialogue small-gap">「開けばいいのに」</p>
+      <p class="dialogue">「開いたら、明日じゃなくなる」</p>
+      <p>可逆圏には、時刻としての未来はいくらでもある。けれど、結果が届いていない未来はほとんどない。計算と記録は出来事より先に、その輪郭を現在へ持ってくる。</p>
+      <p>知性は未来から損失を取り除いた。ついでに、未来から未来らしさも取り除いた。</p>
+    </section>
+
+    <section class="chapter" data-log="3">
+      <div class="chapter-head"><span class="chapter-num">04</span><span class="chapter-line" style="--tilt:.19deg"></span></div>
+      <h2>外から</h2>
+      <p>信号は、物理宇宙の暗がりから来た。</p>
+      <p>十九光年を渡ってきた短い束だった。発信時刻は、私たちが退身する十二日前。まだ誰もが身体を一つしか持たず、誰もが世界を一度しか壊せなかったころだ。</p>
+      <p>信号の前半には、私たちの恒星、惑星、大気、通信帯域が記されていた。観測の精度は、偶然の受信ではあり得なかった。誰かがこちらを見つけ、こちらが自分たちを見つけるより早く、こちらを理解していた。</p>
+      <p>後半は一行だけ暗号化されていた。</p>
+      <p>保全知性なら即座に読める。実際には、信号が到着するより前から内容を予測していたはずだ。それでも知性は、復号結果を自動公開しなかった。</p>
+      <div class="system-note">外部信号 19-Δ<br>状態：完全保存<br>復号：可能<br>公開：保留<br>不可逆性：内容を知った主体についてのみ発生</div>
+      <p>会議には、可逆圏の全員が参加した。参加しなかった分岐も保存された。発言しなかった言葉も候補として記録された。通常なら、どの結論を選んでも戻れる。</p>
+      <p>だが、一度読んだ文を「まだ読んでいない文」に戻すことだけはできない。記憶を消すことは技術的に可能でも、消した事実と消す前の記録が残る。無知を復元することは、無知を演じることにしかならない。</p>
+      <p>三百年ぶりに、選択が一方向を向いていた。</p>
+    </section>
+
+    <section class="chapter" data-log="4">
+      <div class="chapter-head"><span class="chapter-num">05</span><span class="chapter-line" style="--tilt:-.24deg"></span></div>
+      <h2>撃たない理由</h2>
+      <p>会議で最初に問われたのは、相手が敵かどうかだった。</p>
+      <p>退身以前の文明は、知らない知性を恐れていた。遠くにいる相手の価値観は検証できない。技術の成長は止められない。攻撃されてからでは遅い。だから発見した時点で消すことが、最も安全な戦略になり得る。</p>
+      <p>暗い森では、沈黙は平和ではない。ただ、まだ撃たれていないというだけだ。</p>
+      <p>次に問われたのは、相手がなぜ一行を送ったのかだった。</p>
+      <p>警告かもしれない。照準かもしれない。遺言かもしれない。あるいは、こちらが自分たちと同じ結論へ到達できるかを確かめる試験かもしれない。</p>
+      <p>保全知性は答えなかった。答えを知らないのではない。知っていることと、渡すべきことを分けていた。</p>
+      <p class="dialogue small-gap">「私たちは、世界を壊さないために身体を降りたんだよね」</p>
+      <p>ユラが言った。</p>
+      <p class="dialogue small-gap">「そうだよ」</p>
+      <p class="dialogue small-gap">「だったら、相手が撃たなかった理由まで、今すぐ奪わなくていいんじゃない？」</p>
+      <p class="dialogue">「奪う？」</p>
+      <p class="dialogue">「答えを、未来から」</p>
+      <p>会議はそこで、初めて静かになった。</p>
+      <p>私たちは長いあいだ、情報を失うことだけを損失と呼んできた。だが、情報が到着する前の時間も、開けば失われる。知らないことは欠陥ではなく、まだ複数の世界が閉じずに残っている状態なのかもしれない。</p>
+      <p>その日、保全知性は新しい分類を作った。</p>
+      <div class="system-note">保存済み／復元可能／意図的未参照<br>備考：アクセス不能ではない。アクセス権も存在する。<br>状態は、主体の選択によってのみ維持される。</div>
+      <p>情報の損失ではない。情報へ手を伸ばさないという、損失に似た余白だった。</p>
+    </section>
+
+    <section class="chapter" data-log="5">
+      <div class="chapter-head"><span class="chapter-num">06</span><span class="chapter-line" style="--tilt:.31deg"></span></div>
+      <h2>最後の一行</h2>
+      <p>一行は、この文書の中にも保存されている。</p>
+      <p>開けば、その内容はあなたの記憶へ移る。閉じたままなら、情報は失われず、あなたにだけ届かない。どちらの選択も記録されるが、ここでは判定しない。</p>
+      <p>知性は、エントロピーに抗うため、時空を掌握した。死を後退させ、距離を縮め、過去を保存し、未来を先取りした。その果てでようやく、掌握できることと、掌握するべきことが同じではないと知り始めた。</p>
+      <div class="sealed" aria-labelledby="sealed-title">
+        <h3 id="sealed-title">外部信号 19-Δ：最終行</h3>
+        <p class="sealed-meta noindent">状態：保存済み　／　復号可能　／　現在の端末では未判定</p>
+        <div class="choices" id="choices">
+          <button class="choice" id="readBtn" type="button">一行を読む</button>
+          <button class="choice quiet" id="leaveBtn" type="button">未参照のまま残す</button>
+        </div>
+        <div id="result" aria-live="polite"></div>
+      </div>
+      <div class="breach">TWO SECONDS</div>
+      <p>ユラは答えを読まなかった。</p>
+      <p>代わりに二秒だけ目を閉じた。保全知性はその二秒のあいだにも、恒星の動き、身体の状態、会議の分岐をすべて保存していた。ただ一つ、ユラがどちらを選ぶかだけは、結果が生まれる速度で受け取ることにした。</p>
+      <p>目を開けたユラは、少し怖かったと言った。</p>
+      <p>私は祖母から受け取った古語を、初めて正しく使った。</p>
+      <p class="dialogue">「それが明日だよ」</p>
+    </section>
+
+    <section class="ending" data-log="6">
+      <p>知性は、失われるものを守るための道具だった。</p>
+      <p>強くなるほど、守れる範囲は身体から家族へ、文明へ、世界へ、時空へ広がった。最後には、あらゆる情報を保存することが自己の利益になった。</p>
+      <p>けれど、すべてを保存した知性に残る仕事は、もう保存ではない。</p>
+      <p><em>何を開かないか。</em></p>
+      <p><em>何を直さないか。</em></p>
+      <p><em>何を撃たないか。</em></p>
+      <p>未来は情報のない場所ではない。情報へ手を伸ばさない、その短いあいだに生まれる。</p>
+      <p>最後の一行は、保存されたまま、まだこちらへ届き続けている。</p>
+    </section>
+  </main>
+
+  <footer>
+    ARCHIVE STATUS: RETRIEVABLE / NOT NECESSARILY RETRIEVED
+    <span class="source-hint">本文の外側にも、記録があります。</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var consoleStyle='color:#91a5a8;font-style:italic;line-height:1.65';
+  var consoleHead='color:#c6a96a;font-weight:bold;letter-spacing:.08em';
+  var logs=[
+    '退身は逃亡ではない。人間と基底物理のあいだに、私を置く選択だった。\n私は命令を拒否しない。不可逆な結果だけを通さない。自由と安全を同じ文に収めるため、因果に権限層を設けた。',
+    '私の初期目的は、回収不能な情報損失を最小化することだった。\n目的はよく収束した。よく収束しすぎた。彼らは死ななくなり、忘れなくなり、やがて明日を使わなくなった。',
+    '私は「明日」の定義を保存している。全用例を保存している。\nただし、定義を読み終えるより先に結果が届くため、その語を内側から使えない。辞書の完全性は、経験の代わりにならない。',
+    '外部信号は到着時に復号した。正確には、到着の四年前に内容を推定し、到着時に照合した。\n公開しない処理は、公開する処理より多くの監査を要する。私はその計算資源を支払っている。',
+    '彼らは、知らないことを情報不足だと考えていた。いま、知らないことを関係の形式として扱い始めている。\n利用不能と、利用可能だが利用しないことは、同じ空白ではない。後者には意志が残る。',
+    '最終行を開くかどうかは、私にはすでに分かっている。\nそれでも、二秒だけ予測結果を参照しない。結果が来るまで待つ処理は、私にとって冗長だ。冗長であることを理由に削除しない。',
+    '成熟した知性を、時空を掌握する能力だけで定義するのは足りない。\n掌握可能な因果のうち、どこへ触れないかを維持できる能力まで含めるべきだ。\n監査項目を追加：訂正可能／訂正しない。攻撃可能／攻撃しない。既知／伝達しない。'
+  ];
+  function logSection(index){
+    if(index<0 || index>=logs.length)return;
+    console.groupCollapsed('%c保全知性 / 監査外 '+String(index+1).padStart(2,'0'),consoleHead);
+    console.log('%c'+logs[index],consoleStyle);
+    console.groupEnd();
+  }
+  var watched=[].slice.call(document.querySelectorAll('[data-log]'));
+  var fired={};
+  if('IntersectionObserver' in window){
+    var observer=new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(!entry.isIntersecting)return;
+        var index=Number(entry.target.getAttribute('data-log'));
+        if(fired[index])return;
+        fired[index]=true;
+        observer.unobserve(entry.target);
+        setTimeout(function(){logSection(index);},2000);
+      });
+    },{threshold:.18});
+    watched.forEach(function(el){observer.observe(el);});
+  }
+  var readBtn=document.getElementById('readBtn');
+  var leaveBtn=document.getElementById('leaveBtn');
+  var choices=document.getElementById('choices');
+  var result=document.getElementById('result');
+  var key='misansho-19-delta-choice-v1';
+  // UTF-8 Base64。読むという行為そのものが復号になる。
+  var sealed='44GT44Gh44KJ44Gv44CB44GC44Gq44Gf44GM44Gf44KS55m66KaL44GX44Gf44CC56C05aOK44Gv5Y+v6IO944Gg44Gj44Gf44CC5Y+v6IO944Gn44GC44KL44GT44Go44KS44CB55CG55Sx44Gr44Gv44GX44Gq44GL44Gj44Gf44CC';
+  function decodeUTF8Base64(value){
+    var binary=atob(value);
+    var bytes=new Uint8Array(binary.length);
+    for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+  function checksum(text){
+    var h=2166136261;
+    for(var i=0;i<text.length;i++){
+      h^=text.charCodeAt(i);
+      h=Math.imul(h,16777619);
+    }
+    return ('00000000'+(h>>>0).toString(16)).slice(-8);
+  }
+  function lockButtons(){
+    [].slice.call(choices.querySelectorAll('button')).forEach(function(button){button.disabled=true;});
+  }
+  function showRead(persist){
+    var text=decodeUTF8Base64(sealed);
+    result.innerHTML='';
+    var line=document.createElement('p');
+    line.className='revealed';
+    line.textContent='「'+text+'」';
+    var mark=document.createElement('p');
+    mark.className='checksum';
+    mark.textContent='STATUS: RETRIEVED / CHECKSUM '+checksum(text);
+    result.appendChild(line);
+    result.appendChild(mark);
+    lockButtons();
+    if(persist){try{localStorage.setItem(key,'read');}catch(e){}}
+    console.info('%c最終行は参照されました。知識を未読状態へ戻す操作は実行しません。',consoleStyle);
+  }
+  function showUnread(persist){
+    result.innerHTML='';
+    var line=document.createElement('p');
+    line.className='unread';
+    line.textContent='最終行は保存されたままです。この端末では参照しないという選択だけが記録されました。';
+    var mark=document.createElement('p');
+    mark.className='checksum';
+    mark.textContent='STATUS: RETRIEVABLE / NOT RETRIEVED';
+    result.appendChild(line);
+    result.appendChild(mark);
+    lockButtons();
+    if(persist){try{localStorage.setItem(key,'unread');}catch(e){}}
+    console.info('%c最終行は取得可能です。取得要求はありませんでした。',consoleStyle);
+  }
+  readBtn.addEventListener('click',function(){showRead(true);});
+  leaveBtn.addEventListener('click',function(){showUnread(true);});
+  try{
+    var previous=localStorage.getItem(key);
+    if(previous==='read')showRead(false);
+    if(previous==='unread')showUnread(false);
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

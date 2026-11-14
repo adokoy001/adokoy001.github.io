@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="第二不完全性定理から意味論へ。自己保証の限界を、条件付きの証明と、同じ証拠から区別できない二つの世界で考える。">
+<title>「正しさ」は、どこまで自分で保証できるか — 第二不完全性定理から意味論へ</title>
+<style>
+:root{--bg:#10171e;--panel:#18232d;--raised:#202f3b;--text:#ecf1f4;--muted:#b0bdc7;--line:#40505d;--cyan:#78d7ee;--amber:#ffd18a;--green:#b3e8ba;--rose:#ffb1b7;--radius:12px;--measure:760px;color-scheme:dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;font-synthesis:none;font-size:16px}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:85px}body{margin:0;background:var(--bg);color:var(--text);line-height:1.95;overflow-wrap:anywhere}a{color:var(--cyan);text-underline-offset:.22em}a:hover{text-decoration-thickness:2px}button,input{font:inherit}button{cursor:pointer}button:disabled{cursor:default;opacity:.45}button,a,input,summary{ -webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--amber);outline-offset:5px}::selection{color:var(--bg);background:var(--cyan)}h1,h2,h3,p,figure{margin:0}p+p{margin-top:1em}h1,h2,h3{line-height:1.5;letter-spacing:.01em}h1{font-size:clamp(2rem,4.3vw,3.55rem);font-weight:760;line-height:1.45}h2{font-size:clamp(1.55rem,3vw,2.1rem);font-weight:720;margin-bottom:1.2rem}h3{font-size:1.13rem;margin-bottom:.65rem}strong{font-weight:720}small,.small{font-size:.875rem}ul,ol{padding-left:1.5em;margin:1em 0}li+li{margin-top:.45em}code,pre,.formula,.mono{font-family:"DejaVu Sans Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace}code{font-size:.9em}var{font-style:italic;font-family:Georgia,"Times New Roman",serif}sub,sup{font-size:.73em}button{border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--text);padding:.55rem 1rem;min-height:44px;line-height:1.5}button:hover:not(:disabled){background:var(--raised)}button[aria-pressed="true"]{background:var(--cyan);border-color:var(--cyan);color:#071820;font-weight:700}button.primary{background:var(--cyan);border-color:var(--cyan);color:#071820;font-weight:700}button.primary:hover{background:#ade9f6}summary{cursor:pointer;font-weight:650;line-height:1.6;padding:1.15rem 1.2rem;min-height:50px}summary::marker{color:var(--cyan)}details{border:1px solid var(--line);border-radius:var(--radius);margin-top:1.3rem;background:var(--panel)}details[open]>summary{border-bottom:1px solid var(--line)}details .inside{padding:1.4rem}pre{white-space:pre;overflow:auto;font-size:.85rem;line-height:1.8;border:1px solid var(--line);border-radius:7px;background:var(--bg);padding:1rem;margin:1rem 0}.skip{position:absolute;left:1rem;top:-100px;background:var(--cyan);color:var(--bg);padding:.6rem 1rem;z-index:30}.skip:focus{top:.5rem}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}[hidden]{display:none!important}.sitebar{position:sticky;top:0;z-index:20;background:#10171ef5;border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}.bar-inner{max-width:1160px;margin:auto;padding:.72rem 28px;display:flex;align-items:center;gap:1rem;justify-content:space-between}.brand{font-weight:750;font-size:.92rem;letter-spacing:.045em;color:var(--text);text-decoration:none}.bar-links{display:flex;gap:1.25rem;font-size:.9rem}.bar-links a{color:var(--muted);text-decoration:none}.bar-links a:hover{color:var(--cyan)}.wrap{max-width:1104px;margin:auto;padding:0 32px}.prose{max-width:var(--measure)}.hero{padding:65px 0 42px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--cyan);font-size:.82rem;letter-spacing:.11em;font-weight:720;margin-bottom:1.2rem}.hero .deck{font-size:clamp(1.05rem,2vw,1.2rem);max-width:720px;margin-top:1.4rem;line-height:1.9;color:var(--muted)}.meta{display:flex;flex-wrap:wrap;gap:.6rem 1.4rem;margin-top:1.7rem;color:var(--muted);font-size:.82rem}.thesis{margin-top:2rem;border-left:3px solid var(--cyan);padding:.1rem 0 .1rem 1.25rem;max-width:790px}.thesis strong{color:var(--cyan)}.contents{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;padding:1.2rem 0 0;font-size:.88rem}.contents a{text-decoration:none}.chapter{padding:55px 0;border-bottom:1px solid var(--line)}.chapter-head{display:flex;align-items:baseline;gap:1rem;margin-bottom:.9rem}.chapter-head .num{color:var(--cyan);font:600 .9rem/1.5 monospace;min-width:1.6rem}.chapter-head h2{margin:0}.lead{color:var(--muted);max-width:var(--measure);margin-bottom:1.7rem}.badge{display:inline-block;font-size:.75rem;line-height:1.5;border:1px solid currentColor;padding:.13rem .55rem;border-radius:4px;margin-bottom:.75rem;font-weight:700}.cyan{color:var(--cyan)}.amber{color:var(--amber)}.green{color:var(--green)}.rose{color:var(--rose)}.muted{color:var(--muted)}.triad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:1.5rem 0;background:var(--panel)}.triad>div{padding:1.6rem}.triad>div+div{border-left:1px solid var(--line)}.triad p{font-size:.95rem}.triad .example{color:var(--muted);margin-top:1rem;font-size:.875rem}.statement{font-size:clamp(1.2rem,2.2vw,1.55rem);line-height:1.65;border-left:3px solid var(--cyan);padding:.3rem 0 .3rem 1.25rem;margin:1.5rem 0}.note{background:var(--panel);border-left:3px solid var(--amber);padding:1rem 1.3rem;margin:1.5rem 0;max-width:var(--measure);font-size:.95rem}.note strong{color:var(--amber)}.formula{line-height:1.7;letter-spacing:0;overflow-wrap:anywhere}.mathline{font-size:clamp(1.04rem,2.2vw,1.48rem);padding:1.25rem 1.4rem;background:var(--bg);border:1px solid var(--line);border-radius:9px;margin:1rem 0}.formula-main{border-color:var(--cyan);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.6rem 1.2rem;padding:1.75rem}.formula-main .conclusion{color:var(--cyan)}.math-imp{color:var(--muted)}.math-part{white-space:nowrap}.legend{font-size:.85rem;color:var(--muted);line-height:1.8}.cite{font-size:.8em;white-space:nowrap;margin-left:.2em;text-decoration:none;vertical-align:super}.lab{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);margin-top:1.8rem;overflow:hidden}.lab-title{padding:1.05rem 1.4rem;border-bottom:1px solid var(--line);display:flex;gap:.8rem;align-items:baseline;flex-wrap:wrap}.lab-title .lab-no{color:var(--cyan);font-size:.75rem;letter-spacing:.1em;font-weight:750}.lab-title h3{margin:0;font-size:1rem}.lab-body{padding:1.4rem}.conditions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin-bottom:1.2rem}.condition{position:relative;display:flex;align-items:flex-start;gap:.65rem;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:1rem;cursor:pointer;font-size:.93rem;line-height:1.7}.condition input{width:20px;height:20px;accent-color:var(--cyan);margin:3px 0 0;flex:0 0 auto}.condition small{display:block;color:var(--muted);margin-top:.3rem;font-size:.8rem}.result{padding:1rem 1.3rem;border:1px solid var(--cyan);border-radius:8px;background:#78d7ee09;line-height:1.8;min-height:116px}.result[data-kind="open"]{border-color:var(--amber);background:#ffd18a08}.result .result-label{font-size:.8rem;font-weight:700;color:var(--cyan)}.result[data-kind="open"] .result-label{color:var(--amber)}.result strong{display:block;margin:.35rem 0;font-size:1.05rem}.stepper{margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1.2rem}.step-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}.step-head .buttons{display:flex;gap:.55rem}.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem;list-style:none;padding:0;margin:1rem 0}.steps li{font-size:.875rem;margin:0;padding:.9rem;border:1px solid var(--line);border-radius:8px;line-height:1.6;opacity:.43}.steps li.revealed{opacity:1}.steps li.active{border-color:var(--cyan);background:#78d7ee09}.steps .step-number{font:700 .75rem monospace;color:var(--cyan);display:block;margin-bottom:.5rem}.steps .formula{display:block;font-size:1.05rem;margin-bottom:.6rem}.step-caption{font-size:.95rem;min-height:4em}.figure-caption{font-size:.875rem;color:var(--muted);margin-top:.8rem}.bridge-diagram{display:grid;grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr) 40px minmax(0,1fr);gap:.3rem;align-items:center;margin:1.6rem 0}.diagram-box{border:1px solid var(--line);padding:1.2rem 1rem;text-align:center;background:var(--panel);border-radius:9px;line-height:1.65}.diagram-box strong{display:block}.diagram-box small{display:block;color:var(--muted);margin-top:.5rem}.diagram-arrow{text-align:center;color:var(--cyan);font-size:1.5rem}.diagram-box.accent{border-color:var(--cyan)}.model-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0}.model-card{border-top:2px solid var(--cyan);padding:1.15rem 1.2rem;background:var(--panel);border-radius:0 0 8px 8px}.model-card:last-child{border-color:var(--amber)}.model-card p{font-size:.94rem}.segmented{display:flex;flex-wrap:wrap;gap:.6rem;margin:0 0 1.4rem}.segmented button{text-align:left;font-size:.9rem;flex:1;min-width:170px}.worlds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.world{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}.world-head{padding:.8rem 1.1rem;display:flex;justify-content:space-between;gap:.75rem;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line)}.world-head h3{margin:0;font-size:1rem}.world-head span{font-size:.8rem}.world-body{padding:1rem}.world-svg{display:block;width:100%;height:auto;max-height:245px}.world-svg text{font-family:system-ui,"Noto Sans JP",sans-serif;fill:var(--text);font-size:16px}.world-svg .muted-label{fill:var(--muted);font-size:14px}.world-svg .known-frame{fill:#78d7ee09;stroke:var(--cyan);stroke-width:1.5}.world-svg .unknown-frame{fill:#ffd18a08;stroke:var(--amber);stroke-dasharray:5 4;stroke-width:1.5}.world-svg .none-frame{fill:none;stroke:var(--line);stroke-dasharray:5 4}.world-svg .known-node{fill:var(--panel);stroke:var(--cyan);stroke-width:1.5}.world-svg .hidden-node{fill:var(--panel);stroke:var(--amber);stroke-width:1.5}.world-svg .link-line{stroke:var(--line);stroke-width:2}.evidence{padding:1rem;border-top:1px solid var(--line);font-size:.88rem}.evidence .evidence-title{color:var(--muted);font-size:.8rem;display:block;margin-bottom:.4rem}.evidence code{display:block;color:var(--cyan);font-size:.96rem;line-height:1.9}.evidence.highlight{background:#ffd18a09}.evidence.highlight code{color:var(--amber)}.world-result{margin-top:1rem}.insight{margin-top:1rem;border-top:1px solid var(--line);padding-top:1rem;font-size:.9rem;color:var(--muted)}.table-scroll{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:9px;margin:1.3rem 0}table{width:100%;border-collapse:collapse;text-align:left;font-size:.925rem;line-height:1.8}th,td{padding:1rem 1.2rem;vertical-align:top}th{color:var(--cyan);font-weight:650;background:var(--panel)}tr+tr td{border-top:1px solid var(--line)}tbody tr:first-child td{border-top:1px solid var(--line)}.corrections th:first-child{width:26%}.corrections th:nth-child(2){width:39%}.truth-table{text-align:center;max-width:550px}.truth-table th,.truth-table td{padding:.55rem .8rem}.split-note{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:1.5rem 0}.split-note>div{padding-left:1rem;border-left:2px solid var(--line)}.policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1.5rem 0}.policy-grid>div{background:var(--panel);padding:1.35rem;border-radius:9px;border-top:2px solid var(--amber)}.policy-grid h3{font-size:1.03rem}.policy-grid p{font-size:.925rem}.ledger-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-top:1.5rem}.ledger-card{background:var(--panel);border:1px solid var(--line);padding:1.35rem;border-radius:9px}.ledger-card h3{font-size:1rem;display:flex;align-items:center;gap:.6rem}.ledger-card .marker{width:7px;height:20px;display:inline-block;background:var(--cyan);flex:0 0 auto}.ledger-card:nth-child(2) .marker{background:var(--rose)}.ledger-card:nth-child(3) .marker{background:var(--amber)}.ledger-card:nth-child(4) .marker{background:var(--green)}.ledger-card li{font-size:.9rem}.ledger-card ul{margin-bottom:0}.refs{font-size:.9rem;max-width:870px}.refs li{margin-top:1rem;padding-left:.25rem}.refs p{color:var(--muted);font-size:.84rem;margin-top:.3rem}.refs a{overflow-wrap:anywhere}.footer{padding:30px 0 42px;font-size:.82rem;color:var(--muted)}.footer p+p{margin-top:.4rem}.end-note{font-size:1.12rem;max-width:var(--measure);margin:1.5rem 0 0;border-left:3px solid var(--cyan);padding:.2rem 0 .2rem 1.2rem}.noscript{background:var(--panel);padding:1rem;border:1px solid var(--amber);margin:1rem 0}.js-only{display:none}.has-js .js-only{display:block}.has-js .js-flex{display:flex}.offline-tag{color:var(--muted);font-size:.76rem}
+@media(max-width:820px){.wrap{padding:0 23px}.bar-inner{padding:.65rem 23px}.triad{grid-template-columns:1fr}.triad>div{padding:1.3rem}.triad>div+div{border-left:0;border-top:1px solid var(--line)}.conditions{grid-template-columns:1fr}.condition{padding:.9rem 1rem}.condition small{margin-top:.1rem}.steps{grid-template-columns:repeat(2,minmax(0,1fr))}.model-pair{grid-template-columns:1fr}.corrections th,.corrections td{padding:.8rem .9rem}.bar-links{gap:.9rem;font-size:.82rem}.brand{font-size:.84rem}.hero{padding-top:40px}.chapter{padding:42px 0}}
+@media(max-width:620px){.worlds,.ledger-grid,.policy-grid,.split-note{grid-template-columns:1fr}.bridge-diagram{grid-template-columns:1fr;gap:.3rem}.diagram-arrow{transform:rotate(90deg);line-height:1.2}.diagram-box{text-align:left;padding:.95rem 1.1rem}.diagram-box small{margin-top:.3rem}.hero{padding-top:30px}.hero .deck{font-size:1.03rem}.bar-links a:first-child{display:none}.wrap{padding:0 19px}.bar-inner{padding:.65rem 19px}.lab-body{padding:1rem}.lab-title{padding:1rem}.chapter-head{gap:.6rem}.chapter-head h2{font-size:1.47rem}.chapter-head .num{font-size:.8rem}.mathline{padding:1rem}.formula-main{justify-content:flex-start;gap:.5rem}.formula-main .math-imp{width:100%}.contents{gap:.6rem 1.2rem}.segmented button{flex-basis:100%;min-width:0}.corrections thead{display:none}.corrections tr{display:block;padding:.85rem 1rem}.corrections tr+tr{border-top:1px solid var(--line)}.corrections td{display:block;padding:.4rem 0;border:0!important}.corrections td:first-child{font-weight:700;color:var(--cyan)}.corrections td[data-label]::before{content:attr(data-label) "：";font-weight:700;color:var(--muted)}.step-head .buttons{width:100%}.step-head .buttons button{flex:1}.step-caption{min-height:0}.meta{font-size:.78rem}.inside{padding:1.1rem!important}.figure-caption{font-size:.82rem}.steps li{font-size:.83rem}.steps .formula{font-size:.98rem}}
+@media(max-width:620px){.world-svg text{font-size:24px}.world-svg .muted-label{font-size:22px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+@media print{:root{--bg:#fff;--panel:#f4f6f7;--raised:#fff;--text:#16232b;--muted:#43525b;--line:#a7b0b7;--cyan:#006379;--amber:#805013;--green:#25613b;--rose:#983345;color-scheme:light;font-size:11pt}.sitebar,.contents,.skip,.js-only,.js-flex,.segmented{display:none!important}.wrap{max-width:none;padding:0}.hero{padding:0 0 1.5rem}.chapter{padding:1.5rem 0}.lab,.triad,.world,.ledger-card,details{break-inside:avoid}.steps li{opacity:1}.worlds{grid-template-columns:1fr 1fr}.world-svg{max-height:170px}.steps{grid-template-columns:repeat(4,minmax(0,1fr))}a{color:var(--cyan)}.footer{padding:1rem 0}.result{min-height:0}h1{font-size:26pt}h2{font-size:19pt}.meta{margin-top:1rem}.thesis{margin-top:1rem}pre{white-space:pre-wrap}.chapter-head{break-after:avoid}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">本文へ移動</a>
+<header class="sitebar"><div class="bar-inner"><a class="brand" href="#top">NIKKI / LOGIC NOTES</a><nav class="bar-links" aria-label="主要な節"><a href="#bridge">証明</a><a href="#worlds">二つの世界</a><a href="#ledger">監査記録</a></nav></div></header>
+<main id="main" class="wrap">
+<article>
+<header id="top" class="hero">
+<div class="eyebrow">第二不完全性定理から意味論へ</div>
+<h1>「正しさ」は、どこまで<br>自分で保証できるか。</h1>
+<p class="deck">証明が通ること。意味が正しいこと。現実を捉えていること。<br>この三つを分けると、自己保証の限界と、検証を進められる範囲が見えてくる。</p>
+<div class="meta"><time datetime="2026-09-05">2026 09 05</time><span>再検討ノート 1.0</span><span>人間 × AI の共同検討</span></div>
+<div class="thesis"><p><strong>意味論への接続には、厳密な数学的内容がある。</strong><br>その一方で、「宇宙を理解し終えたこと」や「検証を続けるべきこと」には、追加の前提が必要になる。</p></div>
+<nav class="contents" aria-label="目次"><a href="#three">01 三つの正しさ</a><a href="#bridge">02 証明への橋</a><a href="#semantics">03 意味論への接続</a><a href="#worlds">04 二つの世界</a><a href="#revision">05 記事の再検討</a><a href="#practice">06 検証の設計</a><a href="#ledger">07 監査記録</a></nav>
+</header>
+<noscript><p class="noscript">本文と図はそのまま読めます。操作例を動かす場合はJavaScriptを有効にしてください。初期表示は、各例の基本ケースです。</p></noscript>
+
+<section id="three" class="chapter" aria-labelledby="three-title">
+<div class="chapter-head"><span class="num">01</span><h2 id="three-title">「正しい」は、一種類ではない</h2></div>
+<p class="lead">同じ結論でも、何に照らして正しいと言っているのかで、確かめ方が変わる。</p>
+<div class="triad">
+<div><span class="badge cyan">構文・証明</span><h3>規則に従って導けるか</h3><p>公理と推論規則から、文 <var>A</var> に到達できるかを問う。</p><div class="mathline formula">T ⊢ A</div><p class="example">例：指定した公理から、この計算結果を導ける。</p></div>
+<div><span class="badge green">数学的な意味論</span><h3>指定した解釈で真か</h3><p>記号が何を表すかを定めた構造 <var>M</var> で、文 <var>A</var> が真かを問う。</p><div class="mathline formula">M ⊨ A</div><p class="example">例：通常の自然数について、この算術の文は真である。</p></div>
+<div><span class="badge amber">経験的な対応</span><h3>モデルが現実に合うか</h3><p>選んだ解釈・観測・対象範囲が、実際の現象に対応するかを問う。</p><div class="mathline">モデルと観測の照合</div><p class="example">例：式は正しくても、センサーのずれや見落とした要因は残りうる。</p></div>
+</div>
+<div class="prose"><p>理論の<strong>無矛盾性</strong>は、「矛盾を導かない」こと。指定した解釈に対する<strong>健全性</strong>は、「証明した文がその解釈で真である」こと。さらに、<strong>現実をすべて把握した</strong>という主張には、何を「すべて」に含めるかの定義が必要になる。</p><p>第二不完全性定理は、条件を満たす理論の無矛盾性の自己証明を制限する。意味論へ進むには、意味的な保証と無矛盾性の関係を明示する。</p></div>
+<details><summary>補足：「完全性」という言葉も、分けておく</summary><div class="inside prose"><ul><li><strong>理論の構文的完全性：</strong>各文 <var>A</var> について、<var>A</var> またはその否定を証明できる。</li><li><strong>一階論理の意味論的完全性：</strong>すべてのモデルで成り立つ帰結を、証明でも導ける。ここで「すべてのモデルで」は、一つの意図したモデルでの真理とは違う。</li><li><strong>現実把握の完了：</strong>何を観測し、何を説明・予測できれば完了とするのか、別途定義する必要がある。</li></ul><p>このページでは、この三つを「完全性」という一語で置き換えない。</p></div></details>
+</section>
+
+<section id="bridge" class="chapter" aria-labelledby="bridge-title">
+<div class="chapter-head"><span class="num">02</span><h2 id="bridge-title">意味的な保証から、無矛盾性へ橋を架ける</h2></div>
+<p class="lead">ここが、第二不完全性定理から厳密に進める部分。</p>
+<div class="prose"><span class="badge cyan">条件付き系</span><p><var>T</var> を、第二不完全性定理の適用条件を満たす無矛盾な理論とする。<var>C</var> は、その内部で書ける保証の文とする。</p></div>
+<div class="mathline formula formula-main" role="math" aria-label="Tが、CならばTは無矛盾であると証明できるならば、TはCを証明できない"><span class="math-part">T ⊢ C → Con(T)</span><span class="math-imp">ならば</span><span class="math-part conclusion">T ⊬ C</span></div>
+<p class="legend">⊢：証明できる　　⊬：証明できない　　Con(T)：Tの無矛盾性を表す標準的な内部文</p>
+<p class="statement prose">保証 <var>C</var> から自分の無矛盾性まで導けるなら、その保証も自分の中では証明できない。</p>
+<div class="prose"><p>証明は短い。仮に <var>T</var> が <var>C</var> を証明できたら、内部の橋を使って Con(T) も証明できてしまう。それは第二不完全性定理に反する。これは既知の定理から得られる直接の系である。<a class="cite" href="#ref1" aria-label="参考文献1">[1]</a></p></div>
+
+<div class="lab" id="bridge-lab">
+<div class="lab-title"><span class="lab-no">操作例 01</span><h3>前提を外すと、何が言えなくなるか</h3></div>
+<div class="lab-body">
+<p class="small muted" style="margin-bottom:1rem">チェックは「この検討で採用する前提」を表す。外しても、その前提や結論が偽だと判明したことにはならない。</p>
+<fieldset class="conditions" style="border:0;padding:0"><legend class="sr-only">自己保証不能の導出に使う前提</legend>
+<label class="condition"><input id="cond-g2" type="checkbox" checked><span><strong>証明に必要な構造</strong><small>導出可能性条件・対角化などを満たす。</small></span></label>
+<label class="condition"><input id="cond-consistent" type="checkbox" checked><span><strong>Tの無矛盾性</strong><small>矛盾を証明しないと仮定する。</small></span></label>
+<label class="condition"><input id="cond-bridge" type="checkbox" checked><span><strong>内部で証明された橋</strong><small>T ⊢ C → Con(T) がある。</small></span></label>
+</fieldset>
+<div id="bridge-result" class="result" data-kind="proved" aria-live="polite"><span class="result-label" id="bridge-status">この条件の下で成立</span><strong id="bridge-headline">Tは保証 C を証明できない。</strong><p id="bridge-explanation" class="small">Cを証明できると仮定すると、内部の橋からCon(T)が導かれ、第二不完全性定理と両立しない。</p></div>
+<div class="stepper"><p class="small muted" style="margin-bottom:1rem">以下の証明は、上の三つの前提をすべて採用した場合のもの。</p><div class="step-head"><span class="small"><strong>背理法を4段で辿る</strong> <span id="step-count" class="muted">1 / 4</span></span><div class="buttons js-only js-flex"><button id="step-prev" type="button" disabled>前へ</button><button id="step-next" class="primary" type="button">次の段へ</button><button id="step-reset" type="button">最初へ</button></div></div>
+<ol class="steps" id="proof-steps">
+<li class="revealed active" aria-current="step"><span class="step-number">01 / 仮定</span><span class="formula">T ⊢ C</span>保証を証明できた、と仮に置く。</li>
+<li class="revealed"><span class="step-number">02 / 内部の橋</span><span class="formula">T ⊢ C → Con(T)</span>この含意もTの中で証明されている。</li>
+<li class="revealed"><span class="step-number">03 / 推論</span><span class="formula">T ⊢ Con(T)</span>二つの証明をつなげる。</li>
+<li class="revealed"><span class="step-number">04 / 不可能</span><span class="formula">T ⊬ Con(T)</span>第二不完全性に反する。最初の仮定を退ける。</li>
+</ol>
+<p id="step-caption" class="step-caption" aria-live="polite">これは実際にCが証明されたという報告ではない。証明できたと仮定して、何が起きるかを調べる。</p>
+</div></div></div>
+
+<div class="note"><strong>橋は「内部」に必要。</strong><p>外側の私たちが「Cなら無矛盾性も従う」と判断しているだけでは、この導出には足りない。必要なのは、その含意をT自身の推論で導けること。</p></div>
+<details><summary>数式の補足：どんな理論・可証性述語を想定するか</summary><div class="inside prose"><p>典型例は、公理を機械的に列挙でき、十分な算術を含む理論と、その標準的な可証性述語。より抽象的には、命題論理の規則、次のD1〜D3、Löbの証明に必要な対角化を使う。</p><ul class="formula"><li>D1：T ⊢ A なら T ⊢ □A</li><li>D2：T ⊢ □(A → B) → (□A → □B)</li><li>D3：T ⊢ □A → □□A</li></ul><p>□A は「AにTでの証明がある」という内部文。対角化により、ψ ↔ (□ψ → A) という文ψを構成できる。これらの下で、Löbの定理は「T ⊢ □A → A なら T ⊢ A」を与える。Aを矛盾⊥にすると第二不完全性の形になる。</p><p>以上は適用条件を固定するための説明であり、すべての論理・知性・有限の装置に自動適用する条件ではない。</p></div></details>
+</section>
+
+<section id="semantics" class="chapter" aria-labelledby="semantics-title">
+<div class="chapter-head"><span class="num">03</span><h2 id="semantics-title">意味論に、実際につながる例</h2></div>
+<p class="lead">「自分の全公理を満たすモデルがある」という保証を考える。</p>
+<div class="prose"><p>モデルと充足関係を扱える理論 <var>T</var> で、<var>C</var> を「Tの全公理を満たす、集合として表せるモデルが存在する」と定める。さらに、モデルの存在から無矛盾性が従うことを、Tの内部で証明できるとする。</p></div>
+<figure><div class="bridge-diagram" role="img" aria-label="自分のモデルの存在という意味的保証から、内部で形式化した証明の健全性を介して無矛盾性が従う"><div class="diagram-box"><strong>C：自分のモデルが存在</strong><small>公理をすべて満たす構造がある。</small></div><span class="diagram-arrow" aria-hidden="true">→</span><div class="diagram-box accent"><strong>Tの中で橋を証明</strong><small>そのモデルで証明の各段が真を保つ。</small></div><span class="diagram-arrow" aria-hidden="true">→</span><div class="diagram-box"><strong>Con(T)</strong><small>偽である矛盾へは到達しない。</small></div></div><figcaption class="figure-caption">図1　意味論を使う保証にも、前節の条件付き系を適用できる。必要な表現力と内部の健全性証明を前提にした例。</figcaption></figure>
+<div class="prose"><p>ここに第二不完全性の条件と無矛盾性を合わせれば、<strong>Tはそのモデル存在の文Cを証明できない</strong>。数学的な意味論は、このように形式的な自己保証の限界に接続できる。</p></div>
+<div class="model-pair"><div class="model-card"><h3>モデルがあること</h3><p>公理を同時に満たす構造が存在するという保証。これだけで、意図した構造が特定されるわけではない。</p></div><div class="model-card"><h3>そのモデルが現実を捉えること</h3><p>観測・解釈・対象範囲についての追加の問題。モデル存在の証明だけでは、現実との対応まで確認できない。</p></div></div>
+<details><summary>先行研究：限定した真理についての「健全性」へ</summary><div class="inside prose"><p>Chao–Seraji（2016）は、理論の定義可能性と健全性に条件を置き、第二不完全性定理を一般化している。PAを含む理論TがΣ<sub>n+1</sub>定義可能で、Σ<sub>n</sub>健全なら、同論文で定める自己のΣ<sub>n</sub>健全性の文をTで証明できない。<a class="cite" href="#ref2" aria-label="参考文献2">[2]</a></p><p>Σ<sub>n</sub>健全とは、その複雑さの範囲に属する偽の文を証明しないこと。「どの程度の意味的な正しさまで、自分で保証できるか」が、具体的な数学の問題になっている。</p><p>この結果を使うときも、理論の強さ・定義の複雑さ・健全性・採用した符号化を保持する。</p></div></details>
+<details><summary>注意：「全モデルで正しい」だけでは、無矛盾性は出ない</summary><div class="inside prose"><p>「Tから証明できる文は、Tのすべてのモデルで真である」という論理の健全性は、Tにモデルが一つもない場合にも空虚に成立する。したがって、これだけではTの無矛盾性は保証されない。</p><p>上の例では<strong>モデルが存在する</strong>こともCに含めている。「すべてのモデルでの帰結」「特定のモデルでの真理」「モデルの存在」を分ける必要がある。</p></div></details>
+<details><summary>タルスキが制限するのは「全文真理の同一言語内での定義」</summary><div class="inside prose"><p>ここでは証明論的な形で述べる。必要な対角化ができる無矛盾な理論Tについて、その言語Lの中で定義した述語Trueが、すべてのLの文Aに対する次の同値をTで証明できる、と要求する。</p><div class="mathline formula">T ⊢ (True(⌜A⌝) ↔ A)</div><p>すると「私は真ではない」という文λを作れてしまい、この同値の要求と無矛盾性が両立しない。ここで問題になるのは、<strong>同じ言語の全文に適用できる一様な真理述語</strong>である。複雑さを限定した真理述語、対象言語とメタ言語を分ける方法、強いメタ理論での意味論は残る。<a class="cite" href="#ref3" aria-label="参考文献3">[3]</a></p><p>「意味や真理について何も書けない」と一般化してはいけない。</p></div></details>
+</section>
+
+<section id="worlds" class="chapter" aria-labelledby="worlds-title">
+<div class="chapter-head"><span class="num">04</span><h2 id="worlds-title">「理解し終えた」は、証拠から分かるか</h2></div>
+<p class="lead">元の問いは、全宇宙を掌握した存在が、その完了を確認できるか、というものだった。<a class="cite" href="#ref4" aria-label="参考文献4">[4]</a> ここには、観測による識別という別の論点がある。</p>
+<div class="prose"><span class="badge amber">モデル内の補題</span><p>同じ内部の証拠が得られる二つの世界を考える。一方では把握が完了し、もう一方では見落とした領域が残っている。すると、その証拠だけを入力とする判定器は、両世界で常に正しく答えることができない。</p></div>
+<div class="lab" id="world-lab"><div class="lab-title"><span class="lab-no">操作例 02</span><h3>証拠が同じなら、判定だけ変えることはできない</h3></div><div class="lab-body">
+<p class="small muted" style="margin-bottom:1rem">説明用の世界集合を {w₀, w₁} に固定する。保証対象Pは「当初のA・Bからなる把握範囲が、世界全体を尽くしていたか」。Hの有無を新たに観測しても、この当初の範囲に対するPの値は変えない。図は読者から見た全体像で、判定器が受け取るのは下の「証拠」だけ。</p>
+<div class="segmented js-only js-flex" role="group" aria-label="判定器に与える証拠を選ぶ"><button type="button" data-mode="shared" aria-pressed="true">共通の観測だけ</button><button type="button" data-mode="copy" aria-pressed="false">同じ観測を複製</button><button type="button" data-mode="diagnostic" aria-pressed="false">Hを区別する観測を追加</button></div>
+<div class="worlds">
+<section class="world" aria-labelledby="world0-title"><div class="world-head"><h3 id="world0-title">世界 w₀</h3><span class="green">当初の把握は完了 P = 1</span></div><div class="world-body"><svg class="world-svg" viewBox="0 0 420 235" role="img" aria-labelledby="world0-svgtitle world0-svgdesc"><title id="world0-svgtitle">把握した範囲だけからなる世界</title><desc id="world0-svgdesc">当初の把握範囲はAとBで、範囲外の領域Hは存在しない。</desc><rect class="known-frame" x="15" y="15" width="245" height="200" rx="10"/><text x="34" y="45">当初の把握範囲</text><line class="link-line" x1="93" y1="124" x2="181" y2="124"/><circle class="known-node" cx="87" cy="124" r="32"/><circle class="known-node" cx="188" cy="124" r="32"/><text x="87" y="130" text-anchor="middle">A</text><text x="188" y="130" text-anchor="middle">B</text><text class="muted-label" x="137" y="186" text-anchor="middle">観測済み</text><rect class="none-frame" x="280" y="64" width="120" height="120" rx="10"/><text x="340" y="124" text-anchor="middle">H なし</text><text class="muted-label" x="340" y="148" text-anchor="middle">追加なし</text></svg></div><div class="evidence" id="evidence0"><span class="evidence-title">判定器に渡る証拠 E(w₀)</span><code id="evidence-text0">A=0 / B=1</code></div></section>
+<section class="world" aria-labelledby="world1-title"><div class="world-head"><h3 id="world1-title">世界 w₁</h3><span class="amber">当初の範囲外あり P = 0</span></div><div class="world-body"><svg class="world-svg" viewBox="0 0 420 235" role="img" aria-labelledby="world1-svgtitle world1-svgdesc"><title id="world1-svgtitle">同じ把握範囲に加えて、未把握の領域が残る世界</title><desc id="world1-svgdesc">AとBの観測は同じだが、当初の把握範囲外にHが存在する。</desc><rect class="known-frame" x="15" y="15" width="245" height="200" rx="10"/><text x="34" y="45">当初の把握範囲</text><line class="link-line" x1="93" y1="124" x2="181" y2="124"/><circle class="known-node" cx="87" cy="124" r="32"/><circle class="known-node" cx="188" cy="124" r="32"/><text x="87" y="130" text-anchor="middle">A</text><text x="188" y="130" text-anchor="middle">B</text><text class="muted-label" x="137" y="186" text-anchor="middle">観測済み</text><rect class="unknown-frame" x="280" y="64" width="120" height="120" rx="10"/><circle class="hidden-node" cx="340" cy="112" r="27"/><text x="340" y="118" text-anchor="middle">H</text><text class="muted-label" x="340" y="164" text-anchor="middle">範囲外</text></svg></div><div class="evidence" id="evidence1"><span class="evidence-title">判定器に渡る証拠 E(w₁)</span><code id="evidence-text1">A=0 / B=1</code></div></section>
+</div>
+<div class="result world-result" id="world-result" data-kind="open" aria-live="polite"><span id="world-status" class="result-label">証拠は同じ / 正解は異なる</span><strong id="world-headline">把握完了の確証は保留になる。</strong><p id="world-explanation" class="small">「完了」と答えるとw₁で誤り、「未完了」と答えるとw₀で誤る。両世界で正しい保証を要求するなら、同じ証拠から完了を確証できない。</p></div>
+<p id="world-assumption" class="insight">この二世界が候補に残ることを仮定した結果である。現実のあらゆる知性に、そのような候補が必ず残ることまで示したわけではない。</p>
+</div></div>
+<div class="prose" style="margin-top:1.7rem"><p><strong>証拠を複製しても、区別できる情報は増えない。</strong> 別の検証器を用意する場合も、それが同じ見落としを共有していれば、この問題は残る。</p><p>追加の観測で二世界を区別できれば、この例の障害は解消する。そのときも、観測の信頼性と範囲は前提として残る。外部にあるという理由だけで、検証が完全になるわけではない。</p></div>
+<details><summary>数式で確認：第二不完全性とは別の補題</summary><div class="inside prose"><p>世界の集合をW、利用可能な証拠をE : W → D、保証対象をP : W → {0,1} とする。</p><div class="mathline formula">E(w₀) = E(w₁)<br>P(w₀) ≠ P(w₁)</div><p>このような二世界があれば、どんな関数J : D → {0,1} も、すべてのwについて J(E(w)) = P(w) を満たせない。入力が同じなら出力も同じなのに、正解は異なるからである。</p><p>「保留」を許す判定器なら、間違わずに保留することはできる。だが、全世界で正しい肯定保証を要求する判定器は、この共通の証拠に「完了」とは答えられない。</p><p>これは識別不能性の補題であり、第二不完全性定理の証明でも、その無条件の一般化でもない。両者を接続するには、世界・証拠・保証・理論の対応を別途示す。</p></div></details>
+</section>
+
+<section id="revision" class="chapter" aria-labelledby="revision-title">
+<div class="chapter-head"><span class="num">05</span><h2 id="revision-title">元記事から更新する四つの点</h2></div>
+<p class="lead"><a href="/works/loeb-lean/">Löbの定理をLeanで形式化した元記事</a>は、仮定と結論を分ける土台を作った。その上で、意味論へ進むために説明の範囲を修正する。</p>
+<div class="table-scroll"><table class="corrections"><caption class="sr-only">元記事の表現と、再検討後の整理</caption><thead><tr><th scope="col">論点</th><th scope="col">再検討後の整理</th><th scope="col">なぜ重要か</th></tr></thead><tbody>
+<tr><td>非可証性を内部で書く</td><td data-label="整理">通常、¬Prov<sub>T</sub>(⌜A⌝) として表現できる。</td><td data-label="意味">「表現できる」と「証明できる」を区別する。Con(T)自身が典型例。</td></tr>
+<tr><td>真理を言語内で扱う</td><td data-label="整理">制限されるのは、必要な対角化の下での、同一言語の全文に通用する一様な真理述語。</td><td data-label="意味">限定した真理や、強いメタ言語での意味論を排除しない。</td></tr>
+<tr><td>自己健全性の形式化</td><td data-label="整理">所定の条件と無矛盾性の下で、全ての文の自己反映を漏れなく証明することはできない。個別に証明できる場合はある。</td><td data-label="意味">意図したモデルへの解釈は未実装。現実の検証器へ移すには対応を示す。</td></tr>
+<tr><td>機械検証できる範囲</td><td data-label="整理">経験仮定や目的関数も形式化し、条件付きの帰結を検証できる。</td><td data-label="意味">機械検証と、仮定の現実適合性の確認を分ける。</td></tr>
+</tbody></table></div>
+<div class="prose"><p>既知の定理として形式核を評価する判断は維持する。研究として詰める部分は、<strong>自然言語の「保証」を、意味を保った内部文Cへ移し、その橋を構成すること</strong>にある。</p></div>
+<details><summary>掲載Leanコードの射程を確認する</summary><div class="inside prose"><p>元記事の <code>no_uniform_self_soundness</code> は、次の主張を扱う。</p><div class="mathline formula">¬ [∀ A, T ⊢ (□A → A)]</div><p>ここでの∀Aは、外側のLeanでの量化である。対象理論Tの内部で「自分の定理がすべて意図した世界で真」と述べる単一の文とは区別する。</p><p><code>tarski</code> は、Tスキーマと嘘つき文の不動点を別々の引数として受け取る矛盾補題である。<code>tr : F → F</code> という型だけでは、同一言語中の真理述語と構文符号化を実装したことにはならない。定義可能な真理述語から必要な不動点を作る部分は、さらに形式化する対象になる。</p><p class="small muted">ここでの評価は掲載ソースの論理構造の確認に基づく。このページで元コードのLean実行を再検証したという主張はしない。</p></div></details>
+<details><summary>反例：「閉じている」だけでは、自己保証不能は出ない</summary><div class="inside prose"><p>記事と同じ抽象化の一部を使い、次の小さな二値モデルを作る。算術の文を表現する体系ではない。</p><div class="mathline formula">F = {0, 1},　⊥ = 0<br>A ⇒ B = ¬A ∨ B<br>Prov(A) ⇔ A = 1,　□A = A</div><div class="table-scroll truth-table"><table><caption class="sr-only">二値モデルにおける全反映</caption><thead><tr><th scope="col">A</th><th scope="col">□A</th><th scope="col">□A ⇒ A</th></tr></thead><tbody><tr><td>0</td><td>0</td><td>1</td></tr><tr><td>1</td><td>1</td><td>1</td></tr></tbody></table></div><p>このモデルは無矛盾で、命題論理の条件とD1〜D3を満たし、全てのAについて自己反映が成立する。一方、A = ⊥ に対するLöb型の対角化は、ψ ↔ ¬ψ を要求するので成立しない。</p><p><strong>無条件の自己保証不能を退ける反例</strong>であり、条件付きの第二不完全性定理への反例ではない。ここでは全二値の組合せについて、命題論理の条件・D1〜D3・反映・対角化の成否を確認している。</p></div></details>
+<details><summary>次に形式化するなら：保証文Cを受け取る補題</summary><div class="inside prose"><p>元記事の <code>ProvSystem</code> 名前空間内に、次の形の補題を追加する構想がある。</p><pre><code>theorem no_internal_certificate
+    {C : T.F}
+    (hc : T.Consistent)
+    (bridge : T.Prov (T.imp C T.Con)) :
+    ¬ T.Prov C := by
+  intro hC
+  exact T.godel2 hc (T.mp bridge hC)</code></pre><p class="small amber">追加案。掲載コードと合わせたLeanでの型検査は、このページでは未実施。</p><p>この数行の先で必要なのは、保証文Cの定義と、引数 <code>bridge</code> の証明を実際に作ること。Cを単にCon(T)の別名にすれば補題は使えるが、元の意味的な問いへの接続はそれでは進まない。</p></div></details>
+</section>
+
+<section id="practice" class="chapter" aria-labelledby="practice-title">
+<div class="chapter-head"><span class="num">06</span><h2 id="practice-title">検証の設計へ進むときに、加える前提</h2></div>
+<p class="lead">自己証明の限界から、永続的な検証や外部のアンカーが直ちに義務になるわけではない。</p>
+<div class="policy-grid"><div><span class="badge amber">経験的な前提</span><h3>検証に効果があるか</h3><p>未発見の誤りが損失を生むか。新たな誤りや環境変化が生じるか。検証は何を、どの程度検出できるか。</p></div><div><span class="badge amber">規範と選択</span><h3>何を優先し、どこまで費用をかけるか</h3><p>許容する損失・検証費用・判断の遅れをどう評価するか。目的と制約を定めて初めて、適切な頻度を考えられる。</p></div></div>
+<div class="prose"><p>これらをモデルとして定義すれば、条件付きの最適性も形式的に検証できる。一方、そのモデルや数値が現実に合うことは、観測や実験で確かめる必要がある。</p><p>人間とAIの協働なら、AIが出した説明を別の言葉で繰り返すだけでは、共有する見落としが残る可能性がある。フィールドワークや異なる測定、別の前提に基づく検証が役に立つかは、<strong>実際に誤りを見つけ、候補を区別できるか</strong>で評価する。</p></div>
+<div class="note"><strong>「外部」は、相対的な境界。</strong><p>対象理論に対するメタ理論、既存の証拠に対する新たな観測などを指す。宇宙の外側の実体や、絶対に誤らない最終審判を要求する言葉ではない。</p></div>
+</section>
+
+<section id="ledger" class="chapter" aria-labelledby="ledger-title">
+<div class="chapter-head"><span class="num">07</span><h2 id="ledger-title">今回の監査記録</h2></div>
+<p class="lead">「母原理」の全体を証明済みの前提として使わず、成立した部分と、接続が残る部分を分けて記録する。</p>
+<div class="ledger-grid">
+<section class="ledger-card"><h3><span class="marker" aria-hidden="true"></span>確定した補題</h3><ul><li><strong>条件付き系：</strong>第二不完全性の適用条件と無矛盾性の下で、T ⊢ C → Con(T) なら T ⊬ C。</li><li><strong>モデル内の補題：</strong>証拠が同じで保証対象の真偽が異なる二世界を、証拠だけから常に正しく判定することはできない。</li></ul></section>
+<section class="ledger-card"><h3><span class="marker" aria-hidden="true"></span>反証された橋</h3><ul><li>非可証性は内部で表現できない、という一般化。</li><li>閉じた体系であることだけから、自己保証不能を導くこと。</li><li>不可能性定理だけから、検証の永続や外部アンカーの必要性を導くこと。</li></ul></section>
+<section class="ledger-card"><h3><span class="marker" aria-hidden="true"></span>未証明命題</h3><ul><li><strong>意味の対応：</strong>実際の知性の「理解完了」を、内部文Cや判定対象Pとして過不足なく表せるか。</li><li><strong>経験仮定：</strong>現実の候補世界に、識別不能な二世界が残るか。</li><li><strong>規範・経験仮定：</strong>検証の効果・費用・誤りの共有を考慮して、継続する条件が満たされるか。</li></ul></section>
+<section class="ledger-card"><h3><span class="marker" aria-hidden="true"></span>次の実験</h3><ol><li>保証したい対象を一つに絞り、CとTを定義する。</li><li>内部の橋 T ⊢ C → Con(T) を証明できるか試す。</li><li>観測の例では、世界集合W・証拠E・保証対象Pを定め、識別不能な反例を探す。</li></ol></section>
+</div>
+<p class="end-note">研究として詰める場所は、「正しさ」や「理解完了」という意味を、証明・観測・行動のそれぞれへ、条件を落とさずに接続するところにある。</p>
+</section>
+
+<section id="references" class="chapter" aria-labelledby="references-title">
+<div class="chapter-head"><span class="num">資料</span><h2 id="references-title">出典と、このページの位置づけ</h2></div>
+<ol class="refs">
+<li id="ref1"><a href="https://isa-afp.org/entries/Incompleteness.html">Lawrence C. Paulson / Janis Bailitis, Gödel’s Incompleteness Theorems, Archive of Formal Proofs.</a><p>2013、Löbの形式化は2024。Löbの定理・導出可能性条件・第二不完全性との関係を確認する一次資料。</p></li>
+<li id="ref2"><a href="https://arxiv.org/abs/1602.02416">Conden Chao / Payam Seraji, Gödel’s second incompleteness theorem for Σₙ-definable theories（2016）.</a><p>arXiv:1602.02416v3、定理4。定義可能性とΣₙ健全性に条件を置いた一般化。</p></li>
+<li id="ref3"><a href="https://arxiv.org/abs/1803.03937">Albert Visser, From Tarski to Gödel（2018）.</a><p>arXiv:1803.03937。タルスキの真理定義不能性と第二不完全性の接続。全文真理の範囲を確認する一次資料。</p></li>
+<li id="ref4"><a href="/posts/2026/09/2026-09-03-002/">NIKKI「『証明できない』ということを証明する — Löbの定理をLeanで100行」（2026 09 03）.</a><p>再検討の対象となった日記。<a href="/works/loeb-lean/">独立解説ページと掲載Leanコード</a>を併せて参照。</p></li>
+</ol>
+<p class="small muted prose" style="margin-top:1.6rem">このページは既知の定理と今回の条件付きの導出を整理した解説であり、新定理や「母原理」全体の証明を主張しない。二世界の図と操作例は、前提を固定した説明用モデル。本文・数式・図・操作はファイル内に収めてあり、出典へのリンクを開く場合だけ通信を必要とする。</p>
+</section>
+<footer class="footer"><p>第二不完全性定理から意味論へ · 再検討ノート 1.0 · 2026 09 05</p><p><a href="#top">ページの先頭へ</a>　／　<a href="/">NIKKIへ</a></p></footer>
+</article>
+</main>
+<script>
+(function(){
+'use strict';
+var root=document.documentElement;
+root.classList.add('has-js');
+function el(id){return document.getElementById(id);}
+function bridgeState(s){
+  var missing=[];
+  if(!s.g2) missing.push('証明に必要な構造');
+  if(!s.consistent) missing.push('Tの無矛盾性');
+  if(!s.bridge) missing.push('内部で証明された橋');
+  if(missing.length===0) return {kind:'proved',status:'この条件の下で成立',headline:'Tは保証 C を証明できない。',explanation:'Cを証明できると仮定すると、内部の橋からCon(T)が導かれ、第二不完全性定理と両立しない。'};
+  return {kind:'open',status:'この導出には前提が不足',headline:'この経路からは、Cの証明不能を結論できない。',explanation:'採用していない前提：'+missing.join('、')+'。チェックを外しても、Cが証明できると分かったわけではない。'};
+}
+function updateBridge(){
+  var s={g2:el('cond-g2').checked,consistent:el('cond-consistent').checked,bridge:el('cond-bridge').checked};
+  var r=bridgeState(s);
+  el('bridge-result').dataset.kind=r.kind;
+  el('bridge-status').textContent=r.status;
+  el('bridge-headline').textContent=r.headline;
+  el('bridge-explanation').textContent=r.explanation;
+}
+['cond-g2','cond-consistent','cond-bridge'].forEach(function(id){el(id).addEventListener('change',updateBridge);});
+var proofStep=0;
+var captions=[
+  'これは実際にCが証明されたという報告ではない。証明できたと仮定して、何が起きるかを調べる。',
+  '橋はTの中で証明されていなければならない。外側の判断を、そのままTの推論の一段として使うことはできない。',
+  'Cの証明と、CならCon(T)という証明を、Tの推論規則でつなぐ。こうして自己の無矛盾性の証明ができてしまう。',
+  '必要な構造と無矛盾性を仮定すると、第二不完全性定理はCon(T)の自己証明を許さない。したがって、最初の「Cを証明できる」という仮定が成立しない。'
+];
+function setStep(n){
+  proofStep=Math.max(0,Math.min(3,n));
+  Array.prototype.forEach.call(el('proof-steps').children,function(item,i){
+    item.classList.toggle('revealed',i<=proofStep);
+    item.classList.toggle('active',i===proofStep);
+    if(i===proofStep)item.setAttribute('aria-current','step');else item.removeAttribute('aria-current');
+  });
+  el('step-count').textContent=(proofStep+1)+' / 4';
+  el('step-caption').textContent=captions[proofStep];
+  el('step-prev').disabled=proofStep===0;
+  el('step-next').disabled=proofStep===3;
+}
+el('step-prev').addEventListener('click',function(){setStep(proofStep-1);});
+el('step-next').addEventListener('click',function(){setStep(proofStep+1);});
+el('step-reset').addEventListener('click',function(){setStep(0);});
+var worlds=[{id:0,p:1,h:0},{id:1,p:0,h:1}];
+function evidence(world,mode){
+  if(mode==='copy')return 'A=0 / B=1 → 複製：A=0 / B=1';
+  if(mode==='diagnostic')return 'A=0 / B=1 / H='+world.h;
+  return 'A=0 / B=1';
+}
+function worldState(mode){
+  var e0=evidence(worlds[0],mode),e1=evidence(worlds[1],mode);
+  if(e0!==e1)return {kind:'proved',status:'この二世界の間では、証拠で区別できる',headline:'追加した観測で、この例の判定が可能になる。',explanation:'H=0ならw₀、H=1ならw₁と区別できる。ここで分かるのは、あらかじめ固定した二世界の間で、当初の把握範囲が全体だったかということだけ。',assumption:'追加の観測がHの有無を正しく返し、候補世界がこの二つで尽きると仮定した。現実にその観測が可能・正確であることや、さらに未知の領域がないことまで保証したわけではない。',evidence:[e0,e1]};
+  return {kind:'open',status:'証拠は同じ / 正解は異なる',headline:mode==='copy'?'複製しても、把握完了の確証は得られない。':'把握完了の確証は保留になる。',explanation:'「完了」と答えるとw₁で誤り、「未完了」と答えるとw₀で誤る。両世界で正しい保証を要求するなら、同じ証拠から完了を確証できない。',assumption:mode==='copy'?'この複製は同じ記録をもう一度渡す操作であり、独立した新たな観測ではない。検証の数を増やすことと、候補世界を区別する情報を増やすことは別の条件。':'この二世界が候補に残ることを仮定した結果である。現実のあらゆる知性に、そのような候補が必ず残ることまで示したわけではない。',evidence:[e0,e1]};
+}
+function setMode(mode){
+  if(['shared','copy','diagnostic'].indexOf(mode)<0)return;
+  var r=worldState(mode);
+  document.querySelectorAll('[data-mode]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.mode===mode));});
+  [0,1].forEach(function(i){el('evidence-text'+i).textContent=r.evidence[i];el('evidence'+i).classList.toggle('highlight',mode==='diagnostic');});
+  el('world-result').dataset.kind=r.kind;
+  el('world-status').textContent=r.status;
+  el('world-headline').textContent=r.headline;
+  el('world-explanation').textContent=r.explanation;
+  el('world-assumption').textContent=r.assumption;
+}
+document.querySelectorAll('[data-mode]').forEach(function(b){b.addEventListener('click',function(){setMode(b.dataset.mode);});});
+updateBridge();setStep(0);setMode('shared');
+})();
+</script>
+</body>
+</html>
