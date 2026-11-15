@@ -2121,7 +2121,7 @@ uniform vec4 uFl,uCf,uVa,uVb,uVc,uVd,uVe,uVf,uAir;uniform vec4 uTr[22],uBp[5],uB
 `+NOISE+`
 /* 崖の下の眺め（街／海）は、空と同じ1枚の絵の中に描く。目から出た線が、崖の下の平らな面に当たる場所を求めて、そこの色を決める。
    uVa=(見え具合, 種類 1街/2海, 目から面までの深さ, 乱数)  uVb=(目の u, 目の w, 岸に沿う向き xz)  uVc=(沖への向き xz, 巨大な何かの u, w)
-   uVd=街：(来た道の始まり u, w, 炸裂の光, 動きの時刻) 海：(進む向き, 盛り上がりの高さ, 幅の倍率, 0)  uVe=街：(炸裂の場所 横, 高さ, 街の中心の u, 何かの形 0〜6) 海：(雲に隠れた月の向き xyz, 明るさ)  uVf=(目から何かへの向き u, w, 距離, 踏み出した瞬間の沈みこみ)
+   uVd=街：(来た道の始まり u, w, 炸裂の光, 動きの時刻) 海：(進む向き, 盛り上がりの高さ, 幅の倍率, 竜巻のうねりの位相)　海の区間で uAir＝竜巻：(根もとの太さ, 雲の底での太さ, 高さ, 濃さ)  uVe=街：(炸裂の場所 横, 高さ, 街の中心の u, 何かの形 0〜6) 海：(雲に隠れた月の向き xyz, 明るさ)  uVf=(目から何かへの向き u, w, 距離, 踏み出した瞬間の沈みこみ)
    uBp/uBr/uBf=巨大な鳥：(目からの位置 xyz, 翼の半分の長さ) (翼の向き xyz, 翼のひらき 1〜0.5) (体の向き xyz, 濃さ) */
 float sdSeg(vec2 p,vec2 a,vec2 b,float ra,float rb){vec2 pa=p-a,ba=b-a;float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);return length(pa-ba*h)-mix(ra,rb,h);}
 float smin(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
@@ -2348,6 +2348,33 @@ void main(){
       c=mix(c,s,uVa.x);
     }
   }
+  /* 竜巻：海の上に立つ、雲の底までの水の柱。根もとは細く、上へ行くほど太くなって、雲の底でろうと状にひろがる。軸はゆるくうねり、上のほうは流されて傾く。
+     夜の竜巻は、暗い空の前ではほの白く、月明かりのにじむ空や光った雲の前では暗い影として見える。表面を、筋が斜めに巻きあがっていく（回っているように見える）。
+     根もとには、巻き上げられたしぶきの山（こちらは白っぽい）。雲の中が光ると、柱そのものも青白く浮かびあがる。
+     線が、柱の軸を通る「こちら向きの板」に当たる場所の、軸からの横の隔たりと高さで決める（柱より手前で海に当たる線には、描かない） */
+  vec3 twC=vec3(0.);float twA=0.,twD=0.;
+  if(vis&&!city&&uAir.w>.003){
+    vec2 ca=uVc.zw-uVb.xy,hd=vec2(dU,dW)/hl;float al=dot(ca,hd);
+    if(al>40.){
+      float lat=ca.y*hd.x-ca.x*hd.y,y=uVa.z+d.y/hl*al,H=uAir.z,yn=y/H;
+      if(y>-3.&&yn<1.3){
+        float R0=uAir.x,R1=uAir.y,yc=clamp(yn,0.,1.),ph=uVd.w;
+        float bend=(R1*.5+40.)*(sin(yn*3.1+uT*.27+ph)*yc*.9+.45*sin(yn*7.3-uT*.41+ph*2.3)*yc*(1.15-yc))+R1*.8*yc*yc;
+        float r=(R0+(R1-R0)*pow(yc,2.3))*(1.+.1*sin(yn*37.-uT*2.6+ph))*(1.+1.6*smoothstep(.86,1.25,yn));
+        float x=(lat-bend)/r,ax=abs(x),e=clamp(al*uPx*1.5/r,.04,.6);
+        float body=smoothstep(1.,1.-e-.14,ax)*smoothstep(1.3,1.02,yn)*smoothstep(-3.,5.,y);
+        float ang=asin(clamp(x,-1.,1.)),spin=1.+1.4*(1.-yc);
+        float st=vn(vec2(ang*2.4+y/(r*1.5+30.)+uT*1.5*spin+ph,y/(60.+r*.9)-uT*.7))*.6+vn(vec2(ang*5.5+y/(r*.8+16.)+uT*2.3*spin,y/(28.+r*.4)-uT*1.5))*.4;       // 筋は、斜めに巻きあがる
+        float lit=1.+9.*uCf.x+6.*uFl.x;
+        vec3 tc=vec3(.013,.015,.02)*(.4+1.2*st)*(.5+.5*sqrt(max(1.-x*x,0.)))*lit;      // 暗い空の前では、ほの白く見え、月明かりのにじむ空や光った雲の前では、暗い影になる灰色。ふちは暗い（丸みが分かる）
+        float a=body*uAir.w*(.86+.14*st);
+        // しぶきの山：根もとを囲む、低く広い白いもや。上へ行くほど柱に巻きこまれて細くなる
+        float rs=R0*3.2+26.,ys=R0*2.+18.,sp=exp(-pow(lat/rs,2.))*exp(-max(y,0.)/ys)*smoothstep(-3.,4.,y)*(.45+.55*vn(vec2(lat/(R0+9.)+uT*1.2,y/8.-uT*1.6)))*uAir.w;
+        tc=mix(tc,vec3(.05,.056,.066)*(.6+.6*st)*(1.+11.*uCf.x+7.*uFl.x),clamp(sp*1.3,0.,1.));
+        twA=clamp(max(a,sp*.85),0.,1.)*uVa.x;twC=tc;twD=al;       // 塗るのは、霞をかけたあと（近い柱は、遠い空ほどには霞まない）
+      }
+    }
+  }
   if(vis&&city){
     // 巨大な何か：目のほうを向いた1枚の影として描く。向こうの街の灯りと空を隠す。足もとは街の灯りに下から照らされ、炸裂の瞬間だけ、体の一部が見える
     // 空爆の光：何かの向こうの空と煙が、橙に明るむ（uAir＝爆撃の中心の向き xyz と、明るさ）。何かは、その前の黒い影になる
@@ -2374,6 +2401,7 @@ void main(){
       else{float bs=-tr.w-10.;c+=vec3(1.,.72,.38)*bs*uVa.x*(exp(-a2/(px2*70.*bs))*2.5+exp(-a2/(.0005*bs))*.5+exp(-a2/.03)*.05*bs);}}           // 空爆の火の玉（空まで明るむ）
   }
   float ff=1.-exp(-110.*uFog);c=mix(c,uFogC,ff);
+  if(twA>0.)c=mix(c,mix(twC,uFogC,1.-exp(-110.*uFog*clamp(twD/5000.,0.,1.))),twA);
   float vz=dot(d,uCF),vx=dot(d,uCR),vy=dot(d,uCU);
   if(vz>0.){
     float wsp=uFog>.02?.72+.56*vn(vec2(vx,vy)/max(vz,.05)*2.6+vec2(uT*.11,uT*.04)):1.;
@@ -2737,9 +2765,10 @@ function planVista(type){
   let wmax=-1e9;for(const p of pts)if(p[2]>=i0-30)wmax=Math.max(wmax,(p[0]-G.x)*W[0]+(p[1]-G.z)*W[1]);
   const H=type==='city'?rnd(105,135):rnd(36,50),mg=type==='city'?rnd(120,160):rnd(50,80);       // 海の崖は低め（運転席からは、あまり下を見下ろせないので、近い海が見える高さに）
   const V={type,sd,i0,i1,ox:G.x+W[0]*(wmax+mg),oz:G.z+W[1]*(wmax+mg),U,W,H,y:null,seed:rnd(0,50)};
+  V.tw=type==='sea'&&(G.ftw!=null?!!G.ftw:Math.random()<.5);       // 海の区間の半分は、盛り上がる海の代わりに、竜巻が来る
   V.ua=(p0[0]-V.ox)*U[0]+(p0[1]-V.oz)*U[1];V.ub=(p1[0]-V.ox)*U[0]+(p1[1]-V.oz)*U[1];
   open.V=V;VIS.push(V);for(const e of seg)q.push(e);
-  {const s1=i*DS+rnd(120,260);SEC.push({type,s0:G.i*DS,s1});G.secAt=s1}
+  {const s1=i*DS+rnd(120,260);SEC.push({type,s0:G.i*DS,s1,tw:V.tw});G.secAt=s1}
   G.lampD=Math.max(G.lampD,(i-G.i)*DS+rnd(60,200));
 }
 function genSample(){
@@ -3160,7 +3189,7 @@ function drawDyn(S){
    すべて合成。エンジン（直列3気筒ターボの物理モデル）、タイヤと路面、風、雨、ワイパー、雷鳴、段差、計器の音、息、囁き。録音した素材は使わない。 */
 let ac=null,sas=null,userMuted=false;
 const A={on:false};
-['setOn','frame','bump','thump','scrape','knock','doorThunk','chime','ding','beep','relay','whisper','ear','laugh','gasp','radio','radioVoice','radioTune','radioWhisper','click','pass','relite','sputter','behind','creak','wipe','thunder','shift','far','siren','rumble','stomp','roar','blast','ring','mvPrep','mvoice','triPrep','tri','racer','racePrep','heli'].forEach(k=>{A[k]=()=>{}});
+['setOn','frame','bump','thump','scrape','knock','doorThunk','chime','ding','beep','relay','whisper','ear','laugh','gasp','radio','radioVoice','radioTune','radioWhisper','click','pass','relite','sputter','behind','creak','wipe','thunder','shift','far','siren','rumble','stomp','roar','blast','ring','mvPrep','mvoice','triPrep','tri','racer','racePrep','heli','twist'].forEach(k=>{A[k]=()=>{}});
 const WH=[['ho sa na','onna'],['ki he to ne','roba'],['su mi ha e','onna'],['shi na ho e to','onna'],['ha ne i so','shojo'],['ke su ra _ ke su ra','osanago'],
   ['he e _ so no ha','shojo'],['su mi ha e','osanago'],['ha ne i so','shonen'],['ki he to ne','osanago'],['chi ra to mo e','shojo'],['mo i ka su ne','otoko'],['ho sa na','ookii']];
 // 意味のある言葉。ひとり乗りの操縦席で聞こえるはずのない、ふつうの言葉だけ（怖がらせる言葉は入れない）
@@ -3177,6 +3206,8 @@ const LINES={
   city2:['もくひょうは まだ うごいている。きょりを たもて。','たいくうほうかは こうかなし。くりかえす。こうかなし。'],
   air:['くうばくが くる。いますぐ はなれろ。くりかえす。いますぐ はなれろ。','ばくげきまで じゅうびょう。みみを ふさげ。そこを はなれろ。'],
   sea:['かいがんせんに ちかづくな。うみを みるな。','おきに はんのう。おおきい。がけから はなれて はしれ。'],
+  tw:['おきに たつまき。かいがんせんから はなれろ。','うみの うえに うずが たっている。ちかづくな。'],
+  tw2:['たつまきが むきを かえた。そちらへ むかっている。','うずが おおきく なっている。しんろは おまえの いちだ。いそげ。'],
   sea2:['なみじゃない。なにか いる。そくどを あげろ。','はんのうが ちかづいている。おまえの いちだ。いそげ。'],
   flee:['にげろ。とまるな。ふりかえるな。','ぜんかいで ぬけろ。ぶれーきを ふむな。'],
   birds:['じょうくうに おおがたの ひこうぶつたい。らいとを おとせ。','うえを みるな。ねらわれるぞ。そのまま すすめ。','とりだ。とり だと おもう。おおきすぎる。'],
@@ -3535,7 +3566,7 @@ function initAudio(){
     rot.connect(rotG);rotSp='';rotSend({ign:true,rpmNow:S.rpm,rpmT:S.rpm,thr:S.thrA,gearX:S.gear,vX:S.v});
   }
   mkRot();
-  let sirS=null,sirG=null,rumG=null,helS=null,helG=null,RVB=null;const MVC={},TRC={},TRK=[],RSN=[],RB={};       // 巨大な何かの声と、無線の文（要るときに作って、とっておく）
+  let sirS=null,sirG=null,rumG=null,helS=null,helG=null,RVB=null,twG=null;const MVC={},TRC={},TRK=[],RSN=[],RB={};       // 巨大な何かの声と、無線の文（要るときに作って、とっておく）
   const RCURVE=(()=>{const c=new Float32Array(513);for(let i=0;i<513;i++)c[i]=Math.tanh((i/256-1)*2.6);return c})();       // 遠い街のサイレン（鳴らしっぱなしの音）
   // タイヤと路面：低いごうごうという音（左右で別の雑音）と、タイヤの擦れる帯域
   const roadG=G(0),roadLP1=BQ('lowpass',420,.6),roadLP2=BQ('lowpass',420,.6),tireG=G(0),tireBP=BQ('bandpass',950,.7);
@@ -3875,6 +3906,12 @@ function initAudio(){
       cabG.gain.cancelScheduledValues(T);cabG.gain.setTargetAtTime(.2,T+.2,.015);cabG.gain.setTargetAtTime(1,T+1.5,1);
     },
     // 地鳴り：街の巨大な何かのいるほうから、切れ目なく届く重い低音（v は 0〜1）
+    // 竜巻の風の轟き（鳴らしっぱなし。v は 0〜1）：低くうなる風と、その上の、ごうごうという荒れた音。ゆっくり強弱する
+    twist(v){
+      if(!A.on)return;
+      if(!twG){if(v<=0)return;twG=G(0);const m=G(1),lf=OSC('sine',.23),lg=G(.3);chain(NS(.5),BQ('bandpass',150,.7),m);chain(NS(.35),BQ('bandpass',430,.9),G(.6),m);chain(lf,lg,m.gain);chain(m,BQ('lowpass',900,.5),twG,outG)}
+      twG.gain.setTargetAtTime(.45*Math.pow(v,1.5)*(1-.6*S.tun),ac.currentTime,.9);
+    },
     rumble(v){
       if(!A.on)return;
       if(!rumG){if(v<=0)return;rumG=G(0);chain(NS(.3),BQ('lowpass',70,.8),BQ('lowpass',115,.6),rumG,outG)}
@@ -4104,7 +4141,7 @@ let SC=null;
 function sections(){
   while(SEC.length&&SEC[0].s1<S.s)SEC.shift();
   const c=SEC[0],was=SC;SC=c&&S.s>=c.s0-(c.type==='storm'?120:0)?c:null;
-  if(SC&&SC!==was)radioAsk(SC.type,SC.type==='birds'?14:SC.type==='storm'?7:10,1);              // 区間が変わると、本部から、それらしい指示が入る
+  if(SC&&SC!==was)radioAsk(SC.type==='sea'&&SC.tw?'tw':SC.type,SC.type==='birds'?14:SC.type==='storm'?7:10,1);              // 区間が変わると、本部から、それらしい指示が入る
   if(SC&&SC.type==='storm'){if(WX.kind!=='storm')wxStart('storm');WX.end=S.t+99}
   else if(WX.kind!=='clear')wxClear(99);else WX.end=S.t+99;
 }
@@ -4115,10 +4152,11 @@ function cloudFl(dt){
     const p=at(S.s),storm=WX.kind==='storm',V=VS.V;
     CF.az=p.h+(Math.random()<.7?rnd(-1.3,1.3):rnd(-3.14,3.14));
     if(V&&VS.amt>.5&&Math.random()<.55)CF.az=Math.atan2(V.W[0],V.W[1])+rnd(-.9,.9);        // 眺めのひらけた側の空で光ることが多い
+    if(V&&V.B&&V.B.tw&&V.B.u!=null&&VS.amt>.5&&Math.random()<.7){const du=V.B.u-VS.cu,dw=V.B.w-VS.cw;CF.az=Math.atan2(du*V.U[0]+dw*V.W[0],du*V.U[1]+dw*V.W[1])+rnd(-.45,.45);CF.el=rnd(.1,.3)}       // 竜巻のうしろの雲が、よく光る
     CF.el=Math.random()<.75?rnd(.07,.24):rnd(.24,.5);CF.seed=rnd(0,30);CF.n++;
     const n=RM?1:1+((Math.random()*3)|0),I0=rnd(.45,1)*(RM?.5:1);let t=S.t;
     for(let j=0;j<n;j++){CF.q.push({t,i:I0*(j?rnd(.4,1):rnd(.65,1))});t+=rnd(.14,.4)}            // またたきは、1秒に3回まで
-    CF.next=S.t+(storm?rnd(2.5,7):rnd(10,30));              // 雷雨の区間では、ひっきりなしに光る。ほかの区間では、たまに遠くで
+    CF.next=S.t+(storm?rnd(2.5,7):V&&V.B&&V.B.tw&&VS.amt>.5?rnd(4,9):rnd(10,30));       // 竜巻の区間でも、雲の中がよく光る（そのたびに、渦が浮かびあがる）              // 雷雨の区間では、ひっきりなしに光る。ほかの区間では、たまに遠くで
     if(Math.random()<(storm?.6:.28))A.thunder(rnd(.8,1));
   }
   CF.I*=Math.exp(-dt/(RM?.25:.08));
@@ -4135,6 +4173,10 @@ function cloudFl(dt){
 const TRN=22,TRB=new Float32Array(TRN*4);
 const VS={V:null,amt:0,cu:0,cw:0,ch:100,was:0,lookEnd:0,look0:0,nx:0,nw:1,px:-1,pw:0,td:1800};
 const SEA_H=[8,16,27,0],SEA_W=[1,.8,.62,.42],SEA_DU=[170,140,105,80],SEA_WS=[1,1.25,1.6,2];        // 段階ごとの、高さ・沖までの遠さ・前後の位置・幅
+/* 竜巻（海の区間の半分）。はじめは、はるか先の、細く薄い渦。目を戻すたびに、太く、濃く、近くなり、向きを変えて、こちらの道へ寄ってくる。
+   いる場所は、窓の柱や鏡に隠れないところ：海が左なら、前の窓ごしの、ほぼ行く手（少し左の沖）。海が右なら、運転席の横の窓ごし（右ななめ前の沖）。
+   TW_P：段階ごとの [道に沿って先へ何m, こちらから沖へ何m]（[海が左, 海が右]）。TW_R0・R1：根もとと、雲の底での太さ。TW_OP：濃さ。TW_HH：根もとの海の盛り上がり。TW_SND：風の音 */
+const TW_P=[[[2550,330],[1680,230],[980,170],[420,150]],[[1405,2190],[920,1430],[540,840],[227,353]]],TW_R0=[8,18,38,72],TW_R1=[40,90,170,300],TW_OP=[.45,.65,.85,1],TW_HH=[1.5,3,5,8],TW_SND=[.12,.28,.55,1];
 const FORM_AIM=[[70,110,235],[60,110,270],[60,215,300],[55,60,200],[100,120,300],[32,200,400],[140,290,395]];        // 形ごとの、狙われる場所（横の幅、高さの下と上）
 function visInit(V){
   V.init=1;V.t0=S.t;V.lookAt=S.t+1.2;
@@ -4153,7 +4195,7 @@ function visInit(V){
     V.trc=[];V.fls=[];V.mis=[];V.jet=null;V.airI=0;V.fires=[];V.flash=0;V.fx=0;V.fy=150;V.growlAt=S.t+rnd(5,9);V.roarAt=S.t+rnd(16,26);V.boomT=0;V.flakT=0;A.mvPrep(V.form);
   }else{
     const w0=rnd(520,680);
-    V.B={u:null,w:w0,w0,h:SEA_H[0],ws:1,lv:0,lvT:S.t,ph:rnd(0,100)};
+    V.B=V.tw?{tw:1,u:null,w:400,w0:400,h:TW_HH[0],ws:1,lv:0,lvT:S.t,ph:rnd(0,100),R0:TW_R0[0],R1:TW_R1[0],op:0,sv:0}:{u:null,w:w0,w0,h:SEA_H[0],ws:1,lv:0,lvT:S.t,ph:rnd(0,100)};
     // 雲に隠れた月：沖の、進む先寄りの低い空に置く（海に、ぼんやりした光の道が落ちる）
     {const o=rnd(.3,.75),hx=V.W[0]*Math.cos(o)+V.U[0]*Math.sin(o),hz=V.W[1]*Math.cos(o)+V.U[1]*Math.sin(o),el=rnd(.13,.2),l=Math.hypot(1,el);V.moon=[hx/l,el/l,hz/l,rnd(.12,.15)]}
   }
@@ -4164,9 +4206,9 @@ function quake(t,k,f){QQ.push({t,k,f})}
 function vista(dt){
   const i=Math.floor(S.s/DS);
   while(VIS.length&&VIS[0].i1<i-400)VIS.shift();
-  let V=null;for(const v of VIS)if(v.y!=null&&i>v.i0-260&&i<v.i1+220){V=v;break}
+  let V=null;for(const v of VIS)if(v.y!=null&&i>v.i0-260&&i<v.i1+(v.B&&v.B.tw&&S.flee&&!(v.B.hit&&S.t-v.B.hitT>5)?1100:220)){V=v;break}       // 竜巻の横を抜けるまでは、区間をすぎても消さない
   VS.V=V;
-  {const k=V&&V.type==='city'?clamp((i-(V.i0-240))/160,0,1)*clamp((V.i1+200-i)/160,0,1):0;A.siren(k);A.rumble(k*(.75+.25*nz(S.t*.5)));A.heli(k>0&&V.ex&&V.ex.heli&&V.heli?k*(.7+.3*Math.sin(V.heli.a)):0)}
+  {const k=V&&V.type==='city'?clamp((i-(V.i0-240))/160,0,1)*clamp((V.i1+200-i)/160,0,1):0;A.siren(k);A.rumble(k*(.75+.25*nz(S.t*.5)));A.heli(k>0&&V.ex&&V.ex.heli&&V.heli?k*(.7+.3*Math.sin(V.heli.a)):0);A.twist(V&&V.B&&V.B.tw?V.B.sv:0)}
   // 遅れて届く揺れ
   for(let q=QQ.length-1;q>=0;q--)if(S.t>=QQ[q].t){const e=QQ[q],k=e.k*(RM?.5:1);QQ.splice(q,1);S.qk=Math.max(S.qk,k);S.vf+=.1*k;S.vr+=.12*k;if(e.f)e.f(k);else A.stomp(Math.min(k,1.3))}
   /* 海から逃げだして数秒たつと、後ろで、盛り上がった海が崖に崩れかかる：地響きと、長い轟音。思わず、鏡へ目が行く */
@@ -4177,6 +4219,7 @@ function vista(dt){
   if(!V){VS.amt=0;if(VS.was){VS.was=0;S.yawAT=0;S.pitAT=0;S.zoomT=1;S.yawTau=.8}return}
   if(!V.init)visInit(V);
   VS.amt=clamp((i-(V.i0-240))/100,0,1)*clamp((V.i1+200-i)/70,0,1);
+  if(V.B&&V.B.tw&&S.flee&&i>V.i1)VS.amt=Math.max(VS.amt,V.B.hit?clamp(1-(S.t-V.B.hitT-2)/3,0,1):1);
   const p=at(S.s),px=p.x-V.ox,pz=p.z-V.oz,cu=px*V.U[0]+pz*V.U[1],cw=px*V.W[0]+pz*V.W[1],ch=p.y+EYE_H-V.y;
   VS.cu=cu;VS.cw=cw;VS.ch=ch;
   const sea=V.type==='sea',inV=i>V.i0+10&&i<V.i1;
@@ -4247,6 +4290,23 @@ function vista(dt){
       if(S.t>V.roarAt){V.roarAt=S.t+rnd(36,56);V.roarL=S.t;V.growlAt=Math.max(V.growlAt,S.t+rnd(17,23));if(A.mvoice(V.form,1,nl)){T.stepP=Math.max(T.stepP,.85);quake(S.t+nl/343+.8,.5*VS.amt,()=>{});quake(S.t+nl/343+2.6,.45*VS.amt,()=>{});quake(S.t+nl/343+4.6,.3*VS.amt,()=>{})}}
       else if(S.t>V.growlAt){V.growlAt=S.t+rnd(18,30);A.mvoice(V.form,0,nl)}}
     if(inV&&!V.r2&&i>V.i0+170){V.r2=1;radioAsk('city2',0,0)}
+  }else if(V.B.tw){
+    /* 竜巻：はるか先の細い渦が、目を戻すたびに、太く、濃く、近くなる。最後は、すぐ先で、道へ寄ってくる。それに気づいて、道をふさがれる前に、全開で駆けぬける。
+       横を抜けるとき、風で車体が揺さぶられる。抜けた直後に、渦は後ろで崖に届く（轟音と揺れ） */
+    const B=V.B,L=B.lv,P0=TW_P[V.sd<0?0:1][L],P=[L>=2?Math.min(P0[0],Math.max(300,(V.i1-i)*DS-60)):P0[0],P0[1]];       // 近づいてからは、この区間のうちに横を抜けられる所にいる
+    if(B.u==null){B.u=cu+P[0]+rnd(-80,80);B.w=cw+P[1]}
+    if(!inV&&B.lv===0)B.lvT=S.t;
+    if(inV&&L<3&&S.t-B.lvT>11&&!VS.was){B.lv++;B.lvT=S.t}
+    if(B.lv>=2&&!B.r2){B.r2=1;radioAsk('tw2',.8,2)}
+    const e=ease(dt,2.6);B.R0+=(TW_R0[L]-B.R0)*e;B.R1+=(TW_R1[L]-B.R1)*e;B.op+=(TW_OP[L]*VS.amt-B.op)*e;B.h+=(TW_HH[L]-B.h)*e;B.sv+=((S.flee&&!B.hit?1.35:TW_SND[L])*VS.amt-B.sv)*ease(dt,2);
+    B.w+=((S.flee?cw+140:cw+P[1])-B.w)*ease(dt,L>=3?3:4);                                      // 最後は、道へ寄ってくる
+    B.u+=(S.flee?-9:S.v+(cu+P[0]-B.u)*.22)*dt;                                                // こちらの先を、同じ向きに進む。逃げだすと、ゆっくり向かってくる（その横を抜ける）
+    const dT=Math.hypot(B.u-cu,B.w-cw);
+    if(L>=3&&VS.amt>.5)S.qk=Math.max(S.qk,.5*clamp(260/dT,0,1.8)*(RM?.5:1));               // 近づくと、風で車体が揺さぶられる
+    F=[B.u,ch+dT*.07,B.w];
+    if(L>=3&&!S.flee&&inV&&dT<Math.hypot(P[0],P[1])*1.15&&((VS.was&&S.t-VS.look0>1.3)||S.t-B.lvT>10)){
+      S.flee=1;S.fleeT=S.t;S.fleeEnd=V.i1*DS+rnd(450,750);VS.lookEnd=S.t;S.fear=Math.max(S.fear,.95);A.gasp(2.2,.85);radioAsk('flee',1.3,4)}
+    if(S.flee&&!B.hit&&cu>B.u+50){B.hit=1;B.hitT=S.t;S.roarAt=S.t+rnd(.5,1)}                             // 横を抜けた
   }else{
     const B=V.B,L=B.lv,hMax=Math.max(20,ch-4.5);
     if(B.u==null)B.u=cu+SEA_DU[0]+rnd(-20,30);
@@ -4639,7 +4699,7 @@ function draw(){
           gl.uniform4f(P.uVc,V.W[0],V.W[1],T.u,T.w);gl.uniform4f(P.uVd,V.tr0[0],V.tr0[1],V.flash*(RM?.5:1),(S.t-V.t0)*1.6+T.ph);gl.uniform4f(P.uVe,V.fx,V.fy,V.uc,V.form);gl.uniform4f(P.uVf,nu/nl,nw/nl,nl,T.stepP*T.stepP);
           {const ax=V.ox+V.U[0]*T.u+V.W[0]*T.w-cam.pos[0],ay=V.y+170-cam.pos[1],az=V.oz+V.U[1]*T.u+V.W[1]*T.w-cam.pos[2],al=Math.hypot(ax,ay,az)||1;gl.uniform4f(P.uAir,ax/al,ay/al,az/al,(V.airI||0)*(RM?.6:1))}
           gl.uniform4fv(P['uTr[0]'],TRB)}
-        else{const B=V.B;gl.uniform4f(P.uAir,0,1,0,0);gl.uniform4f(P.uVc,V.W[0],V.W[1],B.u,B.w);gl.uniform4f(P.uVd,1,B.h,B.ws,0);gl.uniform4fv(P.uVe,V.moon)}}
+        else{const B=V.B;if(B.tw)gl.uniform4f(P.uAir,B.R0,B.R1,1150,B.op);else gl.uniform4f(P.uAir,0,1,0,0);gl.uniform4f(P.uVc,V.W[0],V.W[1],B.u,B.w);gl.uniform4f(P.uVd,1,B.h,B.ws,B.ph%6.28);gl.uniform4fv(P.uVe,V.moon)}}
       else gl.uniform4f(PS.u.uVa,0,0,100,0)}
     gl.uniform4fv(PS.u['uBp[0]'],BUP);gl.uniform4fv(PS.u['uBr[0]'],BUR);gl.uniform4fv(PS.u['uBf[0]'],BUF);
     gl.drawArrays(gl.TRIANGLES,0,3)};
