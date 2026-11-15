@@ -350,7 +350,7 @@ class TripleDSP{
     this.RHO0=this.P0/(this.RG*this.T0);this.C0=347;
     // ---- 1.65L 直3: ボア100 × ストローク70 (1気筒 550cc), 圧縮比8.8, コンロッド130 (推定の設計値) ----
     this.AP=7.854e-3;this.RC=0.035;this.LAM=0.2692;this.VD=5.498e-4;this.VMIN=this.VD/7.8;
-    this.CD=0.72;this.CDR=0.30;this.dbg=new Float64Array(6);this.HL=13;this.KBK=0.125;this.KSG=0.45;this.GSG=2.2e5;this.liftS=false;this.jv1=0;this.jv2=0;this.jw1=0;this.jw2=0;this.GR1=3.2e4;this.GR2=4.2e4;this.sv1=0;this.sv2=0;this.rush=0;this.wgI=0;this.WGI=3;this.WGP=5;
+    this.CD=0.72;this.CDR=0.30;this.dbg=new Float64Array(6);this.bq=0;this.HL=13;this.KBK=0.125;this.KSG=0.45;this.GSG=2.2e5;this.liftS=false;this.jv1=0;this.jv2=0;this.jw1=0;this.jw2=0;this.GR1=3.2e4;this.GR2=4.2e4;this.sv1=0;this.sv2=0;this.rush=0;this.wgI=0;this.WGI=3;this.WGP=5;
     this.QF=2.9e6;                // 新気1kgあたりの有効発熱 J (推定)
     this.XLIM=0.62;this.XSL=4.0;this.IDP=0.00002;this.IDF=0.8;
     this.TS=698;                  // 燃焼開始角 (圧縮上死点=720≡0 の22°前)
@@ -369,7 +369,7 @@ class TripleDSP{
     this.kB1=1-Math.exp(-6.2832*6500/this.fs);this.kB2=1-Math.exp(-6.2832*1100/this.fs);
     this.TURB=1;this.POPE=0.22;this.POPT=0.0007;
     this.GEARS=[2.90,2.10,1.62,1.30,1.08,0.93];this.FINAL=3.6;this.RW=0.33;this.MASS=950;
-    this.c={priLen:0.42,uneq:0,tailLen:1.60,muffler:false,wg:'ext',bov:'none',boost:2.3,als:false,whine:0.2,intake:0.2,
+    this.c={priLen:0.42,uneq:0,tailLen:1.60,muffler:false,wg:'ext',bov:'stiff',bovP:1.5,boost:2.3,als:false,whine:0.2,intake:0.2,
       nl:0.45,J:0.04,load:0,view:'ex',space:'out',vol:0.7,dyn:0.6,mode:'drive',limit:11000,gbx:0.75,ext:false};   // 2026-11-15 横田さんが試聴して決めた既定値
     this.inp={thr:0,brake:0,ign:false,start:false,rpmT:0,gearX:1,vX:0,cutS:false};
     this.kX=1-Math.exp(-this.dt/0.03);this.wetS=0;
@@ -491,7 +491,9 @@ class TripleDSP{
     this.thrT=thr;
     if(this.startT>0){this.startT-=dtb;if(this.rpmS>this.IDLE*0.55&&this.startT<2.9)this.startT=0;}
     // ウェイストゲート: 過給圧が目標を超えた分だけ開く (積分+比例, 推定)
-    const p2=this.MC*this.RG*this.TR/this.VC,e=(p2-(this.P0+c.boost*1e5))*1e-5;
+    // 目標過給圧はアクセルの踏み込みで決まる（40%までは過給なし＝ウェイストゲート全開、80%から上で設定値いっぱい）。流しているときにターボが回りっぱなしにならない
+    let bq=this.alsOn?1:(thr-0.40)*2.5;bq=bq<0?0:(bq>1?1:bq);this.bq+=(bq-this.bq)*dtb*12;
+    const p2=this.MC*this.RG*this.TR/this.VC,e=(p2-(this.P0+Math.max(0.12,c.boost*this.bq)*1e5))*1e-5;
     this.wgI+=(e>0.4?0.4:e)*dtb*this.WGI;if(!(this.wgI>0))this.wgI=0;else if(this.wgI>1)this.wgI=1;
     let wg=this.wgI+e*this.WGP;this.wg=wg<0?0:(wg>1?1:wg);
     const pr=p2/this.P0;this.cpF=pr>1?Math.pow(pr,0.286)-1:0;
@@ -558,8 +560,9 @@ class TripleDSP{
     let flC=kcv*(P0*(1+hF*(1-0.62*this.stl))-p2);
     {const mx=0.12+0.85*u;if(flC>mx)flC=mx;else if(flC<0)flC*=this.KBK;}
     // 失速(サージ): 圧力比のわりに流量が足りないと羽根が空気を押せなくなり、溜めた空気が逆流する
-    if(!this.stalled){if(hF>0.85&&kcv*(P0*(1+hF)-p2)<0.030*hF)this.stalled=true;}
-    else if(p2<P0*(1+0.50*hF)||hF<0.60)this.stalled=false;
+    const sA=c.bov==='stiff'?0.62:0.85,sB=c.bov==='stiff'?0.45:0.60;        // 強化ブローオフでは、抜けたあとの低い圧力から吹き返しが始まるので、低い回転まで続く
+    if(!this.stalled){if(hF>sA&&kcv*(P0*(1+hF)-p2)<0.030*hF)this.stalled=true;}
+    else if(p2<P0*(1+0.50*hF)||hF<sB)this.stalled=false;
     this.stl+=((this.stalled?1:0)-this.stl)*dt*450;
     // ---- スロットル: インタークーラー容積 ⇔ サージタンク ----
     this.thrS+=(this.thrT-this.thrS)*dt*40;
@@ -580,7 +583,8 @@ class TripleDSP{
     }
     // ---- ブローオフバルブ ----
     let flB=0;
-    {const t=(c.bov!=='none'&&this.thrT<0.12&&p2>P0+12000)?1:0;this.bovS+=(t-this.bovS)*dt*(t?260:60);
+    {let t=0;if(c.bov!=='none'&&this.thrT<0.12){if(c.bov==='stiff'){t=(p2-P0-c.bovP*1e5)*5e-5;t=t<0?0:(t>1?1:t);}else t=p2>P0+12000?1:0;}
+      this.bovS+=(t-this.bovS)*dt*(t>this.bovS?260:90);
       if(this.bovS>0.01&&p2>P0){const A=this.ABOV*this.bovS;flB=CD*A*Math.sqrt(2*rho2*(p2-P0));const mx=CD*A*0.58*rho2*CR;if(flB>mx)flB=mx;}}
     mC+=(flC-flB)*dt;if(mC<1e-4)mC=1e-4;this.MC=mC;
     // 流れの乱流ノイズ
@@ -747,7 +751,7 @@ class TripleDSP{
     {const f=2*Math.sin(3.14159*(500+1500*u)/this.fs),x=Uc<0?-w1*Uc:0;
       this.sv1+=f*(x-this.sv2-0.30*this.sv1);this.sv2+=f*this.sv1;
       rI2+=(this.sv1*0.75+(Uc<0?-nb*Uc*0.5:0))*this.GSG;}
-    if(flB>0&&c.bov==='atmo'){
+    if(flB>0&&c.bov!=='recirc'){
       const Ub=flB/RHO0;rI2+=(this.bz1-this.bz2)*Ub*(1+6*Ub)*1.0e5+(Ub-this.flBs)*this.fs;this.flBs=Ub;
     }else this.flBs=0;
     if(this.stl>0.5)this.stat.flu=1;
@@ -1656,7 +1660,7 @@ function syncChunks(carS){
    車内は真っ暗で、形は窓の明るさを背にした影としてだけ見える。だから、窓にかかるもの（柱に沿う管、ガラスの上すみを斜めに渡る管、
    扉の窓を横切る管、助手席の頭の両脇の張り出し）を、きちんと作ってある。鼻先には、夜の区間のための補助灯の箱が4つ載っている。 */
 const XL=-1.07,XR=.33;
-const DYN={W:512,H:400,clu:[0,0,512,176],mir:[0,184,368,112],trip:[0,300,272,72]};
+const DYN={W:512,H:400,clu:[0,0,512,176],mir:[0,184,368,112],trip:[0,300,272,72],bg:[376,184,128,128]};
 const dynUV=r=>[r[0]/DYN.W,r[1]/DYN.H,(r[0]+r[2])/DYN.W,(r[1]+r[3])/DYN.H];
 const YO=-.035,WHEEL_C=[0,-.39+YO,.4],WHEEL_T=22*Math.PI/180;
 let carBuf,carN=0,wheelBuf,wheelN=0,wipBuf;
@@ -1696,6 +1700,8 @@ function buildCar(){
       q([x*.995,HY,.5],[x*.995,HY,.68],[x*.995,FY,.68],[x*.995,FY,.485],11)}
     q([-.2,FY,.485],[.2,FY,.485],[.2,FY,.68],[-.2,FY,.68],11);q([-.2,HY,.68],[.2,HY,.68],[.2,FY,.68],[-.2,FY,.68],11);
     const u=dynUV(DYN.clu);q([-.17,-.315,.605],[.17,-.315,.605],[.17,-.185,.64],[-.17,-.185,.64],1,[u[0],u[3],u[2],u[3],u[2],u[1],u[0],u[1]])}
+  // 後づけの過給圧計：直径8cmの丸い針の計器を、運転者の表示器のひさしの右肩に、目のほうへ向けて立ててある
+  facing([.2,-.095,.62],.04,.04,1,dynUV(DYN.bg));
   // 助手席の前の距離計（走った距離と、区間の時間）
   {const u=dynUV(DYN.trip);q([-.88,-.345,.468],[-.6,-.345,.468],[-.6,-.27,.478],[-.88,-.27,.478],1,[u[0],u[3],u[2],u[3],u[2],u[1],u[0],u[1]])}
   // 真ん中の操作盤、背の高い油圧サイドブレーキのレバーと、変速のレバー
@@ -1819,7 +1825,7 @@ function drawDyn(S){
   c.fillStyle=top?'#ff3a22':'#f4f8f2';c.font='700 128px '+FF;c.fillText(String(S.gear),256,106);
   const val=(x,y,txt,col)=>{c.textAlign='right';c.fillStyle=col||'#d6ebe6';c.font='600 24px '+FF;c.fillText(txt,x,y)};
   val(184,47,String(Math.round(r/50)*50),r>10500?'#ff5a3a':null);
-  {const bb=S.bst>=.05?3*S.bst:-.6*(1-S.thr);val(184,81,(bb>=0?'+':'−')+Math.abs(bb).toFixed(1),S.bst>.9?'#ffc23c':null)}
+  {const bb=Math.round(S.map*10)/10;val(184,81,(bb>=0?'+':'−')+Math.abs(bb).toFixed(1),S.map>2.7?'#ffc23c':null)}
   val(184,115,String(Math.round(78+16*S.heat+2*nz(t*.2))));
   val(184,149,(IC.eng?2.2+1.5*nz(t*9):3.2+r/3300).toFixed(1),IC.eng?'#ff5a3a':null);
   val(498,47,String(Math.round(S.v*3.6)));
@@ -1834,6 +1840,19 @@ function drawDyn(S){
   // 無線：勝手に入ると、灯りが点く
   lamp(412,150,IC.radio&&(S.radLv>.35||bl),'#ffb43c',()=>{c.beginPath();c.arc(0,0,5,0,7);c.fill()});
   if(IC.dash<1){c.fillStyle='rgba(0,0,0,'+(1-IC.dash)+')';c.fillRect(0,0,512,176)}
+  // --- 後づけの過給圧計：−1〜+3（×100kPa）を、左下から右下まで270°で振る。2.5から上は赤。針は橙 ---
+  {const [x,y,w,h]=DYN.bg,cx=x+w/2,cy=y+h/2,R=58,ang=v=>(135+(clamp(v,-1,3)+1)/4*270)*Math.PI/180;
+    c.fillStyle='#000';c.fillRect(x,y,w,h);c.fillStyle='#050607';c.beginPath();c.arc(cx,cy,R+4,0,7);c.fill();c.strokeStyle='#30363a';c.lineWidth=3;c.beginPath();c.arc(cx,cy,R+3,0,7);c.stroke();
+    c.strokeStyle='#ff3a22';c.lineWidth=5;c.beginPath();c.arc(cx,cy,R-5,ang(2.5),ang(3));c.stroke();
+    c.textAlign='center';c.textBaseline='middle';
+    for(let k=0;k<=16;k++){const v=-1+k*.25,a=ang(v),big=k%4===0,l=big?11:k%2===0?7:4;c.strokeStyle=v>=2.5?'#ff6a4a':'#e9efe9';c.lineWidth=big?2.6:1.3;
+      c.beginPath();c.moveTo(cx+Math.cos(a)*(R-2),cy+Math.sin(a)*(R-2));c.lineTo(cx+Math.cos(a)*(R-2-l),cy+Math.sin(a)*(R-2-l));c.stroke();
+      if(big){c.fillStyle=v>=2.5?'#ff6a4a':'#e9efe9';c.font='700 15px '+FF;c.fillText(v<0?'-1':String(v),cx+Math.cos(a)*(R-24),cy+Math.sin(a)*(R-24))}}
+    c.fillStyle='#8fa6a2';c.font='600 9px '+FF;c.fillText('BOOST',cx,cy+33);c.font='7px '+FF;c.fillText('×100kPa',cx,cy+44);
+    const a=ang(S.map+.02*(nz(t*23)-.5));c.strokeStyle='#ff8a1e';c.shadowColor='#ff8a1e';c.shadowBlur=7;c.lineWidth=3.2;c.beginPath();c.moveTo(cx-Math.cos(a)*10,cy-Math.sin(a)*10);c.lineTo(cx+Math.cos(a)*(R-9),cy+Math.sin(a)*(R-9));c.stroke();c.shadowBlur=0;
+    c.fillStyle='#15191b';c.beginPath();c.arc(cx,cy,7,0,7);c.fill();
+    if(S.map>2.85){c.fillStyle='#ff2a1a';c.shadowColor='#ff2a1a';c.shadowBlur=8;c.beginPath();c.arc(cx,cy-24,4,0,7);c.fill();c.shadowBlur=0}
+    if(IC.dash<1){c.fillStyle='rgba(0,0,0,'+(1-IC.dash)+')';c.fillRect(x,y,w,h)}}
   // --- 助手席の距離計：走った距離と、走りはじめてからの時間。読む人は、いない ---
   {const [x,y,w,h]=DYN.trip;c.fillStyle='#020303';c.fillRect(x,y,w,h);c.strokeStyle='#1a1408';c.lineWidth=2;c.strokeRect(x+3,y+3,w-6,h-6);
     c.fillStyle='#6b4a14';c.font='600 11px '+FF;c.textAlign='left';c.fillText('DIST km',x+14,y+20);c.fillText('TIME',x+150,y+20);
@@ -2033,12 +2052,13 @@ function initAudio(){
   const nb=ac.createBuffer(1,sr*2,sr);{const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
   const NS=rate=>{const s=ac.createBufferSource();s.buffer=nb;s.loop=true;s.playbackRate.value=rate||1;s.start(0,Math.random()*1.5);return s};
   /* エンジン：1.65Lの直列3気筒ターボ。筒の中の圧力、排気管の中の波、ターボの軸の回転から音を作る物理モデル（TripleDSP）を鳴らす。
-     設定は、音だけの試聴版で耳で決めた既定値に、過給圧だけ上限の3.0barまで上げたもの（ブローオフなし＝足を戻すと過給の空気が吹き返す、ウェイストゲートは大気開放）。
+     設定は、音だけの試聴版で耳で決めた既定値に、過給圧だけ上限の3.0barまで上げたもの（バネの強いブローオフ＝全開から足を戻すと、まずプシュッと抜け、圧が下がって弁が閉じたところから吹き返しに変わる。ウェイストゲートは大気開放）。
+     過給はアクセルの踏み込みで決まり、4割までしか踏んでいないあいだは、ターボはほとんど回らない。
      回転数・アクセル開度・段は、走り（tick）が決めて毎コマ渡す。音源はそれに従うだけで、車の動きには関わらない。
      処理は AudioWorklet で。ローカルのファイルとして開くと blob のモジュールが拒否されるので data: で渡し直し、それもだめなら旧式のノードで鳴らす */
   const ROT_V=.4,rotG=G(ROT_V),voxG=G(1);chain(rotG,cabIn);voxG.connect(outG);
   let rot=null,rotDsp=null,rotSp='',rotN=0;
-  const ROTCFG={priLen:.42,uneq:0,tailLen:1.6,muffler:false,wg:'ext',bov:'none',boost:3.0,als:false,whine:.2,intake:.2,nl:.45,J:.04,load:0,view:'race',space:'out',vol:.7,dyn:.6,gbx:.75,limit:11000,mode:'free',ext:true};
+  const ROTCFG={priLen:.42,uneq:0,tailLen:1.6,muffler:false,wg:'ext',bov:'stiff',bovP:1.5,boost:3.0,als:false,whine:.2,intake:.2,nl:.45,J:.04,load:0,view:'race',space:'out',vol:.7,dyn:.6,gbx:.75,limit:11000,mode:'free',ext:true};
   const rotSend=o=>{if(rotDsp)rotDsp.setParams(o);else if(rot&&rot.port)rot.port.postMessage(o)};
   const duck=(dur,depth)=>{const T=ac.currentTime;rotG.gain.cancelScheduledValues(T);rotG.gain.setTargetAtTime(ROT_V*depth,T+.05,.12);rotG.gain.setTargetAtTime(ROT_V,T+dur,.5)};
   async function mkRot(){
@@ -2449,7 +2469,7 @@ function startAudio(){
 const S={t:0,s:44,v:27,lat:0,latV:0,aLong:0,aLat:0,kNow:0,
   yawU:0,pitU:0,rollU:0,lastInput:-99,yawA:0,yawAT:0,yawTau:.6,pitA:0,pitAT:0,gaze:0,steer:0,
   roll:0,rollV:0,pitch:0,pitchV:0,heave:0,heaveV:0,zf:0,vf:0,zr:0,vr:0,prf:null,prr:0,headX:0,headY:0,headZ:0,heaveLP:0,sagR:0,
-  rpm:5000,rpmShow:5000,gear:4,bst:0,drift:0,driftV:0,exP:0,sqAt:0,airb:0,jy:0,jvy:0,jatA:0,jatt:0,jmax:0,jlast:0,nJump:0,shiftT:0,cutT:0,blipT:0,thr:.3,thr0:.3,thrA:.3,brk:0,lift:0,load:.3,engOn:1,sput:0,surf:1,tun:0,leak:0,heat:.3,flame:0,flGlow:0,flameP:0,flSeed:0,
+  rpm:5000,rpmShow:5000,gear:4,bst:0,map:-.3,drift:0,driftV:0,exP:0,sqAt:0,airb:0,jy:0,jvy:0,jatA:0,jatt:0,jmax:0,jlast:0,nJump:0,shiftT:0,cutT:0,blipT:0,thr:.3,thr0:.3,thrA:.3,brk:0,lift:0,load:.3,engOn:1,sput:0,surf:1,tun:0,leak:0,heat:.3,flame:0,flGlow:0,flameP:0,flSeed:0,
   head:1,headT:1,dip:0,flick:0,nextDip:rnd(50,90),brakeL:0,brake:0,bm:1,
   expo:1,fog:.004,fogT:.004,cabL:0,cabLT:0,hazOn:0,tunOff:-1e4,tunAhead:1e4,
   phase:0,chaseAt:30,level:0,fear:0,beat:null,nextBeat:11,lastBeat:'',nBeats:0,hist:[],
@@ -2766,6 +2786,8 @@ function tick(dt){
   // 過給：踏んでいて回転が足りていれば、少し遅れて立ち上がる（低い回転ほど遅い）。足を戻すと、すぐ抜ける
   rNow=S.v*RAT[S.gear];
   {const tg=S.thr>.45&&S.cutT<=0?clamp((rNow-3300)/900,0,1):0;S.bst+=(tg-S.bst)*ease(dt,tg>S.bst?mix(.75,.22,clamp((rNow-3500)/3500,0,1)):(S.cutT>0?.5:.16))}
+  // 計器に出る過給圧（bar）：足を戻すと負圧、踏んでも過給がかかるまでは0のあたり、かかれば3.0まで
+  {const mT=S.cutT>0||S.thr<.05?-.7:Math.max(-.55+.55*clamp(S.thr/.4,0,1),3*S.bst);S.map+=(mT-S.map)*ease(dt,mT<S.map?.07:.12)}
   // 加減速：エンジンの力（全開のトルク×開度）は、4つのタイヤの限界まで。そこから空気抵抗、エンジンブレーキ、ブレーキ、勾配を引く
   const M=1000,F=S.cutT>0?0:S.thr*tqAt(rNow,S.bst)*RAT[S.gear]*.0963,aMax=S.airb?0:(11.8+.0005*S.v*S.v)*grip*Math.sqrt(Math.max(ex?.42:.05,1-latU*latU));          // 立ち上がりでは、横に使っている分があっても、4輪で前へ出る
   let a=Math.min(F/M,aMax)-(.45*S.v*S.v+300)/M-(S.thr<.05?(30+rNow*.005)*RAT[S.gear]*.0963/M:0)-S.brk*(15.5+.0007*S.v*S.v)*grip-9.8*p.sl;
