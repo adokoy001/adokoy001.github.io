@@ -1158,7 +1158,7 @@ void main(){
        粒は、向き（放射状の筋）と時刻の区切りごとに1つ。区切りのはじめに、ある半径に当たり、そこから指数関数的に外へ逃げる。粒は小さなレンズになって、向こうの景色をずらして映す。
        雨に打たれているあいだだけ付く（隧道に入れば、すぐ無くなる） */
     if(uRain.y>.004){
-      vec2 vp=(vUv-.5)*vec2(uRes.x/uRes.y,1.),o=vp-vec2(0.,-.04);float r=length(o),th=atan(o.x,o.y),sp=uWip.x,ar=1.6+6.5*sp;vec2 dir=o/max(r,.001);
+      vec2 vp=(vUv-.5)*vec2(uRes.x/uRes.y,1.),o=vp+.04*normalize(vec2(uHR.y,uHU.y)+1e-5);float r=length(o),th=atan(o.x,o.y),sp=uWip.x,ar=1.6+6.5*sp;vec2 dir=o/max(r,.001);        // 流れの中心は、窓のまんなかの少し下（端末の向きに合わせて回る）
       for(int k=0;k<3;k++){
         float N=k==0?31.:(k==1?47.:23.),la=floor(th*N),hs=h11(la*1.7+float(k)*31.),T=.42+.2*hs;
         float ph=uWip.y/T+hs*7.+float(k)*.37,n=floor(ph),ta=fract(ph)*T,hh=h21(vec2(la,n)+float(k)*5.3);
@@ -1207,7 +1207,8 @@ void main(){
     }
   }
   vec2 p=(vUv-.5)*vec2(1.,.82);c*=1.-.4*pow(min(length(p)*1.32,1.),2.6);
-  {vec2 hv=vec2((vUv.x*2.-1.)*uTan.x,(vUv.y*2.-1.)*uTan.y+.03);        // 視線の向き（正接）。窓は、左右に広く、上下に狭い
+  /* ヘルメットの窓は、車にとっての水平に合わせる（端末を傾けたり、横に倒して持ったりしても、窓は地平線と平行のまま。画面の縦横には合わせない） */
+  {vec2 hu=normalize(vec2(uHR.y,uHU.y)+1e-5),ht=vec2((vUv.x*2.-1.)*uTan.x,(vUv.y*2.-1.)*uTan.y),hv=vec2(dot(ht,vec2(hu.y,-hu.x)),dot(ht,hu)+.03);        // 視線の向き（正接）。窓は、左右に広く、上下に狭い
     float hd=pow(abs(hv.x)/1.5,4.)+pow(abs(hv.y)/(hv.y>0.?.44:.6),4.);
     c*=1.-smoothstep(.78,1.12,hd);c+=vec3(.004,.0045,.005)*smoothstep(.7,.95,hd)*(1.-smoothstep(.95,1.12,hd))*step(hv.y,0.);}        // 下の縁（あごの覆いの内張り）が、わずかに見える
   float n=h21(vUv*uRes+fract(uT*7.31)*113.)-.5,lum=dot(c,vec3(.3,.6,.1));
