@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>某氏 体内にて</title>
+<meta name="description" content="誰かの血管の中を、巡回している。">
+<style>
+/* 配置：画面いっぱいの一枚の絵だけ。文字も部品も置かない。暗い一色の世界に決め打ち */
+:root{ --bg:#060102; --ink:#dccac3; color-scheme:dark }
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);overflow:hidden;-webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;touch-action:none;
+  padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;background:var(--bg);cursor:pointer}
+#err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:1.5rem;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  font:14px/1.9 system-ui,sans-serif;background:var(--bg);text-align:center}
+#err[hidden]{display:none}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="血管の中を流れていく、ぼやけた一人称の映像。触れると音が出る"></canvas>
+<div id="err" hidden>WebGL が使えないため、表示できません。</div>
+<script>
+/* 某氏 体内にて — 血管の中を巡回する大食細胞の一人称。単一ファイル、外部通信なし。
+   長さの単位は µm（赤血球の直径 7.8、血管の半径 15〜24）。 */
+(function () {
+'use strict';
+const $ = id => document.getElementById(id);
+const cv = $('c');
+const gl = cv.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+if (!gl) { $('err').hidden = false; return; }
+const inst = gl.getExtension('ANGLE_instanced_arrays');
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const LITE = false;
+
+// ---------- 数学
+const rnd = (a, b) => a + Math.random() * (b - a);
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const smooth = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+const mix = (a, b, u) => a + (b - a) * u;
+const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const len = a => Math.hypot(a[0], a[1], a[2]);
+const norm = a => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+const mix3 = (a, b, u) => [mix(a[0], b[0], u), mix(a[1], b[1], u), mix(a[2], b[2], u)];
+const qmul = (a, b) => [
+  a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+  a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+  a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+  a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
+const qaxis = (ax, an) => { const s = Math.sin(an / 2); return [ax[0] * s, ax[1] * s, ax[2] * s, Math.cos(an / 2)]; };
+const qnorm = q => { const l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; return [q[0] / l, q[1] / l, q[2] / l, q[3] / l]; };
+const qrand = () => qnorm([rnd(-1, 1), rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)]);
+const qconj = q => [-q[0], -q[1], -q[2], q[3]];
+const qrot = (q, v) => { const u = [q[0], q[1], q[2]], t = mul(cross(u, v), 2); return add(add(v, mul(t, q[3])), cross(u, t)); };
+const qmat = q => { const x = q[0], y = q[1], z = q[2], w = q[3];
+  return [1 - 2 * (y * y + z * z), 2 * (x * y + z * w), 2 * (x * z - y * w), 2 * (x * y - z * w), 1 - 2 * (x * x + z * z), 2 * (y * z + x * w),
+          2 * (x * z + y * w), 2 * (y * z - x * w), 1 - 2 * (x * x + y * y)]; };
+const qfromto = (a, b) => { const c = cross(a, b), d = dot(a, b); return qnorm([c[0], c[1], c[2], 1 + d + 1e-6]); };
+const m4mul = (a, b) => { const o = new Float32Array(16);
+  for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+  return o; };
+
+// ---------- GL の小道具
+function prog(vs, fs, attrs) {
+  const p = gl.createProgram();
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o);
+    if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o) + '\n' + s.split('\n').slice(0, 6).join('\n')); return o; };
+  gl.attachShader(p, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, 'precision highp float;\n' + fs));
+  attrs.forEach((a, i) => gl.bindAttribLocation(p, i, a));
+  gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {}; return { p, u: n => (n in u ? u[n] : (u[n] = gl.getUniformLocation(p, n))) };
+}
+function attribs(n) { for (let i = 0; i < 6; i++) { if (i < n) gl.enableVertexAttribArray(i); else gl.disableVertexAttribArray(i); if (inst) inst.vertexAttribDivisorANGLE(i, 0); } }
+const buf = (data, usage) => { const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, usage || gl.STATIC_DRAW); return b; };
+const ibuf = data => { const b = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, b); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(data), gl.STATIC_DRAW); return b; };
+
+const GLSL_HASH = `
+float hash(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+vec2 hash2(vec2 p){ vec3 p3=fract(vec3(p.xyx)*vec3(.1031,.1030,.0973)); p3+=dot(p3,p3.yzx+33.33); return fract((p3.xx+p3.yz)*p3.zy); }
+float vnoise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f);
+  return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y); }`;
+const GLSL_FOG = `uniform vec3 uFogC,uAhead; uniform float uFog;
+vec3 fogged(vec3 c,vec3 w){ float d=length(w); float g=pow(max(dot(w/d,uAhead),0.),5.);
+  return mix(uFogC*(.22+2.9*g),c,exp(-d*uFog)); }`;
+
+// ---------- 血管の壁
+const P_WALL = prog(`
+attribute vec3 aP,aRad; attribute vec2 aUV; uniform mat4 uVP; uniform vec3 uOff; uniform float uPulse,uSq;
+varying vec2 vUV; varying vec3 vW,vN;
+void main(){ vW=aP+aRad*(uPulse*.035-uSq*.07)+uOff; vN=-normalize(aRad); vUV=aUV; gl_Position=uVP*vec4(vW,1.); }`, GLSL_HASH + GLSL_FOG + `
+varying vec2 vUV; varying vec3 vW,vN; uniform float uPulse,uStage,uGlow,uTime,uOut,uSpark; uniform vec3 uWallC,uGlowC;
+const float NX=18.;
+void main(){
+  vec2 g=vec2(vUV.x*NX,vUV.y/18.), ip=floor(g), fp=fract(g);
+  float f1=9.,f2=9.; vec2 cid=vec2(0.);
+  for(int j=-1;j<=1;j++) for(int i=-1;i<=1;i++){
+    vec2 o=vec2(float(i),float(j)), c=vec2(mod(ip.x+o.x,NX),mod(ip.y+o.y,64.));
+    vec2 r=o+hash2(c)*.8+.1-fp; float d=dot(r,r);
+    if(d<f1){f2=f1;f1=d;cid=c;} else if(d<f2) f2=d; }
+  float edge=sqrt(f2)-sqrt(f1);
+  float groove=smoothstep(0.,.07,edge);
+  float nuc=exp(-f1*16.);
+  vec3 base=uWallC*(.72+.3*hash(cid))*(.62+.38*groove)*(.9+.1*sin(vUV.x*400.+hash(cid)*6.))+vec3(.12,.055,.045)*nuc;
+  vec3 n=normalize(vN), l=normalize(-vW); float d=length(vW);
+  float ndl=max(dot(n,l),0.), at=1./(1.+d*d/520.);
+  vec3 col=base*(.05+1.35*at*(.25+.75*ndl))+vec3(.5,.3,.25)*pow(ndl,28.)*at*.22*groove;
+  // 壁の外から透けてくる明かり。拍に合わせて息をする
+  float bl=sin(vUV.x*12.566+sin(vUV.y*.0491)*2.)*sin(vUV.y*.0327+1.7);
+  col+=uGlowC*(smoothstep(.15,.95,bl)*(.35+.65*uPulse)*uGlow+uOut*(.3+.7*smoothstep(-.7,.9,bl)));
+  col+=vec3(.45,.6,1.)*step(.988,hash(cid+floor(uTime*7.)))*uSpark;
+  // 枝分かれの口（暗い穴）
+  float m=floor(vUV.y/96.), h=hash(vec2(m,7.));
+  if(h>.42){
+    float cx=hash(vec2(m,3.)), dx=vUV.x-cx; dx-=floor(dx+.5);
+    vec2 q=vec2(dx*150.,vUV.y-(m+.5)*96.)/vec2(6.5,10.);
+    float rr=length(q), hole=1.-smoothstep(.82,1.04,rr);
+    col=mix(col,vec3(.012,.0,.0),hole);
+    col+=vec3(.16,.05,.04)*exp(-pow((rr-1.08)/.1,2.))*at*1.5;
+    // 段階が進むと、穴の奥に白っぽいものがいる
+    float w=step(.5,hash(vec2(m,11.)))*smoothstep(3.,4.2,uStage);
+    vec2 qq=q-vec2(.12,.18+.05*sin(uTime*.4+m));
+    col+=vec3(.30,.25,.24)*exp(-dot(qq,qq)*5.)*hole*w*at*2.2;
+  }
+  gl_FragColor=vec4(fogged(col,vW),1.);
+}`, ['aP', 'aRad', 'aUV']);
+
+// ---------- 赤血球と血小板（インスタンス）
+const P_RBC = prog(`
+attribute vec4 aV,iPos,iQ,iPar; uniform mat4 uVP; varying vec3 vN,vW,vK;
+float zp(float x,float k){ float x2=x*x, s=sqrt(max(1.-x2,0.)); return mix(.5*s*(.207+2.003*x2-1.123*x2*x2),.42*s,k); }
+vec3 qrot(vec4 q,vec3 v){ return v+2.*cross(q.xyz,cross(q.xyz,v)+q.w*v); }
+void main(){
+  float x=aV.x, sg=aV.y, k=iPar.x, bend=iPar.y;
+  float z=zp(x,k), xe=min(x,.965), dz=(zp(xe+.02,k)-zp(xe-.02,k))/.04;
+  vec3 p=vec3(x*aV.z,x*aV.w,sg*z+bend*(x*x-.4))*iPos.w;
+  float sl=sg*dz+bend*2.*x;
+  vec3 n=normalize(vec3(-sl*aV.z,-sl*aV.w,1.))*sg;
+  vW=qrot(iQ,p)+iPos.xyz; vN=qrot(iQ,n); vK=vec3(z/.33,k,iPar.z);
+  gl_Position=uVP*vec4(vW,1.); }`, GLSL_FOG + `
+varying vec3 vN,vW,vK; uniform vec3 uTint;
+void main(){
+  vec3 n=normalize(vN), l=normalize(-vW); float d=length(vW);
+  float ndl=abs(dot(n,l)), at=1./(1.+d*d/420.);
+  vec3 base=mix(vec3(.33,.022,.020)*uTint,vec3(.44,.37,.26),vK.y)*vK.z;
+  vec3 col=base*(.03+1.2*at*(.12+.88*ndl));
+  col+=vec3(.30,.06,.02)*(1.-clamp(vK.x,0.,1.))*.3*at;       // まんなかの薄いところは透ける
+  col+=vec3(.34,.03,.02)*pow(1.-ndl,2.5)*.32*at;              // 縁
+  col+=vec3(.9,.55,.45)*pow(ndl,46.)*.16*at;
+  gl_FragColor=vec4(fogged(col,vW),1.);
+}`, ['aV', 'iPos', 'iQ', 'iPar']);
+
+// ---------- 血漿の中のちり
+const P_MOTE = prog(`
+attribute vec4 aP; uniform mat4 uVP; uniform float uPx; varying float vA;
+void main(){ float d=length(aP.xyz); gl_Position=uVP*vec4(aP.xyz,1.);
+  gl_PointSize=clamp(uPx*(.5+aP.w)/max(d,1.),1.,7.); vA=(.4+.8*aP.w)/(1.+d*d/500.)*exp(-d*.012); }`, `
+varying float vA; uniform vec3 uMC;
+void main(){ vec2 q=gl_PointCoord*2.-1.; float a=smoothstep(1.,.1,dot(q,q)); gl_FragColor=vec4(uMC*a*vA,1.); }`, ['aP']);
+
+// ---------- 異物・白血球（部品ごとに描く）
+const P_OBJ = prog(`
+attribute vec3 aP,aN; uniform mat3 uR; uniform vec3 uS,uT; uniform mat4 uVP; uniform vec4 uD; uniform float uTime;
+varying vec3 vN,vW,vO; varying float vH;
+float n3(vec3 p){ float t=uTime*uD.z;
+  return sin(p.x*1.7+sin(p.y*2.3+t))*sin(p.y*1.9+sin(p.z*2.1-t*.7))+.5*sin(p.z*3.1+sin(p.x*2.7+t*.5))*sin(p.x*2.9+p.y*1.3); }
+void main(){
+  float h=n3(aP*uD.y+uD.w*3.7);
+  if(fract(uD.w)>.4) h=pow(abs(h)*.7,.6)*1.5-.25;
+  vec3 p=(aP+aN*uD.x*h)*uS;
+  vW=uR*p+uT; vN=uR*(aN/uS); vO=aN; vH=h;
+  gl_Position=uVP*vec4(vW,1.); }`, GLSL_FOG + `
+varying vec3 vN,vW,vO; varying float vH;
+uniform vec3 uC,uNucC; uniform vec4 uM,uNuc; uniform float uShade;   // uM = 鏡面, 縁, 自発光, 核の内側（輪）
+void main(){
+  vec3 n=normalize(vN), l=normalize(-vW); float d=length(vW);
+  float ndl=max(dot(n,l),0.), at=1./(1.+d*d/420.);
+  vec3 base=uC*(.82+.22*vH);
+  float dn=dot(normalize(vO),uNuc.xyz);
+  float nm=smoothstep(uNuc.w-.04,uNuc.w+.04,dn)*(1.-smoothstep(uM.w-.02,uM.w+.02,dn));
+  base=mix(base,uNucC,nm*.88);
+  at*=uShade;
+  vec3 col=base*(.03+1.1*at*(.12+.88*ndl))+uC*uM.z;
+  col+=vec3(.36,.05,.035)*pow(1.-ndl,2.5)*uM.y*at;
+  col+=vec3(1.,.9,.85)*pow(ndl,60.)*uM.x*at;
+  gl_FragColor=vec4(fogged(col,vW),1.);
+}`, ['aP', 'aN']);
+
+// ---------- 気配（異物のまわりの光や闇、火花）。視点の空間の板
+const P_AURA = prog(`
+attribute vec2 aP; uniform mat4 uP; uniform vec3 uC0; uniform float uSz; varying vec2 vUV;
+void main(){ vUV=aP; gl_Position=uP*vec4(uC0+vec3(aP*uSz,0.),1.); }`, GLSL_HASH + `
+varying vec2 vUV; uniform vec3 uCol; uniform vec4 uA; uniform float uTime,uAmt;
+void main(){
+  float d=length(vUV); vec2 dir=vUV/max(d,1e-3);
+  float tn=vnoise(dir*uA.x+vec2(uA.w*9.,-uTime*uA.y)+d*2.);
+  float core=exp(-d*d*6.), halo=exp(-d*d*1.7)*smoothstep(1.,.55,d);
+  float fl=1.-uA.z*step(.55,hash(vec2(floor(uTime*13.),uA.w)));
+  gl_FragColor=vec4(uCol*(core*.7+halo*(.2+1.1*tn*tn))*uAmt*fl,1.);
+}`, ['aP']);
+
+// ---------- 偽足（視点の空間で描く）
+const P_POD = prog(`
+attribute vec3 aP,aN; attribute vec2 aUV; uniform mat4 uP; varying vec3 vN,vW; varying vec2 vUV;
+void main(){ vW=aP; vN=aN; vUV=aUV; gl_Position=uP*vec4(aP,1.); }`, GLSL_HASH + `
+varying vec3 vN,vW; varying vec2 vUV; uniform float uTime; uniform vec3 uFogC;
+void main(){
+  vec3 n=normalize(vN), l=normalize(-vW); float d=length(vW);
+  float ndl=max(dot(n,l),0.), at=1./(1.+d*d/260.);
+  float a=vUV.y*6.2832; vec2 gp=vec2(vUV.x*5.-uTime*.3,0.)+vec2(cos(a),sin(a))*1.6;
+  float gr=vnoise(gp*3.1), g2=vnoise(gp*.9+3.);
+  vec3 base=vec3(.50,.41,.39)*(.7+.35*g2)-vec3(.12,.10,.09)*smoothstep(.62,.9,gr);
+  float rim=pow(1.-ndl,2.);
+  vec3 col=base*(.06+.95*at*(.2+.8*ndl))+vec3(.42,.16,.13)*rim*.5+vec3(1.,.9,.86)*pow(ndl,50.)*.16*at+uFogC*.5;
+  gl_FragColor=vec4(col,.56+.36*rim);
+}`, ['aP', 'aN', 'aUV']);
+
+// ---------- 仕上げ。目はない。にじみ、ゆがみ、残像だけで「感じている」絵にする
+const VS_Q = `attribute vec2 aP; varying vec2 vUV; void main(){ vUV=aP*.5+.5; gl_Position=vec4(aP,0.,1.); }`;
+// 1) 低い解像度のまま、ゆがめて前のコマへ重ねる（外へ流れる残像）
+const P_ACC = prog(VS_Q, GLSL_HASH + `
+varying vec2 vUV; uniform sampler2D uCur,uPrev; uniform float uTime,uSpeed,uMix,uStrain; uniform vec2 uPx;
+void main(){
+  vec2 q=vUV-.5;
+  vec2 w=vec2(vnoise(vUV*2.6+vec2(uTime*.33,0.)),vnoise(vUV*2.6+vec2(7.,-uTime*.29)))-.5;
+  vec2 w2=vec2(vnoise(vUV*6.5-uTime*.5),vnoise(vUV*6.5+11.+uTime*.45))-.5;
+  vec2 uv=vUV+w*(.13+.1*uStrain)+w2*.04;
+  vec2 d=uPx*3.5;
+  vec3 c=texture2D(uCur,uv).rgb*.36+(texture2D(uCur,uv+vec2(d.x,d.y)).rgb+texture2D(uCur,uv-vec2(d.x,d.y)).rgb
+        +texture2D(uCur,uv+vec2(-d.x,d.y)).rgb+texture2D(uCur,uv+vec2(d.x,-d.y)).rgb)*.16;
+  float a=.03*sin(uTime*.2)+w.x*.09, ca=cos(a), sa=sin(a);
+  vec2 pv=.5+vec2(q.x*ca-q.y*sa,q.x*sa+q.y*ca)*(1.-.02-.035*uSpeed)+w2*.014;
+  vec3 p=texture2D(uPrev,pv).rgb;
+  gl_FragColor=vec4(mix(p*.99,c,uMix),1.);
+}`, ['aP']);
+// 2) 自分の細胞質ごしに、画面へ
+const P_POST = prog(VS_Q, GLSL_HASH + `
+varying vec2 vUV; uniform sampler2D uTex; uniform float uTime,uClose,uFull,uPulse,uDark,uStrain,uGrain,uDrunk,uFlash; uniform vec2 uCen; uniform vec3 uGrade; uniform vec4 uTint;
+void main(){
+  vec2 q=(vUV-.5)*2.;
+  vec2 qc=q-uCen*smoothstep(0.,.45,uClose);
+  float e=length(qc), a=atan(qc.y,qc.x);
+  float rip=.05*sin(a*3.+uTime*.5)+.02*sin(a*7.-uTime*.8+1.3)+.12*(vnoise(vec2(cos(a),sin(a))*1.7+uTime*.12)-.5);
+  float open=1.16-.24*uFull;
+  float cl=uClose*uClose*(3.-2.*uClose);
+  float e0=mix(open,-.3,cl)+rip*(1.-.6*cl);
+  float body=smoothstep(e0-.06,e0+.2,e);
+  float lens=smoothstep(e0-.6,e0,e);
+  vec2 wob=vec2(vnoise(q*1.7+uTime*.22),vnoise(q*1.7-uTime*.2+7.))-.5;
+  vec2 off=-normalize(qc+1e-4)*lens*lens*.07+wob*(.05+.03*uFull+.05*uStrain+.02*uPulse+.07*uDrunk)-q*dot(q,q)*.03;
+  vec2 uv=vUV+off;
+  float ch=.08+.6*uDrunk;
+  vec3 c=vec3(texture2D(uTex,uv+off*ch).r,texture2D(uTex,uv).g,texture2D(uTex,uv-off*ch).b)*1.75;
+  float g2=vnoise(q*5.-uTime*.05);
+  vec3 cyt=vec3(.13,.07,.066)*(.6+.5*g2)+c*.3;
+  cyt*=1.-.55*smoothstep(e0+.1,e0+.75,e);
+  float mem=exp(-pow((e-e0-.08)/.09,2.));
+  c=mix(c,cyt,body*.94)+vec3(.2,.12,.105)*mem*(.4+.4*uPulse)*(1.-.5*cl);
+  c*=1.+.12*uPulse;
+  c*=1.-.24*dot(q,q);
+  c=mix(vec3(dot(c,vec3(.3,.5,.2))),c,.86); c=pow(max(c,0.),vec3(1.1));
+  c*=uGrade; c=mix(c,c*uTint.rgb*2.+uTint.rgb*.07,uTint.a); c+=vec3(1.,.94,.88)*uFlash;
+  c+=(hash(gl_FragCoord.xy+fract(uTime)*91.7)-.5)*uGrain;
+  gl_FragColor=vec4(c*(1.-uDark),1.);
+}`, ['aP']);
+
+// ---------- 取り込んだもの（視野の中に浮く）
+const P_INC = prog(`
+attribute vec2 aP,aUV; attribute vec4 aC; attribute vec2 aK; varying vec2 vUV,vK; varying vec4 vC;
+void main(){ vUV=aUV; vC=aC; vK=aK; gl_Position=vec4(aP,0.,1.); }`, GLSL_HASH + `
+varying vec2 vUV,vK; varying vec4 vC;
+void main(){
+  float d=length(vUV), k=vK.x, a=0.; vec3 c=vC.rgb;
+  if(k<.5){            // 食胞：薄い膜の輪と、中の溶けかけ
+    float ring=exp(-pow((d-.82)/.07,2.))*.30*(.35+.65*vK.y);
+    float an=atan(vUV.y,vUV.x);
+    float inr=smoothstep(.62+.1*sin(an*3.+vC.r*40.),.2,d);
+    c=mix(vec3(.5,.36,.33),c*(.45+.3*vK.y),inr/(inr+ring+1e-3));
+    a=ring+inr*.78*vC.a;
+  } else if(k<1.5){    // 樹脂の粒：溶けない
+    float s=smoothstep(.8,.72,d);
+    c=c*(.35+.8*smoothstep(.9,0.,length(vUV-vec2(-.25,.3))))+vec3(.5)*smoothstep(.2,0.,length(vUV-vec2(-.3,.35)));
+    a=s*.9;
+  } else if(k<2.5){    // 入りきらなかった繊維
+    a=exp(-vUV.y*vUV.y*9.)*.75*smoothstep(1.,.93,abs(vUV.x)); c*=.6+.4*exp(-vUV.y*vUV.y*40.);
+  } else {             // 炭の粒：消えない
+    float an=atan(vUV.y,vUV.x);
+    a=smoothstep(.75+.18*sin(an*5.+vK.y*30.),.5,d)*.95; c=vec3(.012,.01,.012);
+  }
+  gl_FragColor=vec4(c,a);
+}`, ['aP', 'aUV', 'aC', 'aK']);
+
+// ---------- 形
+function sphereMesh(lat, lon, zsplit) {
+  const v = [], ix = [];
+  for (let j = 0; j <= lat; j++) for (let i = 0; i <= lon; i++) {
+    const th = j / lat * Math.PI, ph = i / lon * Math.PI * 2;
+    const n = [Math.sin(th) * Math.cos(ph), Math.sin(th) * Math.sin(ph), Math.cos(th)];
+    v.push(n[0], n[1], n[2] + (zsplit ? Math.sign(n[2] || (j < lat / 2 ? 1 : -1)) * zsplit : 0), n[0], n[1], n[2]);
+  }
+  for (let j = 0; j < lat; j++) for (let i = 0; i < lon; i++) { const a = j * (lon + 1) + i, b = a + lon + 1; ix.push(a, b, a + 1, a + 1, b, b + 1); }
+  return { vb: buf(new Float32Array(v)), ib: ibuf(ix), n: ix.length };
+}
+function needleMesh() {
+  const v = [], ix = [], M = 8, K = 12;
+  for (let j = 0; j <= K; j++) { const z = j / K * 2 - 1, r = Math.sqrt(Math.max(0, 1 - Math.pow(Math.abs(z), 8)));
+    for (let i = 0; i <= M; i++) { const a = i / M * 6.2832; v.push(Math.cos(a) * r, Math.sin(a) * r, z, Math.cos(a), Math.sin(a), 0); } }
+  for (let j = 0; j < K; j++) for (let i = 0; i < M; i++) { const a = j * (M + 1) + i, b = a + M + 1; ix.push(a, b, a + 1, a + 1, b, b + 1); }
+  return { vb: buf(new Float32Array(v)), ib: ibuf(ix), n: ix.length };
+}
+function icoMesh() {
+  const t = (1 + Math.sqrt(5)) / 2;
+  const P = [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]]
+    .map(p => mul(norm(p), rnd(.72, 1.1)));
+  const Fc = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+  const v = [], ix = [];
+  Fc.forEach((f, k) => { const a = P[f[0]], b = P[f[1]], c = P[f[2]], n = norm(cross(sub(b, a), sub(c, a)));
+    [a, b, c].forEach(p => v.push(p[0], p[1], p[2], n[0], n[1], n[2])); ix.push(k * 3, k * 3 + 1, k * 3 + 2); });
+  return { vb: buf(new Float32Array(v)), ib: ibuf(ix), n: ix.length };
+}
+const M_SPH = sphereMesh(16, 22), M_CAP = sphereMesh(12, 12, 1.7), M_NEE = needleMesh(), M_ICO = icoMesh();
+
+// 赤血球の形：両凹の円盤（Evans & Fung の断面の式を頂点シェーダーで解く）
+const RBC = (() => {
+  const NR = 8, NA = 20, v = [], ix = [];
+  for (let s = 0; s < 2; s++) for (let j = 0; j <= NR; j++) for (let i = 0; i <= NA; i++) {
+    const x = Math.sin(j / NR * Math.PI / 2), a = i / NA * 6.2832; v.push(x, s ? -1 : 1, Math.cos(a), Math.sin(a)); }
+  for (let s = 0; s < 2; s++) for (let j = 0; j < NR; j++) for (let i = 0; i < NA; i++) {
+    const a = s * (NR + 1) * (NA + 1) + j * (NA + 1) + i, b = a + NA + 1; ix.push(a, b, a + 1, a + 1, b, b + 1); }
+  return { vb: buf(new Float32Array(v)), ib: ibuf(ix), n: ix.length };
+})();
+const QUAD = buf(new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]));
+
+// ---------- 道すじ（血管の中心線）
+const DS = 2, CH = 12, SEG = 28;
+let nodes = [], i0 = 0;
+const gen = { k1: 0, k2: 0, k1t: 0, k2t: 0, R: 24, Rt: 24, cnt: 0 };
+function pushNode() {
+  const L = nodes[nodes.length - 1];
+  if (!L) { nodes.push({ p: [0, 0, 0], t: [0, 0, -1], n: [1, 0, 0], R: gen.R }); return; }
+  // 心臓に近いほど太い
+  if (--gen.cnt <= 0) { gen.cnt = 18 + (Math.random() * 50 | 0); gen.k1t = rnd(-1, 1) * .017; gen.k2t = rnd(-1, 1) * .017; gen.Rt = rnd(REG[env.name].R[0], REG[env.name].R[1]); }
+  gen.k1 += (gen.k1t - gen.k1) * .06; gen.k2 += (gen.k2t - gen.k2) * .06; gen.R += (gen.Rt - gen.R) * .035;
+  const b = cross(L.t, L.n);
+  const t = norm(add(L.t, add(mul(L.n, gen.k1 * DS), mul(b, gen.k2 * DS))));
+  const n = norm(sub(L.n, mul(t, dot(L.n, t))));
+  nodes.push({ p: add(L.p, mul(t, DS)), t, n, R: gen.R });
+}
+const F = new Float32Array(13);   // p(0-2) t(3-5) n(6-8) b(9-11) R(12)
+function frameAt(s) {
+  let f = s / DS - i0; const N = nodes.length; if (f < 0) f = 0; if (f > N - 1.001) f = N - 1.001;
+  const i = f | 0, u = f - i, w = 1 - u, A = nodes[i], B = nodes[i + 1];
+  for (let k = 0; k < 3; k++) { F[k] = A.p[k] * w + B.p[k] * u; F[3 + k] = A.t[k] * w + B.t[k] * u; F[6 + k] = A.n[k] * w + B.n[k] * u; }
+  F[9] = F[4] * F[8] - F[5] * F[7]; F[10] = F[5] * F[6] - F[3] * F[8]; F[11] = F[3] * F[7] - F[4] * F[6];
+  F[12] = A.R * w + B.R * u; return F;
+}
+const posAt = (s, ox, oy) => { frameAt(s); return [F[0] + F[6] * ox + F[9] * oy, F[1] + F[7] * ox + F[10] * oy, F[2] + F[8] * ox + F[11] * oy]; };
+const chunks = {};
+const CH_IB = (() => { const ix = []; for (let j = 0; j < CH; j++) for (let i = 0; i < SEG; i++) { const a = j * (SEG + 1) + i, b = a + SEG + 1; ix.push(a, a + 1, b, a + 1, b + 1, b); } return { ib: ibuf(ix), n: ix.length }; })();
+function buildChunk(c) {
+  while (nodes.length + i0 <= (c + 1) * CH + 1) pushNode();
+  const v = new Float32Array((CH + 1) * (SEG + 1) * 8), o = nodes[c * CH - i0].p.slice(); let k = 0;
+  for (let j = 0; j <= CH; j++) {
+    const nd = nodes[c * CH + j - i0], b = cross(nd.t, nd.n), sv = ((c % 48) * CH + j) * DS;
+    for (let i = 0; i <= SEG; i++) {
+      const a = i / SEG * 6.283185, ca = Math.cos(a), sa = Math.sin(a);
+      const r = [(nd.n[0] * ca + b[0] * sa) * nd.R, (nd.n[1] * ca + b[1] * sa) * nd.R, (nd.n[2] * ca + b[2] * sa) * nd.R];
+      v[k++] = nd.p[0] - o[0] + r[0]; v[k++] = nd.p[1] - o[1] + r[1]; v[k++] = nd.p[2] - o[2] + r[2];
+      v[k++] = r[0]; v[k++] = r[1]; v[k++] = r[2]; v[k++] = i / SEG; v[k++] = sv;
+    }
+  }
+  chunks[c] = { o, vb: buf(v) };
+}
+
+// ---------- 状態
+const cam = { s: 70, ox: 11, oy: -8, mul: 1, p: [0, 0, 0] };
+let T = 0, running = false, timeScale = 1;
+let stage = 0, count = 0, loop = 0, fails = 0, lastType = '', fiberDone = false, selfDone = false;
+let phase = 'cruise', pt = 0, target = null, nextSpawn = 5, q = 1;
+let prox = 0, hp = .6, tb = 9, bpm = 62, pulse = 0, pulseS = .3, skip = 0, nextSkip = 60, flowMul = 1, glow = 1;
+let flowNow = 40, uClose = 0, uDark = 0, uStrain = 0, uCen = [0, 0], gazeW = 0, podExt = 0, podWrap = 0;
+let big = null, nextAmbient = 30;
+const look = { yaw: 0, pitch: 0, drag: false, x: 0, y: 0, idle: 9 };
+const incs = [], LOG = [];
+
+// ---------- 体の部位。心臓 → 肺 → 心臓 → どこかの臓器 → 心臓 … と巡る
+const REG = {
+  heart:  { prox: 1,   R: [30, 36], fog: [.13, .012, .012],  grade: [1.06, .95, .95], wall: [.56, .12, .10], rbc: [1.2, 1, 1],     glowC: [.22, .02, .015], flow: 1.25, dur: [13, 18] },
+  lung:   { prox: .6,  R: [13, 18], fog: [.15, .062, .056],  grade: [1.08, 1.0, .98], wall: [.64, .31, .29], rbc: [1.45, 1.2, 1.1], glowC: [.34, .16, .13],  flow: .55,  dur: [28, 38] },
+  gut:    { prox: .3,  R: [17, 23], fog: [.075, .05, .012],  grade: [1.06, 1.0, .70], wall: [.44, .27, .10], rbc: [.9, .85, .8],    glowC: [.15, .10, .02],  flow: .5,   dur: [42, 56] },
+  muscle: { prox: .2,  R: [15, 21], fog: [.075, .008, .012], grade: [1.0, .9, .92],   wall: [.44, .07, .08], rbc: [.85, .8, .95],   glowC: [.17, .012, .02], flow: .62,  dur: [42, 56] },
+  skin:   { prox: .1,  R: [12, 16], fog: [.05, .014, .014],  grade: [1, 1, 1],        wall: [.52, .23, .19], rbc: [.85, .8, .95],   glowC: [.5, .28, .12],   flow: .36,  dur: [42, 56] },
+  finger: { prox: .04, R: [9, 11],  fog: [.30, .10, .05],    grade: [1.14, 1.03, .95], wall: [.78, .37, .27], rbc: [1.15, 1, 1],    glowC: [.75, .32, .14],  flow: .3,   dur: [34, 46] },
+  brain:  { prox: .42, R: [12, 17], fog: [.03, .017, .052],  grade: [.86, .92, 1.16], wall: [.30, .20, .37], rbc: [.9, .8, 1.05],   glowC: [.05, .04, .17],  flow: .5,   dur: [42, 56] }
+};
+const TOUR = ['muscle', 'gut', 'skin', 'brain'];
+const cp = a => a.slice();
+const env = { name: 'muscle', t: 0, dur: 26, seq: 0, tourI: 0, fog: cp(REG.muscle.fog), grade: cp(REG.muscle.grade), wall: cp(REG.muscle.wall), rbc: cp(REG.muscle.rbc), glowC: cp(REG.muscle.glowC), flow: .62, out: 0, spark: 0 };
+function nextRegion() {
+  env.seq = (env.seq + 1) % 4; let n;
+  if (env.seq === 0) { if (!env.fin && Math.random() < .2) { n = 'finger'; env.fin = true; } else { env.fin = false; env.tourI = (env.tourI + 1) % TOUR.length; n = TOUR[env.tourI]; } }   // たまに、指先の毛細血管まで行く
+  else n = env.seq === 2 ? 'lung' : 'heart';
+  env.name = n; env.t = 0; env.dur = rnd(REG[n].dur[0], REG[n].dur[1]); env.bit = Math.random() < .25; LOG.push('@' + n);
+}
+// ---------- 体の持ち主の一日。外の出来事は、音と光と揺れでしか届かない
+const ACT = {       // ひとまわり約20分
+  sleep: { bpm: 50,  br: [.2, .5],  step: 0,   sway: .15, light: 0,    dur: [260, 300] },
+  wake:  { bpm: 80,  br: [.3, .6],  step: 0,   sway: .6,  light: .35,  dur: [10, 11] },
+  walk:  { bpm: 90,  br: [.33, .6], step: 1.8, sway: .7,  light: .9,   dur: [60, 85] },
+  eat:   { bpm: 74,  br: [.26, .4], step: 0,   sway: .3,  light: .7,   dur: [65, 80] },
+  work:  { bpm: 68,  br: [.25, .4], step: 0,   sway: .2,  light: .8,   dur: [150, 180] },
+  rest:  { bpm: 64,  br: [.24, .4], step: 0,   sway: .2,  light: 'tv', dur: [130, 160] },
+  run:   { bpm: 150, br: [.75, 1],  step: 2.8, sway: 1.3, light: .9,   dur: [70, 85] },
+  smoke: { bpm: 84,  br: [.18, .95], step: 0,  sway: .3,  light: .6,   dur: [35, 45] },
+  drink: { bpm: 94,  br: [.25, .5], step: 0,   sway: .5,  light: 'tv', dur: [120, 140] },
+  fever: { bpm: 110, br: [.42, .6], step: 0,   sway: .25, light: .08,  dur: [80, 100] }
+};
+const DAY = ['sleep', 'wake', 'walk', 'eat', 'work', 'walk', 'eat', 'run', 'smoke', 'rest', 'drink'];
+const body = { act: 'sleep', t: 0, dur: 24, i: 0, bph: 0, breath: 0, air: 0, inh: 1, sph: 0, step: 0, sway: .15, drunk: 0, fever: 0, adren: 0, light: 0, lightC: [.5, .28, .12],
+  jolt: 0, flash: 0, tap: 0, septicT: 0, ev: 1, ev2: 1, bass: 0, injT: 0, card: null, cardDone: false, feverDone: false, swarmDone: false, dim: 0, tint: [0, 0, 0, 0] };
+function nextAct() {
+  if (body.act === 'fever' && !sep && body.septicT <= 0 && Math.random() < .4) body.septicT = rnd(10, 40);     // 熱が、そのまま悪いほうへ進むことがある
+  body.i++; let a = DAY[body.i % DAY.length];
+  if (a === 'rest' && stage >= 2 && !body.feverDone) { a = 'fever'; body.feverDone = true; }
+  body.act = a; body.t = 0; body.dur = rnd(ACT[a].dur[0], ACT[a].dur[1]); body.ev = .3; body.ev2 = 1; LOG.push('#' + a);
+  if (a === 'wake') body.jolt = .7;
+  if ((a === 'walk' || a === 'run') && Math.random() < .22) body.injT = rnd(6, 16);
+}
+const gaze = { v: [0, 0, -1], intr: null, t: 0, lock: 0 };
+let RDT = .033;
+const swarm = { allies: [], on: false }, sparks = [];
+let bite = null, forceType = null;
+// 起点（体のどこにいるか、持ち主の一日のどこか）は、開くたびに違う
+function randomStart() { body.i = Math.random() * DAY.length | 0; const a = DAY[body.i]; body.act = a; body.dur = rnd(ACT[a].dur[0], ACT[a].dur[1]); body.t = body.dur * rnd(0, .7); body.sway = ACT[a].sway; bpm = ACT[a].bpm;
+  const names = Object.keys(REG).filter(n => n !== 'heart'), n = names[Math.random() * names.length | 0];
+  env.name = n; env.seq = n === 'lung' ? 2 : 0; env.fin = n === 'finger'; env.tourI = Math.max(0, TOUR.indexOf(n)); env.dur = rnd(REG[n].dur[0], REG[n].dur[1]) * rnd(.5, 1);
+  for (const k of ['fog', 'grade', 'wall', 'rbc', 'glowC']) env[k] = cp(REG[n][k]); env.flow = REG[n].flow; prox = REG[n].prox;
+  gen.R = gen.Rt = (REG[n].R[0] + REG[n].R[1]) / 2; const l0 = Math.max(.5, gen.R - 9); cam.ox = l0 * .8; cam.oy = -l0 * .6; LOG.push('@' + n, '#' + a); }
+randomStart();
+let skinEv = Math.random() < .5, cut = null, sep = null, sepDark = 0, sBeatG = 1, sFogG = 1, SEPG = [1, 1, 1];
+
+// 赤血球
+const NRMAX = 320, NR = () => NRMAX;
+const rb = { s: new Float32Array(NRMAX), fx: new Float32Array(NRMAX), fy: new Float32Array(NRMAX), q: new Float32Array(NRMAX * 4),
+  w: new Float32Array(NRMAX * 3), kind: new Float32Array(NRMAX), seed: new Float32Array(NRMAX), sp: new Float32Array(NRMAX) };
+function seedRBC(i, s) {
+  const pl = Math.random() < .13, r = pl ? rnd(.3, .92) : Math.pow(Math.random(), .7) * .5, a = rnd(0, 6.2832);   // 赤血球は軸に集まり、血小板は壁ぎわへ寄る
+  rb.s[i] = s; rb.fx[i] = Math.cos(a) * r; rb.fy[i] = Math.sin(a) * r; rb.kind[i] = pl ? 1 : 0;
+  rb.seed[i] = Math.random(); rb.sp[i] = rnd(.9, 1.1);
+  const qq = qrand(); for (let k = 0; k < 4; k++) rb.q[i * 4 + k] = qq[k];
+  for (let k = 0; k < 3; k++) rb.w[i * 3 + k] = rnd(-1, 1) * .9;
+}
+for (let i = 0; i < NRMAX; i++) seedRBC(i, cam.s + rnd(-40, 250));
+const IBUF = new Float32Array((NRMAX + 2) * 12), IVB = buf(IBUF, gl.DYNAMIC_DRAW);
+// ちり
+const NM = 260, mo = { s: new Float32Array(NM), fx: new Float32Array(NM), fy: new Float32Array(NM), seed: new Float32Array(NM) };
+for (let i = 0; i < NM; i++) { const r = Math.sqrt(Math.random()) * .93, a = rnd(0, 6.2832); mo.s[i] = cam.s + rnd(-10, 110); mo.fx[i] = Math.cos(a) * r; mo.fy[i] = Math.sin(a) * r; mo.seed[i] = Math.random(); }
+const MBUF = new Float32Array(NM * 4), MVB = buf(MBUF, gl.DYNAMIC_DRAW);
+// 偽足
+const PK = 16, PM = 8, PMAX = 8, PVN = PK * (PM + 1);
+const PBUF = new Float32Array(PMAX * PVN * 8), PVB = buf(PBUF, gl.DYNAMIC_DRAW);
+const PIB = (() => { const ix = []; for (let p = 0; p < PMAX; p++) for (let j = 0; j < PK - 1; j++) for (let i = 0; i < PM; i++) { const a = p * PVN + j * (PM + 1) + i, b = a + PM + 1; ix.push(a, b, a + 1, a + 1, b, b + 1); } return ibuf(ix); })();
+const pods = [];
+for (let i = 0; i < PMAX; i++) pods.push({ a: i / 5 * 6.2832 + .5 + rnd(-.2, .2), seed: rnd(0, 9), delay: rnd(0, .3) });
+// 取り込んだもの
+const INCMAX = 46, NBUF = new Float32Array(INCMAX * 6 * 10), NVB = buf(NBUF, gl.DYNAMIC_DRAW);
+
+// ---------- 異物
+const COL = { rods: [.33, .35, .27], cocci: [.50, .43, .26], debris: [.3, .21, .17], echino: [.5, .075, .06], carbon: [.02, .02, .025],
+  bead: [.08, .40, .78], frag: [.80, .77, .70], fiber: [.76, .74, .68], ring: [.60, .30, .28], lymph: [.62, .55, .60],
+  self: [.52, .45, .43], spit: [.5, .58, .1], rbc: [.56, .05, .04], none: [0, 0, 0] };
+const part = (m, o, s, c, x) => Object.assign({ m, o, s, q: qrand(), c, k: .25, rim: .5, e: 0, d: [0, 1, 0, 0], nuc: null }, x);
+function makeObj(type) {
+  const P = [], c = COL[type]; let rad = 3;
+  if (type === 'rods') { const n = 6 + (Math.random() * 4 | 0); rad = 3.4;   // 桿菌：幅 0.5〜1、長さ 2〜3
+    for (let i = 0; i < n; i++) P.push(part(M_CAP, mul(norm([rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)]), rnd(.3, 2.3)), [.5, .5, .5], c, { wig: rnd(0, 9), d: [.09, 2, 1, 0], rim: 1 })); }
+  else if (type === 'cocci') { rad = 2.7; const pts = [[0, 0, 0]];                // ぶどうの房のように集まる球菌
+    for (let i = 0; i < 13; i++) pts.push(add(pts[Math.random() * pts.length | 0], mul(norm([rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)]), 1.05)));
+    pts.forEach(p => P.push(part(M_SPH, p, [.55, .55, .55], c, { k: .5 }))); }
+  else if (type === 'debris') { rad = 3.5;
+    for (let i = 0; i < 4; i++) P.push(part(M_SPH, [rnd(-1.6, 1.6), rnd(-1.6, 1.6), rnd(-1.6, 1.6)], [rnd(1, 2.2), rnd(.8, 1.8), rnd(.7, 1.6)], c, { d: [.38, 1.3, .2, rnd(0, 3) | 0], k: .1 })); }
+  else if (type === 'echino') { rad = 3.9; P.push(part(M_SPH, [0, 0, 0], [3.3, 3.3, 3.3], c, { d: [.32, 2.7, .15, .5], k: .35 })); }   // 有棘赤血球
+  else if (type === 'carbon') { rad = 2.5;
+    for (let i = 0; i < 9; i++) P.push(part(M_ICO, [rnd(-1.4, 1.4), rnd(-1.4, 1.4), rnd(-1.4, 1.4)], [rnd(.4, 1), rnd(.35, .9), rnd(.3, .8)], c, { k: .7, rim: .05 })); }
+  else if (type === 'bead') { rad = 2.6; P.push(part(M_SPH, [0, 0, 0], [2.3, 2.3, 2.3], c, { k: 1.2, rim: .1, e: .1 })); }
+  else if (type === 'frag') { rad = 2.9; P.push(part(M_ICO, [0, 0, 0], [2.8, 1.7, .7], c, { k: .9, rim: .1, e: .04 })); }
+  else if (type === 'fiber') { rad = 2.4; P.push(part(M_NEE, [0, 0, 0], [.3, .3, 34], c, { k: .8, rim: .1, e: .05, q: [0, 0, 0, 1] })); }
+  else if (type === 'ring') { rad = 4; P.push(part(M_SPH, [0, 0, 0], [3.7, 3.7, 1.5], c, { nuc: [.28, .2, .94, .955, .985], q: [0, 0, 0, 1], k: .4 })); }
+  else if (type === 'lymph') { rad = 3.9; P.push(part(M_SPH, [0, 0, 0], [3.5, 3.5, 3.5], c, { d: [.05, 1.5, .5, 0], nuc: [0, .6, .8, .74, 2], track: true, q: [0, 0, 0, 1], k: .4 })); }
+  else if (type === 'self' || type === 'big') { const R = type === 'big' ? 15 : 5; rad = R * 1.15;
+    P.push(part(M_SPH, [0, 0, 0], [R, R, R], type === 'big' ? [.40, .34, .33] : COL.self, { d: [type === 'big' ? .2 : .14, type === 'big' ? .8 : 1.1, .7, 0], q: [0, 0, 0, 1], k: type === 'big' ? .06 : .3, rim: .8,
+      nuc: type === 'big' ? [.5, .3, .8, .8, 2] : null, track: type === 'big' }));
+    if (type === 'self') for (let i = 0; i < 4; i++) { const dir = norm([rnd(-1, 1), rnd(-1, 1), rnd(-.3, 1)]);
+      P.push(part(M_CAP, mul(dir, R * 1.05), [.9, .9, 1], COL.self, { q: qfromto([0, 0, 1], dir), wig: rnd(0, 9), d: [.12, 1.4, 1.2, 0], rim: .8 })); } }
+  else if (type === 'probe') { rad = 4;      // 外から刺しこまれる、太い針
+    P.push(part(M_NEE, [0, 0, 0], [1.6, 1.6, 9], [.24, .13, .04], { d: [.04, 3, .5, 0], q: [0, 0, 0, 1], k: .7, rim: .7, e: .12 })); }
+  else if (type === 'spit') { rad = 3.2;      // 針が残していったもの
+    for (let i = 0; i < 3; i++) P.push(part(M_SPH, [rnd(-1.3, 1.3), rnd(-1.3, 1.3), rnd(-1.3, 1.3)], [rnd(1.2, 2), rnd(1, 1.8), rnd(1, 1.6)], [.4, .46, .1], { d: [.4, 1.2, 1.2, 0], k: .5, e: .2 })); }
+  else if (type === 'clot') { rad = 4;       // 裂け目をふさぐ血小板のかたまり
+    for (let i = 0; i < 16; i++) { const a = rnd(0, 6.28), r = Math.sqrt(Math.random()) * 4.2; P.push(part(M_SPH, [Math.cos(a) * r, Math.sin(a) * r, rnd(-1.2, 1.2)], [rnd(1, 1.7), rnd(1, 1.7), .55], i % 4 ? [.5, .42, .28] : [.3, .04, .03], { d: [.2, 2, .3, 0], k: .2 })); } }
+  else if (type === 'neut') { rad = 6.4;     // 好中球
+    P.push(part(M_SPH, [0, 0, 0], [5.6, 5.6, 5.6], [.50, .47, .41], { d: [.1, 1.3, .9, 0], q: [0, 0, 0, 1], k: .3, rim: .7, nuc: [.3, .5, .8, .7, 2], track: true })); }
+  else if (type === 'worm') { rad = 8;        // 血の中を泳ぐ、細長いもの
+    for (let i = 0; i < 15; i++) { const r = 1.9 - Math.abs(i - 6) * .13; P.push(part(M_SPH, [0, 0, 0], [r, r, r * 1.5], [.10, .13, .05], { d: [.25, 1.6, 1.5, 0], q: [0, 0, 0, 1], k: .5, rim: .2, e: .5 })); } }
+  const anim = type !== 'worm' ? null : (o, t) => { const th = o.thrash || 1;
+    o.parts.forEach((p, i) => { p.o = [(i - 7) * 2.5, 2.6 * th * Math.sin(i * .62 + t * 3.1 * th), 2.1 * th * Math.cos(i * .5 + t * 2.3 * th)]; }); };
+  return { type, parts: P, rad, anim, q: type === 'big' ? [0, 0, 0, 1] : qrand(), w: mul(norm([rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)]), type === 'fiber' ? .03 : rnd(.12, .4)), s: 0, ox: 0, oy: 0, scale: 1, seed: Math.random() };
+}
+function pickType() {
+  const n = count + fails;
+  if (sep && sep.bact > .3) { const r = Math.random(); return (sep.storm > .3 || sep.shock > .3) && r < .3 ? 'rbc' : r < .62 ? 'rods' : r < .94 ? 'cocci' : 'debris'; }      // 血そのものが菌だらけ
+  if (cut && cut.germs > 0) { cut.germs--; return Math.random() < .5 ? 'rods' : 'cocci'; }
+  if (loop === 0 && n < 3) return ['rods', 'cocci', 'debris'][n];
+  let W;
+  if (stage < 1.5) W = { rods: 3, cocci: 3, debris: 2, echino: 2 };
+  else if (stage < 3) W = { rods: 2, cocci: 2, debris: 1, echino: 2, carbon: 3, ring: 2, bead: stage > 2 ? 2 : 0 };
+  else if (stage < 4.5) W = { carbon: 2, ring: 1, bead: 2, frag: 2, lymph: 3, fiber: fiberDone ? 0 : 7, rods: 1, cocci: 1 };
+  else if (stage < 5.8) W = { lymph: 1, self: selfDone ? 0 : 6, rbc: 4, none: 2, bead: 1, frag: 1, carbon: 1, echino: 1 };
+  else W = { rbc: 7, none: 3 };
+  if (stage >= 1.2 && stage < 5.8) {       // その部位らしいものが増える
+    const B = { gut: { rods: 4, cocci: 4 }, lung: { carbon: body.act === 'smoke' ? 10 : 4, fiber: fiberDone ? 0 : 3 }, skin: { frag: 3, bead: 3, debris: 2 }, brain: { ring: 4 }, finger: { frag: 3, debris: 3, bead: 2 }, heart: { echino: 2 }, muscle: { debris: 2, echino: 1 } }[env.name];
+    for (const k in B) W[k] = (W[k] || 0) + B[k];
+  }
+  if (lastType !== 'rbc') delete W[lastType];
+  let tot = 0; for (const k in W) tot += W[k]; let r = Math.random() * tot;
+  for (const k in W) { r -= W[k]; if (r <= 0) return k; } return 'rods';
+}
+function spawn(type) {
+  type = type || forceType || pickType(); forceType = null; lastType = type; LOG.push(type); if (type === 'fiber') fiberDone = true; if (type === 'self') selfDone = true;
+  const o = makeObj(type); o.s = cam.s + rnd(42, 66) / Math.sqrt(q);
+  frameAt(o.s); const lim = Math.max(1, F[12] - o.rad - 5);
+  o.ox = cam.ox + rnd(-5, 5); o.oy = cam.oy + rnd(-5, 5); const l = Math.hypot(o.ox, o.oy); if (l > lim) { o.ox *= lim / l; o.oy *= lim / l; }
+  if (type === 'fiber') { const a = rnd(0, 6.28); o.q = qfromto([0, 0, 1], norm([Math.cos(a), Math.sin(a), .35])); }
+  if (type === 'worm') { o.s = cam.s + 90; o.boss = true; o.q = [0, 0, 0, 1]; o.w = [.05, .1, 0]; }
+  o.sig = snd.sig(type); target = o; phase = 'cruise';
+}
+function clearTarget(inside) {
+  if (target && target.sig) target.sig.end(inside);
+  if (target && target.boss) { swarm.on = false; swarm.allies.forEach(a => { a.goal = null; }); swarm.allies.length = 0; snd.chordOff(); }
+  target = null;
+}
+// 皮膚や指先にいるとき、外から刺される（蚊）
+function startBite() {
+  if (target) clearTarget(); nextSpawn = 30; phase = 'cruise';
+  const s0 = cam.s + 30; frameAt(s0);
+  bite = { t: 0, s: s0, R: F[12], a: Math.atan2(cam.oy, cam.ox) + 3.1416 + rnd(-.8, .8), obj: null, gone: false, slap: Math.random() < .55, suck: 0, itch: 0, pump: 0, scr: 0, ally: 0, rc: 99 };
+  env.dur = Math.max(env.dur, env.t + 58); env.bit = true; LOG.push('!bite'); snd.mosq();
+}
+// 切り傷：壁が裂け、外の光と音がなだれこみ、血が出ていく。菌が入ってくる
+function startCut() {
+  if (target) clearTarget(); nextSpawn = 6; phase = 'cruise';
+  const s0 = cam.s + 24; frameAt(s0); const o = makeObj('clot'); o.s = s0; o.w = [0, 0, .001]; o.scale = .05;
+  cut = { t: 0, s: s0, R: F[12], a: Math.atan2(cam.oy, cam.ox) + 3.1416 + rnd(-.9, .9), obj: o, open: 0, plug: 0, germs: 5, ally: 0, pr: 0, infl: 0 };
+  o.ox = Math.cos(cut.a) * (cut.R - 1.5); o.oy = Math.sin(cut.a) * (cut.R - 1.5);
+  env.dur = Math.max(env.dur, env.t + 52); env.bit = true; LOG.push('!cut'); body.jolt = 2.6; body.flash = .7; body.adren = 1; snd.rip();
+}
+// 持ち主が死んだあと：何もかも捨てて、別の体のどこかから
+function rebirth() {
+  resetLoop(); loop = 0; incs.length = 0; sep = null; cut = null; bite = null; sepDark = 0; skip = 0; ambients.length = 0; sparks.length = 0;
+  body.dim = 0; body.drunk = 0; body.fever = 0; body.septicT = 0; body.card = null; uDark = 1; randomStart(); LOG.push('!rebirth');
+}
+// ヤバいものが出たら、ほかの免疫細胞も集まってくる
+function spawnBoss() {
+  spawn('worm'); body.swarmDone = true; swarm.on = true; const boss = target;
+  ['neut', 'self', 'neut', 'neut', 'self'].forEach((t, i) => {
+    const o = makeObj(t), a = i / 5 * 6.2832 + .6; o.s = cam.s - 18 - i * 14; o.ox = cam.ox * -.6 + Math.cos(a) * 4; o.oy = cam.oy * -.6 + Math.sin(a) * 4; o.amb = true; o.slot = i;
+    o.goal = () => target === boss ? [boss.s + [-7, 6, 0, -3, 8][i], boss.ox + Math.cos(a) * (boss.rad + 2.5), boss.oy + Math.sin(a) * (boss.rad + 2.5)] : null;
+    ambients.push(o); swarm.allies.push(o); });
+}
+// 白血球が、ただ流れていく（段階が進むと、核がこちらを向く）
+const ambients = [];
+function spawnAmbient() { const r0 = Math.random(), o = makeObj(r0 < .4 ? 'lymph' : r0 < .75 ? 'neut' : 'self'); o.s = cam.s - 30; const a = rnd(0, 6.28), r = rnd(9, 14); o.ox = Math.cos(a) * r; o.oy = Math.sin(a) * r; o.amb = true; ambients.push(o); }
+
+// ---------- 音
+let ac = null, A = null, muted = false;
+function audioInit() {
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC || ac) return;
+  ac = new AC();
+  const g = v => { const x = ac.createGain(); x.gain.value = v; return x; };
+  const master = g(.0001), comp = ac.createDynamicsCompressor(); comp.threshold.value = -15; comp.ratio.value = 5;
+  master.connect(comp); comp.connect(ac.destination); master.gain.setTargetAtTime(.9, ac.currentTime, .9);
+  const env = ac.createBiquadFilter(); env.type = 'lowpass'; env.frequency.value = 1100; env.Q.value = .4; env.connect(master);
+  const sr = ac.sampleRate, nb = ac.createBuffer(2, sr * 4, sr);
+  for (let c = 0; c < 2; c++) { const d = nb.getChannelData(c); let b = 0; for (let i = 0; i < d.length; i++) { b = (b + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = b * 3.5; }
+    for (let i = 0; i < 2000; i++) { const u = i / 2000; d[i] = d[i] * u + d[d.length - 2000 + i] * (1 - u); } }
+  const src = ac.createBufferSource(); src.buffer = nb; src.loop = true; src.loopEnd = 4 - 2000 / sr;
+  const flowF = ac.createBiquadFilter(); flowF.type = 'lowpass'; flowF.frequency.value = 300; const flowG = g(0);
+  src.connect(flowF); flowF.connect(flowG); flowG.connect(env);
+  const hissF = ac.createBiquadFilter(); hissF.type = 'bandpass'; hissF.frequency.value = 640; hissF.Q.value = .6; const hissG = g(0);
+  src.connect(hissF); hissF.connect(hissG); hissG.connect(env); src.start();
+  const droneG = g(0); droneG.connect(master);
+  [[46.2, 'sine', 1], [49.0, 'sine', 1], [92.9, 'triangle', .22]].forEach(([f, t, v]) => { const o = ac.createOscillator(); o.type = t; o.frequency.value = f; const x = g(v); o.connect(x); x.connect(droneG); o.start(); });
+  const out = ac.createBiquadFilter(), out2 = ac.createBiquadFilter(), outG = g(2.4);     // 体の外の音は、肉ごしに、ひどくこもって届く（低域通過を2段）
+  out.type = out2.type = 'lowpass'; out.frequency.value = out2.frequency.value = 300; out.Q.value = .6; out2.Q.value = .6; out.connect(out2); out2.connect(outG); outG.connect(master);
+  const breathF = ac.createBiquadFilter(); breathF.type = 'bandpass'; breathF.frequency.value = 600; breathF.Q.value = .7; const breathG = g(0);
+  src.connect(breathF); breathF.connect(breathG); breathG.connect(env);
+  const feverG = g(0); feverG.connect(master);
+  [3120, 3157].forEach(f => { const o = ac.createOscillator(); o.frequency.value = f; o.connect(feverG); o.start(); });
+  A = { master, env, nb, flowF, flowG, hissG, droneG, out, breathF, breathG, feverG, tin: 0, chord: null };
+}
+function thud(t, f0, vol, dur, dst) {
+  [[1, 1], [2.6, .1]].forEach(([m, v]) => { const o = ac.createOscillator(), e = ac.createGain(); o.frequency.setValueAtTime(f0 * m, t); o.frequency.exponentialRampToValueAtTime(f0 * m * .6, t + dur);
+    e.gain.setValueAtTime(.0001, t); e.gain.exponentialRampToValueAtTime(vol * v, t + .014); e.gain.exponentialRampToValueAtTime(.0001, t + dur * 1.7);
+    o.connect(e); e.connect(dst || A.master); o.start(t); o.stop(t + dur * 1.8); });
+}
+function burst(t, dur, f0, f1, Q, vol, pan, dry) {
+  const s = ac.createBufferSource(); s.buffer = A.nb; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = Q;
+  f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  const e = ac.createGain(); e.gain.setValueAtTime(.0001, t); e.gain.exponentialRampToValueAtTime(vol, t + dur * .25); e.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  s.connect(f); f.connect(e); let tail = e;
+  if (pan && ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = pan; e.connect(p); tail = p; }
+  tail.connect(dry === true ? A.master : dry || A.env); s.start(t, rnd(0, 3)); s.stop(t + dur + .05);
+}
+const SIG = {     // 異物ごとの「音の気配」。近づくほど大きくなる
+  rods:   { osc: [['sawtooth', 92], ['sawtooth', 97.3]], am: 23, lp: 900, g: .05 },
+  cocci:  { osc: [['sine', 187], ['sine', 199], ['sine', 211.5]], am: 3.1, g: .05 },
+  debris: { noise: [220, 2], am: .7, g: .5 },
+  echino: { noise: [3100, 14], am: 11, g: .6 },
+  carbon: { osc: [['sine', 31], ['sine', 33.5]], am: .4, g: .3 },
+  bead:   { osc: [['sine', 1244.5]], g: .014 },
+  frag:   { osc: [['sine', 1661], ['sine', 1668]], g: .01 },
+  fiber:  { osc: [['sine', 2093], ['sine', 2171], ['sine', 2794]], am: .3, g: .008 },
+  ring:   { osc: [['sine', 146.8], ['sine', 220]], am: .9, g: .05 },
+  self:   { osc: [['triangle', 110]], am: 1.03, g: .04 },
+  spit:   { osc: [['sine', 233], ['sine', 247]], am: 2, g: .04 },
+  worm:   { osc: [['sawtooth', 41], ['sawtooth', 43.7], ['square', 82.5]], noise: [700, 3], am: 6.5, lp: 520, g: .15 }
+};
+const snd = {
+  sig(type) {
+    const S = SIG[type]; if (!ac || !S) return null;
+    const t = ac.currentTime, mixG = ac.createGain(), amG = ac.createGain(), outG = ac.createGain(), lp = ac.createBiquadFilter(), srcs = [];
+    lp.type = 'lowpass'; lp.frequency.value = S.lp || 9000; outG.gain.value = 0; mixG.connect(lp); lp.connect(amG); amG.connect(outG); outG.connect(A.master);
+    (S.osc || []).forEach(([ty, f]) => { const o = ac.createOscillator(); o.type = ty; o.frequency.value = f; o.connect(mixG); o.start(); srcs.push(o); });
+    if (S.noise) { const n = ac.createBufferSource(); n.buffer = A.nb; n.loop = true; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = S.noise[0]; bp.Q.value = S.noise[1]; n.connect(bp); bp.connect(mixG); n.start(t, rnd(0, 3)); srcs.push(n); }
+    if (S.am) { amG.gain.value = .55; const l = ac.createOscillator(), lg = ac.createGain(); l.frequency.value = S.am; lg.gain.value = .45; l.connect(lg); lg.connect(amG.gain); l.start(); srcs.push(l); }
+    return { set(v) { outG.gain.setTargetAtTime(S.g * v, ac.currentTime, .15); },
+      end(inside) { const now = ac.currentTime; if (inside) { lp.frequency.setTargetAtTime(160, now, .25); outG.gain.setTargetAtTime(S.g * 1.3, now, .05); outG.gain.setTargetAtTime(0, now + .5, .9); } else outG.gain.setTargetAtTime(0, now, .3);
+        srcs.forEach(x => { try { x.stop(now + (inside ? 5 : 1.5)); } catch (e) {} }); } };
+  },
+  tone(f, vol, dur, type, dst) { const t = ac.currentTime + .02, o = ac.createOscillator(), e = ac.createGain(); o.type = type || 'sine'; o.frequency.value = f;
+    e.gain.setValueAtTime(.0001, t); e.gain.exponentialRampToValueAtTime(vol, t + .01); e.gain.setValueAtTime(vol, t + dur * .8); e.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(e); e.connect(dst || A.out); o.start(t); o.stop(t + dur + .05); },
+  step(v) { if (!ac || muted) return; thud(ac.currentTime + .02, 64, v * .45, .08, A.out); },
+  alarm() { if (!ac || muted) return; snd.tone(660, 1.5, .1, 'square'); setTimeout(() => { if (ac) snd.tone(660, 1.5, .1, 'square'); }, 180); },
+  tap() { if (!ac || muted) return; const t = ac.currentTime + .02; thud(t, 95, .12, .05, A.out); burst(t, .03, 700, 300, 1.5, 1.2, 0, A.out); },
+  swallow() { if (!ac || muted) return; const t = ac.currentTime + .02; burst(t, .32, 520, 110, 3, 1.3); thud(t + .22, 88, .16, .14); },
+  chew() { if (!ac || muted) return; burst(ac.currentTime + .02, .07, rnd(600, 900), 380, 3, 1.6, 0, A.out); },
+  gurgle() { if (!ac || muted) return; const t = ac.currentTime + .02, n = 2 + (Math.random() * 3 | 0); for (let i = 0; i < n; i++) burst(t + i * rnd(.18, .3), rnd(.25, .5), rnd(110, 220), rnd(60, 320), 7, 1.6, rnd(-.5, .5)); },
+  cough() { if (!ac || muted) return; const t = ac.currentTime + .02; burst(t, .2, 1300, 280, 1.1, 3); thud(t, 82, .45, .12); },
+  bass(i) { if (!ac || muted) return; snd.tone([49, 49, 65.4, 55, 49, 73.4, 65.4, 55][i % 8], .08, .3, 'sine', A.out); },
+  impact() { if (!ac || muted) return; const t = ac.currentTime + .02; thud(t, 46, 1, .32); burst(t, .25, 320, 60, 1, 3.2, 0, A.out); },
+  shock() { if (!ac || muted) return; const t = ac.currentTime + .02; thud(t, 60, 1.2, .36); burst(t, .2, 900, 200, 1, 3, 0, A.out); },
+  beep() { if (!ac || muted) return; snd.tone(620, 1.3, .09, 'square'); },                // 拍に合わせて鳴る、外の機械
+  flat() { if (!ac || muted) return; const t = ac.currentTime + .02, o = ac.createOscillator(), e = ac.createGain(); o.type = 'square'; o.frequency.value = 620;
+    e.gain.setValueAtTime(1.3, t); e.gain.setValueAtTime(1.3, t + 16); e.gain.linearRampToValueAtTime(0, t + 16.1); o.connect(e); e.connect(A.out); o.start(t); o.stop(t + 16.2); },
+  rip() { if (!ac || muted) return; const t = ac.currentTime + .02; burst(t, .35, 3200, 500, 1, 3, 0, true); thud(t, 58, 1, .28); },
+  press() { if (!ac || muted) return; thud(ac.currentTime + .02, 58, .3, .12, A.out); },
+  mosq() { if (!ac || muted) return; const t = ac.currentTime + .05, o = ac.createOscillator(), e = ac.createGain(), l = ac.createOscillator(), lg = ac.createGain();      // 羽音が近づいて、止まる
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(430, t); o.frequency.linearRampToValueAtTime(540, t + 2.2); o.frequency.linearRampToValueAtTime(500, t + 3);
+    l.frequency.value = 9; lg.gain.value = 22; l.connect(lg); lg.connect(o.frequency);
+    e.gain.setValueAtTime(.0001, t); e.gain.exponentialRampToValueAtTime(.25, t + 1.4); e.gain.exponentialRampToValueAtTime(1.5, t + 2.9); e.gain.linearRampToValueAtTime(0, t + 3.02);
+    o.connect(e); e.connect(A.out); o.start(t); l.start(t); o.stop(t + 3.1); l.stop(t + 3.1); },
+  pierce() { if (!ac || muted) return; const t = ac.currentTime + .02; burst(t, .09, 1500, 420, 2, 1.6, 0, true); thud(t, 120, .25, .06); },
+  pump() { if (!ac || muted) return; const t = ac.currentTime + .02; burst(t, .12, 210, 95, 2.5, 1.2); thud(t, 70, .1, .07); },
+  slap() { if (!ac || muted) return; const t = ac.currentTime + .02; thud(t, 50, 1, .26, A.out); thud(t, 44, .5, .3); burst(t, .14, 600, 120, 1, 4, 0, A.out); },
+  scratch() { if (!ac || muted) return; burst(ac.currentTime + .02, .15, rnd(460, 560), 250, 1.2, 2.4, 0, A.out); },
+  crackle() { if (!ac || muted) return; burst(ac.currentTime + .02, .035, rnd(3000, 6000), 2000, 4, 1.4, rnd(-.7, .7), true); },
+  steal() { if (!ac || muted) return; const t = ac.currentTime + .02; burst(t, .4, 900, 150, 2.5, .8); },
+  tin() { if (!ac || muted) return; const t = ac.currentTime, o = ac.createOscillator(), e = ac.createGain(); o.frequency.value = [4186, 5274, 3729, 6272][A.tin++ % 4];     // 後味の耳鳴り。小さく入って、30秒ほどで消える
+    e.gain.value = 0; e.gain.setTargetAtTime(.0011, t, 1.5); e.gain.setTargetAtTime(0, t + 8, 7); o.connect(e); e.connect(A.master); o.start(); o.stop(t + 50); },
+  chord(i) { if (!ac) return; if (!A.chord) A.chord = [196, 233.1, 277.2, 311.1, 370].map(f => { const o = ac.createOscillator(), e = ac.createGain(), l = ac.createOscillator(), lg = ac.createGain();
+      o.type = 'triangle'; o.frequency.value = f; e.gain.value = 0; l.frequency.value = rnd(3, 6); lg.gain.value = f * .012; l.connect(lg); lg.connect(o.frequency); o.connect(e); e.connect(A.master); o.start(); l.start(); return e; });
+    A.chord[i % 5].gain.setTargetAtTime(.03, ac.currentTime, .6); },
+  chordOff() { if (ac && A.chord) A.chord.forEach(e => e.gain.setTargetAtTime(0, ac.currentTime, 1.2)); },
+  beat(k) { if (!ac) return; const t = ac.currentTime + .02; thud(t, 55, .6 * k, .16); thud(t + .27, 70, .38 * k, .12);   // 心臓に近いほど大きい。近ければ弁の音も混じる
+    if (k > .25) { burst(t, .09, 190, 80, 1.4, 1.6 * (k - .25), 0, true); burst(t + .27, .07, 240, 110, 1.4, 1.1 * (k - .25), 0, true); } },
+  stretch(dur) { if (!ac) return; const t = ac.currentTime + .02; burst(t, dur, 380, 1250, 7, 1.1, 0, true);
+    for (let i = 0; i < 9; i++) burst(t + rnd(0, dur), .06, rnd(1400, 2400), 800, 11, .9, rnd(-.6, .6), true); },
+  gulp() { if (!ac) return; const t = ac.currentTime + .02; burst(t, .45, 1150, 130, 2.5, 2.2, 0, true); thud(t + .3, 105, .55, .2); burst(t + .52, .28, 320, 85, 1.5, 1.4, 0, true); },
+  strain() { if (!ac) return; const t = ac.currentTime + .02; for (let i = 0; i < 5; i++) burst(t + i * .42, .5, 500 + i * 130, 900 + i * 200, 9, 1.2, 0, true); thud(t + 2.3, 80, .5, .25); },
+  bubbles(n, span) { if (!ac) return; for (let i = 0; i < n; i++) { const t = ac.currentTime + rnd(.4, span), f = rnd(260, 820), o = ac.createOscillator(), e = ac.createGain();
+    o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.6, t + .07);
+    e.gain.setValueAtTime(.0001, t); e.gain.exponentialRampToValueAtTime(.035, t + .012); e.gain.exponentialRampToValueAtTime(.0001, t + .09);
+    o.connect(e); e.connect(A.master); o.start(t); o.stop(t + .1); } }
+};
+
+// ---------- 異物の気配（色、ゆらぎの数、速さ、明滅、大きさ）
+const FX = {
+  rods:   { c: [.22, .6, .1],   n: 5,  sp: 2.2, fl: .3,  sz: 3.4 },
+  cocci:  { c: [.8, .62, .08],  n: 3,  sp: .8,  fl: 0,   sz: 3.6, pulse: 2.2 },
+  debris: { c: [.3, .24, .2],   n: 2,  sp: .3,  fl: 0,   sz: 2.4 },
+  echino: { c: [.85, .04, .05], n: 9,  sp: .6,  fl: .15, sz: 3.2 },
+  carbon: { c: [.95, .95, .95], n: 4,  sp: .4,  fl: 0,   sz: 5,   dark: 1 },
+  bead:   { c: [.08, .55, .95], n: 1,  sp: .1,  fl: 0,   sz: 3.4 },
+  frag:   { c: [.7, .78, .85],  n: 1,  sp: .1,  fl: .5,  sz: 3.2 },
+  fiber:  { c: [.75, .75, .6],  n: 12, sp: 1.5, fl: .2,  sz: 4.5 },
+  ring:   { c: [.5, .1, .75],   n: 2,  sp: .5,  fl: 0,   sz: 3.8, pulse: .8 },
+  lymph:  { c: [.3, .28, .3],   n: 1,  sp: .2,  fl: 0,   sz: 2.2 },
+  self:   { c: [.4, .33, .32],  n: 3,  sp: .5,  fl: 0,   sz: 2.4, pulse: 1.03 },
+  spit:   { c: [.6, .72, .06],  n: 4,  sp: 1,   fl: 0,   sz: 3.6, pulse: .6 },
+  worm:   { c: [.5, .65, .04],  n: 7,  sp: 1.8, fl: .25, sz: 3.6, halo: 1 }
+};
+
+// ---------- 取り込む
+function addInc(type, o) {
+  const base = { a: rnd(0, 6.2832), e: rnd(.58, 1.06), w: rnd(-1, 1) * .025, born: T, seed: Math.random(), kind: 0, col: COL[type] || [.4, .3, .3], keep: false, alive: false, r: rnd(.11, .15) };
+  if (type === 'carbon') { for (let i = 0; i < 3; i++) incs.push(Object.assign({}, base, { a: base.a + rnd(-.25, .25), e: base.e + rnd(-.08, .08), kind: 3, keep: true, r: rnd(.012, .024), seed: Math.random() })); return; }
+  if (type === 'bead' || type === 'frag') Object.assign(base, { kind: 1, keep: true, r: type === 'bead' ? .04 : .034 });
+  if (type === 'fiber') Object.assign(base, { kind: 2, keep: true, e: .7, r: .9, rot: base.a + 1.57 + rnd(-.4, .4) });
+  if (type === 'self' || (type === 'lymph' && stage > 4)) base.alive = true;
+  Object.assign(base, o); incs.push(base);
+  while (incs.length > INCMAX - 2) { const i = incs.findIndex(x => !x.keep); incs.splice(i < 0 ? 0 : i, 1); }
+}
+function ingest() {
+  const type = target.type; count++; stage = Math.min(sep ? 6.9 : 7, stage + (sep ? .08 : .34));
+  snd.gulp(); snd.bubbles(type === 'none' ? 2 : 9, 6); addInc(type === 'worm' ? 'rods' : type);
+  // 呑んだものの後味
+  const fx = FX[type]; if (fx) body.tint = [fx.c[0], fx.c[1], fx.c[2], fx.dark ? 0 : .55];
+  if (type === 'carbon') body.dim = Math.min(.3, body.dim + .04);
+  if (type === 'bead' || type === 'frag') snd.tin();
+  if (type === 'rods' || type === 'worm') uStrain = 1;
+  if (type === 'worm') { body.flash = .35; stage = Math.min(7, stage + .34); }
+  clearTarget(true); phase = 'swallow'; pt = 0;
+}
+function resetLoop() {
+  loop++; LOG.push('|'); stage = 0; count = 0; fails = 0; fiberDone = false; selfDone = false; lastType = ''; body.feverDone = false; body.swarmDone = false; body.cardDone = false; body.dim *= .5;
+  const keep = incs.filter(x => x.kind === 3).slice(-14); incs.length = 0; keep.forEach(x => incs.push(x));   // 炭の粒だけは、次へ引き継がれる
+  clearTarget(); big = null; phase = 'wake'; pt = 0; uClose = 0; podExt = 0; podWrap = 0; cam.mul = .3; bpm = 62; skip = 0; nextSkip = 70; nextSpawn = 7;
+  const l = Math.hypot(cam.ox, cam.oy) || 1; cam.ox *= 5 / l; cam.oy *= 5 / l;
+}
+
+function update(dt) {
+  T += dt; pt += dt; q = 1 + stage * .13;
+  // 拍
+  if (skip > 0) { skip -= dt; } else { hp += dt * bpm / 60; if (hp >= 1) { hp -= 1; tb = 0; if (running && !muted) snd.beat((.04 + 1.1 * prox * prox) * sBeatG); if (sep && sep.hosp > .3 && !sep.dead) snd.beep(); } }
+  tb += dt;
+  const pf = x => x < 0 ? 0 : (1 - Math.exp(-x * 30)) * Math.exp(-x * 4.2) * 1.25;
+  pulse = pf(tb) + .4 * pf(tb - .27);
+  pulseS += (pulse - pulseS) * Math.min(1, dt * 6);
+  flowMul += ((skip > 0 ? .05 : 1) - flowMul) * Math.min(1, dt * (skip > 0 ? 2.2 : 1.2));
+  glow += ((skip > 0 ? .15 : 1) - glow) * Math.min(1, dt * 1.5);
+  // 部位
+  const dead = sep && sep.dead;     // 持ち主が止まったら、巡りも一日も止まる
+  if (!dead) env.t += dt; if (env.t > env.dur && phase !== 'end') nextRegion();
+  const Rg = REG[env.name], ke = Math.min(1, dt * .4);
+  for (const k of ['fog', 'grade', 'wall', 'rbc']) for (let i = 0; i < 3; i++) env[k][i] += (Rg[k][i] - env[k][i]) * ke;
+  env.flow += (Rg.flow - env.flow) * ke; prox += (Rg.prox - prox) * Math.min(1, dt * .3);
+  // 体の持ち主
+  const Ac = ACT[body.act]; if (!dead) body.t += dt; if (body.t > body.dur && phase !== 'end') nextAct();
+  if (phase !== 'end' && !body.card && !sep) bpm += (Ac.bpm + 45 * body.adren - bpm) * Math.min(1, dt * .25);
+  body.bph += dt * (sep ? .55 : Ac.br[0]); { const ph = body.bph % 1; body.inh = ph < .42 ? 1 : 0; const u = ph < .42 ? ph / .42 : (ph - .42) / .58;
+    body.breath = ph < .42 ? smooth(u) : 1 - smooth(u); body.air = Math.sin(Math.PI * u) * Ac.br[1]; }
+  if (Ac.step) { body.sph += dt * Ac.step; if (body.sph >= 1) { body.sph -= 1; body.step = 1; snd.step(env.name === 'muscle' ? .5 : .13); } }
+  body.step *= Math.exp(-dt * 7); body.sway += (Ac.sway - body.sway) * Math.min(1, dt * .5);
+  body.drunk = body.act === 'drink' ? Math.min(1, body.drunk + dt / 25) : Math.max(0, body.drunk - dt / 90);
+  body.fever += ((body.act === 'fever' ? 1 : 0) - body.fever) * Math.min(1, dt * .12);
+  body.adren *= Math.exp(-dt / 8); body.jolt *= Math.exp(-dt * 5); body.flash *= Math.exp(-dt * 4); body.tint[3] *= Math.exp(-dt / 1.4);
+  { let L = Ac.light, C = [.5, .28, .12];        // 皮膚の近くでは、外の明かりが透ける。夜は、画面の青い明滅
+    if (L === 'tv') { const h = Math.abs(Math.sin(Math.floor(T * 7) * 12.9898) * 43758.5453) % 1; L = .1 + .45 * h; C = [.1, .16, .42]; }
+    body.light += (L - body.light) * Math.min(1, dt * 6); for (let i = 0; i < 3; i++) body.lightC[i] += (C[i] - body.lightC[i]) * Math.min(1, dt * 2);
+    const gc = env.name === 'skin' || (env.name === 'finger' && Ac.light === 'tv') ? body.lightC : Rg.glowC; for (let i = 0; i < 3; i++) env.glowC[i] += (gc[i] - env.glowC[i]) * ke * 2;
+    const o = env.name === 'skin' ? body.light : env.name === 'finger' ? .45 + .8 * body.light : env.name === 'lung' ? body.breath * .8 * Ac.br[1] + .1 : 0; env.out += (o - env.out) * Math.min(1, dt * 4);
+    env.spark += ((env.name === 'brain' ? (body.act === 'sleep' ? 1.4 : .5) : 0) - env.spark) * Math.min(1, dt); }
+  body.tap *= Math.exp(-dt * 9);        // 指先では、持ち主が何かに触れるたびに押しつぶされる
+  if (env.name === 'finger' && Math.random() < dt * (body.act === 'work' ? 4.5 : body.act === 'sleep' ? .05 : .6)) { body.tap = 1; body.jolt = Math.max(body.jolt, .2); snd.tap(); }
+  body.ev -= dt; body.ev2 -= dt;
+  if (body.act === 'wake' && body.t < 5.6 && body.ev < 0) { body.ev = .9; snd.alarm(); }
+  if (body.act === 'eat') { if (body.ev < 0) { body.ev = rnd(3.5, 6.5); snd.swallow(); } if (body.ev2 < 0) { body.ev2 = .55; if (body.ev > 1.2 && Math.random() < .75) snd.chew(); } }
+  if (body.act === 'drink' && body.t < 12 && body.ev < 0) { body.ev = rnd(1.6, 3); snd.swallow(); }
+  if (body.act === 'smoke' && body.ev < 0) { body.ev = rnd(5, 8); const n = 1 + (Math.random() * 3 | 0); for (let i = 0; i < n; i++) setTimeout(() => { body.jolt = 1; snd.cough(); }, i * 330); }
+  if ((body.act === 'rest' || body.act === 'drink') && (body.bass -= dt) < 0) { body.bass += .6; snd.bass(Math.floor(T / .6)); }
+  if (body.act === 'fever') body.jolt = Math.max(body.jolt, .1 + .1 * Math.sin(T * 31));
+  if ((env.name === 'gut' || body.act === 'eat') && Math.random() < dt / (env.name === 'gut' ? 3 : 9)) snd.gurgle();
+  if (body.injT > 0 && (body.injT -= dt) <= 0) { body.jolt = 2.2; body.flash = .5; body.adren = 1; snd.impact(); }
+  if (env.name === 'heart' && tb < dt * 1.5) body.jolt = Math.max(body.jolt, .5);
+  // 異変：拍が乱れ、止まり、外から叩き起こされる
+  if (!body.cardDone && !sep && stage >= 5 && (body.act === 'sleep' || body.act === 'rest') && body.t > 6 && phase === 'cruise') { body.card = { t: 0 }; body.cardDone = true; LOG.push('!card'); }
+  if (body.card) { const c = body.card; c.t += dt;
+    if (c.t < 6 && skip <= 0 && Math.random() < dt * .9) skip = rnd(.5, 1.3);
+    if (c.t >= 6 && !c.p) { c.p = 1; skip = 7.6; }
+    if (c.t >= 13 && !c.s) { c.s = 1; skip = 0; hp = .99; bpm = 128; body.jolt = 3; body.flash = 1; body.adren = 1; snd.shock(); }
+    if (c.t > 16) body.card = null; }
+  uStrain = Math.max(uStrain, Math.min(1, body.jolt * .6));
+  // 敗血症：菌が血に回る → 熱と、味方の暴走 → 流れが落ちる → 外で手が尽くされる → 持ち直すか、止まる
+  let sFlow = 1; sBeatG = 1; sFogG = 1; SEPG[0] = SEPG[1] = SEPG[2] = 1;
+  if (body.septicT > 0 && !sep && phase !== 'end' && (body.septicT -= dt) <= 0) { sep = { t: 0, die: Math.random() < .35, sp: 0, bact: 0, storm: 0, shock: 0, hosp: 0 }; LOG.push('!sepsis' + (sep.die ? '-die' : '')); }
+  if (sep) { const z = sep; z.t += dt; const t = z.t;
+    const bact = z.bact = smooth(t / 25) * (1 - smooth((t - 135) / 30)), storm = z.storm = smooth((t - 40) / 20) * (1 - smooth((t - 88) / 15));
+    const shock = z.shock = smooth((t - 90) / 20) * (z.die ? 1 : 1 - smooth((t - 145) / 35)), hosp = z.hosp = smooth((t - 128) / 12);
+    body.fever = Math.max(body.fever, Math.min(1.4, bact + .5 * storm) * (1 - shock * .8));
+    if (!z.dead) bpm += ((t < 40 ? 122 : t < 90 ? 148 : z.die ? (t > 150 ? 36 : 140) : 138 - 50 * smooth((t - 150) / 40)) - bpm) * Math.min(1, dt * (t > 150 && z.die ? .12 : .5));
+    sFlow = 1 - .75 * shock; sBeatG = 1 - .65 * shock; sFogG = 1 + .5 * storm - .55 * shock + .45 * hosp * (1 - shock * .6);
+    SEPG[0] = 1 + .25 * storm - .28 * shock + .12 * hosp; SEPG[1] = 1 - .08 * storm - .12 * shock + .14 * hosp; SEPG[2] = 1 - .1 * storm + .06 * shock + .16 * hosp;
+    if (storm > .1) { body.jolt = Math.max(body.jolt, .22 * storm * (.5 + .5 * Math.sin(T * 27))); uStrain = Math.max(uStrain, .25 * storm);
+      if (Math.random() < dt * 7 * storm && sparks.length < 24) sparks.push({ s: cam.s + rnd(6, 45), ox: rnd(-8, 8), oy: rnd(-8, 8), life: rnd(.1, .25), seed: Math.random() });
+      if (Math.random() < dt * 2 * storm) snd.crackle(); }
+    if (shock > .3 && skip <= 0 && !z.dead && Math.random() < dt * .35 * shock) skip = rnd(.3, .8);
+    if ((z.sp -= dt) < 0 && ambients.length < 7) { z.sp = rnd(2.5, 5); const r = Math.random();       // 菌のかたまり、血のかたまり、駆けつける細胞が流れてくる
+      const ty = bact > .3 && r < .55 ? (r < .3 ? 'rods' : 'cocci') : shock > .4 && r < .8 ? 'debris' : r < .85 ? 'neut' : 'self', o = makeObj(ty), a = rnd(0, 6.28), rr = rnd(3, 11);
+      o.s = cam.s - 30; o.ox = Math.cos(a) * rr; o.oy = Math.sin(a) * rr; o.amb = true; o.contam = ty === 'rods' || ty === 'cocci'; ambients.push(o); }
+    if (z.die) {
+      if (t >= 168 && !z.dead) { z.dead = 1; skip = 1e9; snd.flat(); LOG.push('!flat'); }
+      if (z.dead) { sFlow = 0;
+        if (t >= 174 && !z.s1) { z.s1 = 1; body.jolt = 3; body.flash = .9; tb = 0; snd.shock(); }
+        if (t >= 180 && !z.s2) { z.s2 = 1; body.jolt = 3; body.flash = .9; tb = 0; snd.shock(); }
+        sepDark = smooth((t - 186) / 34) * .94; if (t > 226) rebirth(); }
+    } else if (t > 205) sep = null;
+  }
+  const flow = mix(36, 100, prox) * env.flow / .62 * (.8 + bpm / 320) * (RM ? .8 : mix(.85, .2 + 1.2 * pulseS, Math.pow(prox, .7))) * flowMul * sFlow;
+  if (phase !== 'end' && phase !== 'wake' && stage >= 2 && !sep && (nextSkip -= dt) < 0 && phase === 'cruise') {
+    skip = rnd(2.6, 5); nextSkip = rnd(40, 75);
+  }
+  flowNow = flow;
+  // 自分
+  const camV = Math.min(16, flow * .3) * cam.mul; cam.s += camV * dt;
+  const camChunk = Math.floor(cam.s / (DS * CH));
+  for (let c = Math.max(0, camChunk - 2); c <= camChunk + 9; c++) if (!chunks[c]) buildChunk(c);
+  for (const k in chunks) if (+k < camChunk - 3) { gl.deleteBuffer(chunks[k].vb); delete chunks[k]; }
+  while (i0 < (camChunk - 3) * CH) { nodes.splice(0, CH); i0 += CH; }
+  frameAt(cam.s); const Rc = F[12];
+  let wantMul = 1 - .28 * clamp(count / 22, 0, 1), lane = [Math.max(.5, Rc - 9) * Math.cos(T * .037 - .6), Math.max(.5, Rc - 9) * Math.sin(T * .037 - .6)], laneRate = .25, gazeT = 0;
+  uStrain += (0 - uStrain) * Math.min(1, dt * 1.5);
+
+  // 標的の状態
+  if (target) {
+    const o = target; let gap = o.s - cam.s; const hold = o.rad * (W < H ? 1.6 : 1) + 5.2;
+    o.q = qnorm(qmul(qaxis(norm(o.w), len(o.w) * dt), o.q));
+    if (o.anim) { o.thrash = 1 + .5 * swarm.allies.filter(a => a.arrived).length * (phase === 'cruise' ? .3 : 1); o.anim(o, T); }
+    if (o.sig) o.sig.set(phase === 'cruise' || phase === 'approach' ? Math.pow(smooth((95 - gap) / 80), 1.5) : 1);
+    if (phase === 'cruise') { o.s += camV * .42 * dt; if (gap < 48) { phase = 'approach'; pt = 0; } if (gap < -20) clearTarget();
+      // たまに、ほかの細胞に先を越される
+      if (target && !o.boss && !o.chk && gap < 60) { o.chk = 1; if (stage >= 1 && Math.random() < .14) { const th = makeObj(Math.random() < .5 ? 'self' : 'neut'); th.s = o.s + 30; th.ox = -o.ox * .5; th.oy = -o.oy * .5; th.amb = true; th.prey = o;
+        th.goal = () => target === o ? [o.s, o.ox, o.oy] : null; ambients.push(th); } } }
+    else if (phase === 'approach') {
+      lane = [o.ox, o.oy]; laneRate = 1.3; gazeT = .85; wantMul = gap > hold + 9 ? 1.5 : .6;       // 見つけたら、飛びつく
+      const closing = clamp((gap - hold) * 1.5, .7, 24); o.s += (camV - closing) * dt;
+      podExt = Math.max(podExt, .24 * smooth(pt / 1.2)); podWrap = 0;
+      if (gap <= hold + .25) { phase = 'reach'; pt = 0; o.rt = (o.boss ? 6.5 : 2.6) / (o.boss ? 1 : q); snd.stretch(o.rt); }
+    } else if (phase === 'reach') {
+      lane = [o.ox, o.oy]; laneRate = 1.5; gazeT = .92; wantMul = .42; o.s = cam.s + hold;
+      podExt = mix(.24, 1, smooth(pt / o.rt)); podWrap = 0;
+      if (o.boss) { uStrain = Math.max(uStrain, .35 + .35 * Math.sin(pt * 5)); if (Math.random() < dt * 1.2) body.jolt = Math.max(body.jolt, .5); }
+      if (pt > o.rt + .2) { phase = 'engulf'; pt = 0; }
+    } else if (phase === 'engulf') {
+      lane = [o.ox, o.oy]; laneRate = 2; gazeT = .95; wantMul = .38;
+      const u = pt / (o.boss ? 3.4 : 2.0 / q), fib = o.type === 'fiber';
+      podExt = 1; podWrap = smooth(u * 1.4);
+      o.s = cam.s + mix(hold, fib ? hold * .55 : .9, smooth(u)); o.scale = 1 - .3 * smooth(u * 1.2 - .2) * (fib ? 0 : 1);
+      uClose = smooth((u - .35) / .5) * (fib ? .6 : 1);
+      if (fib && u > .7) { phase = 'fail'; pt = 0; snd.strain(); }
+      else if (u >= 1) ingest();
+    } else if (phase === 'fail') {       // 長すぎて、包みきれない
+      lane = [o.ox, o.oy]; gazeT = .9; wantMul = .3; o.s = cam.s + hold * .55 - pt * .4;
+      uStrain = .5 + .5 * Math.sin(pt * 7); uClose = .52 + .12 * Math.sin(pt * 3.1) - smooth((pt - 2) / .8) * .6; podWrap = .8;
+      if (pt > 2.8) { fails++; stage = Math.min(7, stage + .34); addInc('fiber'); clearTarget(true); phase = 'swallow'; pt = .4; uClose = 0; }
+    }
+  } else if (phase === 'cruise') { if ((nextSpawn -= dt) < 0) { if (stage >= 7 && !sep) { phase = 'end'; pt = 0; }
+    else if (!body.swarmDone && ((body.act === 'fever' && body.t > 8) || stage >= 5)) spawnBoss(); else spawn(); } }
+  if (phase === 'swallow') {
+    wantMul = .5; uClose = Math.min(uClose, 1 - smooth((pt - .35) / 1.25)); podExt = Math.max(0, podExt - dt * 2.5); podWrap = Math.max(0, podWrap - dt);
+    if (pt > 1.7) { phase = 'cruise'; uClose = 0; podExt = 0; nextSpawn = rnd(1.5, 4.5) / q * (sep && sep.bact > .3 ? .3 : cut && cut.germs > 0 ? .4 : 1); }
+  }
+  // 蚊：羽音 → 針が壁を破って入る → 血が一点へ吸われる → 抜ける（叩かれることも） → 赤く腫れ、掻かれる
+  const inSkin = env.name === 'skin' || env.name === 'finger';
+  if (!bite && !env.bit && inSkin && env.t > 8 && env.t < env.dur - 20 && phase === 'cruise' && !(target && target.boss) && !cut && Math.random() < dt / 4) ((skinEv = !skinEv) ? startCut : startBite)();       // 蚊と切り傷が、かわるがわる
+  if (bite) { const b = bite; b.t += dt;
+    if (b.t > 3.6 && !b.obj && !b.gone) { b.obj = makeObj('probe'); b.obj.s = b.s; body.jolt = Math.max(body.jolt, .6); snd.pierce(); }
+    if (b.obj) { const o = b.obj, ca = Math.cos(b.a), sa = Math.sin(b.a);
+      const pr = b.t < 7 ? 2.2 * Math.sin(b.t * 19) * (1 - (b.t - 3.6) / 3.4) : .35 * Math.sin(b.t * 31);       // はじめは探るように出入りする
+      b.rc = b.R + 9 - 16 * smooth((b.t - 3.6) / .5) + pr; o.ox = ca * b.rc; o.oy = sa * b.rc;
+      frameAt(o.s); o.q = qfromto([0, 0, 1], norm([-(F[6] * ca + F[9] * sa) - .35 * F[3], -(F[7] * ca + F[10] * sa) - .35 * F[4], -(F[8] * ca + F[11] * sa) - .35 * F[5]]));
+      b.suck = smooth((b.t - 6.5) / 2);
+      if (b.suck > 0 && (b.pump -= dt) < 0) { b.pump = .21; snd.pump(); uStrain = Math.max(uStrain, .3); }
+      const gap = o.s - cam.s; wantMul = clamp((gap - 13) * .35, -.25, 1.5); lane = [o.ox * .45, o.oy * .45]; laneRate = .8;       // こちらも引き寄せられ、針に取りつこうとする
+      podExt = Math.max(podExt * (1 - dt), smooth((19 - gap) / 5)); podWrap = .25 + .2 * Math.sin(T * 3.1);
+      if (b.t >= 18) { if (b.slap) { body.jolt = 2.6; body.flash = .3; body.tap = 1.7; snd.slap(); } b.obj = null; b.gone = true; b.suck = 0; phase = 'swallow'; pt = .4; forceType = 'spit'; nextSpawn = 3; body.adren = Math.max(body.adren, .3); }
+    }
+    if (b.gone) { b.itch = smooth((b.t - 18) / 6);
+      if (b.ally < 3 && b.t > 20 + b.ally * 2.5) { const o = makeObj('neut'), k = b.ally++, t0 = T; o.s = cam.s - 25; o.ox = Math.cos(k * 2.1) * 5; o.oy = Math.sin(k * 2.1) * 5; o.amb = true;
+        o.goal = () => T - t0 < 18 && bite ? [cam.s + 9 + k * 6, Math.cos(k * 2.1 + T * .2) * 4, Math.sin(k * 2.1 + T * .2) * 4] : null; ambients.push(o); }
+      if (b.t > 24 && (b.t - 24) % 9 < 2.4 && (b.scr -= dt) < 0) { b.scr = .22; body.tap = 1; body.jolt = Math.max(body.jolt, .25); snd.scratch(); }
+      if (!inSkin || phase === 'end') bite = null; }
+  }
+  if (cut) { const c = cut; c.t += dt;
+    c.plug = smooth((c.t - 5) / 12); c.open = smooth(c.t / .4) * (1 - c.plug); c.obj.scale = .05 + .95 * c.plug; c.infl = smooth((c.t - 10) / 10);
+    if (c.open > .12) { const gap = c.s - cam.s; wantMul = clamp((gap - 9) * .35, -.2, 1.5); lane = [c.obj.ox * .55, c.obj.oy * .55]; laneRate = .9; uStrain = Math.max(uStrain, .3 * c.open); }
+    if (c.ally < 3 && c.t > 8 + c.ally * 3) { const o = makeObj('neut'), k = c.ally++, t0 = T; o.s = cam.s - 25; o.ox = Math.cos(k * 2.1) * 5; o.oy = Math.sin(k * 2.1) * 5; o.amb = true;
+      o.goal = () => T - t0 < 18 && cut ? [cam.s + 9 + k * 6, Math.cos(k * 2.1 + T * .2) * 4, Math.sin(k * 2.1 + T * .2) * 4] : null; ambients.push(o); }
+    if (c.t > 6 && c.t < 16 && (c.pr -= dt) < 0) { c.pr = rnd(.5, 1.1); body.tap = Math.max(body.tap, .8); snd.press(); }       // 持ち主が傷を押さえる
+    if (c.t > 12 && !c.sept) { c.sept = 1; if (!sep && body.septicT <= 0 && Math.random() < .75) body.septicT = rnd(60, 110); }   // 入った菌が、あとで全身に回ることがある
+    if (!inSkin || phase === 'end' || c.t > 70) cut = null; }
+  // 終わり：満ちて、壁に貼りつき、もっと大きなものに包まれる
+  if (phase === 'end') {
+    wantMul = Math.max(0, 1 - pt / 6) * .5; bpm += (40 - bpm) * dt * .3; laneRate = .5; body.card = null;
+    const l = Math.hypot(cam.ox, cam.oy) || 1; lane = [cam.ox / l * Math.max(.5, Rc - 8.5), cam.oy / l * Math.max(.5, Rc - 8.5)];
+    if (pt > 3 && !big) { big = makeObj('big'); big.s = cam.s + 150; big.ox = 0; big.oy = 0; }
+    if (big) { const gap = Math.max(26, 150 - (pt - 3) * 13); big.s = cam.s + gap; big.ox += (cam.ox * .4 - big.ox) * dt * .3; big.oy += (cam.oy * .4 - big.oy) * dt * .3;
+      big.q = qnorm(qmul(qaxis([0, 1, 0], .05 * dt), big.q)); gazeT = .9; }
+    if (pt > 13 && pt - dt <= 13) snd.stretch(4);
+    podExt = smooth((pt - 13) / 4); podWrap = 0;
+    uClose = smooth((pt - 15.5) / 2); uDark = smooth((pt - 17.3) / 1.6);
+    if (pt > 17.5 && pt - dt <= 17.5) { snd.gulp(); skip = 9; }
+    if (pt > 23.5) resetLoop();
+  }
+  if (phase === 'wake') { uDark = 1 - smooth(pt / 4); wantMul = 1; if (pt > 4.5) { phase = 'cruise'; uDark = 0; } }
+
+  cam.mul += (wantMul - cam.mul) * Math.min(1, dt * 1.2);
+  const lim = Math.max(.5, Rc - 9), ll = Math.hypot(lane[0], lane[1]); if (ll > lim) { lane[0] *= lim / ll; lane[1] *= lim / ll; }
+  cam.ox += (lane[0] - cam.ox) * Math.min(1, dt * laneRate); cam.oy += (lane[1] - cam.oy) * Math.min(1, dt * laneRate);
+  gazeW += (gazeT - gazeW) * Math.min(1, dt * 1.6);
+
+  // 赤血球
+  const n = NR(), back = cam.s - 42, span = 292;
+  const bo = bite && bite.obj, sk = bo ? bite.suck : cut ? Math.min(1, cut.open * 1.2) : 0, bS = bo ? bite.s : cut ? cut.s : 0;
+  const bX = bo ? Math.cos(bite.a) * (bite.rc - 8.5) / bite.R : cut ? Math.cos(cut.a) * .97 : 0, bY = bo ? Math.sin(bite.a) * (bite.rc - 8.5) / bite.R : cut ? Math.sin(cut.a) * .97 : 0;
+  for (let i = 0; i < n; i++) {
+    const r2 = rb.fx[i] * rb.fx[i] + rb.fy[i] * rb.fy[i];
+    let v = flow * (1.12 - .85 * r2) * rb.sp[i];
+    if (sk > 0) { const ds = bS - rb.s[i]; if (ds > -50 && ds < 50) { v = mix(v, Math.sign(ds) * 46 * rb.sp[i], sk); const kk = Math.min(1, dt * 2.2 * sk * (1 - Math.abs(ds) / 50));
+      rb.fx[i] += (bX - rb.fx[i]) * kk; rb.fy[i] += (bY - rb.fy[i]) * kk; if (Math.abs(ds) < 2.5) { seedRBC(i, cam.s - 42 + rnd(0, 14)); continue; } } }
+    rb.s[i] += v * dt;
+    if (rb.s[i] > back + span) seedRBC(i, rb.s[i] - span); else if (rb.s[i] < back) seedRBC(i, rb.s[i] + span);
+    const j = i * 4, k = i * 3, hx = rb.w[k] * dt * .5, hy = rb.w[k + 1] * dt * .5, hz = rb.w[k + 2] * dt * .5;
+    const x = rb.q[j], y = rb.q[j + 1], z = rb.q[j + 2], w = rb.q[j + 3];
+    let nx = x + hx * w + hy * z - hz * y, ny = y - hx * z + hy * w + hz * x, nz = z + hx * y - hy * x + hz * w, nw = w - hx * x - hy * y - hz * z;
+    const il = 1 / Math.hypot(nx, ny, nz, nw); rb.q[j] = nx * il; rb.q[j + 1] = ny * il; rb.q[j + 2] = nz * il; rb.q[j + 3] = nw * il;
+  }
+  for (let i = 0; i < NM; i++) { mo.s[i] += flow * (1.1 - .8 * (mo.fx[i] * mo.fx[i] + mo.fy[i] * mo.fy[i])) * dt; if (mo.s[i] > cam.s + 110) mo.s[i] -= 124; else if (mo.s[i] < cam.s - 14) mo.s[i] += 124; }
+  // 流れていく白血球
+  if ((nextAmbient -= dt) < 0 && ambients.length < 2 && phase !== 'end') { spawnAmbient(); nextAmbient = rnd(25, 55); }
+  for (let i = ambients.length - 1; i >= 0; i--) { const o = ambients[i]; o.q = qnorm(qmul(qaxis(norm(o.w), len(o.w) * dt), o.q));
+    const g = o.goal ? o.goal() : null;
+    if (g) { const ds = g[0] - o.s; o.s += camV * dt + clamp(ds * 1.6, -34, 34) * dt; o.ox += (g[1] - o.ox) * Math.min(1, dt * 1.2); o.oy += (g[2] - o.oy) * Math.min(1, dt * 1.2);
+      if (Math.abs(ds) < 2.5) { if (o.prey && target === o.prey && phase === 'cruise') { clearTarget(); snd.steal(); nextSpawn = rnd(1, 2.5); o.goal = null; }
+        else if (o.slot != null && !o.arrived) { o.arrived = true; snd.chord(o.slot); } } }
+    else { o.goal = null; o.s += flow * .78 * dt; }
+    if (o.s > cam.s + 240 || o.s < cam.s - 160) ambients.splice(i, 1); }
+  // 集まった細胞が、相手を焼く火花
+  if (target && target.boss) { const na = swarm.allies.filter(a => a.arrived).length + (phase === 'reach' || phase === 'engulf' ? 2 : 0);
+    if (Math.random() < dt * 5 * na && sparks.length < 24) { sparks.push({ s: target.s + rnd(-14, 14), ox: target.ox + rnd(-4, 4), oy: target.oy + rnd(-4, 4), life: rnd(.12, .3), seed: Math.random() }); if (Math.random() < .5) snd.crackle(); } }
+  for (let i = sparks.length - 1; i >= 0; i--) if ((sparks[i].life -= dt) < 0) sparks.splice(i, 1);
+  // 取り込んだもの
+  for (const x of incs) { x.a += x.w * dt; if (x.alive) x.a += Math.sin(T * 9 + x.seed * 50) * Math.max(0, Math.sin(T * .7 + x.seed * 20) - .6) * dt * .6; }
+  // 見まわす
+  if (!look.drag) { look.yaw += (0 - look.yaw) * Math.min(1, dt * .7); look.pitch += (0 - look.pitch) * Math.min(1, dt * .7); }
+  // 音
+  if (ac && A) { const t = ac.currentTime, full = clamp(count / 22, 0, 1);
+    A.flowG.gain.setTargetAtTime((.06 + .13 * flow / 60 + .3 * pulseS * prox) * flowMul + .01, t, .06); A.flowF.frequency.setTargetAtTime(230 + 430 * pulseS, t, .06);
+    A.hissG.gain.setTargetAtTime((.02 + .13 * prox) * pulse * flowMul + (cut ? .3 * cut.open : 0), t, .04);
+    A.env.frequency.setTargetAtTime(Math.max(170, 1150 - 300 * body.drunk - 480 * full - (skip > 0 ? 380 : 0) - 280 * clamp(uClose, 0, 1) - (sep ? 350 * sep.shock : 0)) + (cut ? 6000 * cut.open : 0), t, .12);
+    A.droneG.gain.setTargetAtTime(.012 + .075 * full * full + (phase === 'end' ? .05 : 0), t, 1.5);
+    A.breathG.gain.setTargetAtTime(muted ? 0 : body.air * (env.name === 'lung' ? .55 : .07) * (body.act === 'run' ? 1.4 : 1), t, .08);
+    A.breathF.frequency.setTargetAtTime(body.inh ? 820 : 470, t, .1);
+    A.feverG.gain.setTargetAtTime(.0009 * body.fever, t, 1);
+  }
+}
+
+// ---------- 描く
+let W = 1, H = 1, SW = 1, SH = 1, fbo = null, accI = 0; const acc = [null, null];
+function mkTarget(w, h, depth) {
+  const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  let rb = null; if (depth) { rb = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, rb); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb); }
+  gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+  return { fb, tex, rb };
+}
+const freeTarget = t => { if (!t) return; gl.deleteFramebuffer(t.fb); gl.deleteTexture(t.tex); if (t.rb) gl.deleteRenderbuffer(t.rb); };
+function resize() {     // 短い辺を400画素にして描き、その半分の解像度で景色を作る。あとは拡大でぼける
+  const cw = cv.clientWidth || 2, ch = cv.clientHeight || 2, k = Math.min(1, 400 / Math.min(cw, ch));
+  const w = Math.max(2, Math.round(cw * k)), h = Math.max(2, Math.round(ch * k));
+  if (w === W && h === H && fbo) return; W = cv.width = w; H = cv.height = h; SW = Math.max(2, w >> 1); SH = Math.max(2, h >> 1);
+  freeTarget(fbo); freeTarget(acc[0]); freeTarget(acc[1]); fbo = mkTarget(SW, SH, true); acc[0] = mkTarget(SW, SH); acc[1] = mkTarget(SW, SH);
+}
+function drawObj(o, R, U, Fw, P) {
+  if (!o.parts.length) return;
+  const op = sub(posAt(o.s, o.ox, o.oy), cam.p);
+  for (const p of o.parts) {
+    let pq = p.q; if (p.wig != null) pq = qmul(pq, qaxis([1, 0, 0], .32 * Math.sin(T * 2.6 + p.wig)));
+    const tq = qmul(o.q, pq), tp = add(op, qrot(o.q, mul(p.o, o.scale)));
+    gl.uniformMatrix3fv(P.u('uR'), false, qmat(tq)); gl.uniform3f(P.u('uS'), p.s[0] * o.scale, p.s[1] * o.scale, p.s[2] * o.scale); gl.uniform3fv(P.u('uT'), tp);
+    gl.uniform4f(P.u('uD'), p.d[0], p.d[1], p.d[2], p.d[3] + o.seed * .3); gl.uniform3fv(P.u('uC'), p.c);
+    let nuc = [0, 0, 1, 2], inner = 2;
+    if (p.nuc) { nuc = p.nuc.slice(0, 4); inner = p.nuc[4];
+      if (p.track) { const toCam = qrot(qconj(tq), norm(mul(tp, -1))), w = smooth((stage - 2.3) / 1.2) * smooth(((o.type === 'big' ? 110 : 70) - len(tp)) / 40);   // 核が、こちらを向く
+        const dd = norm(mix3(p.nuc, toCam, w)); nuc[0] = dd[0]; nuc[1] = dd[1]; nuc[2] = dd[2]; } }
+    gl.uniform4fv(P.u('uNuc'), nuc); gl.uniform3f(P.u('uNucC'), .2, .09, .24); gl.uniform4f(P.u('uM'), p.k, p.rim, p.e, inner);
+    gl.bindBuffer(gl.ARRAY_BUFFER, p.m.vb); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 24, 0); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 24, 12);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, p.m.ib); gl.drawElements(gl.TRIANGLES, p.m.n, gl.UNSIGNED_SHORT, 0);
+  }
+}
+function buildPods(list, time) {
+  let k = 0;
+  for (const pd of list) {
+    const ref = norm([-pd.root[1], pd.root[0], .3]);
+    for (let j = 0; j < PK; j++) {
+      const kk = j / (PK - 1), u = pd.ext * kk, v = 1 - u;
+      const c = [0, 0, 0], tg = [0, 0, 0];
+      for (let a = 0; a < 3; a++) { c[a] = v * v * pd.root[a] + 2 * v * u * pd.ctrl[a] + u * u * pd.tip[a]; tg[a] = 2 * v * (pd.ctrl[a] - pd.root[a]) + 2 * u * (pd.tip[a] - pd.ctrl[a]); }
+      const Tn = norm(tg), N1 = norm(cross(Tn, ref)), N2 = cross(Tn, N1);
+      const cap = Math.sqrt(Math.max(0, 1 - Math.pow(kk, 12)));
+      const r = pd.r0 * (.5 + .85 * u + .25 * u * u * pd.bulb) * (1 + .13 * Math.sin(u * 7 - time * 2.2 + pd.seed) + .06 * Math.sin(u * 17 + time * 1.3 + pd.seed * 3)) * cap * (pd.ext > .02 ? 1 : 0);
+      for (let i = 0; i <= PM; i++) {
+        const a = i / PM * 6.2832, ca = Math.cos(a), sa = Math.sin(a);
+        const rx = N1[0] * ca + N2[0] * sa, ry = N1[1] * ca + N2[1] * sa, rz = N1[2] * ca + N2[2] * sa;
+        PBUF[k++] = c[0] + rx * r; PBUF[k++] = c[1] + ry * r; PBUF[k++] = c[2] + rz * r;
+        const nn = norm([rx * cap + Tn[0] * (1 - cap), ry * cap + Tn[1] * (1 - cap), rz * cap + Tn[2] * (1 - cap)]);
+        PBUF[k++] = nn[0]; PBUF[k++] = nn[1]; PBUF[k++] = nn[2]; PBUF[k++] = u * 2 + pd.seed; PBUF[k++] = i / PM;
+      }
+    }
+  }
+  return list.length;
+}
+function render() {
+  resize();
+  const aspect = W / H, fovy = (aspect >= 1 ? 70 : Math.min(100, 70 + (1 - aspect) * 48)) * (1 - .15 * gaze.lock * (phase === 'cruise' || phase === 'approach' ? 1 : .4)) * Math.PI / 180, tf = Math.tan(fovy / 2);
+  const near = .45, far = 340, fi = 1 / tf;
+  const Pm = new Float32Array([fi / aspect, 0, 0, 0, 0, fi, 0, 0, 0, 0, (far + near) / (near - far), -1, 0, 0, 2 * far * near / (near - far), 0]);
+  // 視点
+  frameAt(cam.s); const ct = [F[3], F[4], F[5]], cn = [F[6], F[7], F[8]], cb = [F[9], F[10], F[11]];
+  cam.p = [F[0] + cn[0] * cam.ox + cb[0] * cam.oy, F[1] + cn[1] * cam.ox + cb[1] * cam.oy, F[2] + cn[2] * cam.ox + cb[2] * cam.oy];
+  const ahead = posAt(cam.s + 16, cam.ox * .55, cam.oy * .55);
+  const f0 = norm(sub(ahead, cam.p)), up0 = norm(cross(cn, ct)), right0 = norm(cross(f0, up0));
+  const gz = big || (bite && bite.obj) || (cut && cut.t < 5 ? cut.obj : null) || target; let tpos = null;
+  if (gz) tpos = sub(posAt(gz.s, gz.ox, gz.oy), cam.p);
+  // 向き：貪欲に、次々と目移りする。標的を見つけたら、食いつく
+  const locked = !!(gz && len(tpos) > .5 && (gz !== target || phase !== 'cruise' || len(tpos) < 85));
+  let D = f0, rate = 4; gaze.t -= RDT;
+  if (locked) { D = norm(tpos); rate = 11; gaze.intr = null; gaze.t = 0; }
+  else {
+    if (gaze.t <= 0) { const r = Math.random(); gaze.intr = null; gaze.t = rnd(.5, 1.4);
+      if (ambients.length && r < .22) { gaze.intr = { o: ambients[Math.random() * ambients.length | 0] }; gaze.t = rnd(.8, 2); }
+      else if (r < .74) { for (let k = 0; k < 10; k++) { const i = Math.random() * NRMAX | 0, d = rb.s[i] - cam.s; if (d > 5 && d < 38) { gaze.intr = { i }; gaze.t = rnd(.35, 1.2); break; } } }
+      else if (r < .92) { gaze.intr = { d: [rnd(-1.3, 1.3), rnd(-.6, .6)] }; gaze.t = rnd(.3, 1); } }
+    const it = gaze.intr;
+    if (it && it.i != null) { frameAt(rb.s[it.i]); const R = F[12], ax = rb.fx[it.i] * R, ay = rb.fy[it.i] * R;
+      const p = [F[0] + F[6] * ax + F[9] * ay - cam.p[0], F[1] + F[7] * ax + F[10] * ay - cam.p[1], F[2] + F[8] * ax + F[11] * ay - cam.p[2]];
+      if (dot(p, ct) < 1 || len(p) > 60) gaze.t = 0; else { D = norm(p); rate = 9; } }
+    else if (it && it.o) { if (ambients.indexOf(it.o) < 0) gaze.t = 0; else { D = norm(sub(posAt(it.o.s, it.o.ox, it.o.oy), cam.p)); rate = 7; } }
+    else if (it && it.d) { const y = it.d[0], pp = it.d[1]; D = norm(add(add(mul(f0, Math.cos(y) * Math.cos(pp)), mul(right0, Math.sin(y) * Math.cos(pp))), mul(up0, Math.sin(pp)))); rate = 10; }
+  }
+  gaze.lock += ((locked ? 1 : 0) - gaze.lock) * Math.min(1, RDT * 3);
+  gaze.v = norm(mix3(gaze.v, D, Math.min(1, RDT * rate * (RM ? .25 : 1))));
+  let f = gaze.v;
+  const wob = RM ? .3 : 1, jl = body.jolt * wob;
+  let up = up0, right = norm(cross(f, up)); up = cross(right, f);
+  const yaw = look.yaw + .03 * wob * Math.sin(T * .4) + jl * .1 * Math.sin(T * 47), pitch = look.pitch + .025 * wob * Math.sin(T * .31 + 1) + jl * .08 * Math.sin(T * 53) + wob * (.02 * (body.breath - .5) - .03 * body.step);
+  f = norm(add(add(mul(f, Math.cos(yaw) * Math.cos(pitch)), mul(right, Math.sin(yaw) * Math.cos(pitch))), mul(up, Math.sin(pitch))));
+  right = norm(cross(f, up)); up = cross(right, f);
+  const roll = wob * (.10 * Math.sin(T * .21) + .05 * Math.sin(T * .53 + 1) + body.sway * .07 * Math.sin(body.sph * 3.14159 + T * .6) + body.drunk * .3 * Math.sin(T * .45) + jl * .1 * Math.sin(T * 41)), cr = Math.cos(roll), sr = Math.sin(roll);
+  const r2 = add(mul(right, cr), mul(up, sr)), u2 = sub(mul(up, cr), mul(right, sr)); right = r2; up = u2;
+  const Vm = new Float32Array([right[0], up[0], -f[0], 0, right[1], up[1], -f[1], 0, right[2], up[2], -f[2], 0, 0, 0, 0, 1]);
+  const VP = m4mul(Pm, Vm);
+  const toView = p => [dot(right, p), dot(up, p), -dot(f, p)];
+  const fk = (.7 + .5 * pulseS) * glow * (1 + .3 * body.fever) * (env.name === 'lung' ? .8 + .5 * body.breath : 1) * (1 + (bite ? .6 * bite.itch + .25 * bite.suck : 0)) * sFogG * (1 + (cut ? 2.2 * cut.open + .5 * cut.infl : 0));
+  const cw = cut ? .22 * cut.open : 0, fogC = [env.fog[0] * fk + .004 + cw, env.fog[1] * fk + cw * .9, env.fog[2] * fk + cw * .8], fogD = .014;
+  const aheadV = norm(sub(posAt(cam.s + 70, 0, 0), cam.p));
+  const fogU = P => { gl.uniform3fv(P.u('uFogC'), fogC); gl.uniform1f(P.u('uFog'), fogD); gl.uniform3fv(P.u('uAhead'), aheadV); };
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.fb); gl.viewport(0, 0, SW, SH);
+  gl.clearColor(fogC[0] * .22, fogC[1] * .22, fogC[2] * .22, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.depthMask(true);
+
+  // 壁
+  gl.useProgram(P_WALL.p); attribs(3); fogU(P_WALL); gl.uniformMatrix4fv(P_WALL.u('uVP'), false, VP);
+  gl.uniform1f(P_WALL.u('uPulse'), RM ? 0 : pulseS * prox); gl.uniform1f(P_WALL.u('uStage'), stage); gl.uniform1f(P_WALL.u('uGlow'), glow); gl.uniform1f(P_WALL.u('uTime'), T);
+  gl.uniform3fv(P_WALL.u('uWallC'), env.wall); gl.uniform3fv(P_WALL.u('uGlowC'), env.glowC); gl.uniform1f(P_WALL.u('uOut'), env.out + (cut ? 1.3 * cut.open : 0)); gl.uniform1f(P_WALL.u('uSpark'), env.spark);
+  gl.uniform1f(P_WALL.u('uSq'), RM ? 0 : body.step * (env.name === 'muscle' ? 1 : .25) + body.tap * .9);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, CH_IB.ib);
+  for (const k in chunks) { const c = chunks[k]; gl.uniform3fv(P_WALL.u('uOff'), sub(c.o, cam.p));
+    gl.bindBuffer(gl.ARRAY_BUFFER, c.vb); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 32, 12); gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 32, 24);
+    gl.drawElements(gl.TRIANGLES, CH_IB.n, gl.UNSIGNED_SHORT, 0); }
+
+  // 赤血球
+  let n = NR(), k = 0;
+  for (let i = 0; i < n; i++) {
+    frameAt(rb.s[i]); const R = F[12], ax = rb.fx[i] * R, ay = rb.fy[i] * R;
+    let x = F[0] + F[6] * ax + F[9] * ay - cam.p[0], y = F[1] + F[7] * ax + F[10] * ay - cam.p[1], z = F[2] + F[8] * ax + F[11] * ay - cam.p[2];
+    const d = Math.hypot(x, y, z); if (d < 7 && d > .01) { const m = 7 / d; x *= m; y *= m; z *= m; }   // 自分の体には入ってこない
+    const pl = rb.kind[i];
+    IBUF[k++] = x; IBUF[k++] = y; IBUF[k++] = z; IBUF[k++] = pl ? 1.35 : 3.91;
+    IBUF[k++] = rb.q[i * 4]; IBUF[k++] = rb.q[i * 4 + 1]; IBUF[k++] = rb.q[i * 4 + 2]; IBUF[k++] = rb.q[i * 4 + 3];
+    IBUF[k++] = pl; IBUF[k++] = pl ? 0 : .1 * Math.sin(T * 1.3 + rb.seed[i] * 40) + .13 * pulseS; IBUF[k++] = .8 + .4 * rb.seed[i]; IBUF[k++] = rb.seed[i];
+  }
+  if (target && target.type === 'rbc') { const p = sub(posAt(target.s, target.ox, target.oy), cam.p), tq = target.q;
+    IBUF.set([p[0], p[1], p[2], 3.91 * target.scale, tq[0], tq[1], tq[2], tq[3], 0, .05, 1.05, .5], k); k += 12; n++; }
+  gl.useProgram(P_RBC.p); attribs(4); fogU(P_RBC); gl.uniformMatrix4fv(P_RBC.u('uVP'), false, VP); { const k = sep ? 1 - .4 * sep.shock : 1; gl.uniform3f(P_RBC.u('uTint'), env.rbc[0] * k, env.rbc[1] * k, env.rbc[2] * (sep ? 1 + .2 * sep.shock : 1)); }
+  gl.bindBuffer(gl.ARRAY_BUFFER, RBC.vb); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 16, 0); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, RBC.ib);
+  gl.bindBuffer(gl.ARRAY_BUFFER, IVB); gl.bufferSubData(gl.ARRAY_BUFFER, 0, IBUF.subarray(0, k));
+  if (inst) {
+    for (let a = 1; a <= 3; a++) { gl.vertexAttribPointer(a, 4, gl.FLOAT, false, 48, (a - 1) * 16); inst.vertexAttribDivisorANGLE(a, 1); }
+    inst.drawElementsInstancedANGLE(gl.TRIANGLES, RBC.n, gl.UNSIGNED_SHORT, 0, n);
+  } else {
+    for (let a = 1; a <= 3; a++) gl.disableVertexAttribArray(a);
+    for (let i = 0; i < n; i++) { for (let a = 1; a <= 3; a++) gl.vertexAttrib4fv(a, IBUF.subarray(i * 12 + (a - 1) * 4, i * 12 + a * 4)); gl.drawElements(gl.TRIANGLES, RBC.n, gl.UNSIGNED_SHORT, 0); }
+  }
+
+  // 異物と白血球
+  gl.useProgram(P_OBJ.p); attribs(2); fogU(P_OBJ); gl.uniformMatrix4fv(P_OBJ.u('uVP'), false, VP); gl.uniform1f(P_OBJ.u('uTime'), T);
+  gl.uniform1f(P_OBJ.u('uShade'), .5 * (1 - .62 * podWrap));
+  if (target) drawObj(target, right, up, f, P_OBJ);
+  gl.uniform1f(P_OBJ.u('uShade'), 1);
+  if (big) drawObj(big, right, up, f, P_OBJ);
+  if (bite && bite.obj) drawObj(bite.obj, right, up, f, P_OBJ);
+  if (cut) drawObj(cut.obj, right, up, f, P_OBJ);
+  gl.uniform1f(P_OBJ.u('uShade'), .8);
+  for (const o of ambients) drawObj(o, right, up, f, P_OBJ);
+
+  // ちり
+  const nm = NM; k = 0;
+  for (let i = 0; i < nm; i++) { frameAt(mo.s[i]); const R = F[12], ax = mo.fx[i] * R, ay = mo.fy[i] * R;
+    MBUF[k++] = F[0] + F[6] * ax + F[9] * ay - cam.p[0]; MBUF[k++] = F[1] + F[7] * ax + F[10] * ay - cam.p[1]; MBUF[k++] = F[2] + F[8] * ax + F[11] * ay - cam.p[2]; MBUF[k++] = mo.seed[i]; }
+  gl.useProgram(P_MOTE.p); attribs(1); gl.uniformMatrix4fv(P_MOTE.u('uVP'), false, VP); gl.uniform1f(P_MOTE.u('uPx'), SH * .07);
+  { const b = sep ? sep.bact : 0; gl.uniform3f(P_MOTE.u('uMC'), mix(.85, .55, b) * (1 + b), mix(.62, 1, b) * (1 + b), mix(.5, .2, b) * (1 + b)); }
+  gl.bindBuffer(gl.ARRAY_BUFFER, MVB); gl.bufferSubData(gl.ARRAY_BUFFER, 0, MBUF.subarray(0, k)); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 16, 0);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); gl.depthMask(false); gl.drawArrays(gl.POINTS, 0, nm);
+  // 気配と火花
+  if ((target && FX[target.type]) || sparks.length || (bite && bite.obj) || cut || sep) {
+    gl.useProgram(P_AURA.p); attribs(1); gl.bindBuffer(gl.ARRAY_BUFFER, QUAD); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.uniformMatrix4fv(P_AURA.u('uP'), false, Pm); gl.uniform1f(P_AURA.u('uTime'), T);
+    const blob = (pv, sz, col, A4, amt, dark) => { if (pv[2] > -1) return; gl.blendFunc(dark ? gl.ZERO : gl.ONE, dark ? gl.ONE_MINUS_SRC_COLOR : gl.ONE);
+      gl.uniform3fv(P_AURA.u('uC0'), pv); gl.uniform1f(P_AURA.u('uSz'), sz); gl.uniform3fv(P_AURA.u('uCol'), col); gl.uniform4fv(P_AURA.u('uA'), A4); gl.uniform1f(P_AURA.u('uAmt'), amt); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); };
+    if (target && FX[target.type] && tpos) { const fx = FX[target.type], pv = toView(tpos), d = len(tpos);
+      const amt = Math.pow(smooth((110 - d) / 85), 1.3) * (fx.pulse ? .7 + .3 * Math.sin(T * fx.pulse * 6.2832) : 1) * (1 - .7 * podWrap) * (.3 + .7 * smooth(d / 32)) * (fx.halo ? .55 : 1), A4 = [fx.n, fx.sp, fx.fl, target.seed];
+      if (fx.halo) blob(pv, target.rad * 7, [.9, .9, .9], [3, .5, 0, target.seed + .3], amt * .8, true);
+      blob(pv, target.rad * fx.sz * target.scale, fx.c, A4, amt * (fx.dark ? .95 : .55), fx.dark); }
+    if (bite && bite.obj && bite.suck > 0) { const c = Math.cos(bite.a) * (bite.rc - 8.5), sn = Math.sin(bite.a) * (bite.rc - 8.5);        // 針の先から広がる唾液
+      blob(toView(sub(posAt(bite.s, c, sn), cam.p)), 9 + 9 * bite.suck, [.5, .58, .08], [4, .8, 0, .37], .45 * bite.suck * (.8 + .2 * Math.sin(T * 30)), false); }
+    if (cut) { const pv = toView(sub(posAt(cut.s, cut.obj.ox, cut.obj.oy), cam.p));             // 裂け目から差す外の光と、それをふさいでいく網
+      if (cut.open > .01) blob(pv, 6 + 18 * cut.open, [1, .87, .72], [9, .6, 0, .5], 1.6 * cut.open, false);
+      if (cut.plug > .05) blob(pv, 3 + 8 * cut.plug, [.6, .6, .6], [14, .2, 0, .8], .55 * cut.plug, true); }
+    for (const o of ambients) if (o.contam) { const p = sub(posAt(o.s, o.ox, o.oy), cam.p), fx = FX[o.type]; blob(toView(p), o.rad * 3, fx.c, [fx.n, fx.sp, fx.fl, o.seed], .4 * smooth((90 - len(p)) / 60), false); }
+    for (const sp of sparks) blob(toView(sub(posAt(sp.s, sp.ox, sp.oy), cam.p)), 2.4, [1, .9, .6], [6, 3, 0, sp.seed], .7, false);
+  }
+  gl.depthMask(true);
+
+  // 偽足
+  const hh = tf * 1.3, hw = hh * aspect, np = 6, list = [];
+  let cen = [0, 0];
+  if (podExt > .01) {
+    if (phase === 'end' && big) {       // 包まれる側
+      const bv = toView(sub(posAt(big.s, big.ox, big.oy), cam.p));
+      for (let i = 0; i < 6; i++) { const a = i / 6 * 6.2832 + .3, d = [Math.cos(a), Math.sin(a)];
+        const root = [bv[0] + d[0] * 9, bv[1] + d[1] * 9, bv[2] + 6], tip = [d[0] * hw * 1.05, d[1] * hh * 1.05, 2.5];
+        const ctrl = [d[0] * (hw + 9), d[1] * (hh + 9), bv[2] * .45];
+        list.push({ root, ctrl, tip, ext: smooth(podExt * 1.25 - i * .04), r0: 3.2, bulb: 0, seed: pods[i].seed }); }
+    } else if (tpos || phase === 'swallow') {
+      const o = target || (bite && bite.obj), ov = o ? toView(tpos) : [0, 0, -2], rad = o ? o.rad * o.scale : 2;
+      if (o) cen = [clamp(ov[0] / -ov[2] * fi / aspect, -.6, .6), clamp(ov[1] / -ov[2] * fi, -.6, .6)];
+      for (let i = 0; i < np; i++) { const pd = pods[i], a = i / np * 6.2832 + .5 + pd.a * .08, d = [Math.cos(a), Math.sin(a)];
+        const root = [d[0] * (hw + 1.25), d[1] * (hh + 1.25), -1.3];
+        const tA = [ov[0] + d[0] * rad * 1.05, ov[1] + d[1] * rad * 1.05, ov[2] + rad * .35], tB = [ov[0] + d[0] * rad * .3, ov[1] + d[1] * rad * .3, ov[2] - rad * 1.15];
+        const tip = mix3(tA, tB, podWrap), mid = mix3(root, tip, .5), bow = 1.3 + rad * .85 * podWrap + .3 * Math.sin(T * 1.3 + pd.seed);
+        const ctrl = [mid[0] + d[0] * bow, mid[1] + d[1] * bow, mid[2]];
+        list.push({ root, ctrl, tip, ext: smooth(podExt * (1 + pd.delay) - pd.delay), r0: .5 + .22 * Math.sin(pd.seed * 5) + rad * .06, bulb: 1 + podWrap, seed: pd.seed }); }
+    }
+  }
+  for (let a = 0; a < 2; a++) uCen[a] += (cen[a] - uCen[a]) * .15;
+  if (list.length) {
+    const m = buildPods(list, T);
+    gl.useProgram(P_POD.p); attribs(3); gl.uniformMatrix4fv(P_POD.u('uP'), false, Pm); gl.uniform1f(P_POD.u('uTime'), T); gl.uniform3fv(P_POD.u('uFogC'), fogC);
+    gl.bindBuffer(gl.ARRAY_BUFFER, PVB); gl.bufferSubData(gl.ARRAY_BUFFER, 0, PBUF.subarray(0, m * PVN * 8));
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 32, 12); gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 32, 24);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, PIB); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.drawElements(gl.TRIANGLES, m * (PK - 1) * PM * 6, gl.UNSIGNED_SHORT, 0);
+  }
+
+  gl.disable(gl.DEPTH_TEST);
+  // 取り込んだもの（にじむ側の絵に描く）
+  if (incs.length) {
+    k = 0; let nq = 0;
+    for (const x of incs) {
+      const age = T - x.born, fresh = x.kind === 0 ? Math.exp(-age / 28) : 1;
+      const r = x.kind === 0 ? x.r * (.3 + .7 * fresh) * smooth(age / 1.5 + .2) : x.r;
+      const e = x.e + .04 * Math.sin(T * .13 + x.seed * 30), cx = Math.cos(x.a) * e, cy = Math.sin(x.a) * e;
+      const rot = x.kind === 2 ? x.rot + .05 * Math.sin(T * .2) : 0, c = Math.cos(rot), s = Math.sin(rot);
+      const hx = r, hy = x.kind === 2 ? .05 : r, al = (x.kind === 2 ? .45 : .9) * (x.kind === 0 ? .25 + .75 * fresh : 1);
+      const Q = [[-1, -1], [1, -1], [-1, 1], [1, -1], [1, 1], [-1, 1]];
+      for (const v of Q) { const lx = v[0] * hx, ly = v[1] * hy;
+        NBUF[k++] = cx + (lx * c - ly * s) / aspect; NBUF[k++] = cy + lx * s + ly * c; NBUF[k++] = v[0]; NBUF[k++] = v[1];
+        NBUF[k++] = x.col[0]; NBUF[k++] = x.col[1]; NBUF[k++] = x.col[2]; NBUF[k++] = al; NBUF[k++] = x.kind; NBUF[k++] = x.kind === 0 ? fresh : x.seed; }
+      nq++;
+    }
+    gl.useProgram(P_INC.p); attribs(4); gl.bindBuffer(gl.ARRAY_BUFFER, NVB); gl.bufferSubData(gl.ARRAY_BUFFER, 0, NBUF.subarray(0, k));
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 40, 0); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 40, 8); gl.vertexAttribPointer(2, 4, gl.FLOAT, false, 40, 16); gl.vertexAttribPointer(3, 2, gl.FLOAT, false, 40, 32);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.drawArrays(gl.TRIANGLES, 0, nq * 6); gl.disable(gl.BLEND);
+  }
+  // 仕上げ
+  gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
+  const full = clamp(count / 22, 0, 1), prev = acc[accI], cur = acc[accI ^= 1];
+  gl.bindFramebuffer(gl.FRAMEBUFFER, cur.fb); gl.viewport(0, 0, SW, SH);
+  gl.useProgram(P_ACC.p); attribs(1); gl.bindBuffer(gl.ARRAY_BUFFER, QUAD); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, prev.tex); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fbo.tex);
+  gl.uniform1i(P_ACC.u('uCur'), 0); gl.uniform1i(P_ACC.u('uPrev'), 1); gl.uniform1f(P_ACC.u('uTime'), T); gl.uniform2f(P_ACC.u('uPx'), 1 / SW, 1 / SH);
+  gl.uniform1f(P_ACC.u('uSpeed'), RM ? .2 : clamp(flowNow / 90, 0, 1.2)); gl.uniform1f(P_ACC.u('uMix'), .2 + .25 * podExt); gl.uniform1f(P_ACC.u('uStrain'), uStrain + .6 * body.drunk);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H);
+  gl.useProgram(P_POST.p); attribs(1); gl.bindBuffer(gl.ARRAY_BUFFER, QUAD); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cur.tex); gl.uniform1i(P_POST.u('uTex'), 0);
+  gl.uniform1f(P_POST.u('uTime'), T); gl.uniform1f(P_POST.u('uClose'), clamp(uClose, 0, 1)); gl.uniform1f(P_POST.u('uFull'), full);
+  gl.uniform1f(P_POST.u('uPulse'), RM ? .1 : pulseS * (.15 + .85 * prox)); gl.uniform1f(P_POST.u('uDark'), Math.max(uDark, sepDark)); gl.uniform1f(P_POST.u('uStrain'), uStrain);
+  gl.uniform1f(P_POST.u('uGrain'), .04); gl.uniform2fv(P_POST.u('uCen'), uCen);
+  { const b = (1 - body.dim) * (1 + .18 * body.fever) * (body.act === 'sleep' ? .86 : 1); gl.uniform3f(P_POST.u('uGrade'), env.grade[0] * b * SEPG[0] * (1 + .12 * body.fever + (bite ? .22 * bite.itch : 0) + (cut ? .2 * cut.infl : 0)), env.grade[1] * b * SEPG[1], env.grade[2] * b * SEPG[2]); }
+  gl.uniform4fv(P_POST.u('uTint'), body.tint); gl.uniform1f(P_POST.u('uFlash'), RM ? body.flash * .3 : body.flash); gl.uniform1f(P_POST.u('uDrunk'), body.drunk);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+}
+
+// ---------- 回す
+let last = 0;
+function frame(t) {
+  requestAnimationFrame(frame);
+  let dt = Math.min(.05, (t - last) / 1000 || .016); last = t;
+  if (document.hidden) return;
+  dt *= timeScale; const steps = Math.max(1, Math.ceil(dt / .05));
+  for (let i = 0; i < steps; i++) update(dt / steps);
+  RDT = dt; render();
+}
+// 遠くへ行きすぎたら、原点を引き寄せる（桁落ちを避ける）
+setInterval(() => { const p = cam.p; if (len(p) < 2500) return; const o = p.slice();
+  for (const nd of nodes) nd.p = sub(nd.p, o); for (const k in chunks) chunks[k].o = sub(chunks[k].o, o); }, 2000);
+
+// ---------- 操作（画面には何も置かない。最初に触れたとき、音が出はじめる。二度押しで全画面）
+function start() {
+  if (running) return; running = true;
+  try { audioInit(); if (ac.state === 'suspended') ac.resume(); } catch (e) {}
+  try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
+}
+cv.addEventListener('pointerdown', e => { start(); look.drag = true; look.x = e.clientX; look.y = e.clientY; try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
+cv.addEventListener('pointermove', e => { if (!look.drag) return;
+  look.yaw = clamp(look.yaw + (e.clientX - look.x) * .004, -.75, .75); look.pitch = clamp(look.pitch - (e.clientY - look.y) * .004, -.6, .6); look.x = e.clientX; look.y = e.clientY; });
+const up_ = () => { look.drag = false; }; cv.addEventListener('pointerup', up_); cv.addEventListener('pointercancel', up_);
+cv.addEventListener('dblclick', () => { try { const d = document; if (d.fullscreenElement) d.exitFullscreen(); else d.documentElement.requestFullscreen().catch(() => {}); } catch (e) {} });
+window.addEventListener('keydown', start);
+document.addEventListener('visibilitychange', () => { if (ac) { if (document.hidden) ac.suspend(); else if (running) ac.resume(); } });
+
+// 確認用の口（作品の動きには関わらない）
+window.__nomi = { get s() { return { phase, stage, count, loop, T, type: target && target.type, incs: incs.length, skip, bpm, prox, flow: flowNow }; },
+  set scale(v) { timeScale = v; }, get log() { return LOG; }, spawn: t => spawn(t), setStage: v => { stage = v; }, setCount: v => { count = v; }, end: () => { stage = 7; clearTarget(); phase = 'cruise'; nextSpawn = 0; },
+  inc: t => addInc(t), start, boss: () => spawnBoss(), cut: () => { env.name = 'skin'; env.t = 10; env.dur = 90; startCut(); }, sepsis: d => { sep = { t: 0, die: !!d, sp: 0, bact: 0, storm: 0, shock: 0, hosp: 0 }; }, sepT: v => { if (sep) sep.t = v; }, get sep() { return sep && [sep.t, sep.bact, sep.storm, sep.shock, sep.hosp, sepDark]; }, bite: () => { env.name = 'skin'; env.t = 10; env.dur = 90; startBite(); }, get bt() { return bite && bite.t; }, region: n => { env.name = n; env.t = 0; env.dur = 60; }, act: a => { body.i = DAY.indexOf(a) - 1; if (a === 'fever') { body.act = a; body.t = 0; body.dur = 70; } else nextAct(); }, get env() { return env.name + '/' + body.act; }, step: (sec, until) => { for (let i = 0; i < sec / .033; i++) { update(.033); if (until && phase === until) break; } }, skip: v => { skip = v; } };
+
+for (let c = 0; c < 10; c++) buildChunk(c);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
