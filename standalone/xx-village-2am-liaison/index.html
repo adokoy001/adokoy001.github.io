@@ -2058,6 +2058,9 @@ vec3 mat(float m,float par,bool back){
     if(h21(floor(vUv*vec2(2.,3.))+par)<.06)discard;
     return c;
   }
+  if(m>23.5){                                 // すれ違うレースカーの塗装：0 車体の深い緑／1 黒鉛色／2 タイヤ／3 暗い窓／4 合金／5 明るい緑の差し色／6 灯りの枠／7 尾灯
+    return par<.5?vec3(.03,.24,.1):par<1.5?vec3(.035,.045,.055):par<2.5?vec3(.018,.02,.023):par<3.5?vec3(.02,.05,.07):par<4.5?vec3(.13,.17,.16):par<5.5?vec3(.25,.7,.45):par<6.5?vec3(.8,.9,.95):vec3(.5,.03,.015);
+  }
   gEm=vec3(1.,.5,.17)*uHut*par;return vec3(0.);   // 小屋の中の闇。奥に灯りがあるときだけ、戸口と板のすきまが橙に見える
 }
 void main(){
@@ -3443,6 +3446,51 @@ function raceIR(ac){
    だから、遠いうちは、山に響く残響ばかりが小さく聞こえ、近づくにつれて、じかの音がはっきりしてくる（すれ違うときは、ほとんどじかの音）。d は距離、x は道に沿った隔たり（後ろは負）、age は鳴りはじめてからの秒 */
 const RACE_WET=.85;
 function raceGains(d,x,age){const back=x<0?.8*Math.exp(x/700):1,fi=Math.min(1,age/3.5),q=26/(d+10);return[Math.min(1,Math.pow(q,.9))*back*fi,.22*Math.min(1,Math.pow(q,.25))*back*fi]}
+/* ---------- すれ違うレースカーの形 ----------
+   横田さんの「NIGHT PASS — 96 Triangle Traffic Kit」の手書きメッシュを、そのまま使う（輪郭版：R91風のレースカー 60三角形、フォーミュラ 100三角形）。
+   単位はm。X が右、Y が上、車の前が −Z（鼻先は z=−2.36 あたり）。p＝頂点の位置（三角形ごとに3頂点）、n＝面の向き、m＝素材の番号（頂点ごと）。
+   素材：0 車体（深い緑）／1 黒鉛色／2 タイヤ／3 暗い窓／4 合金／5 明るい緑の差し色／6 前の灯り／7 尾灯。
+   RACE_MESH[1]＝フォーミュラ（V10）、RACE_MESH[2]＝R91風（4ローター） */
+const RACE_MESH=(()=>{
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],sub=(a,b)=>a.map((v,i)=>v-b[i]);
+function model(name){const o={name,p:[],n:[],m:[],parts:[]};o.poly=(vs,fs,mat=0,center=null)=>{for(let fi=0;fi<fs.length;fi++){let ids=fs[fi].slice(),a=vs[ids[0]],n=cross(sub(vs[ids[1]],a),sub(vs[ids[2]],a));if(center&&n.reduce((s,v,i)=>s+v*(a[i]-center[i]),0)<0)ids.reverse();for(let j=1;j<ids.length-1;j++){const pp=[vs[ids[0]],vs[ids[j]],vs[ids[j+1]]],nn=cross(sub(pp[1],pp[0]),sub(pp[2],pp[0])),len=Math.hypot(...nn);if(len<1e-9)continue;for(const v of pp){o.p.push(...v);o.n.push(...nn.map(t=>t/len));o.m.push(typeof mat==='function'?mat(fi):mat);}}}};o.quad=(p,m)=>o.poly(p,[[0,1,2,3]],m);return o;}
+function loft(o,rows,mat=0,openBottom=false){let vs=[];for(const row of rows){for(const [x,y] of row.xy)vs.push([x,y,row.z]);}const N=rows[0].xy.length;let fs=[];for(let j=0;j<rows.length-1;j++)for(let k=0;k<N;k++){if(openBottom&&k===0)continue;fs.push([j*N+k,j*N+(k+1)%N,(j+1)*N+(k+1)%N,(j+1)*N+k]);}fs.push(Array.from({length:N},(_,i)=>i).reverse());fs.push(Array.from({length:N},(_,i)=>(rows.length-1)*N+i));o.poly(vs,fs,mat,[0,.3,(rows[0].z+rows.at(-1).z)/2]);}
+function rows(profiles){return profiles.map(([z,w,top,bottom=.17])=>({z,xy:[[-w,bottom],[w,bottom],[w,top],[-w,top]]}));}
+function wing(o,z0,z1,y,width,base,pylonX){o.quad([[-width,y,z0],[width,y,z0],[width,y,z1],[-width,y,z1]],1);for(const x of [-pylonX,pylonX])o.quad([[x,base,z0+.06],[x,y,z0+.06],[x,y,z0+.20],[x,base,z0+.20]],1);}
+function lamps(o,z,y){for(const s of [-1,1])o.quad([[s*.64-.105,y-.025,z],[s*.64+.105,y-.025,z],[s*.64+.105,y+.025,z],[s*.64-.105,y+.025,z]],6);o.lights=[[-.64,y,z],[.64,y,z]];}
+function r91(lod){const o=model('R91 '+lod);
+ if(lod==='extreme'){
+  loft(o,rows([[-2.36,.88,.29,.13],[2.26,.94,.64,.13]]),i=>i%3===0?1:0);
+  const v=[[-.46,.44,-.78],[.46,.44,-.78],[.46,.58,.85],[-.46,.58,.85],[0,1.04,-.20],[0,1.04,.35]];
+  o.poly(v,[[0,1,4],[1,2,5,4],[2,3,5],[3,0,4,5]],3,[0,.65,0]);
+ }else{
+  loft(o,[[-2.36,.85,.30,.27],[-1.36,.98,.73,.40],[1.31,.98,.76,.59],[2.26,.90,.58,.57]].map(([z,w,e,c])=>({z,xy:[[-w,.13],[w,.13],[w,e],[0,c],[-w,e]]})),i=>i%5===1?1:0,true);
+  const v=[[-.50,.47,-.85],[.50,.47,-.85],[.50,.59,.85],[-.50,.59,.85],[-.32,1.04,-.20],[.32,1.04,-.20],[.32,1.04,.35],[-.32,1.04,.35]];
+  o.poly(v,[[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7],[4,5,6,7],[0,3,2,1]],i=>i===4?0:3,[0,.7,0]);
+ }
+ wing(o,1.79,2.35,1.07,1,.6,.59);
+ for(const z of [-1.36,1.31])for(const s of [-1,1]){const h=lod==='extreme'?.37:.65;o.quad([[s*.989,.025,z-.28],[s*.989,.025,z+.28],[s*.989,h,z+.28],[s*.989,h,z-.28]],2);}
+ lamps(o,-2.371,.255);return finish(o,'r91',lod);
+}
+function formula(lod){const o=model('Formula '+lod);
+ loft(o,rows(lod==='extreme'?[[-2.1,.14,.40],[1.7,.39,.57]]:[[-2.1,.14,.40],[-.15,.43,.54],[1.7,.35,.57]]),i=>i%3===1?1:0);
+ for(const z of [-1.38,1.32])for(const s of [-1,1]){
+  const x=s*.88,w=.17,r=.34,y=.36;
+  if(lod==='extreme'){
+   const v=[[x-w,y-r,z-r],[x+w,y-r,z-r],[x+w,y+r,z-r],[x-w,y+r,z-r],[x-w,y-r,z+r],[x+w,y-r,z+r],[x+w,y+r,z+r],[x-w,y+r,z+r]];
+   o.poly(v,[[0,1,2,3],[4,7,6,5],[3,2,6,7],s>0?[1,5,6,2]:[4,0,3,7]],2,[x,y,z]);
+  }else{
+   const N=5,v=[];for(const xx of [x-w,x+w])for(let k=0;k<N;k++){const a=2*Math.PI*k/N+Math.PI/2;v.push([xx,y+r*Math.sin(a),z+r*Math.cos(a)]);}const f=[];for(let k=0;k<N;k++)f.push([k,(k+1)%N,(k+1)%N+N,k+N]);f.push([4,3,2,1,0],[5,6,7,8,9]);o.poly(v,f,i=>i>=5?4:2,[x,y,z]);
+  }
+ }
+ o.poly([[-.13,.55,-.15],[.13,.55,-.15],[0,.55,.10],[0,.84,-.04]],[[0,1,3],[1,2,3],[2,0,3],[0,2,1]],5,[0,.6,-.06]);
+ o.quad([[-1,.20,-2.35],[1,.20,-2.35],[1,.20,-2.04],[-1,.20,-2.04]],0);
+ wing(o,1.80,2.20,1.00,.90,.55,.48);
+ lamps(o,-2.361,.235);return finish(o,'formula',lod);
+}
+function finish(o,type,lod){delete o.poly;delete o.quad;o.type=type;o.lod=lod;o.triangles=o.p.length/9;return o;}
+return[null,formula('outline'),r91('outline')];
+})();
 /* ---------- 遠くの音（焼き込み） ----------
    街の戦いの音は、どれも2kmほど先から届く：じかの音は鈍く、そのあとに、街並みと山に当たって返ってくる音（こだま）が尾を引く。こだまは波形に焼きこんである（遅れるほど、こもる）。
    E = {SND, add(名前, 本数, 秒, 作る関数), op(周波数)→1次の低域通過の係数, sr, jobs, ac}。本体と音見本の両方から呼ぶ。
@@ -4120,7 +4168,7 @@ function traffic(dt){
     else{const ok=[1,2].filter(r=>RACE_V[r]);
       if(!ok.length)S.raceT=S.t+rnd(4,9);                                                          // 音（と走り）がまだできていない
       else{const race=ok[(Math.random()*ok.length)|0],q=RACE_V[race],ts=rnd(0,q.len),v=q.v[(ts/q.dt)|0];
-        S.objs.push({t:'car',race,s:S.s+1150,lat:1.6,v,vn:v,ts,on:race===1?.02:1.5,amb:0,col:3});S.raceT=S.t+rnd(40,90);S.trafT=Math.max(S.trafT,S.t+16);radioAsk('race0',3,1)}}}
+        S.objs.push({t:'car',race,s:S.s+1150,lat:1.6,v,vn:v,ts,on:1.1,amb:0,col:3});S.raceT=S.t+rnd(40,90);S.trafT=Math.max(S.trafT,S.t+16);radioAsk('race0',3,1)}}}
   let near=1e9;
   for(const o of S.objs){if(o.t!=='car')continue;
     const d=o.s-S.s,k=Math.abs(at(o.s-12).k),vt=Math.min(o.v,Math.sqrt((o.race?26:3.4)/Math.max(k,.002)));
@@ -4642,19 +4690,21 @@ function buildDyn(cam){
       else if(o.t==='car'){if(o.on<=0)continue;
         // すれ違ったあとの車は、赤い尾灯になる。後ろについた車がハイビームにすると、大きく明るい
         const tail=!o.rear&&d<-1.5,hi=o.rear&&S.mir.high,r=Math.max(.11,dist*.0032)*(tail?.7:hi?1.6:o.rear?1:1.25);
-        const Ln=o.race?5:o.bike?1.9:o.tall?5:4.3,Wd=o.race?1.95:o.bike?.45:o.tall?1.85:1.7,Q=(a,b,y)=>[w[0]+sn*a+c*b,w[1]+y,w[2]+c*a-sn*b];       // a：車の前から後ろへ、b：横、y：高さ
+        const Ln=o.race?4.72:o.bike?1.9:o.tall?5:4.3,Wd=o.race?1.95:o.bike?.45:o.tall?1.85:1.7,Q=(a,b,y)=>[w[0]+sn*a+c*b,w[1]+y,w[2]+c*a-sn*b];       // a：車の前から後ろへ、b：横、y：高さ
         if(dist<110){const UV=[0,0,1,0,1,.5,0,.5],pc=o.bike?3:[0,2,2,3][o.col|0],hw=Wd/2,
             box=(a0,a1,h0,h1,bw,par,lit,b0)=>{const Q0=Q;{const Q=b0?(a,b,y)=>Q0(a,b+b0,y):Q0;mb.quad(Q(a0,-bw,h0),Q(a0,bw,h0),Q(a0,bw,h1),Q(a0,-bw,h1),UV,lit?5:23,lit?par:0,0,0);mb.quad(Q(a1,-bw,h0),Q(a1,bw,h0),Q(a1,bw,h1),Q(a1,-bw,h1),UV,5,par,0,0);
               for(const sd of[-1,1])mb.quad(Q(a0,sd*bw,h0),Q(a1,sd*bw,h0),Q(a1,sd*bw,h1),Q(a0,sd*bw,h1),UV,5,par,0,0);
               mb.quad(Q(a0,-bw,h1),Q(a0,bw,h1),Q(a1,bw,h1),Q(a1,-bw,h1),UV,5,par,0,0)}};
-          if(o.race===1){const F=1;box(-.3,Ln,.08,.5,.3,0,F);box(1.5,3.9,.08,.58,hw*.8,0,F);box(2.2,3.6,.5,.98,.28,0,F);box(Ln-.25,Ln+.2,.6,.95,.5,2,F);box(-.75,-.2,.05,.22,hw*.92,2,F);
-            for(const sd of[-1,1]){box(.35,1.05,0,.66,.16,3,F,sd*(hw-.16));box(3.75,4.5,0,.68,.2,3,F,sd*(hw-.2))}}       // フォーミュラカー：低い胴、空気取り入れ口、前後の羽根
-          else if(o.race===2){box(0,Ln,.08,.72,hw,2);box(Ln*.3,Ln*.66,.72,1.04,hw*.6,3);box(Ln*.9,Ln,.85,1.05,hw,2)}                                                    // 屋根つきのレースカー：低く幅広い箱と、大きな羽根
+          /* レースカー：手書きの低ポリゴンの形（racemodel.js）を、道の向きに置く。前を向いた面は、自分の前照灯の光で白く飛ばないように、照らさない黒にする */
+          if(o.race){const M=RACE_MESH[o.race],MP=M.p,MN=M.n,MM=M.m,A=mb.a;
+            for(let v=0,k=0;v<MM.length;v++,k+=3){const q=Q(MP[k+2]+2.36,MP[k],MP[k+1]),nx=MN[k],nz=MN[k+2],fr=nz<-.35;
+              A.push(q[0],q[1],q[2],sn*nz+c*nx,MN[k+1],c*nz-sn*nx,0,0,fr?23:24,fr?0:MM[v],0,0)}}
           else if(o.bike)box(0,Ln,.3,1.5,hw,3);else if(o.tall)box(0,Ln,.3,2.05,hw,pc);
           else{box(0,Ln,.2,.92,hw,pc);box(Ln*.3,Ln*.84,.92,1.4,hw*.86,3)}}
-        const la=tail?Ln+.03:-.03;
-        // フォーミュラカーには前照灯がない。後ろに、点滅する赤い灯りがひとつ
-        if(!(o.race===1&&!tail))for(const sd of o.bike||o.race===1?[0]:[-1,1]){const q=Q(la,sd*(o.race?.74:.62),o.race===1?.36:o.bike?.86:tail?.8:o.race?.5:.66);mb.board(q,v3.mul(rt,r),[0,r,0],[-1,-1,1,1],20,(o.race===1?((S.t*5)%1<.5?1.5:0):o.on)*(hi?2.2:1),tail?1:0,n)}}     // バイクは灯りがひとつ
+        const la=tail?Ln+(o.race?.3:.03):o.race?-.3:-.03;       // レースカーは鼻先が低くとがっているので、灯りの板が車体にめりこまないよう、少し前へ出す
+        // レースカーも、ほかの対向車と同じように前照灯がまぶしい。すれ違ったあとは、フォーミュラはまんなかに点滅する赤い灯りがひとつ、R91風は尾灯がふたつ
+        {const tf=o.race===1&&tail;for(const sd of o.bike||tf?[0]:[-1,1]){const q=Q(la,sd*(o.race?.64:.62),o.race?(tail?(tf?.42:.5):(o.race===1?.235:.255)):o.bike?.86:tail?.8:.66);
+          mb.board(q,v3.mul(rt,r),[0,r,0],[-1,-1,1,1],20,(tf?((S.t*5)%1<.5?1.5:0):o.on)*(hi?2.2:1),tail?1:0,n)}}}     // バイクは灯りがひとつ     // バイクは灯りがひとつ
     }
     if(!pass)n0=mb.a.length/12;
   }
@@ -4751,9 +4801,9 @@ function draw(){
   // 対向車の前照灯のまぶしさ：近いほど強い（すれ違う直前は、光の軸から外れて弱まる）。ガラスが濡れていると、もっと散る
   {let gx=0,gy=0,gs=0,gi=0;
     for(const o of S.objs){if(o.t!=='car'||o.rear||o.on<=0||o.s<S.s)continue;
-      const q=v3.sub(wpt(o.s,o.lat,.66),cam.pos),z=v3.dot(q,cam.f),d=Math.hypot(q[0],q[1],q[2]);if(z<1)continue;
+      const q=v3.sub(wpt(o.s-(o.race?.3:0),o.lat,o.race===1?.235:o.race?.255:.66),cam.pos),z=v3.dot(q,cam.f),d=Math.hypot(q[0],q[1],q[2]);if(z<1)continue;
       const I=o.on*clamp(1000/(d*d+50),0,1.15)*sstep(3,14,d)*(1+1.4*S.drops)*(RM?.6:1)*(o.bike?.7:1);
-      if(I>gi){gi=I;gx=.5+.5*v3.dot(q,cam.r)/(z*fv*ASP);gy=.5+.5*v3.dot(q,cam.u)/(z*fv)+(o.bike?.5*.2/(z*fv):0);gs=o.bike?0:.5*.62/(z*fv*ASP)}}
+      if(I>gi){gi=I;gx=.5+.5*v3.dot(q,cam.r)/(z*fv*ASP);gy=.5+.5*v3.dot(q,cam.u)/(z*fv)+(o.bike?.5*.2/(z*fv):0);gs=o.bike?0:.5*(o.race?.64:.62)/(z*fv*ASP)}}
     gl.uniform4f(PP.u.uGl,gx,gy,gs,gi)}
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
@@ -4828,7 +4878,7 @@ function keepAwake(){try{if(navigator.wakeLock&&!wl&&!document.hidden)navigator.
 addEventListener('pointerdown',keepAwake);document.addEventListener('visibilitychange',()=>{if(!document.hidden)keepAwake()});
 syncUI();wake();
 say('画面に触れると、音が出ます');
-window.__ng={dcv,scv,onOri,gyroToggle,get HUTS(){return HUTS},WX,WXK,wxStart,wxClear,strike,S,A,G,IC,GEN,tick,draw,startBeat,endBeat,camera,sm,at,VIS,VS,CF,TRB,traffic,visInit,BRD,BG,SEC,QQ,RDO,radioAsk,LINES,RACE_V,get SC(){return SC},get RD0(){return RD0},get PROPS(){return PROPS},get LAMPS(){return LAMPS},CHK};
+window.__ng={dcv,scv,onOri,gyroToggle,get HUTS(){return HUTS},WX,WXK,wxStart,wxClear,strike,S,A,G,IC,GEN,tick,draw,startBeat,endBeat,camera,sm,at,VIS,VS,CF,TRB,traffic,visInit,BRD,BG,SEC,QQ,RDO,radioAsk,LINES,RACE_V,RACE_MESH,get SC(){return SC},get RD0(){return RD0},get PROPS(){return PROPS},get LAMPS(){return LAMPS},CHK};
 })();
 </script>
 </body>
