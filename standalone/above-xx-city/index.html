@@ -1282,12 +1282,14 @@ const proj=(C,p)=>{const v=v3.sub(p,C.pos),z=v3.dot(v,C.f);return[v3.dot(v,C.r)/
    ・ヘルメットの開口部の縁：上の縁と四すみが、ぼんやり暗い
    ・右目の前の表示器：照準の線と数字が映る小さなガラス。枠は目に近すぎてぼやけ、もう片方の目には向こうが見えているので、半分透けている
    ・表示器を支える腕（右下から）と、口もとのマイク（左下） */
+function hudFrame(w,h){const roll=G.on?S.rollU:0,sd=Math.sin(roll)**2;return{roll,we:mix(w,h,sd),he:mix(h,w,sd)}}
 function hmdBox(w,h){const u=Math.min(w,h)/560,sx=Math.min(205*u,w/2-34*u),sy=Math.min(170*u,h/2-70*u);return{u,sx,sy,hw:Math.min(sx+64*u,w/2-5*u),hh:sy+34*u}}
 function helmet(){
-  const c=mx2,w=mc.width,h=mc.height,B=hmdBox(w,h),u=B.u,cx=w/2,cy=h/2;c.clearRect(0,0,w,h);
+  const c=mx2,W0=mc.width,H0=mc.height,FR=hudFrame(W0,H0),w=FR.we,h=FR.he,B=hmdBox(w,h),u=B.u,cx=w/2,cy=h/2;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,W0,H0);
+  c.translate(W0/2,H0/2);c.rotate(FR.roll);c.translate(-w/2,-h/2);
   c.save();c.translate(cx,cy+.12*h/2);c.scale(w/2,h/2);
   const g=c.createRadialGradient(0,0,1.06,0,0,1.5);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.35,'rgba(0,0,0,.5)');g.addColorStop(1,'rgba(0,0,0,.97)');
-  c.fillStyle=g;c.fillRect(-1.2,-1.4,2.4,2.8);c.restore();
+  c.fillStyle=g;c.fillRect(-4,-4,8,8);c.restore();
   c.lineCap=c.lineJoin='round';
   const soft=(path,wd,al)=>{for(let k=0;k<6;k++){c.beginPath();path();c.lineWidth=wd*(1+k*.55);c.strokeStyle=`rgba(1,2,1,${al/(1+k*.9)})`;c.stroke()}};
   const rr=()=>{const r=30*u,x0=cx-B.hw,x1=cx+B.hw,y0=cy-B.hh,y1=cy+B.hh;c.moveTo(x0+r,y0);c.arcTo(x1,y0,x1,y1,r);c.arcTo(x1,y1,x0,y1,r);c.arcTo(x0,y1,x0,y0,r);c.arcTo(x0,y0,x1,y0,r);c.closePath()};
@@ -1299,7 +1301,10 @@ function helmet(){
 /* ---------- 片目の照準器（頭についてくる、緑の線と数字） ---------- */
 const MONO=getComputedStyle(document.documentElement).getPropertyValue('--mono')||'monospace';
 function hmd(C){
-  const c=hx,w=hc.width,h=hc.height,HB=hmdBox(w,h),u=HB.u,cx=w/2,cy=h/2;c.clearRect(0,0,w,h);
+  const c=hx,W0=hc.width,H0=hc.height,FR=hudFrame(W0,H0),w=FR.we,h=FR.he,HB=hmdBox(w,h),u=HB.u,cx=w/2,cy=h/2;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,W0,H0);
+  c.translate(W0/2,H0/2);c.rotate(FR.roll);c.translate(-w/2,-h/2);
+  // 画面の上の位置（−1〜1）を、回した枠の中の位置に直す
+  const cR=Math.cos(FR.roll),sR=Math.sin(FR.roll),SP=q=>{const dx=q[0]*W0/2,dy=-q[1]*H0/2;return[cx+dx*cR+dy*sR,cy-dx*sR+dy*cR]};
   const al=S.fade*(S.gl&&S.gl.k==='panel'?.14:1);if(al<.03)return;
   const gz=S.t<S.glitch?Math.min(1,(S.glitch-S.t)*.8):0;if(gz>0){if(Math.random()<.3*gz)return;c.save();c.translate((Math.random()-.5)*46*gz*u,(Math.random()-.5)*14*gz*u);if(Math.random()<.5*gz){c.beginPath();c.rect(0,h*Math.random(),w,h*.3);c.clip()}}
   c.globalAlpha=.78*al*(gz>0?.5+.5*Math.random():1);c.strokeStyle=c.fillStyle='#8dffa6';c.lineWidth=1.3*u;c.shadowColor='#5dff8a';c.shadowBlur=5*u;c.textBaseline='middle';
@@ -1325,12 +1330,12 @@ function hmd(C){
   else if(H.mode==='ingress'){const e=Math.max(0,(H.r-1720)/72)|0;F(11);c.fillText(`WPT TGT  ${(H.r/1852).toFixed(1)} NM  ETE 0:${String(e).padStart(2,'0')}`,cx,by-40*u)}
   // 目標の枠。視野の外にあるときは、縁の矢印で向きを示す
   const P=[MON.x+MON.chestW[0],MON.chestW[1],MON.z+MON.chestW[2]],q=proj(C,P);c.beginPath();
-  if(q[2]>0&&Math.abs(q[0])<.96&&Math.abs(q[1])<.96){const X=cx+q[0]*w/2,Y=cy-q[1]*h/2,b=(20+2*Math.sin(S.t*5))*u;c.setLineDash([5*u,4*u]);c.rect(X-b,Y-b,2*b,2*b);c.stroke();c.setLineDash([]);
-    if(S.dots){c.beginPath();for(let i=2;i<MON.n;i+=3){const j=i*4,k=proj(C,[MON.x+MON.B[j],MON.B[j+1],MON.z+MON.B[j+2]]);if(k[2]>0&&h11(i+Math.floor(S.t*1.3))>.45){const s=6*u;c.rect(cx+k[0]*w/2-s,cy-k[1]*h/2-s,2*s,2*s)}}c.stroke()}}
-  else{const a=Math.atan2(q[2]>0?-q[1]:q[1],q[2]>0?q[0]:-q[0])+(q[2]>0?0:PI),R=Math.min(w,h)*.36,X=cx+Math.cos(a)*R,Y=cy+Math.sin(a)*R;
+  if(q[2]>0&&Math.abs(q[0])<.96&&Math.abs(q[1])<.96){const [X,Y]=SP(q),b=(20+2*Math.sin(S.t*5))*u;c.setLineDash([5*u,4*u]);c.rect(X-b,Y-b,2*b,2*b);c.stroke();c.setLineDash([]);
+    if(S.dots){c.beginPath();for(let i=2;i<MON.n;i+=3){const j=i*4,k=proj(C,[MON.x+MON.B[j],MON.B[j+1],MON.z+MON.B[j+2]]);if(k[2]>0&&h11(i+Math.floor(S.t*1.3))>.45){const s=6*u,e=SP(k);c.rect(e[0]-s,e[1]-s,2*s,2*s)}}c.stroke()}}
+  else{const a=Math.atan2(q[2]>0?-q[1]:q[1],q[2]>0?q[0]:-q[0])+(q[2]>0?0:PI)-FR.roll,R=Math.min(w,h)*.36,X=cx+Math.cos(a)*R,Y=cy+Math.sin(a)*R;
     c.save();c.translate(X,Y);c.rotate(a);L(-10*u,-7*u,4*u,0);L(-10*u,7*u,4*u,0);c.stroke();c.restore()}
-  c.beginPath();for(const b of BIRDS){const k=proj(C,b.p);if(k[2]>0&&Math.abs(k[0])<.97&&Math.abs(k[1])<.97){const X=cx+k[0]*w/2,Y=cy-k[1]*h/2,s=9*u;c.moveTo(X,Y-s);c.lineTo(X+s,Y);c.lineTo(X,Y+s);c.lineTo(X-s,Y);c.closePath()}}
-  if(JET){const k=proj(C,JET.p);if(k[2]>0&&Math.abs(k[0])<.97&&Math.abs(k[1])<.97){const X=cx+k[0]*w/2,Y=cy-k[1]*h/2,s=8*u;c.moveTo(X-s,Y+s);c.lineTo(X,Y-s);c.lineTo(X+s,Y+s)}}c.stroke();
+  c.beginPath();for(const b of BIRDS){const k=proj(C,b.p);if(k[2]>0&&Math.abs(k[0])<.97&&Math.abs(k[1])<.97){const [X,Y]=SP(k),s=9*u;c.moveTo(X,Y-s);c.lineTo(X+s,Y);c.lineTo(X,Y+s);c.lineTo(X-s,Y);c.closePath()}}
+  if(JET){const k=proj(C,JET.p);if(k[2]>0&&Math.abs(k[0])<.97&&Math.abs(k[1])<.97){const [X,Y]=SP(k),s=8*u;c.moveTo(X-s,Y+s);c.lineTo(X,Y-s);c.lineTo(X+s,Y+s)}}c.stroke();
   if(gz>0)c.restore();
   c.globalAlpha=1;c.shadowBlur=0;
 }
@@ -1430,11 +1435,12 @@ function draw(dt){
   gl.uniform1f(u.uExpo,S.expo*(1+.5*(S.jolt||0)));gl.uniform1f(u.uFade,S.fade);gl.uniform1f(u.uPanB,.11);gl.uniform1f(u.uGrain,.02);gl.uniform1f(u.uGun,S.gunner);
   const rd=RM?PI:34*Math.min(dt,.034);gl.uniform1f(u.uRot,(S.t*34)%PI);gl.uniform1f(u.uRotD,rd);
   gl.drawArrays(gl.TRIANGLES,0,3);
+  {const k=G.on?Math.round(S.rollU*60):1e9;if(k!==helmetKey){helmetKey=k;helmet()}}
   if(frame%2===0||lite)hmd(C);
 }
 
 /* ---------- 回す ---------- */
-let last=0,slow=0;
+let last=0,slow=0,helmetKey=1e9;
 function loop(now){
   requestAnimationFrame(loop);
   if(lost||document.hidden||S.hold)return;
