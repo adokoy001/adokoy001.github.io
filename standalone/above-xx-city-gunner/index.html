@@ -31,6 +31,17 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font);overflow:hidde
 #gf:active{background:rgba(255,217,138,.22);color:var(--focus);border-color:var(--focus)}
 #gz{right:118px;bottom:12px;width:62px;height:62px}
 #gz[aria-pressed="true"]{color:var(--focus);border-color:var(--focus)}
+/* 字幕：下のまんなかに、小さく、枠なしで。横長の画面では右下のボタンをよけて幅をせばめ、縦長の画面ではボタンの上へ上げる */
+#sub{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(9px + env(safe-area-inset-bottom,0px));width:max-content;max-width:min(540px,calc(100% - 430px));
+  display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none;text-align:center;text-wrap:balance;line-break:strict;
+  font:400 13px/1.45 var(--font);letter-spacing:.05em;color:rgba(232,230,220,.84);text-shadow:0 0 2px #000,0 0 7px #000,0 1px 1px #000}
+#sub .ln{opacity:0;max-height:0;overflow:hidden;transition:opacity .28s}
+#sub .ln.on{opacity:1;max-height:6em}
+#sub .w:empty{display:none}
+#sub .w{font-size:.76em;letter-spacing:.12em;color:rgba(141,255,166,.6);margin-right:.75em;white-space:nowrap}
+@media (max-aspect-ratio:1/1){#sub{bottom:calc(132px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 32px)}}
+/* 墜落のあとの、まっ黒。ボタンも照準器も、すべて隠す */
+#blk{position:fixed;inset:0;background:#000;z-index:50}
 #ui.idle{opacity:.12}
 #ui button{width:36px;height:36px;padding:0;display:grid;place-items:center;border-radius:50%;cursor:pointer;
   background:var(--ui-bg);color:var(--ui);border:1px solid var(--ui-line)}
@@ -50,11 +61,16 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font);overflow:hidde
 <canvas id="h" aria-hidden="true"></canvas>
 <p id="nogl" hidden>この端末では WebGL が使えないため、映像を表示できません。</p>
 <p id="msg" role="status" hidden></p>
+<div id="sub" aria-hidden="true"><div class="ln" id="sub0"><span class="w"></span><span></span></div><div class="ln" id="sub1"><span class="w"></span><span></span></div></div>
+<div id="blk" hidden></div>
 <div id="gm" hidden>
   <button id="gz" type="button" aria-pressed="false" aria-label="拡大する">ZOOM</button>
   <button id="gf" type="button" aria-label="機関砲を撃つ（押しているあいだ）">FIRE</button>
 </div>
 <div id="ui">
+  <button id="bc" type="button" aria-pressed="true" aria-label="日本語の字幕" title="字幕">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="2.2"/><path d="M7 11.2h4.5M13.5 11.2H17M7 14.4h7"/></svg>
+  </button>
   <button id="bg" type="button" aria-pressed="false" aria-label="端末の向きで見回す" title="ジャイロ" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="5" width="7" height="14" rx="1.6"/><path d="M4.5 9.5a8 8 0 0 0 0 5M19.5 9.5a8 8 0 0 1 0 5M3 8l1.5 1.5L6.2 8.2M21 16l-1.5-1.5-1.7 1.3"/></svg>
   </button>
@@ -1163,6 +1179,7 @@ function battle(dt){
    向きを変える速さから傾き（バンク）が、速さの変化と上下動から機首の上げ下げが決まる */
 function heloTick(dt){
   const dx=H.x-MON.x,dz=H.z-MON.z,r=Math.hypot(dx,dz),th=Math.atan2(dx,dz);H.r=r;
+  if(H.mode==='crash'){crashFly(dt);return}
   const er=[Math.sin(th),Math.cos(th)],et=[H.dir*Math.cos(th),-H.dir*Math.sin(th)];
   let ux,uz,vT=42,altT=H.alt0,wmax=.14,pd=0,side=0;
   if(H.mode==='ingress'){ux=-er[0];uz=-er[1];vT=72;wmax=.12;altT=r>2700?115:300;if(r<1720){H.mode='orbit';H.dir=Math.random()<.5?1:-1;nextAct()}}     // 海の上を低く、まっすぐ現地へ。岸が近づいたら上がる
@@ -1333,13 +1350,14 @@ function restart(first){
     buffet:0,glitch:0,wave:-99,flee:0,jolt:0,dz:0,dzW:null,hits:0,nextAA:S.t+5,nextArt:S.t+8,nextFlare:1e9,nextVoice:S.t+20,gl:null,nextGl:S.t+18,nextZoom:S.t+14,zoomT:1});
   for(const w of W){w.on=1;w.next=S.t+rnd(8,16)}for(const s of SL)s.on=1;gmReset();
   monBuild();placeGround();
+  Object.assign(CR,{on:0,rpm:1,eng:1});H.pit=0;H.vy=0;A.unmute();
   if(!first){S.loop++;A.duck(0);A.mvPrep()}
   startIngress();
 }
 
 /* ---------- 音 ---------- */
 let ac=null,userMuted=false;
-const A={ld:0,tq:0,on:false,bomb(){},brrt(){},jet(){},thump(){},setOn(){},far(){},voice(){},gun(){},gun1(){},rocket(){},rwr(){},caution(){},hiss(){},duck(){},mvPrep(){},update(){},radio(){return false},whisper(){},alert(){},airWarn(){},prox(){},traffic(){},lock(){},altWarn(){},jetWarn(){},whoosh(){}};
+const A={ld:0,tq:0,on:false,bomb(){},brrt(){},jet(){},thump(){},setOn(){},far(){},voice(){},gun(){},gun1(){},crunch(){},impact(){},unmute(){},rocket(){},rwr(){},caution(){},hiss(){},duck(){},mvPrep(){},update(){},radio(){return false},whisper(){},alert(){},airWarn(){},prox(){},traffic(){},lock(){},altWarn(){},jetWarn(){},whoosh(){}};
 function initAudio(){
   if(ac)return;
   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
@@ -1374,6 +1392,11 @@ function initAudio(){
   jobs.push(()=>{SND.gun=bake(1.7,(d,n)=>{const k1=op(1700),k2=op(280);let a=0,b=0;
     for(let i=0;i<n;i++){const t=i/sr,on=t<1.4,ts=((t*10.5)%1)/10.5,w=Math.random()*2-1;a+=(w-a)*k1;b+=(w-b)*k2;
       d[i]=on?Math.sin(6.283*(52+80*Math.exp(-ts*60))*ts)*Math.exp(-ts*24)*1.3+a*1.7*Math.exp(-ts*50)+b*2*Math.exp(-ts*16):b*.6*Math.exp(-(t-1.4)*9)}})});
+  jobs.push(()=>{SND.crunch=bake(.7,(d,n)=>{const k1=op(5200),k2=op(380);let a=0,b=0;                              // 尾部をもぎ取られる：割れる音、鈍い衝撃、金属の響き、引き裂く音
+    for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k1;b+=(w-b)*k2;
+      d[i]=(w-a)*Math.exp(-t*90)*1.2+a*Math.exp(-t*38)*1.5+Math.sin(6.283*(38+70*Math.exp(-t*30))*t)*Math.exp(-t*9)*1.6
+        +(Math.sin(6.283*313*t)+.7*Math.sin(6.283*521*t+1)+.5*Math.sin(6.283*847*t+2)+.35*Math.sin(6.283*1290*t))*Math.exp(-t*11)*.35+b*(.5+.5*Math.sin(6.283*23*t))*Math.exp(-Math.pow((t-.2)/.16,2))*1.3}})});
+  jobs.push(()=>{SND.impact=bake(.11,(d,n)=>{const k=op(900);let b=0;for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;b+=(w-b)*k;d[i]=Math.tanh((w*.8+b*2.5+Math.sin(6.283*52*t)*1.5)*3)}},.98)});   // 地面に当たる一瞬
   jobs.push(()=>{SND.gun1=bake(.42,(d,n)=>{const k1=op(1700),k2=op(280);let a=0,b=0;                                  // 機関砲の1発ぶん（押しているあいだ、1秒に10回あまり鳴らす）
     for(let i=0;i<n;i++){const ts=i/sr,w=Math.random()*2-1;a+=(w-a)*k1;b+=(w-b)*k2;d[i]=(Math.sin(6.283*(52+80*Math.exp(-ts*60))*ts)*Math.exp(-ts*24)*1.3+a*1.7*Math.exp(-ts*50)+b*2*Math.exp(-ts*16))*Math.min(1,(.42-ts)/.05)}})});
   // ロケット弾：すぐ横から、裂くように出ていく
@@ -1438,6 +1461,10 @@ function initAudio(){
     mvPrep(){const f=MON.form;if(MVC[f])return;MVC[f]=[];[0,1].forEach(r=>setTimeout(()=>{try{const v=monsterVoice([1,5,2,4,0,3,6][f],r),b=ac.createBuffer(1,v.length,MV_SR);b.getChannelData(0).set(v);MVC[f][r]=b}catch(e){}},300+r*500))},
     voice(roar,dist,gain,rate,lp){const b=(MVC[MON.form]||[])[roar];play(b,{rate:rate||.5,vol:(roar?.95:.6)*clamp(1100/dist,.5,1.25)*(gain||1),delay:dist/340,lp:lp||560,dest:outG})},
     gun(){play(SND.gun,{vol:.9,dest:flyG,lp:2600})},gun1(){play(SND.gun1,{vol:.8,rate:rnd(.97,1.03),dest:flyG,lp:2600})},
+    crunch(){play(SND.crunch,{vol:1.3,dest:flyG})},
+    // 地面に当たる：ごく短い爆音のあと、出口の音量を、0.075秒後に、段をつけて 0 にする（なだらかに絞らない）
+    impact(){if(!A.on)return;const t=ac.currentTime;play(SND.impact,{vol:2.4,dest:outG});outG.gain.cancelScheduledValues(t);outG.gain.setValueAtTime(.9,t);outG.gain.setValueAtTime(0,t+.075)},
+    unmute(){if(!ac)return;const t=ac.currentTime;outG.gain.cancelScheduledValues(t);outG.gain.setTargetAtTime(A.on?.9:0,t,.35)},
     rocket(side,big){play(SND.rkt,{vol:big?1:.75,dest:flyG,pan:side*.6,rate:big?.8:rnd(.95,1.08)})},
     beep(f,dur,vol,delay,type){if(!A.on)return;const o=ac.createOscillator(),g=Gn(0),t=ac.currentTime+(delay||0);o.type=type||'square';o.frequency.value=f;chain(o,g,rdG);
       g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.005);g.gain.setValueAtTime(vol,t+dur-.01);g.gain.linearRampToValueAtTime(0,t+dur);o.start(t);o.stop(t+dur+.02)},
@@ -1461,9 +1488,9 @@ function initAudio(){
        降下や引き起こしでは、ローターが少し回りすぎる。ゆっくり横へ滑っているときは、全体に低い */
     update(dt){if(!LOOP.rotor)return;const t=ac.currentTime,raw=clamp(Math.abs(H.bank)*1.15+Math.max(0,H.vy)*.04+Math.abs(H.acc)*.07+Math.max(0,H.v-44)*.014-clamp(22-H.v,0,15)*.012,-.2,1.4);
       A.ld+=(raw-A.ld)*ease(dt||.016,1.6);A.tq+=(raw-A.tq)*ease(dt||.016,.45);const droop=clamp(raw-A.ld,-.5,.6),ov=Math.max(0,-H.vy)*.004;
-      LOOP.rotor.s.playbackRate.setTargetAtTime(clamp(1+.055*A.ld-.085*droop+ov,.9,1.12),t,.12);LOOP.rotor.g.gain.setTargetAtTime(.46+.36*Math.max(0,raw),t,.2);
-      if(LOOP.whine){LOOP.whine.s.playbackRate.setTargetAtTime(clamp(.97+.2*A.tq+.06*droop,.9,1.3),t,.15);LOOP.whine.g.gain.setTargetAtTime(.045+.04*Math.max(0,A.tq),t,.3)}
-      if(LOOP.wind){LOOP.wind.f.frequency.setTargetAtTime(350+H.v*11,t,.5);LOOP.wind.g.gain.setTargetAtTime(.03+H.v*.0016,t,.5)}},
+      LOOP.rotor.s.playbackRate.setTargetAtTime(clamp(1+.055*A.ld-.085*droop+ov,.9,1.12)*CR.rpm,t,.12);LOOP.rotor.g.gain.setTargetAtTime(.46+.36*Math.max(0,raw),t,.2);
+      if(LOOP.whine){LOOP.whine.s.playbackRate.setTargetAtTime(clamp(.97+.2*A.tq+.06*droop,.9,1.3)*CR.eng,t,.15);LOOP.whine.g.gain.setTargetAtTime((.045+.04*Math.max(0,A.tq))*CR.eng*CR.eng,t,.3)}
+      if(LOOP.wind){const va=Math.hypot(H.v,H.vy);LOOP.wind.f.frequency.setTargetAtTime(350+va*11,t,.5);LOOP.wind.g.gain.setTargetAtTime(.03+va*.0016,t,.5)}},
     // 文を作る（声 → 無線機ごし。射手の機内通話も含めて、全員の声を9段階に丸める。軽い音声合成の機械っぽさが、歪みに隠れる）。pre は、作っておくだけ。鳴らしたら長さ（秒）を返し、まだできていなければ 0
     radio(item){const sty=item.style||'calm',key=item.who+sty+item.text,b=TRC[key];
       if(b&&b!==1){if(item.pre)return 0;play(b,{vol:(item.who==='gun'?.4:.3)*(sty==='calm'?1:1.08),dest:rdG});return b.duration}
@@ -1480,11 +1507,11 @@ function radio(text,who,delay,style){text=EN[text]||text;RQ.q.push({text,who,sty
 function prep(text,who,style){text=EN[text]||text;if(A.on)A.radio({text,who,style,pre:1})}
 function radioTick(){
   const q=RQ.q;if(!q.length)return;q.sort((a,b)=>a.at-b.at);
-  if(!A.on){while(q.length&&q[0].at<S.t-1)q.shift();return}
+  if(!A.on){while(q.length&&q[0].at<=S.t){const it=q.shift();if(it.at>S.t-1)subShow(it,1.3+it.text.length*.045)}return}   // 音を切っているとき：台詞の時刻に、字幕だけ出す
   for(let i=0,n=0;i<q.length&&n<3;i++)if(q[i].at-S.t<5&&!q[i].pb){q[i].pb=1;n++;A.radio({text:q[i].text,who:q[i].who,style:q[i].style,pre:1})}
   for(let c=0;c<2;c++){const i=q.findIndex(x=>x.ch===c);if(i<0)continue;const it=q[i];if(it.at>S.t)continue;
     if(it.at<S.t-(it.style==='calm'?12:5)){q.splice(i,1);continue}
-    if(S.t>=RQ.busy[c]||it.style==='panic'){const d=A.radio(it);if(d){RQ.busy[c]=S.t+d+rnd(.4,.9);q.splice(i,1)}}}
+    if(S.t>=RQ.busy[c]||it.style==='panic'){const d=A.radio(it);if(d){subShow(it,d);RQ.busy[c]=S.t+d+rnd(.4,.9);q.splice(i,1)}}}
 }
 
 /* ---------- ジャイロ ---------- */
@@ -1526,23 +1553,33 @@ function gyroToggle(){
    ・攻撃で近づくたびに、何かが首や腕をこちらへ伸ばしてくる。その先に6発当てれば、引っこむ。間に合わなければ、機体に当たる（3回で、墜ちる）。
      映像版では 1.5秒で伸びきるが、それでは撃つ間がないので、ゲームでは伸びる速さを 0.36倍にしてある。伸びきったとき（4.3秒後）に、まだ引っこめていなければ、当たる。
      そのあいだ、操縦士は速さを落として、何かを正面に置いたままにする（映像版のようにすぐ切り返すと、手が視野の外へ出て撃てない）。頭は、手の先を自動では追わない（追うと、撃つボタンを押しているだけで当たる）。
+   3回めに当たると、墜ちる（下の「墜落」）。
    砲兵と攻撃機のときは、操縦士が離れる。機関砲は、機首から 130°あまりより後ろへは回らないので、そのあいだは撃てない（LIMITS）。
    （実物の機関砲が回るのは、左右 86°まで。この作品の旋回では、何かが機首から 100°あまりの向きに見えるので、実物どおりにすると旋回中に撃てない。ゲームの都合で広げてある）
    何かは、映像版と同じく、最後は空爆で倒れる。点数は出さず、最後の黒い画面に、数字だけの報告が出る。
    弾の速さは、実物（805 m/秒）より速い 1100 m/秒（1500m 先まで 1.4秒。実物の速さだと 1.9秒かかって、撃ってから当たるまでが間のびする）。
    無線と機内の声は、すべて英語（EN：もとの日本語の台詞 → 英語の発音記号）。機内の声は、操縦士。 */
 const EN={"ろけっと、はっしゃ！": "[ 'rAkIts! ]", "めいちゅう！ぜんだん めいちゅう！": "[ 'gUd 'hIts! 'OL 'raUndz An 'tArgIt! ]", "あたった！あたりました！": "[ 'hIt! D{ts @ 'hIt! ]", "めいちゅう〜！きいてる！": "[ 'gUd 'hIts! Its 'w3kIN! ]", "にばんき、かくにん。いい ぞ！": "[ 'tu k@n'f3mz. 'naIs 'SutIN! ]", "こうか あり！つづけろ！": "[ 'gUd I'fEkt! 'kip It 'Vp! ]", "はずれた。…もういちど いきます。": "[ 'mIst. … 'goUIN @'raUnd @'gEn. ]", "ほんぶから かくき。べつの もくひょうが しがいちに しゅつげん。ちじょうぶたいが こうせんちゅう。": "[ 'OL 'steIS@nz, k@n'troUL. @'nVD3 'tArgIt Iz In D@ 'sI4i. 'graUnd 'fOrsIz A:r In'geIdZd. ]", "ほんぶから かくき。もくひょうは しがいちの ちゅうしんぶ。ちじょうぶたいが こうせんちゅう。": "[ 'OL 'steIS@nz, k@n'troUL. 'tArgIt Iz In D@ 'sI4i 'sEnt3. 'graUnd 'fOrsIz A:r In'geIdZd. ]", "いちばんき、りょうかい。かいじょうを ほくじょうちゅう。とうちゃくまで、あと ごじゅうびょう。": "[ 'vaIp3 'wVn, 'kApi. 'oUv3 D@ 'wO43, 'nOrTbaUnd. 'fIfti 'sEk@ndz 'aUt. ]", "にばんき、ひだりに ついている。": "[ 'tu Iz An jOr 'lEft. ]", "さんばんき、みぎ。いじょう なし。": "[ 'Tri, 'raIt 'saId. 'OL 'gUd. ]", "いまの、きこえましたか…？": "[ 'dId ju 'hIr D{t…? ]", "ああ。こえだ。ここまで とどくのか。": "[ 'jE. D{ts Its 'vOIs. 'OL D@ 'weI 'aUt 'hIr. ]", "かくき、もくひょうは しんちょう さんびゃくめーとる いじょう。ちかづきすぎるな。": "[ 'OL 'steIS@nz. 'tArgIt Iz 'oUv3 'Tri 'hVndr@d 'mi43z 'tOL. 'du 'nAt 'kloUz 'In. ]", "かいがんせん、つうか。": "[ 'krOsIN D@ 'koUst. ]", "みえた。…また、ひが あがってる。": "[ 'tAli. … D@ 'sI4i Iz 'b3nIN @'gEn. ]", "みえた。…ひが あがってる。": "[ 'tAli. … D@ 'sI4i Iz 'b3nIN. ]", "[ 'tAli 'tArgIt. ] さんばんき、もくひょう しにん。": "[ 'Tri, 'tAli 'tArgIt. ]", "かくき、さんかいして こうげきせよ。[ 'klIrd tu In'geIdZ. ]": "[ 'OL 'vaIp3z, 'sprEd 'aUt {nd @'t{k. 'klIrd tu In'geIdZ. ]", "にばんき、いちに ついた。": "[ 'tu Iz In p@'zIS@n. ]", "さんばんき、ひがしがわに つきます。": "[ 'Tri, 'teIkIN D@ 'ist 'saId. ]", "また、でましたね…。こんどは かたちが ちがう。": "[ @'nVD3 'wVn…. 'dIfr@nt 'SeIp DIs 'taIm. ]", "もくひょう かくにん。…おおきい。": "[ 'tArgIt In 'saIt. … Its 'bIg. ]", "きかんほう、うちます。": "[ 'gVn3, 'wEp@nz 'fri. D@ 'gVn Iz 'jOrz. ]", "せきがいせんに うつらない。…ねつが ないんです。": "[ Its 'gOn frVm D@ 'flIr. … DErz 'noU 'hit. ]", "こっちも だ。まっくろに うつる。": "[ 'seIm 'hIr. Its 'kOLd 'bl{k. ]", "いきものじゃ ないの？": "[ Iz It 'ivIn @'laIv? ]", "ほえた！くる、つかまって！": "[ Its 'rOrIN! 'breIs! 'breIs! ]", "さんばんき、ぶじです。けいきも もどりました。": "[ 'Tri Iz 'oUkeI. 'Instr@m@nts A:r 'b{k. ]", "こうげき しんにゅう。": "[ 'rVnIN 'In. ]", "にばんき、えんごする。": "[ 'tu, 'kVv3IN. ]", "さんばんき、うえから みてます。": "[ 'Tri, 'haI 'kVv3. ]", "よこへ すべります。もくひょうを しょうめんに。": "[ 'slaIdIN 'saIdweIz. 'tArgIt An D@ 'noUz. ]", "もういちど、よこから みます。": "[ 'slaIdIN @'gEn. ]", "さんばんき、みさいる はっしゃ。": "[ 'Tri, 'raIf@L. ]", "[ 'wIntSEst3. ] さんばんき、だんやく なし。": "[ 'Tri Iz 'wIntSEst3. ]", "けいきが とんだ！…もどった、もどりました。": "[ 'Instr@m@nts A:r 'daUn! … 'b{k. DeI A:r 'b{k. ]", "なんだ いまのは！": "[ 'wVt 'wVz 'D{t! ]", "はへんが くる！あがって、あがって！": "[ d@'bri! 'klaImIN! 'klaImIN! ]", "ほんぶから かくき。ほうへいが うつ。しゃせんから はなれろ。だんちゃく、にじゅうびょうまえ。": "[ 'OL 'steIS@nz, 'faI3 'mIS@n, Ar'tIl@ri. 'klIr D@ 'gVn 'tArgIt 'laIn. 'spl{S In 'twEni 'sEk@ndz. ]", "りょうかい。はなれます。": "[ 'kApi. 'muvIN 'Of. 'hoULd jOr 'faI3. ]", "[ 'kApi. ] にばんき、りだつ。": "[ 'kApi. 'tu, 'Of. ]", "さんばんき、りだつ します。": "[ 'Tri, 'Of. ]", "だんちゃく、いま。[ 'spl{S! ]": "[ 'spl{S! ]", "あたってる！あたってます！": "[ D{ts An 'tArgIt! 'gUd 'hIts! ]", "よろけた！きいてる〜！": "[ Its 'st{g3IN! Its 'w3kIN! ]", "こうか、かくにんちゅう。かくき、こうげきを つづけよ。": "[ @'sEsIN I'fEkt. 'OL 'vaIp3z, k@n'tInju D@ @'t{k. ]", "こうげききが しんにゅうする。ぜんき、ただちに たいひ。くりかえす。ただちに たいひ！": "[ 'OL 'steIS@nz, 'f{st 'muv3z 'InbaUnd. 'klIr D@ 'Eri@ 'naU. aI 'seI @'gEn, 'klIr D@ 'Eri@ 'naU! ]", "りょうかい、たいひします！": "[ 'kApi, 'klIrIN 'Of! ]", "たいひ、たいひ！はなれて！": "[ 'klIrIN 'Of! 'hoULd 'faI3! ]", "さんばんき、たいひ！": "[ 'Tri, 'klIrIN! ]", "にばんき、たいひする！": "[ 'tu, 'klIrIN! ]", "めいちゅう。…まだ ういている。": "[ 'gUd 'hIts. … Its 'stIL 'floU4IN. ]", "めいちゅう。…まだ たっている。": "[ 'gUd 'hIts. … Its 'stIL 'st{ndIN. ]", "[ 'seI @'gEn? ] かくき、じょうきょうを おくれ。": "[ 'seI @'gEn? 'OL 'vaIp3z, 'steI4@s. ]", "さんばんき、いじょう なし。": "[ 'Tri Iz 'oUkeI. ]", "…もどりました。まだ とべます。": "[ … DeI A:r 'b{k. wi A:r 'stIL 'flaIIN. ]", "にばんき、いじょう なし。": "[ 'tu Iz 'oUkeI. ]", "にばんき、ひだん！…いや、かすった だけだ。": "[ 'tu Iz 'hIt! … 'nEg@4Iv. 'dZVst @ 'skr{tS. ]", "さんばんき、よけます！": "[ 'Tri, 'breIkIN! ]", "かくき、こうどを とれ。": "[ 'OL 'vaIp3z, 'geIn '{Lt@tud. ]", "…ぬけました。こうどを もどします。": "[ … wi A:r 'klIr. 'kVmIN 'b{k 'daUn. ]", "いちばんき、ぶじ？ おうとう して！": "[ 'wVn, A:r ju 'oUkeI? 'wVn, rI'spAnd! ]", "…ぶじです。あぶなかった…。": "[ … wi A:r 'oUkeI. D{t wVz 'kloUs…. ]", "ちかづきすぎるな。あれは てが とどく。": "[ 'du 'nAt 'kloUz 'In. It k@n 'ritS ju. ]", "めいちゅう！すごい〜！": "[ d@'rEkt 'hIt! 'lUk {t 'D{t! ]", "やった！ひざを ついた！": "[ 'jEs! Its 'daUn An Its 'niz! ]", "やった！ぐらついた！": "[ 'jEs! Its 'wAb@lIN! ]", "やった！かたむいた！": "[ 'jEs! Its 'tIltIN! ]", "もくひょう、くずれる！": "[ 'tArgIt Iz 'goUIN 'daUn! ]", "おちる…おちます！": "[ Its 'fOlIN… Its 'fOlIN! ]", "たおれる…たおれます！": "[ Its 'goUIN 'oUv3… Its 'goUIN 'daUn! ]", "やった〜！たおした！": "[ 'jEs! wi 'gAt It! ]", "もくひょう、ちんもく。うごかない。": "[ 'tArgIt Iz 'saIl@nt. 'noU 'muvm@nt. ]", "[ 'si:s 'faI3. 'si:s 'faI3. ] ぜんき、うちかた やめ。げんいちで かんしせよ。": "[ 'si:s 'faI3. 'si:s 'faI3. 'OL 'vaIp3z, 'hoULd p@'zIS@n {nd @b'z3v. ]", "おわった…んですよね？": "[ Its 'oUv3…. 'raIt? ]", "じょうくうに おおがたの ひこうぶったい。…ふくすう います。": "[ 'lArdZ 'kAnt{kts, 'haI. … 'mVLt@p@L. ]", "とり、ですか？あれ…。": "[ A:r 'DoUz… 'b3dz? ]", "でかすぎる。つばさが まちを おおってる。": "[ 'tu 'bIg. D@ 'wINz A:r 'kVv3IN D@ 'sI4i. ]", "ほんぶ、しじを ください。": "[ k@n'troUL, rI'kwEst In'strVkS@nz. ]", "…まて。てを だすな。": "[ … 'st{nd 'baI. 'du 'nAt In'geIdZ. ]", "ぜんき、てを だすな。きかんせよ。[ 'O:L 'steIS@nz, 'A:r ti 'bi. ]": "[ 'OL 'steIS@nz, 'du 'nAt In'geIdZ. 'A:r ti 'bi. aI 'seI @'gEn, 'A:r ti 'bi. ]", "さんばんき、きかん します。": "[ 'Tri, 'A:r ti 'bi. ]", "にばんき、きかんする。": "[ 'tu, 'A:r ti 'bi. ]", "…かえりましょう。": "[ … 'lEts 'goU 'hoUm. ]", "おりた。…くってる。": "[ Its 'l{ndId. … Its 'i4IN. ]", "たべてる…。": "[ DeI A:r 'i4IN It…. ]"};
+/* ---------- 字幕 ----------
+   英語の無線と機内の声に、日本語の字幕をつける。画面の下のまんなかに、小さく、枠なしで出す（映画の字幕のように）。話している人の名前は、照準器と同じ緑で、小さく添える。
+   無線（ch 0）と機内（ch 1）は重なることがあるので、2行ぶんの場所を持つ。声が鳴りはじめたときに出して、鳴りおわって少ししたら消す。音を切っているときは、台詞の時刻に、字幕だけ出す。 */
+const SUB={"[ 'rAkIts! ]": "ロケット、発射！", "[ 'gUd 'hIts! 'OL 'raUndz An 'tArgIt! ]": "命中！全弾命中！", "[ 'hIt! D{ts @ 'hIt! ]": "当たった！命中だ！", "[ 'gUd 'hIts! Its 'w3kIN! ]": "命中！効いてる！", "[ 'tu k@n'f3mz. 'naIs 'SutIN! ]": "2番機、確認。いい射撃だ！", "[ 'gUd I'fEkt! 'kip It 'Vp! ]": "効果あり！続けろ！", "[ 'mIst. … 'goUIN @'raUnd @'gEn. ]": "外れた。…もう一度回る。", "[ 'OL 'steIS@nz, k@n'troUL. @'nVD3 'tArgIt Iz In D@ 'sI4i. 'graUnd 'fOrsIz A:r In'geIdZd. ]": "本部から各機。別の目標が市街地に出現。地上部隊が交戦中。", "[ 'OL 'steIS@nz, k@n'troUL. 'tArgIt Iz In D@ 'sI4i 'sEnt3. 'graUnd 'fOrsIz A:r In'geIdZd. ]": "本部から各機。目標は市街地の中心部。地上部隊が交戦中。", "[ 'vaIp3 'wVn, 'kApi. 'oUv3 D@ 'wO43, 'nOrTbaUnd. 'fIfti 'sEk@ndz 'aUt. ]": "バイパー1、了解。海上を北上中。到着まで50秒。", "[ 'tu Iz An jOr 'lEft. ]": "2番機、左についている。", "[ 'Tri, 'raIt 'saId. 'OL 'gUd. ]": "3番機、右。異常なし。", "[ 'dId ju 'hIr D{t…? ]": "今の、聞こえたか…？", "[ 'jE. D{ts Its 'vOIs. 'OL D@ 'weI 'aUt 'hIr. ]": "ああ。あれの声だ。ここまで届くのか。", "[ 'OL 'steIS@nz. 'tArgIt Iz 'oUv3 'Tri 'hVndr@d 'mi43z 'tOL. 'du 'nAt 'kloUz 'In. ]": "各機、目標は身長300メートル以上。近づきすぎるな。", "[ 'krOsIN D@ 'koUst. ]": "海岸線、通過。", "[ 'tAli. … D@ 'sI4i Iz 'b3nIN @'gEn. ]": "見えた。…また街が燃えてる。", "[ 'tAli. … D@ 'sI4i Iz 'b3nIN. ]": "見えた。…街が燃えてる。", "[ 'Tri, 'tAli 'tArgIt. ]": "3番機、目標視認。", "[ 'OL 'vaIp3z, 'sprEd 'aUt {nd @'t{k. 'klIrd tu In'geIdZ. ]": "各機、散開して攻撃せよ。交戦を許可する。", "[ 'tu Iz In p@'zIS@n. ]": "2番機、位置についた。", "[ 'Tri, 'teIkIN D@ 'ist 'saId. ]": "3番機、東側につきます。", "[ @'nVD3 'wVn…. 'dIfr@nt 'SeIp DIs 'taIm. ]": "また出たな…。今度は形が違う。", "[ 'tArgIt In 'saIt. … Its 'bIg. ]": "目標確認。…でかい。", "[ 'gVn3, 'wEp@nz 'fri. D@ 'gVn Iz 'jOrz. ]": "射手、射撃を許可する。機関砲は任せた。", "[ Its 'gOn frVm D@ 'flIr. … DErz 'noU 'hit. ]": "赤外線に映らない。…熱がない。", "[ 'seIm 'hIr. Its 'kOLd 'bl{k. ]": "こっちもだ。真っ黒に映る。", "[ Iz It 'ivIn @'laIv? ]": "あれ、生き物じゃないの？", "[ Its 'rOrIN! 'breIs! 'breIs! ]": "吠えた！来るぞ、つかまれ！", "[ 'Tri Iz 'oUkeI. 'Instr@m@nts A:r 'b{k. ]": "3番機、無事です。計器も戻りました。", "[ 'rVnIN 'In. ]": "攻撃進入。", "[ 'tu, 'kVv3IN. ]": "2番機、援護する。", "[ 'Tri, 'haI 'kVv3. ]": "3番機、上から見てます。", "[ 'slaIdIN 'saIdweIz. 'tArgIt An D@ 'noUz. ]": "横へ滑る。目標を正面に。", "[ 'slaIdIN @'gEn. ]": "もう一度、横へ滑る。", "[ 'Tri, 'raIf@L. ]": "3番機、ミサイル発射。", "[ 'Tri Iz 'wIntSEst3. ]": "3番機、弾薬なし。", "[ 'Instr@m@nts A:r 'daUn! … 'b{k. DeI A:r 'b{k. ]": "計器が飛んだ！…戻った、戻ったぞ。", "[ 'wVt 'wVz 'D{t! ]": "何だ、今のは！", "[ d@'bri! 'klaImIN! 'klaImIN! ]": "破片が来る！上がる、上がるぞ！", "[ 'OL 'steIS@nz, 'faI3 'mIS@n, Ar'tIl@ri. 'klIr D@ 'gVn 'tArgIt 'laIn. 'spl{S In 'twEni 'sEk@ndz. ]": "本部から各機。砲兵が撃つ。射線から離れろ。弾着、20秒前。", "[ 'kApi. 'muvIN 'Of. 'hoULd jOr 'faI3. ]": "了解。離れる。射手、撃ち方待て。", "[ 'kApi. 'tu, 'Of. ]": "了解。2番機、離脱。", "[ 'Tri, 'Of. ]": "3番機、離脱します。", "[ 'spl{S! ]": "弾着、今。", "[ D{ts An 'tArgIt! 'gUd 'hIts! ]": "当たってる！命中だ！", "[ Its 'st{g3IN! Its 'w3kIN! ]": "よろけた！効いてる！", "[ @'sEsIN I'fEkt. 'OL 'vaIp3z, k@n'tInju D@ @'t{k. ]": "効果を確認中。各機、攻撃を続けよ。", "[ 'OL 'steIS@nz, 'f{st 'muv3z 'InbaUnd. 'klIr D@ 'Eri@ 'naU. aI 'seI @'gEn, 'klIr D@ 'Eri@ 'naU! ]": "各機、攻撃機が進入する。ただちに退避。繰り返す、ただちに退避！", "[ 'kApi, 'klIrIN 'Of! ]": "了解、退避する！", "[ 'klIrIN 'Of! 'hoULd 'faI3! ]": "退避、退避！撃ち方待て！", "[ 'Tri, 'klIrIN! ]": "3番機、退避！", "[ 'tu, 'klIrIN! ]": "2番機、退避する！", "[ 'gUd 'hIts. … Its 'stIL 'floU4IN. ]": "命中。…まだ浮いている。", "[ 'gUd 'hIts. … Its 'stIL 'st{ndIN. ]": "命中。…まだ立っている。", "[ 'seI @'gEn? 'OL 'vaIp3z, 'steI4@s. ]": "もう一度言え。各機、状況を送れ。", "[ 'Tri Iz 'oUkeI. ]": "3番機、異常なし。", "[ … DeI A:r 'b{k. wi A:r 'stIL 'flaIIN. ]": "…戻った。まだ飛べる。", "[ 'tu Iz 'oUkeI. ]": "2番機、異常なし。", "[ 'tu Iz 'hIt! … 'nEg@4Iv. 'dZVst @ 'skr{tS. ]": "2番機、被弾！…いや、かすっただけだ。", "[ 'Tri, 'breIkIN! ]": "3番機、よけます！", "[ 'OL 'vaIp3z, 'geIn '{Lt@tud. ]": "各機、高度を取れ。", "[ … wi A:r 'klIr. 'kVmIN 'b{k 'daUn. ]": "…抜けた。高度を戻す。", "[ 'wVn, A:r ju 'oUkeI? 'wVn, rI'spAnd! ]": "1番機、無事？ 応答して！", "[ … wi A:r 'oUkeI. D{t wVz 'kloUs…. ]": "…無事だ。危なかった…。", "[ 'du 'nAt 'kloUz 'In. It k@n 'ritS ju. ]": "近づきすぎるな。あれは手が届く。", "[ d@'rEkt 'hIt! 'lUk {t 'D{t! ]": "直撃！見たか、今の！", "[ 'jEs! Its 'daUn An Its 'niz! ]": "やった！膝をついた！", "[ 'jEs! Its 'wAb@lIN! ]": "やった！ぐらついた！", "[ 'jEs! Its 'tIltIN! ]": "やった！傾いた！", "[ 'tArgIt Iz 'goUIN 'daUn! ]": "目標、崩れる！", "[ Its 'fOlIN… Its 'fOlIN! ]": "落ちる…落ちるぞ！", "[ Its 'goUIN 'oUv3… Its 'goUIN 'daUn! ]": "倒れる…倒れるぞ！", "[ 'jEs! wi 'gAt It! ]": "やった！倒した！", "[ 'tArgIt Iz 'saIl@nt. 'noU 'muvm@nt. ]": "目標、沈黙。動きなし。", "[ 'si:s 'faI3. 'si:s 'faI3. 'OL 'vaIp3z, 'hoULd p@'zIS@n {nd @b'z3v. ]": "撃ち方やめ。撃ち方やめ。全機、現位置で監視せよ。", "[ Its 'oUv3…. 'raIt? ]": "終わった…んだよな？", "[ 'lArdZ 'kAnt{kts, 'haI. … 'mVLt@p@L. ]": "上空に大型の飛行物体。…複数います。", "[ A:r 'DoUz… 'b3dz? ]": "あれ…鳥、なのか？", "[ 'tu 'bIg. D@ 'wINz A:r 'kVv3IN D@ 'sI4i. ]": "でかすぎる。翼が街を覆ってる。", "[ k@n'troUL, rI'kwEst In'strVkS@nz. ]": "本部、指示を乞う。", "[ … 'st{nd 'baI. 'du 'nAt In'geIdZ. ]": "…待て。手を出すな。", "[ 'OL 'steIS@nz, 'du 'nAt In'geIdZ. 'A:r ti 'bi. aI 'seI @'gEn, 'A:r ti 'bi. ]": "全機、手を出すな。帰投せよ。繰り返す、帰投せよ。", "[ 'Tri, 'A:r ti 'bi. ]": "3番機、帰投します。", "[ 'tu, 'A:r ti 'bi. ]": "2番機、帰投する。", "[ … 'lEts 'goU 'hoUm. ]": "…帰ろう。", "[ Its 'l{ndId. … Its 'i4IN. ]": "降りた。…食ってる。", "[ DeI A:r 'i4IN It…. ]": "食べてる…。", "[ 'raIf@L! ]": "ミサイル、発射！", "[ 'hAg 'wVn 'wVn, 'tArgIt In 'saIt. 'rVnIN 'In. ]": "ホッグ11、目標視認。進入する。", "[ 'hAg 'wVn 'wVn, 'klIrd 'hAt. ]": "ホッグ11、攻撃を許可する。", "[ 'gVnz, 'gVnz, 'gVnz! ]": "機関砲、撃つ！", "[ 'bAmz @'weI. ]": "爆弾、投下。", "[ 'gUd 'hIts! 'hAg 'wVn 'wVn, 'Of 'tArgIt. ]": "命中！ ホッグ11、離脱する。", "[ 'tArgIt 'daUn. 'naIs 'w3k, 'gaIz. 'hAg 'wVn 'wVn, 'A:r ti 'bi. ]": "目標、撃破。いい仕事だ。ホッグ11、帰投する。", "[ 'wVt D@ 'hEL A:r 'DoUz? ]": "何だ、あれは？", "[ wi A:r 'hIt! wi A:r 'hIt! ]": "被弾！被弾した！", "[ Its 'pULIN 'b{k! 'naIs 'SutIN! ]": "引っこんだ！いい射撃だ！", "[ 'gUd I'fEkt! ]": "効果あり！", "[ D{t 'h3t It! ]": "効いたぞ！", "[ 'naIs 'SutIN, 'gVn3. ]": "いい射撃だ、射手。", "[ 'gUd 'hIts! ]": "命中！", "[ 'hAt 'spAt An D@ 'bAdi. 'gVn3, 'hIt It. ]": "体に光る点がある。射手、そこを撃て。", "[ @'nVD3 'hAt 'spAt. ]": "また光る点だ。", "[ 'hAt 'spAt. 'hIt It. ]": "光る点。撃て。", "[ 'DEr. D@ 'gloUIN 'pArt. ]": "あそこだ。光ってるところ。", "[ 'gVn Iz 'wIntSEst3. ]": "機関砲、弾切れ。", "[ 'teIL 'roU43! wi 'lOst D@ 'teIL 'roU43! ]": "テールローター！テールローターをやられた！", "[ 'meIdeI, 'meIdeI, 'meIdeI! 'vaIp3 'wVn Iz 'goUIN 'daUn! 'goUIN 'daUn! ]": "メーデー、メーデー、メーデー！ バイパー1、墜落する！墜落する！", "[ 'wVn Iz 'hIt! 'wVn Iz 'spInIN! ]": "1番機、被弾！回ってるぞ！", "[ 'wVn, jOr 'goUIN 'In! ]": "1番機、落ちてます！", "[ 'breIs! 'breIs! 'breIs! ]": "衝撃に備えろ！"},SUBR=['首','腕','脚','首','触手','鎖','紐'],SUBW={gun:'操縦士',w2:'2番機',w3:'3番機',hq:'本部',jet:'攻撃機'},SUBS=[0,0];
+let subOn=store.get('joukuu-gunner-sub')!=='0';
+function subShow(it,d){if(!subOn||S.black)return;const tx=SUB[it.text]||(it.text.indexOf("'ritSIN fOr")>0?'こっちへ伸びてくる！'+SUBR[MON.form]+'だ！ 射手、撃て！撃て！':'');if(!tx)return;
+  const e=document.getElementById('sub'+it.ch);if(!e)return;const w=SUBW[it.who]||'';e.firstChild.textContent=tx.indexOf(w)===0?'':w;e.lastChild.textContent=tx;e.classList.add('on');SUBS[it.ch]=S.t+d+.45}
+function subTick(){for(let c=0;c<2;c++)if(SUBS[c]&&(S.t>SUBS[c]||GM.dead||!subOn)){SUBS[c]=0;const e=document.getElementById('sub'+c);if(e)e.classList.remove('on')}}
+function subClear(){SUBS[0]=SUBS[1]=1e-9;subTick()}
+
 const RK=.36,RJ=1.55,GV=1100;
-const GM0={on:0,done:0,lost:0,fire:0,kf:0,kx:0,ky:0,zoom:0,acc:0,lim:0,shots:0,hits:0,broke:0,spots:0,spot:null,nextSpot:0,reach:0,rep:0,dmg:0,rOn:0,pull:1,tipN:0,tipDone:0,judged:0,sayT:-99},GM=Object.assign({pm:new Float32Array(72),pv:new Float32Array(24)},GM0);
-function gmUI(){const e=document.getElementById('gm');if(e)e.hidden=!GM.on;const z=document.getElementById('gz');if(z)z.setAttribute('aria-pressed',String(!!GM.zoom))}
-function gmReset(){Object.assign(GM,GM0);gmUI()}
-function gmStart(){if(GM.on||S.down||S.black)return;GM.on=1;GM.done=0;S.gun=1200;GM.nextSpot=S.t+5;GM.pv.fill(99);
+const GM0={on:0,done:0,lost:0,fire:0,kf:0,kx:0,ky:0,zoom:0,acc:0,lim:0,shots:0,hits:0,broke:0,spots:0,spot:null,nextSpot:0,reach:0,rep:0,dmg:0,rOn:0,pull:1,tipN:0,tipDone:0,judged:0,sayT:-99,dead:0},GM=Object.assign({pm:new Float32Array(72),pv:new Float32Array(24)},GM0);
+function gmUI(){const e=document.getElementById('gm');if(e)e.hidden=!GM.on;const z=document.getElementById('gz');if(z)z.setAttribute('aria-pressed',String(!!GM.zoom));const b=document.getElementById('blk');if(b)b.hidden=!GM.dead}
+function gmReset(){Object.assign(GM,GM0);gmUI();subClear()}
+function gmStart(){if(GM.on||S.down||S.black)return;GM.on=1;GM.done=0;S.gun=1200;GM.nextSpot=S.t+5;GM.pv.fill(99);for(const l of CRL)prep(l[0],l[1],'panic');
   if(G.on){S.yawA=clamp(S.yawA+S.yawU,-2,2);S.pitA=clamp(S.pitA+S.pitU,-.55,.5);G.az0=G.az;G.off=0;G.pit0=G.pit;G.poff=0}
   gmUI();say(G.on?'端末を向けて、ねらう ／ 右下の FIRE：撃つ':'なぞる：ねらいを動かす ／ 右下の FIRE：撃つ'+(document.getElementById('bg').hidden?'':'（上のボタンで、端末の向きでもねらえる）'))}
 function gmEnd(){if(!GM.on)return;GM.on=0;GM.done=1;GM.fire=GM.kf=0;GM.zoom=0;if(GM.spot)GM.spot.sp.life=0;GM.spot=null;if(G.on)G.off=S.yawA+S.yawU-wrapPi(G.az-G.az0);gmUI()}
-function gmDamage(){GM.dmg++;S.buffet=S.t+3;S.glitch=S.t+2.6;S.shake=1;S.jolt=1;A.caution(8);A.thump(1.4);hmsg('HIT  HIT',4);S.caut=1;at(6,()=>{S.caut=0});
-  radio("[ wi A:r 'hIt! wi A:r 'hIt! ]",'gun',0,'panic');
-  if(GM.dmg>=3){GM.lost=1;radio("[ 'meIdeI, 'meIdeI! 'vaIp3 'wVn Iz 'goUIN 'daUn! ]",'gun',1.4,'panic');at(4.6,()=>{if(S.black)return;gmEnd();blackout()})}}
+function gmDamage(){GM.dmg++;S.buffet=S.t+3;S.glitch=S.t+2.6;S.shake=1;S.jolt=1;A.caution(8);A.thump(1.4);hmsg('HIT  HIT',4);S.caut=1;
+  if(GM.dmg>=3){GM.lost=1;crashStart()}else{at(6,()=>{S.caut=0});radio("[ wi A:r 'hIt! wi A:r 'hIt! ]",'gun',0,'panic')}}
 function gmReach(){if(!GM.on)return;GM.rOn=1;GM.pull=1;GM.reach++;GM.tipN=0;GM.tipDone=0;GM.judged=0}
 function gmTip(){if(GM.tipDone||!GM.rOn)return;if(++GM.tipN>=6){GM.tipDone=1;GM.rep++;MON.hurtEnd=Math.max(MON.hurtEnd,S.t+3);radio("[ Its 'pULIN 'b{k! 'naIs 'SutIN! ]",'gun',.2,'joy')}}
 // こちらの弾が、何かの体に当たった
@@ -1610,6 +1647,49 @@ function gmReport(c,W0,H0){const u=Math.min(W0,H0)/560,cx=W0/2;let y=H0/2-62*u;c
   const R=[['ROUNDS FIRED',String(GM.shots)],['HITS',GM.hits+'  ('+pc+'%)'],['WEAK POINTS BROKEN',GM.broke+' / '+GM.spots],['REACH REPELLED',GM.rep+' / '+GM.reach],['AIRCRAFT HITS',String(GM.dmg)]];
   F(15);c.textAlign='center';c.fillText(GM.lost?'AIRCRAFT LOST':'SORTIE REPORT',cx,y);y+=30*u;F(13);
   for(const[a,b]of R){c.textAlign='left';c.fillText(a,cx-130*u,y);c.textAlign='right';c.fillText(b,cx+130*u,y);y+=21*u}c.globalAlpha=1}
+/* ---------- 墜落 ----------
+   3回めに当たると、尾部（尾部回転翼）を失って落ちる。動きは、次の資料と、そこからの見積もりで組んだ：
+   ・主回転翼が上から見て左回りの機体は、尾部回転翼を失うと、機首が右へ回りだす。力を多く使っていて、遅いときほど、激しく回る（FAA Helicopter Flying Handbook 11章）
+   ・対処は、力を抜いて（コレクティブを下げ、スロットルを絞る）オートローテーションに入ること。低いと、間に合わないことがある（同）
+   ・接地の前に力を足すと、また回りだす。実際の AH-64 の事故では、高さ 400 フィート（約120m）から接地まで 14秒（米陸軍の記事、2011年の事故）
+   ここからは見積もり（資料に数字がない）：回りだす強さ（毎秒毎秒 1.25 ラジアン。エンジンの力÷回転翼の回る速さ÷機体の重さの見当から）、
+   力を抜いたあとの落ちる速さ（毎秒 19m ほど。遅いので、ふつうのオートローテーションより速い）、機首が下がること（尾が軽くなるので）、
+   1回転のあいだに機首と傾きが1回ずつ揺れること（まだ前へ進んでいるので、前から・横から・後ろからと、風の当たる向きが変わる）。
+   地面に当たった瞬間、短い爆音のあと、すべての音を切り、画面をまっ黒にする。何も出さない。4.5秒で、はじめから。 */
+const CR={on:0,t:0,rpm:1,eng:1,fl:0,nb:0,nh:0,k:0,br:0,al:0,vd:0};
+const CRL=[["[ 'teIL 'roU43! wi 'lOst D@ 'teIL 'roU43! ]",'gun'],["[ 'meIdeI, 'meIdeI, 'meIdeI! 'vaIp3 'wVn Iz 'goUIN 'daUn! 'goUIN 'daUn! ]",'gun'],["[ 'wVn Iz 'hIt! 'wVn Iz 'spInIN! ]",'w2'],["[ 'wVn, jOr 'goUIN 'In! ]",'w3'],["[ 'breIs! 'breIs! 'breIs! ]",'gun']];
+function crashStart(){
+  GM.on=0;GM.fire=GM.kf=0;GM.zoom=0;if(GM.spot){GM.spot.sp.life=0;GM.spot=null}
+  if(G.on)G.off=S.yawA+S.yawU-wrapPi(G.az-G.az0);else{S.yawA=clamp(S.yawA+S.yawU,-2,2);S.pitA=clamp(S.pitA+S.pitU,-.55,.5);S.yawU=S.pitU=0}
+  gmUI();Object.assign(CR,{on:1,t:0,rpm:1,eng:1,fl:0,nb:3.5,nh:0,k:0,br:0,al:0,vd:Math.atan2(H.vx,H.vz)});
+  H.mode='crash';H.w=Math.max(H.w,0)+.55;H.vy=Math.min(H.vy,0);SCH.length=0;RQ.q.length=0;
+  A.crunch();hmsg('TAIL ROTOR',5);
+  radio(CRL[0][0],'gun',.25,'panic');radio(CRL[1][0],'gun',2.5,'panic');radio(CRL[2][0],'w2',3.6,'panic');radio(CRL[3][0],'w3',7.4,'panic');
+}
+function crashFly(dt){
+  const t=(CR.t+=dt),chop=t>1.5;
+  // 回る：エンジンが回転翼を回す反動で、機首が右へ。操縦士が力を抜く（1.5秒後）までは、回る速さが増えつづける。抜いたあとは、止めるものがないので、ゆっくりしか落ちない
+  H.w+=((chop?0:1.25)-.05*H.w-.012*H.w*Math.abs(H.w))*dt;H.psi+=H.w*dt;
+  // 回転翼とエンジン：力を抜くとエンジンの音が下がり、回転翼は、下からの風で回りつづける。最後に引き起こすと、回転翼の勢いを使いきって、回る速さが落ちる
+  if(!CR.fl&&chop&&H.y<27)CR.fl=1;
+  if(!chop)CR.rpm+=(.96-CR.rpm)*ease(dt,.8);
+  else{CR.eng+=(.56-CR.eng)*ease(dt,1.1);if(CR.fl)CR.rpm=Math.max(.6,CR.rpm-.22*dt);else CR.rpm+=((H.vy<-9?1.04:.93)-CR.rpm)*ease(dt,1.2)}
+  // 落ちる：力を抜くと、支えがほとんどなくなって落ちはじめ、落ちる速さが増すにつれて回転翼が支えを取りもどす（毎秒 19m ほどで釣り合う）
+  const lift=!chop?.86:CR.fl?1.55*Math.pow(CR.rpm/1.04,2):Math.min(1,Math.pow(H.vy/20,2)+.12);
+  H.vy-=9.81*(1-lift)*dt;H.y+=H.vy*dt;
+  const kd=Math.exp(-dt/7);H.vx*=kd;H.vz*=kd;H.v=Math.hypot(H.vx,H.vz);H.sp=H.v;H.x+=H.vx*dt;H.z+=H.vz*dt;H.acc=0;H.aR=0;
+  // 姿勢：機首が下がる。前へ進む向きに対して機首がどちらを向いているかで、機首の上げ下げと左右の傾きが揺れる
+  const rel=H.psi-CR.vd,k=clamp(H.v/30,.25,1),nose=CR.fl?-.05:-.3*clamp(t/2.2,0,1);
+  H.pit+=(nose+.17*k*Math.cos(rel)-H.pit)*ease(dt,.35);H.bank+=(.1+.24*k*Math.sin(rel)+.05*Math.sin(t*5.3)-H.bank)*ease(dt,.35);
+  S.buffet=Math.max(S.buffet,S.t+.75);S.lastInput=S.t;
+  // 警告：主警告は鳴りつづける。高度が低い。引き起こしてからは、回転翼の回転が低い
+  if(t>CR.nb){CR.nb=t+.42;A.beep(CR.k++%2?620:880,.22,.05,0,'triangle')}
+  if(!CR.al&&H.y<80){CR.al=1;A.altWarn();hmsg('LOW ALT',9)}
+  if(CR.fl&&t>CR.nh){CR.nh=t+.15;A.beep(1500,.08,.045,0,'square')}
+  if(!CR.br&&H.y<64&&H.vy<-8){CR.br=1;for(let i=RQ.q.length-1;i>=0;i--)if(RQ.q[i].ch===1)RQ.q.splice(i,1);radio(CRL[4][0],'gun',0,'panic')}
+  if(H.y<=2.6)crashImpact();
+}
+function crashImpact(){CR.on=0;GM.dead=1;S.black=1;S.blackT=S.t+4.5;S.fade=0;SCH.length=0;RQ.q.length=0;PJ.length=0;gmUI();A.impact()}
 function gmInit(){const gf=$('gf'),gz=$('gz');if(!gf)return;
   const dn=e=>{e.preventDefault();startAudio();GM.fire=1;try{gf.setPointerCapture(e.pointerId)}catch(_){}wake()},up=()=>{GM.fire=0};
   gf.addEventListener('pointerdown',dn);for(const n of['pointerup','pointercancel','lostpointercapture'])gf.addEventListener(n,up);
@@ -1617,12 +1697,13 @@ function gmInit(){const gf=$('gf'),gz=$('gz');if(!gf)return;
   gz.addEventListener('click',()=>{if(GM.on){GM.zoom^=1;gmUI();wake()}});
   const KX={ArrowLeft:-1,ArrowRight:1,a:-1,d:1,A:-1,D:1},KY={ArrowUp:1,ArrowDown:-1,w:1,s:-1,W:1,S:-1};
   addEventListener('keydown',e=>{if(!GM.on)return;if(e.key===' '){GM.kf=1;e.preventDefault()}else if((e.key==='z'||e.key==='Z')&&!e.repeat){GM.zoom^=1;gmUI()}else if(KX[e.key])GM.kx=KX[e.key];else if(KY[e.key])GM.ky=KY[e.key]});
-  addEventListener('keyup',e=>{if(e.key===' ')GM.kf=0;else if(KX[e.key])GM.kx=0;else if(KY[e.key])GM.ky=0});addEventListener('blur',()=>{GM.kf=GM.fire=GM.kx=GM.ky=0});gmUI()}
+  addEventListener('keyup',e=>{if(e.key===' ')GM.kf=0;else if(KX[e.key])GM.kx=0;else if(KY[e.key])GM.ky=0});addEventListener('blur',()=>{GM.kf=GM.fire=GM.kx=GM.ky=0});gmUI();
+  const bc=$('bc');if(bc){bc.setAttribute('aria-pressed',String(subOn));bc.addEventListener('click',()=>{subOn=!subOn;store.set('joukuu-gunner-sub',subOn?'1':'0');bc.setAttribute('aria-pressed',String(subOn));if(!subOn)subClear();wake()})}}
 function tick(dt){
   S.t+=dt;S.clock+=dt;if(S.lv<5)S.fuel-=dt*.11;
   director(dt);
   if(!S.black){monTick(dt);heloTick(dt);battle(dt)}
-  gmTick(dt);projTick(dt);radioTick();
+  gmTick(dt);projTick(dt);radioTick();subTick();
   S.shake*=Math.exp(-dt*7);S.muzz*=Math.exp(-dt*22);S.rktGlow*=Math.exp(-dt*3.2);
   S.fade+=((S.black?0:1)-S.fade)*ease(dt,S.black?.12:1.6);
   // 頭の向き：ふだんは、何かを目で追っている。ときどき、行く手や計器へ目をやる
@@ -1641,6 +1722,7 @@ function tick(dt){
   else if(calm){if(S.t>S.nextZoom){S.nextZoom=S.t+rnd(18,30);S.zoomEnd=S.t+rnd(6,10)}zT=S.t<S.zoomEnd?1.7:1}
 
   if(idle&&!S.gl&&!S.black){if(S.flee>.5)zT=.88;else if(MON.falling&&!MON.dead)zT=2.6;else if(H.mode==='side'&&H.R0>2000)zT=2;else if(S.fed&&S.t>=(S.birdLookEnd||0))zT=fr(S.t/23)<.72?2.3:1}
+  if(CR.on){yT=.42+.2*Math.sin(S.t*1.9);pT=.03+.07*Math.sin(S.t*2.7);tau=.3;zT=1}                  // 墜落：回っていく先（右前）の外を見ている。計器盤へは目を落とさない
   if(G.on&&!GM.on){S.yawA=0;S.pitA=0;S.yawU=G.off+wrapPi(G.az-G.az0);S.pitU=G.pit;const dr=wrapPi(G.roll-S.rollU);S.rollU+=G.snap?dr:dr*ease(dt,.12);G.snap=0;zT=1}
   else{if(G.on){S.yawU=clamp(G.off+wrapPi(G.az-G.az0),-2.6,2.6);S.pitU=clamp(G.poff+(G.pit0==null?0:G.pit-G.pit0),-1,1);const dr=wrapPi(G.roll-S.rollU);S.rollU+=G.snap?dr:dr*ease(dt,.12);G.snap=0}   // ゲーム中のジャイロ：自動で追う頭の向きに、端末の向きのずれを足す
     S.yawA=wrapPi(S.yawA+wrapPi(yT-S.yawA)*ease(dt,tau));S.pitA+=(pT-S.pitA)*ease(dt,tau);
@@ -1898,7 +1980,7 @@ function keepAwake(){try{if(navigator.wakeLock&&!wl&&!document.hidden)navigator.
 addEventListener('pointerdown',keepAwake);document.addEventListener('visibilitychange',()=>{if(!document.hidden)keepAwake()});
 syncUI();wake();
 say('画面に触れると、音が出ます');
-window.__kj={GM,gmStart,gmEnd,gmDamage,EN,SP,proj,camUp(){return CAM=camera()},STR,startIngress,MOON,S,H,MON,G,W,SL,PJ,EX,FL,A,RQ,DEB,BIRDS,BOMBS,ACTS,tick,draw,restart,nextAct,flare,salvo,gunBurst,missile,explode,blackout,glance,onOri,gyroToggle,voiceAttack,collateral,reachAttack,jetRun,goDown,stagger,get JET(){return JET},get CAM(){return CAM},get lite(){return lite},set lite(v){lite=v}};
+window.__kj={GM,gmStart,gmEnd,gmDamage,EN,SUB,SUBS,subShow,SP,CR,crashStart,proj,camUp(){return CAM=camera()},STR,startIngress,MOON,S,H,MON,G,W,SL,PJ,EX,FL,A,RQ,DEB,BIRDS,BOMBS,ACTS,tick,draw,restart,nextAct,flare,salvo,gunBurst,missile,explode,blackout,glance,onOri,gyroToggle,voiceAttack,collateral,reachAttack,jetRun,goDown,stagger,get JET(){return JET},get CAM(){return CAM},get lite(){return lite},set lite(v){lite=v}};
 })();
 
 </script>
