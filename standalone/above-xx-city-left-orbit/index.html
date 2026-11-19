@@ -1032,14 +1032,14 @@ function monBuild(){
     const jh=[h[0]-u[0]*dn-f[0]*10,h[1]-u[1]*dn-f[1]*10,h[2]-u[2]*dn-f[2]*10];
     return[[h[0]+f[0]*Lu+u[0]*Lu*.09,h[1]+f[1]*Lu+u[1]*Lu*.09,h[2]+f[2]*Lu+u[2]*Lu*.09],jh,[jh[0]+(f[0]*co-u[0]*so)*Ll,jh[1]+(f[1]*co-u[1]*so)*Ll,jh[2]+(f[2]*co-u[2]*so)*Ll]]};
   if(M.form===0){
-    const sw=Math.sin(g),cw=Math.cos(g),br=3*Math.sin(T*.5),hip=[0,150+4*Math.abs(cw),-15],chest=[0,232+br,52];
+    const sg=Math.sin(g),cw=Math.cos(g),br=3*Math.sin(T*.5),hip=[0,150+4*Math.abs(cw),-15],chest=[0,232+br,52];   // sg＝歩く揺れ。sw（手を伸ばす量）と同じ名前にしていたので、首が、歩くのに合わせてこちらへ伸び縮みしていた
     seg(hip,chest,66,52);
     // 長い首の先に、頭が前へ垂れている。口は、ワニやイヌのように大きく裂けていて、いつも開いている（上あごと下あごを別々の棒にして、あいだを空ける。吠えるときは、もっと開く）
     let n1=[sl*30,chest[1]+56,chest[2]+34+cl*14],head=[n1[0]+sl*50,n1[1]-22+4*Math.sin(T*.4),n1[2]+22+cl*42],fd=v3.norm([sl*40,-5,cl*40]),jw=Math.abs(Math.sin(T*.37))*M.jaw;
     if(sw>0){n1=mx3(n1,v3.add(rp(chest,600,.5),[0,50*sw,0]),sw);head=mx3(head,rp(chest,600,1),sw);fd=v3.norm(v3.sub(head,n1))}
     const [sn,jh,jt]=jaws(head,fd,82,78,.44+.08*Math.sin(T*.23)+.4*jw,13);if(sw>0)M.tipL=sn;
     seg(chest,n1,36,23);seg(n1,head,23,23);seg(head,sn,23,12);seg(jh,jt,19,10);
-    const t1=[12*sw,95,-150],t2=[40*Math.sin(g-1),52,-290],t3=[60*Math.sin(g-2),40,-400];
+    const t1=[12*sg,95,-150],t2=[40*Math.sin(g-1),52,-290],t3=[60*Math.sin(g-2),40,-400];
     seg(hip,t1,56,32);seg(t1,t2,32,14);seg(t2,t3,14,3);
     for(const s of[-1,1]){const ph=s>0?g:g+PI,fz=58*Math.sin(ph),fy=Math.max(0,34*Math.cos(ph));
       seg([s*48,140,-10],[s*58,82+fy*.6,28+fz*.6],46,32);seg([s*58,82+fy*.6,28+fz*.6],[s*58,24+fy,fz-6],32,24);seg([s*58,24+fy,fz-6],[s*58,15+fy,fz+44],24,15);
