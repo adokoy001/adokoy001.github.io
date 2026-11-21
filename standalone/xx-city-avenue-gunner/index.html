@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>〇〇県✕✕市 大通り・砲手</title>
+<meta name="description" content="戦車の砲手の席。小さな白黒モニターの熱線映像ごしに、大通りを這ってくるものを、120mm・12.7mm・7.62mm で撃つ。巨大なものは、脚だけが映りこむ。触らなければ、車長が撃つ。">
+<style>
+html,body{margin:0;padding:0}img{max-width:100%}[hidden]{display:none!important}
+/* 戦車の砲手の席。目の前の小さな白黒モニター（熱線映像）と、手もとのスイッチだけが見える。
+   暗い車内の見た目に固定（暗い一色）。色は、モニターの緑がかった白、スイッチの琥珀色、撃発の赤。 */
+:root{
+  --bg:#040504; --fg:#e4e8e0; --ui:#d9c9a8; --focus:#ffd98a; --amber:#e9b36b;
+  --font:"Hiragino Sans","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#con{position:fixed;inset:0}
+#c,#h{position:absolute;inset:0;width:100%;height:100%;display:block}
+#c{background:var(--bg);touch-action:none;cursor:crosshair}
+#h{pointer-events:none}
+#h,#ctl{will-change:transform}
+#ui{position:fixed;display:flex;gap:4px;transition:opacity .6s;top:calc(2px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px))}
+#ui.idle{opacity:.4}
+#ui button{width:30px;height:27px;padding:0;display:grid;place-items:center;border-radius:4px;cursor:pointer;background:none;color:rgba(217,190,140,.34);border:0}
+#ui button:focus-visible,#ctl button:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+#ui button[aria-pressed="true"]{color:rgba(233,190,130,.9)}
+#ui svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+/* 手もとのスイッチ。絵は canvas に描く。ここは、押す場所だけ（見えない）。場所と大きさは、スクリプトが決める */
+#ctl{position:absolute;inset:0;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#ctl button{position:absolute;pointer-events:auto;touch-action:none;padding:0;cursor:pointer;border-radius:5px;background:none;border:0;color:transparent;font-size:0;-webkit-tap-highlight-color:transparent}
+#kf{border-radius:50%!important}
+/* 字幕：モニターの下のほうに、小さく、枠なしで */
+#sub{position:fixed;transform:translateX(-50%);width:max-content;display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none;text-align:center;text-wrap:balance;line-break:strict;
+  font:400 13px/1.45 var(--font);letter-spacing:.05em;color:rgba(240,238,228,.92);text-shadow:0 0 2px #000,0 0 6px #000,0 1px 1px #000,0 0 10px #000}
+#sub .ln{opacity:0;max-height:0;overflow:hidden;transition:opacity .28s}
+#sub .ln.on{opacity:1;max-height:6em}
+#sub .w{font-size:.76em;letter-spacing:.12em;color:rgba(233,179,107,.8);margin-right:.75em;white-space:nowrap}
+[hidden]{display:none!important}
+#msg{position:fixed;left:16px;right:16px;margin:0 auto;width:fit-content;max-width:calc(100% - 32px);top:calc(34px + env(safe-area-inset-top,0px));
+  color:rgba(236,232,220,.8);font-size:12.5px;line-height:1.6;letter-spacing:.05em;text-align:center;pointer-events:none;text-shadow:0 0 2px #000,0 0 7px #000,0 1px 1px #000}
+#nogl{position:fixed;inset:0;display:grid;place-items:center;text-align:center;line-height:1.8;font-size:15px;padding-inline:max(16px,env(safe-area-inset-left,0px))}
+</style>
+</head>
+<body>
+<div id="con">
+<canvas id="c" aria-label="戦車の砲手の席。小さな白黒のモニターに、夜の大通りの熱線映像。這ってくる熱いものを、照準の十字に入れて撃つ。なぞると、照準が動きます"></canvas>
+<canvas id="h" aria-hidden="true"></canvas>
+<div id="ctl">
+  <button id="kw0" type="button" aria-pressed="true" aria-label="120ミリ主砲（対戦車榴弾）">120</button>
+  <button id="kw1" type="button" aria-pressed="false" aria-label="12.7ミリ重機関銃">12.7</button>
+  <button id="kw2" type="button" aria-pressed="false" aria-label="7.62ミリ連装機関銃">7.62</button>
+  <button id="kz" type="button" aria-pressed="false" aria-label="倍率を上げる">ZOOM</button>
+  <button id="kf" type="button" aria-label="撃つ（押しているあいだ）">FIRE</button>
+</div>
+</div>
+<p id="nogl" hidden>この端末では WebGL が使えないため、映像を表示できません。</p>
+<p id="msg" role="status" hidden></p>
+<div id="sub" aria-hidden="true"><div class="ln" id="sub0"><span class="w"></span><span></span></div><div class="ln" id="sub1"><span class="w"></span><span></span></div></div>
+<div id="ui">
+  <button id="bc" type="button" aria-pressed="true" aria-label="日本語の字幕" title="字幕">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="2.2"/><path d="M7 11.2h4.5M13.5 11.2H17M7 14.4h7"/></svg>
+  </button>
+  <button id="bs" type="button" aria-pressed="false" aria-label="音" title="音">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5z"/><path id="bs1" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.4 7.4 0 0 1 0 10.4"/><path id="bs0" d="M16 9.5l5 5m0-5l-5 5"/></svg>
+  </button>
+  <button id="bf" type="button" aria-pressed="false" aria-label="全画面" title="全画面">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>
+  </button>
+</div>
+
+<script>
+(()=>{'use strict';
+/* 〇〇県✕✕市 大通り・砲手
+   「午前二時・リエゾン」で、崖の下に見えていた街。その街の大通りを進む、戦車（90式）の砲手の席。
+   目の前の7インチの白黒モニターに、熱線映像（熱いものが白い）が映っている。見えるのは、それだけ。視野はせまく、砲は上へ10°までしか向かない。
+   巨大な何かは、街の向こうを、とてもゆっくり歩いている。モニターの上のほうに、脚と、腹の下が映りこむ。戦車の相手は、それではなく、体から落ちて大通りを這ってくる小さいもの（といっても、背は3m をこえる）。
+   武装は3つを切り替える：120mm 主砲（対戦車榴弾。1発で倒せる。撃つと車体が下がり、装填に4.5秒）、12.7mm 重機関銃、7.62mm 連装機関銃（どちらも、それなりに撃ちこまないと倒れない）。
+   操縦は操縦手、目標の指示は車長。車長は、目標へ砲塔を大まかに向けてくれる。触らなければ、車長が代わりに撃つ（映像として見ていられる）。
+   12.7mm は、本物は砲塔の上で人が撃つ。モニターごしに撃てるのは、作り話。 */
+const $=id=>document.getElementById(id);
+const cv=$('c'),hc=$('h'),hx=hc.getContext('2d');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,TOUCH=matchMedia('(pointer: coarse)').matches;
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const PI=Math.PI,D2R=PI/180;
+const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(x,a,b)=>x<a?a:x>b?b:x,mix=(a,b,t)=>a+(b-a)*t,ease=(dt,k)=>1-Math.exp(-dt*k);
+const sstep=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)},anyOf=a=>a[(Math.random()*a.length)|0],wrapPi=a=>Math.atan2(Math.sin(a),Math.cos(a));
+const fr=x=>x-Math.floor(x);
+/* ---------- 話し声 ----------
+   文を、いったん発音記号（音素）の列に直してから、音にする。音素ごとに、口の共鳴の形・雑音・声帯の有無・長さが決まっていて、前後の音にあわせて滑らかにつなぐ。
+   声そのものは、声帯の波を3つの共鳴に通して作る。
+
+   日本語：ひらがな・カタカナで書く。音素に直すときに、次のことが起きる
+     ・「ん」は、次の音で変わる（ぱ・ば・ま行の前は m、た・だ・な・ら・ざ行の前は n、か・が行の前は ŋ、母音や文末の前は口の奥の ɴ）
+     ・「おう」「えい」と、同じ母音の連続は、長い母音になる（こうげき → koːgeki、めいちゅう → meːtɕɯː）
+     ・文や句の終わりの「す」と、声を使わない子音にはさまれた「す」「し」は、母音が落ちる（です → des、ました → maɕta）
+     ・「ひ」は ç、「ふ」は ɸ、ら行は弾き音 ɾ
+     拍のすぐあとに「'」を書くと、そこがアクセントの核。書かなければ、語ごとに適当に決める
+   英語：[ ] の中に、発音記号（X-SAMPA 風の ASCII）で書く。空白が語の切れ目、' は次の音節に第一強勢、% は第二強勢
+     母音  i(beat) I(bit) E(bet) {(bat) A(father) O(thought) U(book) u(boot) V(but) @(about) 3(bird)  eI aI oU aU OI
+     子音  p b t d k g tS dZ f v T(thin) D(this) s z S Z h m n N(sing) l L(暗い l) r w j 4(弾き音)
+     強勢のある音節は長く・高く・強く、ない音節は短く弱く。強勢の前の p t k は息をともなう。母音は、濁った子音の前で伸び、澄んだ子音の前で縮む
+   共通の記号：空白は語の切れ目、「、」「,」は息つぎ、「。」「.」は言い切り（下がる）、「？」は上がる、「！」は強く言い切る、「…」は言いよどむ、「ー」は伸ばす、「〜」はもっと伸ばす、「っ」は詰まる
+
+   speak(text,o)：o.f0 声の高さ（Hz。男は100〜130、女は200〜250）／o.scale 共鳴ぜんたいの倍率（女は1.15〜1.2）／o.speed 速さ／o.oq 声帯が開いている割合（大きいほど柔らかい声）
+   ／o.breath 息まじりの量／o.range 抑揚の幅の倍率／o.long 伸ばす長さの倍率／o.style 'calm' 冷静・'panic' 焦り・'joy' 歓喜
+   調子（STY）：sp 速さ／pm 高さ／rg 抑揚の幅／jit 高さのふらつき／trem 震え／lng 文末の伸ばし／amp 強さ／br 息／crack 声が裏返る拍の割合／up 句の頭と終わりを持ち上げる量 */
+/* 話し声の合成（RSP）。「深夜放送」のために作り直した版に入れ替えた（もとは「上空」の RSP）。
+   口の共鳴を直列6つにし、鼻音には鼻の共鳴と谷を足し、子音は種類ごとに、母音への共鳴の渡り・閉鎖・破裂・息を作り分ける。
+   speak(文,{jp:'new'}) で、日本語もこの新しい道すじで作る（指定しなければ、日本語だけの文は元の音のまま。[ ] の英語を含む文は、いつも新しい道すじ）。
+   新しい道すじでは、かなと実際の音のずれも直す：母音の無声化（です・した）、長音（おう→おー、えい→えー）、「ん」の同化、語頭のざ行の破擦。
+   ほかの指定：style 'sad' 'whisper'、sharp（声の硬さ）、bidaku:true（鼻濁音）、devoice:false、literal:true（かなのとおりに読む）、wa:true（語の最後の は・へ を、助詞の わ・え として読む）、fuji:false（高さを、もとの作り方で）
+   日本語の高さは、藤崎モデルで作る（下の fuji）。アクセントの核は、拍のあとの ' で書く。書いてない語は、平板 */
+const RSP_H={rnd:(a,b)=>a+Math.random()*(b-a),clamp:(x,a,b)=>x<a?a:x>b?b:x,mix:(a,b,t)=>a+(b-a)*t};
+const RSP=(function(){const {rnd,clamp,mix}=RSP_H;
+return (()=>{
+  const SRV=16000,NEU=[400,1700,2600];
+  // 母音：共鳴 F1,F2,F3（男の声の値）、英語での基準の長さ（秒）、二重母音は滑っていく先の形。M は日本語の「う」
+  const VW={a:[730,1250,2500,.09],i:[290,2250,2950,.085],M:[330,1300,2350,.07],e:[480,1900,2550,.07],o:[480,880,2500,.09],
+    I:[390,1990,2550,.05],E:[530,1840,2480,.062],'{':[660,1720,2410,.095],A:[730,1090,2440,.095],O:[570,840,2410,.095],U:[440,1020,2240,.052],u:[300,870,2240,.085],V:[640,1190,2390,.058],'@':[500,1500,2500,.034],'3':[490,1350,1690,.09],
+    eI:[480,1950,2550,.115,[330,2200,2800]],aI:[730,1200,2500,.135,[400,2000,2600]],oU:[540,1000,2400,.115,[360,850,2300]],aU:[720,1350,2450,.135,[430,950,2300]],OI:[550,850,2400,.135,[380,2000,2600]]};
+  // 破裂音・破擦音：[雑音の中心, Q, 長さ(秒), 強さ, 声帯が鳴るか]
+  const STOP={k:[2000,3,.02,.6,0],g:[1900,3,.012,.35,1],t:[4300,1.6,.016,.5,0],d:[3800,1.6,.01,.3,1],p:[900,1.5,.012,.4,0],b:[800,1.5,.008,.25,1],tS:[3200,2,.05,.5,0],ts:[5200,1.6,.045,.45,0],dZ:[3000,2,.04,.35,1]};
+  // 摩擦音：同じ並び。C は「ひ」の ç、F は「ふ」の ɸ、T・D は英語の th
+  const FRIC={s:[5600,1.4,.055,.3,0],z:[5200,1.4,.04,.22,1],S:[3200,2,.06,.38,0],Z:[3000,2,.045,.25,1],f:[4200,.8,.04,.14,0],F:[4200,.8,.04,.14,0],C:[3600,2,.045,.2,0],v:[4000,.8,.035,.09,1],T:[4800,.9,.045,.12,0],D:[4200,.9,.03,.06,1]};
+  // 鼻音：共鳴の形。X は日本語の語末の「ん」（ɴ）
+  const NAS={m:[280,1050,2500],n:[280,1500,2500],N:[280,1900,2600],X:[280,1300,2400]};
+  // 接近音：[F1,F2,F3, 強さ, 長さ(秒)]。r は F3 が低い（英語の r の色）。L は語末の暗い l
+  const APX={l:[360,1250,2700,.5,.05],L:[450,870,2600,.5,.06],r:[420,1300,1600,.55,.055],w:[300,650,2200,.5,.045],j:[270,2100,3000,.5,.04]};
+  /* ---- 英語（作り直し）の表 ----
+     元の英語は、3つの共鳴を並べて同じ割合で足す作りで、子音はどれも「母音とまんなかの口の形のあいだ」から始まっていた。新しい道すじは、
+       ・共鳴を直列につなぐ（母音ごとの山の高さの釣り合いが、ひとりでに合う）。高い共鳴を3つ足す（3.3、3.75、4.9kHz。動かさない）
+       ・子音ごとに、口のどこを閉じるかで決まる出発点（ローカス）から、母音へわたる。わたりの長さは、場所ごとに違う
+       ・p t k は、閉鎖 → 破裂 → 息（強勢の前で長い）→ 声。b d g は、閉鎖のあいだ低くうなる
+       ・鼻音は、鼻の共鳴（270Hz）と谷（450Hz）を入れた、こもった音。出入りは急に変わる
+       ・長さは、音ごとの「もとの長さ」と「最小の長さ」から、規則で決める（句の最後で伸び、強勢がないと縮み、澄んだ破裂音の前で縮む…）
+     母音の値（共鳴 F1〜F3 と幅 B1〜B3、二重母音の行き先）と、w y r l の値は Klatt (1980) の表から。長さの規則と、もとの長さ・最小の長さは Klatt (1979) から。
+     破裂音の息の長さは、Lisker と Abramson の値（p 58、t 70、k 80 ミリ秒。単語を1つずつ読んだとき）より短くしてある（つづけて話すときは短い）。
+     (推定) 次のものは、文献の値ではなく、機械の聞き取り（Whisper と PocketSphinx）を見ながら私が決めた：
+       ・Klatt の表から動かした母音（i、æ、ɑ、aɪ と aʊ の入り）。あいまい母音、暗い l、鼻音の共鳴と幅
+       ・ローカスの式（傾きは Sussman らの測定 唇 .91／歯ぐき .54／奥 .79 を目安にしたが、切片と、歯・歯ぐきの後ろの式は見積もり）
+       ・わたりの長さ、破裂と摩擦の雑音の帯域と強さ、破擦音の長さ、母音の強さのそろえ方 */
+  // 母音：F1,F2,F3,B1,B2,B3（入り）、F1,F2,F3（終わり）、もとの長さ・最小の長さ（ミリ秒）
+  const EV={i:[300,2250,2950,45,130,250,285,2300,3000,160,50],I:[400,1800,2570,50,100,140,470,1600,2600,130,40],eI:[480,1720,2520,70,100,200,330,2020,2600,190,70],
+    E:[530,1680,2500,60,90,200,620,1530,2530,150,60],'{':[700,1750,2450,70,130,300,720,1620,2470,230,60],A:[730,1100,2500,100,80,160,730,1100,2500,240,80],
+    O:[600,990,2570,90,100,80,630,1040,2600,240,80],V:[620,1220,2550,80,50,140,620,1220,2550,140,50],oU:[540,1100,2300,80,70,70,450,900,2300,220,70],
+    U:[450,1100,2350,80,100,80,500,1180,2390,160,50],u:[350,1250,2200,65,110,140,320,900,2200,210,60],'3':[470,1270,1540,100,60,110,420,1310,1540,180,60],
+    aI:[710,1260,2550,100,70,200,400,1880,2500,250,90],aU:[730,1350,2500,90,80,140,450,950,2350,260,100],OI:[550,960,2400,80,50,130,360,1820,2450,280,110],
+    '@':[500,1400,2500,80,90,150,500,1400,2500,120,40],
+    // 日本語の母音（あ え お う。「い」は英語の i と共用）。長さは、拍の長さから決めるので、ここには持たない
+    a:[730,1250,2500,90,90,160,730,1250,2500],e:[480,1900,2550,60,100,200,480,1900,2550],o:[480,880,2500,80,80,120,480,880,2500],M:[330,1300,2350,60,100,150,330,1300,2350]};
+  // 子音：[作り方, 閉じる場所, 声帯が鳴るか, もとの長さ, 最小の長さ]。作り方 s 破裂 / a 破擦 / f 摩擦 / n 鼻 / x 接近 / h 息 / 4 はじき。場所 l 唇 / a 歯ぐき / v 奥 / d 歯 / p 歯ぐきの後ろ
+  const EC={p:['s','l',0,85,50],b:['s','l',1,85,60],t:['s','a',0,65,40],d:['s','a',1,75,50],k:['s','v',0,80,60],g:['s','v',1,80,60],tS:['a','p',0,125,75],dZ:['a','p',1,105,65],
+    f:['f','l',0,100,80],v:['f','l',1,60,40],T:['f','d',0,110,80],D:['f','d',1,50,30],s:['f','a',0,125,50],z:['f','a',1,75,40],S:['f','p',0,125,50],Z:['f','p',1,70,40],
+    m:['n','l',1,75,60],n:['n','a',1,70,55],N:['n','v',1,85,60],l:['x','a',1,80,40],L:['x','a',1,80,40],r:['x','a',1,80,30],w:['x','l',1,80,60],j:['x','p',1,80,50],h:['h','',0,80,20],'4':['4','a',1,20,20],
+    ts:['a','a',0],dz:['a','a',1],F:['f','l',0],C:['f','p',0],X:['n','u',1]};       // 日本語だけの子音：つ、語頭の ざ行（dz）、ふ、ひ、語末の ん
+  const NASM={m:[480,1100,2150,40,400,520],n:[480,1600,2600,40,400,520],N:[480,2100,2600,40,400,520],X:[480,1350,2450,40,400,520]},NP=270,NZ=450,
+    APT={w:[290,610,2150,50,80,250],j:[260,2200,3000,40,150,300],r:[310,1060,1380,70,100,120],l:[310,1050,2880,50,100,280],L:[430,850,2750,60,90,200]},
+    VOT={l:.045,a:.055,v:.065},TRP={l:.04,a:.05,v:.06,d:.04,p:.05,u:.03},
+    BUR={l:[1000,.5,.4],a:[4800,1.1,.45],v:[2500,3,.7]},                      // 破裂の雑音：[中心, Q, 強さ]。奥（k g）の中心は、次の母音で動かす
+    FRS={s:[6000,1.3,.36,0],z:[6000,1.3,.22,.35],S:[2800,2.6,.4,0],Z:[2800,2.6,.22,.35],f:[2800,.35,.035,0],v:[2800,.35,.012,.42],T:[4200,.4,.035,0],D:[2500,.35,.005,.42],tS:[3400,1.3,.5,0],dZ:[3400,1.3,.4,.12],ts:[5600,1.3,.36,0],dz:[6000,1.3,.26,.2],F:[2200,.4,.05,0],C:[3800,1.6,.22,0]};   // 摩擦の雑音：[中心, Q, 強さ, 声の強さ]
+  // ローカス：子音と母音の境い目での共鳴。母音の F2 から、場所ごとの直線で決める（傾きは、唇で急、歯ぐきでゆるい）
+  const LOC={l:[.75,130],a:[.5,900],v:[.79,600],d:[.5,800],p:[.5,950],y:[.3,1600]};       // y は、日本語の し・ち・じ・ひ（舌の前を上あごに寄せる）
+  function locus(pl,F){const f2=F[1],f3=F[2],L=LOC[pl]||LOC.p,x=L[0]*f2+L[1];
+    if(pl==='l')return[230,x,f3-350];
+    if(pl==='a')return[230,x,.4*f3+1620];
+    if(pl==='v'){const y=Math.min(2350,x);return[230,y,Math.max(2050,Math.min(2950,y+450))]}
+    if(pl==='d')return[260,x,.5*f3+1270];
+    return[250,x,.3*f3+1950]}
+  // 日本語：子音の長さ（ミリ秒）と、1拍の長さ（秒）。母音は、拍の残りを埋める（拍の長さがそろう）
+  const PZ=2.1,JD={k:62,g:50,s:80,z:60,t:55,d:45,n:48,h:55,b:50,p:62,m:52,'4':24,S:85,tS:80,ts:80,dZ:62,dz:65,N:50,F:65,C:70,j:40,w:50},JT=.105;      // PZ＝息つぎの間の倍率（藤崎モデルで作るとき）。1拍の長さと間は、参照の声（1拍 0.106〜0.131 秒、間 0.44〜0.71 秒）に寄せた
+  const STY={calm:{sp:1,pm:1,rg:.85,jit:.03,trem:0,lng:1,amp:1,br:0,crack:0,up:0},
+    panic:{sp:1.3,pm:1.24,rg:1.5,jit:.1,trem:.035,lng:1.45,amp:1.25,br:.5,crack:.13,up:.06,eff:.25,pz:.55,gasp:.5,fs:1.02},
+    joy:{sp:1.1,pm:1.15,rg:1.7,jit:.05,trem:0,lng:1.75,amp:1.15,br:.15,crack:0,up:.11,eff:.2,pz:.85,fs:1.05},
+    // 下の2つと、上の eff・pz・gasp・fs は、新しい道すじで足したもの（(推定) 値は私の見積もり）
+    sad:{sp:.86,pm:.92,rg:.55,jit:.05,trem:.012,lng:1.25,amp:.85,br:.35,crack:0,up:0,eff:-.25,pz:1.4},
+    whisper:{sp:.9,pm:1,rg:.5,jit:.03,trem:0,lng:1,amp:.9,br:0,crack:0,up:0,wh:1,pz:1.1}};
+  const KT={},CMAP={sh:'S',j:'dZ',ch:'tS',f:'F',r:'4',ng:'N'};
+  ('あa いi うu えe おo かka きki くku けke こko さsa しshi すsu せse そso たta ちchi つtsu てte とto なna にni ぬnu ねne のno '+
+   'はha ひhi ふfu へhe ほho まma みmi むmu めme もmo やya ゆyu よyo らra りri るru れre ろro わwa をo '+
+   'がga ぎgi ぐgu げge ごgo ざza じji ずzu ぜze ぞzo だda ぢji づzu でde どdo ばba びbi ぶbu べbe ぼbo ぱpa ぴpi ぷpu ぺpe ぽpo').split(' ').forEach(p=>{KT[p[0]]=p.slice(1)});
+  const punct=(ch,T)=>{if(ch==='。'||ch==='.')T.push({p:2,e:'f'});else if(ch==='？'||ch==='?')T.push({p:2,e:'q'});else if(ch==='！'||ch==='!')T.push({p:1.5,e:'x'});
+    else if(ch==='…')T.push({p:2.8,e:'d'});else if(ch==='、'||ch===',')T.push({p:1.2});else if(/\s/.test(ch)){if(T.length&&!T[T.length-1].w&&!T[T.length-1].p)T.push({w:1})}else return false;return true};
+  /* ---- 日本語：かな → 拍の列 → 音素の列 ---- */
+  /* X があるとき（新しい道すじ）は、かなの字づらと実際の音のちがいを直す：
+       ・「という」「そういう」の いう → ゆー。「ている」「でいく」の て＋い は、長い母音にしない（えいが・せんせい は、えー）
+       ・き く ち つ ひ ふ ぴ ぷ の母音は、澄んだ子音にはさまれると声が出ない（つくえ、きっぷ、ふたつ、がくせい）
+       ・ざ ず ぜ ぞ は、語の頭と「ん」「っ」のあとでは、いったん閉じる（dz）
+       ・X.bidaku なら、語の中の が行 を、鼻にかける（鼻濁音。かがみ、おんがく、助詞の が）
+     「=」は、その語が平板（下がり目なし）という印 */
+  function parse(text,X){
+    const T=[];let src=String(text);if(X)src=src.replace(/(^|[\s、。！？!?…とうあ])いう/g,'$1ゆー');
+    const CH=[...src];
+    for(let ci=0;ci<CH.length;ci++){const ch0=CH[ci];
+      let ch=ch0;const cc=ch.charCodeAt(0);if(cc>=0x30a1&&cc<=0x30f6)ch=String.fromCharCode(cc-0x60);
+      const last=T[T.length-1];
+      if(KT[ch]){const r=KT[ch];let c=r.slice(0,-1),g='';if(c==='y'||c==='w'){g=c;c=''}
+        if(X){const ini=!last||last.w||last.p;if(c==='g'&&X.bidaku&&!ini)c='ng';else if(c==='z'&&X.dz&&(ini||last.n||last.q))c='dz'}
+        // 長い母音：同じ母音がつづくとき、「お」のあとの「う」、「え」のあとの「い」
+        if(!c&&!g&&ch!=='を'&&last&&(last.v||last.l)&&last.lv&&(r===last.lv||(last.lv==='o'&&r==='u')||(last.lv==='e'&&r==='i'&&!(X&&(last.c==='t'||last.c==='d')&&last.v==='e'&&'るまたてなくきけいれろ'.includes(CH[ci+1]||'')))))T.push({l:1,lv:last.lv});
+        else T.push({c,g,v:r.slice(-1),lv:r.slice(-1)})}
+      else if('ゃゅょ'.includes(ch)&&last&&last.v){last.v=last.lv={'ゃ':'a','ゅ':'u','ょ':'o'}[ch];if(last.c!=='sh'&&last.c!=='ch'&&last.c!=='j')last.g='y'}
+      else if('ぁぃぅぇぉ'.includes(ch)&&last&&last.v)last.v=last.lv={'ぁ':'a','ぃ':'i','ぅ':'u','ぇ':'e','ぉ':'o'}[ch];
+      else if(ch==='ん')T.push({n:1});else if(ch==='っ')T.push({q:1});else if(ch==='ー')T.push({l:1,lv:last&&last.lv});else if(ch==='〜'||ch==='～')T.push({l:2.6,lv:last&&last.lv});
+      else if(ch==="'"){if(last)last.ac=1}
+      else if(ch==='='){if(last)last.hb=1}
+      else punct(ch,T);
+    }
+    // 助詞の「は」「へ」を、わ・え と読む（{wa:true} をつけたときだけ。語の最後の は・へ を助詞とみなすので、「げきは（撃破）」「よは（余波）」のような語があると読みまちがえる。ふだんは、台詞のほうに わ・え と書く）
+    if(X&&X.wa){let a=0;while(a<T.length){let b=a;while(b<T.length&&!T[b].w&&!T[b].p)b++;
+      const W=T.slice(a,b).filter(s=>s.v||s.n||s.l||s.q),L=W[W.length-1],h=s=>s&&s.v&&!s.g&&s.c==='h';
+      if(h(L)&&L.v==='a'&&!(W.length===2&&h(W[0])&&W[0].v==='a')){L.c='';L.g='w'}else if(h(L)&&L.v==='e')L.c='';
+      a=b+1}}
+    // 母音の落ちる拍
+    for(let i=0;i<T.length;i++){const s=T[i];if(!s.v||s.g||s.ac||!(s.c==='s'&&s.v==='u'||s.c==='sh'&&s.v==='i'))continue;
+      let j=i+1;while(T[j]&&T[j].w)j++;const nx=T[j],pv=T[i-1];
+      if(nx&&nx.l)continue;
+      if(s.c==='s'&&(!nx||nx.p)){if(pv&&(pv.v||pv.l))s.dv=1}
+      else if(nx&&nx.v&&!nx.dv&&'k t p ch ts s sh h'.split(' ').includes(nx.c)&&!(pv&&pv.dv))s.dv=2}
+    if(X&&X.dv)for(let i=0;i<T.length;i++){const s=T[i];if(!s.v||s.g||s.ac||s.dv||!(s.v==='i'||s.v==='u')||!'k s sh ch ts h f p'.split(' ').includes(s.c))continue;
+      let nx=T[i+1];const pv=T[i-1];if(nx&&nx.q)nx=T[i+2];
+      if(nx&&nx.v&&!nx.l&&!nx.dv&&!(pv&&pv.dv)&&'k t p ch ts s sh h f'.split(' ').includes(nx.c))s.dv=2}
+    return T;
+  }
+  // 日本語の抑揚：語ごとのアクセントと、文の終わりの調子から、拍ごとの 高さ(pm)・長さ(dm)・強さ(am) を決める
+  function prosody(T,S,R,JX){
+    const isM=s=>(s.v&&!s.dv)||s.n||s.l;let i=0;
+    while(i<T.length){
+      let j=i;while(j<T.length&&!T[j].p)j++;
+      const end=T[j]&&T[j].e,ph=T.slice(i,j);let mi=0,ds=1,a=0,first=true;
+      while(a<ph.length){let b=a;while(b<ph.length&&!ph[b].w)b++;
+        const M=ph.slice(a,b).filter(isM),n=M.length;
+        if(n){let nuc=M.findIndex(s=>s.ac)+1;
+          if(JX)nuc=nuc||0;else if(!nuc&&!M.some(s=>s.hb)){const r=R();nuc=n<=2?(r<.6?0:1):r<.45?0:r<.62?1:Math.min(n,2+((R()*(n-1))|0))}
+          M.forEach((s,q)=>{const k=q+1,pat=k===1?(nuc===1?1.13:.9):(nuc===0||k<=nuc)?1.08:.84,dec=Math.max(.76,1-.02*mi);mi++;
+            s.pm=Math.pow(pat*dec*ds,S.rg);s.dm=1;s.am=1});
+          if(nuc)ds*=.94;
+          if(first&&S.up)M[0].pm*=1+S.up;first=false}
+        a=b+1}
+      if(JX){const W=[];let cw=[];for(const s of ph){if(s.w){if(cw.length)W.push(cw);cw=[]}else if(s.v||s.n||s.l||s.q)cw.push(s)}if(cw.length)W.push(cw);
+        if(W.length)(JX.bg=JX.bg||[]).push({end,W:W.map(M=>({M,nuc:M.findIndex(s=>s.ac)+1}))})}
+      const Mp=ph.filter(isM),last=Mp[Mp.length-1];
+      /* 拍の中での高さの動き：前の拍の高さから入って、母音の中で自分の高さへ滑りこむ（段にならない）。
+         核の次の拍（大きく下がる拍）は、母音のほとんどを使って遅めに落ちる。核の拍は、気持ちが入っているほど、小さな山を作る */
+      {const D=.1*S.rg;Mp.forEach((s,q)=>{const pv=Mp[q-1],r=pv?pv.pm/s.pm:.97,drop=r>1.12;
+        s.c0=1+(r-1)*(drop?.8:.6);s.ct=drop?[[.85,1]]:s.ac||(pv&&r<.9)?[[.5,1+.35*D],[1,1]]:[[.6,1]]})}
+      if(last){
+        const D=.1*S.rg,g0=1+((last.c0||1)-1)*.5;last.c0=1;                                                    // ひとつの母音の中での、高さの動きの深さ
+        if(end==='f'){last.dm=1.3;last.c0=1.03*g0;last.ct=[[.3,1.02],[1,.82]]}                               // 言い切り：最後の拍の中で、すっと落ちる
+        else if(end==='q'){last.dm=1.6;last.c0=.94*g0;last.ct=[[.4,.96],[1,1.42]]}                 // 問い：いったん低く、しゃくり上げる
+        else if(end==='x'){last.dm=1.45*S.lng;last.pm*=1.1+S.up;last.am=1.25;
+          last.c0=g0;last.ct=S.up>.08?[[.35,1+1.8*D],[.8,1+1.2*D],[1,1+.3*D]]:[[.3,1+1.3*D],[1,1-1.6*D]];        // 強い言い切り：山を作って落とす。歓喜は、高いまま保つ
+          const p2=Mp[Mp.length-2];if(p2){p2.pm*=1.06+S.up;p2.am=1.15}}
+        else if(end==='d'){last.dm=1.7;last.am=.7;last.c0=.96*g0;last.ct=[[1,.84]]}
+        else{last.dm=1.15;last.c0=g0;last.ct=[[.5,1],[1,.95]]}}
+      if(S.crack)for(const s of Mp)if(R()<S.crack){s.pm*=1.3;s.am=1.15}
+      i=j+1}
+  }
+  // 拍を音素にひらく。「ん」は、次の音で形が変わる
+  function expandJP(T){
+    const G=[];
+    T.forEach((s,n)=>{
+      if(s.w||s.p||s.q){G.push(s);return}
+      if(s.l){G.push({l:s.l,pm:s.pm,len:s.dm,am:s.am,ct:s.ct,c0:s.c0,mo:s});return}
+      let j=n+1;while(T[j]&&T[j].w)j++;const nx=T[j];
+      if(s.n){const c=nx&&nx.v?nx.c:null,ph=c==null||c===''||c==='s'||c==='sh'||c==='h'||c==='f'?'X':c==='p'||c==='b'||c==='m'?'m':c==='k'||c==='g'||c==='ng'?'N':'n';
+        G.push({ph,mora:1,pm:s.pm,len:s.dm,am:s.am,mo:s});return}
+      const c=CMAP[s.c]||s.c,last=!T[n+1]||!!T[n+1].p;
+      if(s.dv){G.push({ph:c==='h'&&s.v==='i'?'C':c,dv:s.dv,jp:1,mo:s});if(s.dv===2&&c!=='s'&&c!=='S')G.push({ph:s.v==='u'?'M':s.v,jp:1,wv:1,mo:s});return}
+      if(c)G.push({ph:c==='h'&&s.v==='i'?'C':c,jp:1,pm:s.pm*(s.c0||1),am:s.am,mo:s});                     // 子音は、母音の入りの高さで
+      if(s.g)G.push({ph:s.g==='y'?'j':'w',jp:1,am:s.am,mo:s});
+      G.push({ph:s.v==='u'?'M':s.v,jp:1,pm:s.pm,len:s.dm,am:s.am,ct:s.ct,c0:s.c0,last,bare:!c&&!s.g,mo:s});
+    });
+    return G;
+  }
+  /* ---- 英語：発音記号 → 音素の列 ---- */
+  const SYM=['tS','dZ','eI','aI','oU','aU','OI'],ALIAS={e:'E',o:'O',a:'A'};
+  function parseEN(text){
+    const G=[];let st=0;const s=String(text);
+    for(let i=0;i<s.length;i++){const ch=s[i];
+      if(ch==="'"||ch==='ˈ'){st=1;continue}if(ch==='%'||ch==='ˌ'){st=2;continue}
+      if(ch===':'){const l=G[G.length-1];if(l&&VW[l.ph])l.lng=1.5;continue}
+      if(punct(ch,G))continue;
+      let ph=SYM.find(x=>s.startsWith(x,i));if(ph)i++;else ph=ALIAS[ch]||ch;
+      if(!(VW[ph]||STOP[ph]||FRIC[ph]||NAS[ph]||APX[ph]||ph==='h'||ph==='4'))continue;
+      const g={ph,en:1};if(VW[ph]){g.st=st;st=0}G.push(g)}
+    return G;
+  }
+  // 英語の抑揚：強勢のある音節を、長く・高く・強く。句の中で少しずつ下がり、最後の強勢（核）のあとで落ちる
+  function prosodyEN(G,S,R){
+    let i=0;
+    while(i<G.length){
+      let j=i;while(j<G.length&&!G[j].p)j++;
+      const end=G[j]&&G[j].e,V=[];for(let q=i;q<j;q++)if(G[q].en&&VW[G[q].ph])V.push(q);
+      if(V.length){let nuc=-1;V.forEach((q,n)=>{if(G[q].st===1)nuc=n});if(nuc<0)nuc=V.length-1;
+        V.forEach((q,n)=>{const g=G[q],dec=Math.max(.76,1-.028*n),pat=(g.st===1?1.16:g.st===2?1.05:.94)*(n===nuc?1.07:1)*(n>nuc&&end!=='q'?(end==null?.93:.86):1);
+          g.pm=Math.pow(pat*dec,S.rg);g.len=(g.st===1?1.3:g.st===2?1.08:.8)*(g.lng||1);g.am=g.st===1?1.12:g.st===2?1:.82;
+          const nx=G[q+1]&&!G[q+1].p&&!G[q+1].w?G[q+1]:G[q+2]&&G[q+1]&&G[q+1].w?G[q+2]:null;                       // 母音は、濁った子音の前で伸び、澄んだ子音の前で縮む
+          if(nx&&nx.ph){const o=STOP[nx.ph]||FRIC[nx.ph];g.len*=o?(o[4]?1.12:.86):1}});
+        const L=G[V[V.length-1]],Nc=G[V[nuc]],F0=G[V.find(q=>G[q].st===1)]||G[V[0]];
+        if(S.up)F0.pm*=1+S.up;
+        if(end==='f'){L.len*=1.35;L.pm*=.92}
+        else if(end==='q'){L.len*=1.5}
+        else if(end==='x'){Nc.pm*=1.1+S.up;Nc.len*=1.2*Math.sqrt(S.lng);Nc.am=1.28;L.len*=1.25}
+        else if(end==='d'){L.len*=1.6;L.am*=.75}
+        else L.len*=1.15;
+        /* ひとつの母音の中での高さの動き（c0＝はじめの倍率、ct＝[母音の中の位置 0〜1, 倍率] の並び）。
+           強勢のある母音は、下から入って山を作り、少し下りる。句の核（最後の強勢）は、言い切りなら高く入って大きく落ち、問いなら低く入って上がりつづけ、
+           強い言い切りなら大きな山を作る。強勢のない母音は、ほぼ平らに少し下がる */
+        const D=.1*S.rg,nl=V.length-1;
+        V.forEach((q,n)=>{const g=G[q];
+          if(n===nuc){
+            if(end==='q'){g.c0=1-D;g.ct=n===nl?[[.45,1-.5*D],[1,1+3.4*D]]:[[1,1+.8*D]]}
+            else if(end==='x'){g.c0=1-.3*D;g.ct=[[.35,1+2.1*D],[1,S.up>.08?1+.5*D:1-1.7*D]]}
+            else if(end==null){g.c0=1+.3*D;g.ct=n===nl?[[.3,1+.9*D],[.72,1-.5*D],[1,1+.3*D]]:[[.3,1+.9*D],[1,1-.7*D]]}       // つづく句：核は浅く下りるだけ。核が最後の母音なら、下りてから少し戻る
+            else{g.c0=1+.5*D;g.ct=[[.25,1+1.1*D],[1,1-2*D]]}}
+          else if(n>nuc&&end==null&&n===nl){g.c0=1;g.ct=[[1,1+.7*D]]}                                                    // つづく句の最後の母音は、少し上がって終わる
+          else if(n>nuc&&end==='q'){g.c0=1+.8*D;g.ct=[[1,1+(n===nl?3.4:1.8)*D]]}
+          else if(g.st===1){g.c0=1-.7*D;g.ct=[[.4,1+.7*D],[1,1-.3*D]]}
+          else if(g.st===2){g.c0=1-.3*D;g.ct=[[.4,1+.35*D],[1,1-.15*D]]}
+          else{g.c0=1;g.ct=[[1,.97]]}});
+        if(S.crack)for(const q of V)if(R()<S.crack){G[q].pm*=1.3}
+        // 子音は、同じ音節の母音の高さと強さを受けつぐ。強勢の前の p t k は、息をともなう。母音の前でない l は、暗い l
+        let am=G[V[0]].am;
+        for(let q=j-1,nv=null;q>=i;q--){const g=G[q];if(!g.en)continue;if(VW[g.ph]){nv=g;continue}
+          if(nv){g.pm=nv.pm*(nv.c0||1);g.am=nv.am}}                                   // 音節の頭の子音は、母音の入りの高さで
+        for(let q=i;q<j;q++){const g=G[q];if(!g.en||!g.ph)continue;if(VW[g.ph]){am=g.am;continue}if(g.am==null)g.am=am*.9;                         // 音節の終わりの子音は、母音の終わりの高さのまま
+          let nq=q+1;while(G[nq]&&G[nq].w)nq++;const nx=nq<j?G[nq]:null,pv=G[q-1];
+          if('ptk'.includes(g.ph)&&g.ph.length===1&&nx&&VW[nx.ph]&&nx.st===1&&!(pv&&pv.ph==='s'))g.asp=1;
+          if(STOP[g.ph]&&(!nx||!nx.ph||STOP[nx.ph]||FRIC[nx.ph]||NAS[nx.ph]))g.weak=1;
+          if(g.ph==='l'&&!(nx&&VW[nx.ph]))g.ph='L'}
+        for(const q of V)G[q].last=!G[q+1]||!!G[q+1].p}
+      i=j+1}
+  }
+  /* 英語の音素に、長さ（秒）と、前後の音素を入れる。長さ＝（もとの長さ−最小）×割合＋最小。割合は、規則を掛けあわせて作る（Klatt 1979） */
+  function planEN(G){
+    let i=0;
+    while(i<G.length){let j=i;while(j<G.length&&!G[j].p)j++;
+      const end=G[j]&&G[j].e,P=[];for(let q=i;q<j;q++)if(G[q].en&&G[q].ph)P.push(G[q]);
+      for(let a=i;a<j;){let b=a;while(b<j&&!G[b].w)b++;const W=[];for(let q=a;q<b;q++)if(G[q].en&&G[q].ph)W.push(G[q]);
+        const vs=W.filter(g=>EV[g.ph]);W.forEach((g,x)=>{g.wi=x;g.wvs=vs;if(EV[g.ph]){g.wfin=g===vs[vs.length-1];g.wmed=!g.wfin&&g!==vs[0];g.open=x===W.length-1}});a=b+1}
+      let lv=null,after=false;for(const g of P)if(EV[g.ph])lv=g;
+      P.forEach((g,x)=>{g.P=P[x-1]||null;g.N=P[x+1]||null});
+      P.forEach((g,x)=>{const v=EV[g.ph],c=EC[g.ph],pv=g.P,nx=g.N,pc=pv&&!EV[pv.ph],nc=nx&&!EV[nx.ph];let pr=1,inh,mn;
+        if(v){inh=v[9];mn=v[10];
+          pr*=g===lv?1.4:.6;if(!g.wfin)pr*=.85;if(g.wvs.length>1)pr*=.8;                      // 句の最後の音節は伸び、ほかは縮む。語の最後でない音節、音節の多い語は、縮む
+          if(!g.st){mn/=2;pr*=g.wmed?.5:.7}                                                  // 強勢がない
+          let p1=1;const k=nc&&EC[nx.ph];                                                    // うしろの子音：濁った摩擦の前で伸び、澄んだ破裂の前で縮む
+          if(g.open)p1=1.2;else if(k){if(k[0]==='f'&&k[2])p1=1.6;else if(k[0]==='s'&&k[2])p1=1.2;else if(k[0]==='n')p1=.85;else if(k[0]==='s'&&!k[2])p1=.7}
+          pr*=g===lv?p1:.7+.3*p1;
+          if(nx&&!nc)pr*=1.2;if(pv&&!pc)pr*=.7;
+          g.D=((inh-mn)*pr+mn)/1000*(g.lng||1)*(g===lv?(end==='q'?1.15:end==='d'?1.3:1):1);
+          if(g===lv)after=true}
+        else{inh=c[3];mn=c[4];
+          if(after)pr*=1.4;if(g.wi>0)pr*=.85;
+          let sv=nx&&!nc?nx:null;if(!sv)for(let y=x-1;y>=0;y--)if(EV[P[y].ph]){sv=P[y];break}   // その子音がついている音節の強勢
+          if(sv&&!sv.st){mn/=2;pr*=c[0]==='x'&&nx&&!nc?.5:.7}
+          if(pc&&nc)pr*=.5;else if(pc||nc)pr*=.7;
+          g.D=((inh-mn)*pr+mn)/1000}});
+      i=j+1}
+  }
+  /* 日本語の音素に、長さと前後の音素を入れる（新しい道すじで日本語を作るとき）。子音＋母音で1拍。長い母音「ー」と「ん」は、それだけで1拍。
+     「っ」は、次の子音の閉鎖（または摩擦）を1拍ぶん近く伸ばす。母音の落ちた「す」「し」は、摩擦だけを長めに */
+  function planJP(G,T){
+    const link=P=>{let acc=0;P.forEach((g,x)=>{g.P=P[x-1]||null;g.N=P[x+1]||null;const len=g.len||1;
+      if(g.jl||g.mora){g.D=T*.85*(g.jl||1)*len;acc=0}
+      else if(EV[g.ph]){g.D=g.wv?.055:Math.max(.045,(acc?T:T*.9)*len-acc);acc=0}                // wv＝声の出ない母音（き・く・ち・つ・ぴ・ぷ の母音が落ちたとき）。息だけを短く
+      else{let d=(JD[g.ph]||50)/1000;if(g.dv&&(g.ph==='s'||g.ph==='S')){d=d*1.25+(g.dv===1?.05:.02);acc=0}else acc+=d;if(g.gem)d+=T*.85;g.D=d}})};
+    let P=[],lv=null,gem=0;
+    for(const g of G){
+      if(g.p||g.en){if(P.length)link(P);P=[];lv=null;gem=0;continue}
+      if(g.w){g.J=1;g.skip=1;continue}
+      if(g.q){g.J=1;g.skip=1;gem=1;continue}
+      if(g.l){g.J=1;if(!lv){g.skip=1;continue}g.ph=lv;g.jl=g.l;P.push(g);continue}
+      if(!g.ph||!(EV[g.ph]||EC[g.ph]))continue;
+      g.J=1;g.gem=gem;gem=0;if(EV[g.ph])lv=g.ph;P.push(g)}
+    if(P.length)link(P);
+  }
+  /* ---- 日本語の高さ：藤崎モデル（基本周波数パターン生成過程モデル） ----
+     声の高さ（の対数）を、「句の成分」と「アクセントの成分」の足し算で作る。
+       句の成分：息つぎごとに、ぽんと叩いた反応。すぐ上がって、ゆっくり下がる（Gp(t)=α²t·e^(-αt)、α=3）。文がだんだん下がっていくのは、これ
+       アクセントの成分：語ごとに、高い区間を四角い指令で与え、その反応（Ga(t)=1-(1+βt)e^(-βt)、β=20、上限0.9）。段にならず、なめらかに上がり下がりする
+     語（分かち書きの一区切り＝アクセント句）ごとの指令：
+       ・核が1拍め → 語の頭から高く、2拍めで下がる。核がそれ以外 → 1拍めは低く、2拍めから高い（2拍めが ん・ー・っ なら、頭から上がる）。核の拍のあとで下がる
+       ・核なし（平板）→ 2拍めから高いまま、語の終わりまで。高さは、核のある語より低い
+       ・核のある語のあとは、同じ息のなかで、次の語の山が低くなる（ダウンステップ）
+     α・β は文献の値（話し手によらず、ほぼ α=3、β=20）。
+     指令の大きさと時刻（FJP）は、Open JTalk の声（人の声から学習した HMM の声）に、この作品の台詞 34 文を読ませ、その高さの動きにいちばん近くなるように探して決めた：
+       句の指令は、声の出はじめの 20 ミリ秒前（ここから 0.3 秒ほどかけて上がる）。大きさ 0.30（息つぎのあとは 0.28）
+       アクセントの指令は、核あり 0.36／核なし 0.26（アナウンサーの測定 0.35〜0.39／0.23〜0.25 と、ほぼ同じになった）。ダウンステップは 0.8 倍
+       上がりはじめは 2拍めの頭。下がりはじめは、核の次の拍に 30 ミリ秒入ってから（「おそ下がり」）。頭高は、語の 80 ミリ秒前から。言い切りの下げは小さい（0.06）
+     (推定) 強い言い切り・問い・言いよどみの終わり方と、長い息の途中の持ち直しは、参照に例がなく、私の見積もりのまま */
+  const FJP={t0:.02,ap1:.3,ap2:.28,apr:.13,aa:.36,af:.26,ds:.8,t1h:.08,t1:0,t1v:-.04,t2:-.03,fl:.06,flw:.4,em:1.25};
+  function fuji(K,JX,S,sp,jt,R,PX){
+    const P=Object.assign({},FJP,PX),A=3,B=20,CE=.9,rg=S.rg,cmdP=[],cmdA=[],fin=[],pk=.55+.45*rg;let first=true;
+    for(const bg of JX.bg||[]){const Ws=bg.W.filter(w=>w.M.every(s=>s.t0!=null));if(!Ws.length)continue;
+      for(const w of Ws){w.t=w.M.map((s,x)=>{const pv=w.M[x-1];return pv&&pv.q?pv.t0+.85*jt*sp:s.t0});w.te=w.M[w.M.length-1].t1}
+      const tS=Ws[0].t[0],lw=Ws[Ws.length-1],tE=lw.te,em=bg.end==='x';
+      cmdP.push([tS-P.t0,(first?P.ap1:P.ap2)*pk*(em?1.15:1)]);first=false;let ds=1,mc=0;
+      Ws.forEach((w,wi)=>{const n=w.M.length,k=w.nuc>0&&w.nuc<n?w.nuc:0,t=w.t,nx=Ws[wi+1];
+        if(mc>=9&&n>=3&&wi>0){cmdP.push([t[0]-P.t0*.7,P.apr*pk]);mc=0}                                         // 長い息のなかでは、ところどころで小さく持ち直す
+        const heavy=n>1&&(w.M[1].n||w.M[1].l||w.M[1].q),T1=k===1||n===1?t[0]-P.t1h:heavy?t[0]-P.t1v:t[1]-P.t1,T2=k?t[k]-P.t2:nx?nx.t[0]-.04:w.te-.02;
+        let a=(k?P.aa:P.af)*rg*ds*(em?P.em:1);if(S.crack&&R()<S.crack*1.5)a*=1.4;
+        cmdA.push([T1,Math.max(T1+.03,T2),a]);if(k)ds=Math.max(.45,ds*P.ds);mc+=n});
+      fin.push([tE,bg.end,Math.max(.08,tE-lw.t[lw.t.length-1])])}
+    const gp=t=>t>0?A*A*t*Math.exp(-A*t):0,ga=t=>t>0?Math.min(1-(1+B*t)*Math.exp(-B*t),CE):0,ss=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
+    const at=t=>{let p=0,a=0,f=0;for(const c of cmdP)p+=c[1]*gp(t-c[0]);for(const c of cmdA)a+=c[2]*(ga(t-c[0])-ga(t-c[1]));
+      for(const c of fin){const u=t-c[0];if(u>.12||u<-.5)continue;const e=c[1],d=c[2];                    // 息の終わり：言い切りは下げ、問いは最後の拍でしゃくり上げ、つづくときは少し浮かせる
+        f+=e==='f'?-P.fl*ss((u+P.flw)/P.flw):e==='q'?.42*Math.pow(ss((u+d*.75)/(d*.75)),1.3):e==='x'?-.08*ss((u+.2)/.2):e==='d'?-.12*ss((u+.35)/.35):.035*ss((u+d)/d)}
+      return[p,a,f]};
+    let m=0,n=0;const V=[];for(let i=0;i<K.length;i++){const k=K[i];if(!k.J)continue;const v=at(k[0]);V[i]=v;if(k[4]>0&&k[8]>0){m+=v[0]+v[1];n++}}
+    const base=Math.exp(-(n?m/n:0))*(1+(S.up||0));                                                       // 声の平均の高さが、指定した高さ（f0）になるようにそろえる
+    for(let i=0;i<K.length;i++){const v=V[i];if(!v)continue;K[i][9]=base*Math.exp(v[0]+v[1]+v[2]);K[i][4]*=.93+.4*v[1]}                 // 高いところは、少し強く
+    return{cmdP,cmdA,fin,base,at}}
+  /* ---- 音素の列 → 音 ---- */
+  function speak(text,o){
+    o=o||{};const S=Object.assign({},STY[o.style]||STY.calm);if(o.range!=null)S.rg*=o.range;if(o.long!=null)S.lng*=o.long;
+    const sp=1/((o.speed||1)*S.sp),f0b=(o.f0||150)*S.pm,sc=o.scale||1,oq=o.oq||.58,brv=(o.breath||0)+S.br,R=Math.random,r2=(a,b)=>a+R()*(b-a),cl=(x,a,b)=>x<a?a:x>b?b:x;
+    // [ ] の中は英語の発音記号、外は日本語
+    const JX=!o.literal&&o.jp!=='old'&&o.en!=='old'&&(o.jp==='new'||/\[/.test(String(text)))?{bidaku:!!o.bidaku,dv:o.devoice!==false,dz:o.dz!==false,wa:!!o.wa}:null;       // かなと実際の音のちがいを直すか（新しい道すじのときだけ。{literal:true} で、字づらのまま）
+    const FJ=!!JX&&o.jp!=='old'&&o.en!=='old'&&o.fuji!==false;                                           // 日本語の高さを、藤崎モデルで作るか
+    let G=[];String(text).split(/\[([^\]]*)\]/).forEach((part,ix)=>{if(!part.trim())return;
+      if(ix%2){const g=parseEN(part);prosodyEN(g,S,R);if(G.length&&!G[G.length-1].p)G.push({p:1});G=G.concat(g)}
+      else{const T=parse(part,JX);prosody(T,S,R,FJ?JX:null);G=G.concat(expandJP(T))}});
+    const NEW=o.en!=='old'&&(o.jp==='new'||G.some(g=>g.en));if(NEW){planEN(G);if(o.jp!=='old')planJP(G,JT*(o.x&&o.x.jt||1))}       // 英語を含む文と、{jp:'new'} をつけた文は、新しい道すじで作る（何もつけない日本語だけの文は、元のまま）
+    // 制御点：[時刻, F1,F2,F3, 声の強さ, 雑音の強さ, 雑音の中心, 雑音のQ, 声帯が鳴っているか, 高さの倍率, 鼻の谷の高さ, 共鳴の幅 B1,B2,B3]（うしろの4つは、新しい道すじだけが使う）
+    const K=[];let tt=0,cur=VW.a,fc=4000,fq=1,pf=1,cav=0;
+    const k=(dt,F,av,af,vo)=>{tt+=dt*sp;cur=F;cav=av;K.push([tt,F[0],F[1],F[2],NEW?av*1.6:av,af,fc,fq,vo,pf,NP,70,100,160])};
+    K.push([0,cur[0],cur[1],cur[2],0,0,fc,fq,1,pf,NP,70,100,160]);k(.02,cur,0,0,1);
+    /* 英語の音素ひとつぶんの制御点を置く（新しい道すじ）。F は [F1,F2,F3,B1,B2,B3]。
+       境い目（bnd）＝隣どうしの音素が出会う点での共鳴。子音は、左の境い目から右の境い目へ動く。母音は、左の境い目から自分の形へわたり、右の境い目へ出ていく */
+    const NEU6=[500,1500,2500,70,100,160],ss=x=>x<=0?0:x>=1?1:x*x*(3-2*x),
+      mixA=(a,b,t)=>[0,1,2,3,4,5].map(j=>{const x=a[j]==null?NEU6[j]:a[j],y=b[j]==null?NEU6[j]:b[j];return x+(y-x)*t}),
+      vS=g=>EV[g.ph],vE=g=>{const v=EV[g.ph];return[v[6],v[7],v[8],v[3],v[4],v[5]]},
+      nearV=(g,d)=>{for(let x=d>0?g.N:g.P;x;x=d>0?x.N:x.P)if(EV[x.ph])return d>0?vS(x):vE(x);return null},
+      own=(g,d)=>{const c=EC[g.ph];if(c[0]==='x')return APT[g.ph];const V=nearV(g,d)||nearV(g,-d)||NEU6;if(c[0]==='h'||c[1]==='u')return V;const L=locus(g.J&&(c[1]==='p'||(c[1]==='a'&&(c[0]==='n'||c[0]==='4')&&g.N&&(g.N.ph==='i'||g.N.ph==='j')))?'y':c[1],V);return[L[0],L[1],L[2],c[2]?60:180,110,170]},
+      bnd=(a,b)=>{const va=a&&EV[a.ph],vb=b&&EV[b.ph];
+        if(!a)return vb?vS(b):own(b,1);if(!b)return va?vE(a):own(a,-1);
+        if(va&&vb)return mixA(vE(a),vS(b),.5);
+        if(va){const c=EC[b.ph];return c[0]==='x'?mixA(vE(a),APT[b.ph],.5):c[0]==='h'?vE(a):own(b,-1)}
+        if(vb){const c=EC[a.ph];return c[0]==='x'?mixA(APT[a.ph],vS(b),.5):c[0]==='h'?vS(b):own(a,1)}
+        return mixA(own(a,1),own(b,-1),.5)},
+      trOf=g=>{const c=EC[g.ph];return c[0]==='x'?(g.ph==='l'||g.ph==='L'?.04:g.ph==='w'?.06:.06):c[0]==='h'?0:c[0]==='4'?.025:TRP[c[1]]},
+      e=(dt,F,av,af,vo,nz)=>{tt+=Math.max(.001,dt);cur=F;cav=av;K.push([tt,F[0],F[1],F[2],av,af,fc,fq,vo,pf,nz||NP,F[3]||70,F[4]||100,F[5]||160])},
+      noise=(c,q)=>{fc=c;fq=q;const L=K[K.length-1];if(!L[5]){L[6]=c;L[7]=q}};
+    // 日本語の し・ち・じ は、英語の sh・ch・j より、雑音が高く、強い
+    const frs=g=>{const f=FRS[g.ph];return g.J&&(g.ph==='S'||g.ph==='tS'||g.ph==='dZ')?[f[0]*1.25,f[1],f[2]*1.4,f[3]]:f};
+    const emitEN=g=>{
+      const P=g.P,N=g.N,v=EV[g.ph],c=EC[g.ph],D=Math.max(.012,g.D*sp)+(EV[g.ph]&&!g.wv?(g.aspT||0)*.7:0),st=r2(.9,1)*(g.am||1)*S.amp,Lb=bnd(P,g),Rb=bnd(g,N),Nv=N&&EV[N.ph],Pv=P&&EV[P.ph],voiced=x=>x&&(EV[x.ph]||EC[x.ph][2]);
+      if(o.dbg)(o.dbg.ph=o.dbg.ph||[]).push([tt,g.ph]);
+      if(!P)e(.004,Lb,0,0,1);
+      if(v&&g.wv&&1){
+        /* 声の出ない母音（き・く・ち・つ・ひ・ふ・ぴ・ぷ の母音が落ちたとき）：声帯は鳴らず、口の狭い所でこすれる音だけが残る。
+           前が摩擦・破擦なら、その雑音をそのまま伸ばす（ち→しー、つ→すー、ひ・ふ はそのまま）。前が破裂（k p）なら、「い」は ひ に近い高い雑音、「う」は低く弱い雑音 */
+        const pc=P&&EC[P.ph],f=pc&&(pc[0]==='f'||pc[0]==='a')?frs(P):g.ph==='i'?[3000,1.8,.2]:[1600,1,.12],a=f[2]*(P&&P.ph==='F'?2.2:.85)*1,r=Math.min(.012*sp,D*.3);
+        noise(P&&P.ph==='F'?1800:f[0],P&&P.ph==='F'?.6:f[1]);e(r,v,0,a,0);e(D-2*r,v,0,a,0);e(r,Rb,0,a*.3,0);if(!N)e(.02*sp,cur,0,0,0);return}
+      if(v){
+        // 母音：左の境い目 → 自分の形（二重母音は、入りの形から終わりの形へ）→ 右の境い目。高さの動き（ct）も、同じ制御点に乗せる。頭に息がつくなら（p t k のあと）、そのあいだは声帯を鳴らさない
+        const Te=vE(g),uL=P?(Pv?.25:Math.min(.4,trOf(P)*sp/D)):0,uR=1-(N?(Nv?.25:Math.min(.4,trOf(N)*sp/D)):0),ua=g.wv?1:Math.min(.5,(g.aspT||0)/D),
+          base=u=>mixA(v,Te,ss((u-.25)/.6)),bL=base(uL),bR=base(uR),
+          F=u=>u<uL?mixA(Lb,bL,1-Math.pow(1-u/uL,2)):u>uR?mixA(bR,Rb,Math.pow((u-uR)/(1-uR),1.4)):base(u),
+          nzL=P&&EC[P.ph]&&EC[P.ph][0]==='n',nzR=N&&EC[N.ph]&&EC[N.ph][0]==='n',nzAt=0?(u=>nzR&&u>uR?NP+(NZ-NP)*(u-uR)/(1-uR):nzL&&u<uL?NZ-(NZ-NP)*u/uL:NP):(u=>(nzR&&u>=.999)||(nzL&&u<=uL*.5+.001)?400:NP),
+          b0=pf,ct=g.ct,pAt=u=>{if(!ct)return b0;let a=[0,g.c0||1];for(const x of ct){if(u<=x[0])return b0*(a[1]+(x[1]-a[1])*(u-a[0])/(x[0]-a[0]||1));a=x}return b0*a[1]};
+        let us=[uL*.5,uL,.4,.55,.7,.85,uR,(1+uR)/2,1];if(ct)for(const x of ct)us.push(x[0]);if(!P)us.push(.018*sp/D);
+        us=us.filter(u=>u>.004&&u<=1).sort((a,b)=>a-b).filter((u,i,A)=>!i||u-A[i-1]>.012);if(us[us.length-1]<1)us.push(1);
+        if(ua){us=us.filter(u=>Math.abs(u-ua)>.012);us.push(ua);us.sort((a,b)=>a-b)}
+        let pu=0;
+        for(const u of us){pf=pAt(u);
+          const f=F(u),a=st*cl(f[0]/480,.6,1.5);                                // 口の開きの狭い母音（F1 が低い）は、そのままだと大きく鳴りすぎるので、開きに合わせて強さをそろえる
+          if(u<=ua){e(D*(u-pu),f,(g.wv?.7:.3)*st,0,0);if(u===ua&&!g.wv)e(.006*sp,f,a,0,1)}
+          else e(D*(u-pu),f,a,0,1,nzAt(u));
+          pu=u}
+        if(!N)e(.05*sp,cur,0,0,1);return}
+      const k0=g.J&&g.ph==='dZ'&&Pv&&0?'f':c[0],vd=c[2],bar=vd&&voiced(P);                 // 日本語の じ は、母音のあいだでは、閉じずに摩擦だけになる
+      if(k0==='s'){
+        // 破裂音：閉鎖（濁音は、低いうなり）→ 破裂の雑音 →（澄んだ音は）次の音の頭に息。次が破裂・摩擦・鼻音なら、破裂させない
+        const pl=c[1],nx=N&&EC[N.ph],rel=!N||Nv||(nx&&(nx[0]==='x'||nx[0]==='h')),bl=(pl==='l'?.005:pl==='a'?.009:.014)*sp,clo=Math.max(.02*sp,D-bl),B=BUR[pl],A=B[2]*1*(vd?.7:1)*(rel?1:.4);
+        e(.012*sp,[bar?200:Lb[0],Lb[1],Lb[2],60,110,170],bar?.16*st:0,0,1);
+        e(clo-.012*sp,[bar?200:Rb[0],Rb[1],Rb[2],60,110,170],bar?.1*st:0,0,vd?1:0);
+        {noise(pl==='v'?cl(Rb[1]*1.25,1500,3200):B[0],B[1]);e(.0015,Rb,vd?.12*st:0,A,vd?1:0);e(bl,Rb,vd?.2*st:0,A*.45,vd?1:0);}
+        if(rel){
+          if(!vd&&N){const sv=Nv?N:N.N&&EV[N.N.ph]?N.N:null;N.aspT=VOT[pl]*(g.J?.45:sv&&sv.st===1?1:g.wi===0?.8:.5)*(P&&P.ph==='s'&&g.wi>0?.3:1)*sp}
+          if(!N)e(.035*sp,Rb,vd?0:.14*st,0,0)}}
+      else if(k0==='a'){
+        const dz=g.ph==='dz',f=frs(g),clo=dz?.025*sp:Math.max(.045*sp,D*.5),fr=dz?Math.max(.04*sp,D-clo):Math.max((vd?.06:.075)*sp,D-clo)*1,va=vd?f[3]*st:0;
+        e(.012*sp,[bar?200:Lb[0],Lb[1],Lb[2],60,110,170],bar?.14*st:0,0,1);e(clo-.012*sp,Rb,bar?.1*st:0,0,vd?1:0);noise(f[0],f[1]);
+        e(.003,Rb,va*.5,f[2]*1.3,vd?1:0);e(fr*.75,Rb,va,f[2]*.9,vd?1:0);e(fr*.25,Rb,va,f[2]*.2,vd?1:0)}
+      else if(k0==='f'){
+        const f=frs(g),r=Math.min(.02*sp,D*.3),a=f[2]*(N||P?1:.8),va=vd?f[3]*st:0;noise(f[0],f[1]);
+        e(r,mixA(Lb,Rb,.25),va,a,vd?1:0);e(D-2*r,mixA(Lb,Rb,.75),va,a,vd?1:0);e(r,Rb,va,a*.25,vd?1:0)}
+      else if(k0==='h'){const V=Nv?vS(N):Lb;e(.012*sp,V,.28*st,0,0);e(D-.012*sp,V,.3*st,0,0)}
+      else if(k0==='n'&&g.ph==='X'&&N&&1){const M=mixA(Pv?vE(P):Lb,Nv?vS(N):Rb,.5),a=.7*st;M[3]=150;e(.02*sp,M,a,0,1,NZ);e(Math.max(.02,D-.04*sp),M,a,0,1,NZ);e(.02*sp,Rb,Nv?.8*st:a,0,1,NZ)}       // 母音・摩擦・は行の前の「ん」：鼻にかかった母音
+      else if(k0==='n'){const M0=g.ph==='N'&&1?[480,Nv?Rb[1]:Lb[1],Nv?Rb[2]:Lb[2],40,400,520]:NASM[g.ph],nb=0,M=[M0[0],g.ph==='n'?M0[1]:M0[1],M0[2],40,nb||M0[4],nb?nb*1.3:M0[5]],a=.85*st,Dn=Math.max(D,.045*sp)*(P?1:.75),z=NZ;e(.006*sp,M,a,0,1,z);e(Dn-.012*sp,M,a,0,1,z);e(.006*sp,Rb,Nv?.8*st:st,0,1,z)}
+      else if(k0==='x'){const T=APT[g.ph],a=.75*st,ua=1?(g.aspT||0)*.8:Math.min(D*.7,g.aspT||0);
+        if(ua){e(ua,mixA(Lb,T,.7),.2*st,0,0);e(.006*sp,T,a,0,1);e(Math.max(1?.03*sp:.005,D*.65-ua),T,a,0,1)}else{e(D*.35,T,a,0,1);e(D*.3,T,a,0,1)}
+        e(D*.35,Rb,a*1.1,0,1)}
+      else{e(D*.5,[Lb[0]*.8,Lb[1],Lb[2],60,110,170],.45*st,0,1);e(D*.5,Rb,.55*st,0,1)}
+      if(!N)e(.02*sp,cur,0,0,K[K.length-1][8])};
+
+    // 次に来る母音（子音は、次の母音の口の形へ寄りながら鳴る）。あいだの語の切れ目と子音は越える
+    const nextV=n=>{for(let j=n+1;j<G.length;j++){const g=G[j];if(g.p||g.q)return null;if(g.ph&&VW[g.ph])return VW[g.ph]}return null};
+    const direct=n=>{let j=n+1;while(G[j]&&G[j].w)j++;const g=G[j];return!!(g&&g.ph&&(VW[g.ph]||(g.jp&&APX[g.ph])))};
+    G.forEach((s,n)=>{
+      if(NEW&&s.J){if(s.pm)pf=s.pm;const kb=K.length,m=s.mo||(s.q?s:null);if(m&&m.t0==null)m.t0=tt;if(!s.skip)emitEN(s);if(m)m.t1=tt;if(FJ)for(let i=kb;i<K.length;i++)K[i].J=1;return}
+      if(s.w){if(!(G[n+1]&&G[n+1].en))k(.013,cur,cav*.6,0,1);return}                       // 日本語は語の切れ目で小さな谷。英語は、語と語を切らずにつなぐ
+      if(s.p){k(.03,cur,0,0,1);k(s.p*r2(.07,.11)*(NEW&&S.pz||1)*(FJ?PZ:1),cur,0,0,1);
+        if(NEW&&S.gasp&&n<G.length-1&&R()<S.gasp){e(.03,NEU6,0,0,0);e(.11,[620,1500,2600,150,150,200],.2,0,0);e(.05,NEU6,0,0,0)}       // あわてているときは、句のあいだで、息を吸う音が入る
+        return}
+      if(s.q){k(.02,cur,0,0,1);k(.045,cur,0,0,1);return}
+      if(NEW&&s.en){if(s.pm)pf=s.pm;emitEN(s);return}
+      if(s.pm)pf=s.pm;const len=s.len||1,am=(s.am||1)*S.amp,st=r2(.8,1)*am,ph=s.ph;
+      if(s.l){const b=pf,D=.055*s.l*len;if(s.ct){let pu=0,a=[0,s.c0||1];pf=b*a[1];for(const c of s.ct){pf=b*c[1];k(D*(c[0]-pu)+(c[0]===1?.03:0),cur,cav*.95,0,1);pu=c[0]}}else k(D,cur,cav*.95,0,1);return}
+      const F=VW[ph],v=F?F:nextV(n),tov=F?false:direct(n),mx=(v||cur).slice(0,3).map((x,j)=>x*.55+NEU[j]*.45);
+      if(F){
+        // 母音の本体：高さの動き（ct）と、二重母音の口の動きを、いくつかの制御点に割って置く。計算が増えるのは制御点の数だけ
+        const base=pf,ct=s.ct||(s.rise?[[.45,1],[1,s.rise]]:null);if(ct)pf=base*(s.c0||1);
+        const body=(D,amp)=>{
+          if(!ct&&!F[4]){k(D,F,amp,0,1);return}
+          const us=[1];if(ct)for(const c of ct)if(!us.includes(c[0]))us.push(c[0]);if(F[4]&&!us.includes(.42))us.push(.42);us.sort((a,b)=>a-b);let pu=0;
+          for(const u of us){
+            if(ct){let a=[0,s.c0||1];for(const c of ct){if(u<=c[0]){pf=base*(a[1]+(c[1]-a[1])*(u-a[0])/(c[0]-a[0]||1));break}a=c}}
+            const f=F[4]&&u>.42?[0,1,2].map(j=>F[j]+(F[4][j]-F[j])*(u-.42)/.58):F;
+            k(D*(u-pu),f,amp*(u===1?.95:1),0,1);pu=u}};
+        if(s.en){k(.022,F,st,0,1);body(F[3]*len,st);if(s.last)k(.05,cur,0,0,1)}
+        else{if(s.bare)k(.02,F,st*.7,0,1);
+          k(.02,F,st,0,1);
+          body(r2(.027,.036)*(s.last?1.5:1)*len*(len>1.2?2.2:1),st*.9);
+          if(s.last)k(.05,cur,0,0,1)}
+        return}
+      const B=STOP[ph],Fr=FRIC[ph],Nf=NAS[ph],Ap=APX[ph];
+      if(s.dv){const e=s.dv===1;fc=ph==='s'?4300:Fr[0];fq=Fr[1];                             // 母音の落ちた拍：息の音だけ。文末の s は、長めに、はっきり
+        k(.014,cur,0,Fr[3]*(e?1.05:.85),0);k(Fr[2]*(e?1.6:1.15),cur,0,Fr[3]*(e?1.05:.85),0);k(e?.05:.016,cur,0,0,0);return}
+      if(B){fc=ph==='k'&&v&&v[1]>1700?2700:B[0];fq=B[1];const ba=s.weak?.45:1;
+        if(B[4]){k(.018,[250,mx[1],mx[2]],.16,0,1);k(.004,mx,.2,B[3]*ba,1);k(B[2],mx,.3,B[3]*.6*ba,1)}
+        else{k(.012,mx,0,0,1);k(.016,mx,0,0,0);k(.004,mx,0,B[3]*ba,0);k(B[2],mx,.08,B[3]*.7*ba,0);if(s.asp&&v){k(.014,v,.2,0,0);k(.022,v,.26,0,0)}}
+        if(tov)k(.016,v,st*.75,0,1);else k(.012,mx,0,0,1)}
+      else if(Fr){fc=Fr[0];fq=Fr[1];const vd=Fr[4];k(.012,mx,vd*.2,Fr[3],vd);k(Fr[2]*(s.en?len:1),mx,vd*.2,Fr[3],vd);if(tov)k(.018,v,st*.7,0,1);else k(.012,mx,0,0,vd)}
+      else if(ph==='h'){const f=v||cur;k(.012,f,.2,0,0);k(.028,f,.32,0,0);if(tov)k(.014,v,st*.75,0,1)}
+      else if(Nf){
+        if(s.mora){k(.02,Nf,.42*am,0,1);k(.04*len,Nf,.4*am,0,1)}                             // 日本語の「ん」：1拍ぶん
+        else if(tov){k(.014,Nf,.3,0,1);k(.028,Nf,.36,0,1);k(.018,v,st*.8,0,1)}               // 音節の頭の鼻音
+        else{k(.016,Nf,.34*am,0,1);k(.05*len,Nf,.34*am,0,1)}}                                // 音節の終わりの鼻音
+      else if(ph==='4'){const f=v||cur;k(.012,[f[0]*.8,f[1],1900],.3,0,1);if(tov)k(.016,v,st*.8,0,1)}
+      else if(Ap){
+        if(s.jp){const f=v||cur;k(.014,ph==='j'?VW.i:VW.M,st*.5,0,1);k(.022,f,st*.9,0,1)}    // 日本語の「や行」「わ」
+        else{k(.022,Ap,Ap[3]*st,0,1);k(Ap[4]*len,Ap,Ap[3]*st,0,1);if(tov)k(.03,v,st*.85,0,1)}}
+    });
+    k(.04,cur,0,0,1);if(FJ){const fj=fuji(K,JX,S,sp,JT*(o.x&&o.x.jt||1),R,o.x&&o.x.fj);if(o.dbg){o.dbg.fj=fj;o.dbg.bg=JX.bg}}if(o.dbg)o.dbg.K=K;if(o.dry)return new Float32Array(0);
+    const N=Math.ceil(tt*SRV),out=new Float32Array(N);
+    const flt=()=>({a:0,b:0,k:1,a1:0,a2:0,a3:0}),set=(F,f,q)=>{const g=Math.tan(Math.PI*Math.min(f,SRV*.45)/SRV);F.k=1/q;F.a1=1/(1+g*(g+F.k));F.a2=g*F.a1;F.a3=g*F.a2},
+      run=(F,x)=>{const v3=x-F.b,v1=F.a1*F.a+F.a2*v3,v2=F.b+F.a2*F.a+F.a3*v3;F.a=2*v1-F.a;F.b=2*v2-F.b;return v1*F.k};
+    const f1=flt(),f2=flt(),f3=flt(),ff=flt(),sm=1-Math.exp(-8/SRV/.004),tp=R()*6.28;
+    /* 声帯の閉じ方の鋭さ（o.sharp、0〜1。書かなければ 0 で、元の音のまま）：元の波は、開くのと閉じるのが同じ形の、なだらかな山で、高い倍音が弱い（こもった声）。
+       sharp を上げると、山の頂きが後ろへ寄り、閉じぎわが急になって、高い倍音が強くなる（口の共鳴の2つめ・3つめが、はっきり鳴る）。ラジオの狭い帯域を通さない声のために足した */
+    const shp=cl(o.sharp||0,0,1),tpk=oq*(.5+.22*shp),cex=2-shp;
+    let ki=0,c1=K[0][1],c2=K[0][2],c3=K[0][3],av=0,af=0,vo=1,f0=f0b,ph=0,prev=0,pk=1e-6,jit=0;
+    if(NEW){
+      /* 新しい道すじの音づくり：声帯の波と息の雑音を、鼻の谷と山 → 6つの共鳴の直列 に通す。摩擦と破裂の雑音は、別の1つの共鳴に通して足す */
+      const W2=6.283185307/SRV,rs=()=>({a:1,b:0,c:0,p:0,q:0}),sr=(r,f,bw)=>{const c=-Math.exp(-W2*bw),b=2*Math.exp(-.5*W2*bw)*Math.cos(W2*Math.min(f,SRV*.46));r.c=c;r.b=b;r.a=1-b-c},
+        R1=rs(),R2=rs(),R3=rs(),R4=rs(),R5=rs(),R6=rs(),RN=rs(),RZ=rs(),smn=1-Math.exp(-8/SRV/.002),shn=cl((shp||.6)+(S.eff||0),.1,1),tpn=oq*(.5+.22*shn),cxn=2-shn,scn=sc*(S.fs||1),wh=S.wh||0;       // 気持ち：力んだ声は鋭く（eff）、笑顔の声は口が横に開いて共鳴が上がる（fs）、ささやきは声帯を鳴らさない（wh）
+      sr(R4,3300*scn,250);sr(R5,3750*scn,200);sr(R6,4900*scn,1000);sr(RN,NP,100);
+      let b1=70,b2=100,b3=160,za=1,zb=0,zc=0,x1=0,x2=0,hl=0;
+      for(let i=0;i<N;i++){
+        if((i&7)===0){const x=i/SRV;while(ki<K.length-2&&K[ki+1][0]<=x)ki++;
+          const A=K[ki],B=K[ki+1],u=cl((x-A[0])/(B[0]-A[0]||1),0,1),L=j=>A[j]+(B[j]-A[j])*u;
+          c1+=(L(1)-c1)*smn;c2+=(L(2)-c2)*smn;c3+=(L(3)-c3)*smn;av=L(4);af=L(5);vo=L(8)*(1-wh);b1=L(11);b2=L(12);b3=L(13);
+          jit+=((R()-.5)-jit)*.3;f0=f0b*L(9)*(1+S.jit*1.4*jit)*(1+S.trem*Math.sin(x*46+tp));
+          sr(R1,c1*scn,b1);sr(R2,c2*scn,b2);sr(R3,c3*scn,b3);sr(RZ,L(10),100);za=1/RZ.a;zb=-RZ.b*za;zc=-RZ.c*za;set(ff,L(6),L(7))}
+        ph+=f0/SRV;if(ph>=1)ph-=1;
+        const w=R()*2-1,gl=ph<tpn?Math.pow(Math.sin(1.5708*ph/tpn),2):ph<oq?Math.pow(Math.max(0,Math.cos(1.5708*(ph-tpn)/(oq-tpn))),cxn):0,src=gl-oq*.5,d=src-prev;prev=src;
+        const x=d*GV*av*vo+w*GA2*av*(1-vo)*(1+1.6*wh)+w*GA2*brv*.5*av*vo,z=za*x+zb*x1+zc*x2;x2=x1;x1=x;
+        let y=RN.a*z+RN.b*RN.p+RN.c*RN.q;RN.q=RN.p;RN.p=y;
+        y=R6.a*y+R6.b*R6.p+R6.c*R6.q;R6.q=R6.p;R6.p=y;y=R5.a*y+R5.b*R5.p+R5.c*R5.q;R5.q=R5.p;R5.p=y;y=R4.a*y+R4.b*R4.p+R4.c*R4.q;R4.q=R4.p;R4.p=y;
+        y=R3.a*y+R3.b*R3.p+R3.c*R3.q;R3.q=R3.p;R3.p=y;y=R2.a*y+R2.b*R2.p+R2.c*R2.q;R2.q=R2.p;R2.p=y;y=R1.a*y+R1.b*R1.p+R1.c*R1.q;R1.q=R1.p;R1.p=y;
+        hl+=(x-hl)*.75;                                                    // 4kHz から上の、うすい息（直列の共鳴だけだと、ここが空になる）
+        const s=y+(x-hl)*HA+af*GF2*run(ff,w);
+        out[i]=s;const a=s<0?-s:s;if(a>pk)pk=a}
+    }else
+    for(let i=0;i<N;i++){
+      if((i&7)===0){const x=i/SRV;while(ki<K.length-2&&K[ki+1][0]<=x)ki++;
+        const A=K[ki],B=K[ki+1],u=cl((x-A[0])/(B[0]-A[0]||1),0,1),L=j=>A[j]+(B[j]-A[j])*u;
+        c1+=(L(1)-c1)*sm;c2+=(L(2)-c2)*sm;c3+=(L(3)-c3)*sm;av=L(4);af=L(5);vo=L(8);
+        jit+=((R()-.5)-jit)*.3;f0=f0b*L(9)*(1+S.jit*1.4*jit)*(1+S.trem*Math.sin(x*46+tp));
+        set(f1,c1*sc,5);set(f2,c2*sc,9);set(f3,c3*sc,10);set(ff,L(6),L(7))}
+      ph+=f0/SRV;if(ph>=1)ph-=1;
+      // 声帯の波（開いて閉じる山）を微分して、口の共鳴に通す。声帯の鳴らない音は、息の雑音。息まじりの声は、声帯の波に雑音を足す
+      const w=R()*2-1,gl=shp?(ph<tpk?Math.pow(Math.sin(1.5708*ph/tpk),2):ph<oq?Math.pow(Math.max(0,Math.cos(1.5708*(ph-tpk)/(oq-tpk))),cex):0):ph<oq?Math.pow(Math.sin(Math.PI*ph/oq),2):0,src=gl-oq*.5,d=src-prev;prev=src;
+      const exc=d*GV*av*vo+w*GA*av*(1-vo)+w*GA*brv*.5*av*vo;
+      const s=run(f1,exc)+run(f2,exc)*.8+run(f3,exc)*.5+af*GF*run(ff,w);
+      out[i]=s;const a=s<0?-s:s;if(a>pk)pk=a}
+    for(let i=0;i<N;i++)out[i]*=.9/pk;
+    return out;
+  }
+  // 確かめ用：文が、どんな音素の列になるかを文字で返す
+  function phones(text,X){let o=[];String(text).split(/\[([^\]]*)\]/).forEach((part,ix)=>{if(!part.trim())return;const G=ix%2?parseEN(part):expandJP(parse(part,X&&{bidaku:!!X.bidaku,dv:X.devoice!==false,dz:X.dz!==false}));
+    o.push(G.map(g=>g.p?'|':g.w?' ':g.q?'Q':g.l?':':g.ph+(g.wv?'°':'')+(g.dv&&!['k','p','tS','ts'].includes(g.ph)?'°':'')+(g.st===1?"'":'')).join(''))});return o.join(' ')}
+  const GV=14,GA=.35,GF=.3,GA2=.25,GF2=1.5,HA=.7;
+  return{speak,parse,parseEN,phones,STY,SRV};
+})();
+})();
+/* 無線機を通す：帯域を狭め、約6kHzで標本化し直して、9段階（0、±.25、±.5、±.75、±1）に丸める。その送信でいちばん大きい音の5%より小さい音は消え、54%より大きい音は頭打ちになる（もとは3段階で、しきい値は18%。作り直した合成器は音ごとの強弱の差が大きく、18%のままだと声のある区間の4割が無音になったので、聞き比べて決めた）。
+   小さな音は消えるか、雑音と一緒にばりばりと割れる。送信の頭と尻で雑音がはじけ、最後に短い確認音が鳴る。d は出力（標本化周波数 sr、長さ n）、v は16kHzの声 */
+function triRadio(d,n,v,sr){
+  const op=fc=>1-Math.exp(-6.283*fc/sr),k1=op(350),k2=op(3000),kn1=op(500),kn2=op(3200),L=v.length,durV=L/RSP.SRV,T0=.18,HOLD=Math.max(1,Math.round(sr/6000));
+  const fp=rnd(0,6.28),fr2=rnd(.4,1.1),ke=1-Math.exp(-1/(sr*.03));
+  let h1=0,h2=0,l1=0,l2=0,n1=0,n2=0,env=.05,qv=0,cr=0,ck=1e9;
+  let i=0;
+  return m=>{const e=Math.min(n,i+m);for(;i<e;i++){const t=i/sr,tv=t-T0,j=tv*RSP.SRV;       // 少しずつ作れるように、続きから m 個ぶん進める関数を返す（終わったら true）
+    let x=0;if(j>=0&&j<L-1){const j0=j|0;x=v[j0]+(v[j0+1]-v[j0])*(j-j0)}
+    const fade=.8+.2*Math.sin(6.283*fr2*t+fp);
+    h1+=(x-h1)*k1;const a=x-h1;h2+=(a-h2)*k1;const b=a-h2;l1+=(b-l1)*k2;l2+=(l1-l2)*k2;                 // 350Hz〜2.6kHz だけ残す
+    const w=Math.random()*2-1;n1+=(w-n1)*kn1;n2+=(w-n2)*kn2;const hiss=n2-n1,s=l2*fade+hiss*.03,as=s<0?-s:s;
+    env+=((as>env?as:env*.9995)-env)*(as>env?.2:ke);
+    if(i%HOLD===0){const th=Math.max(.012,env*.05),top=Math.max(env*.54,th*1.5,.07);if(as<=th)qv=0;else{const q=Math.min(4,1+Math.floor((as-th)/(top-th)*3))/4;qv=s<0?-q:q}}       // 9段階（0、±.25、±.5、±.75、±1）
+    let y=qv*.62*2;        // 段が細かくなると声が小さくなるので、もとの3段階のときと同じ大きさ（実効値）に戻す
+    if(Math.random()<5/sr){cr=rnd(.2,.6)*(Math.random()<.5?-1:1);ck=0}const pop=cr*Math.exp(-ck/sr*900);ck++;
+    const on=tv>-.14&&tv<durV+.1?1:0,sq=(tv>-.16&&tv<-.1)||(tv>durV+.06&&tv<durV+.15)?1:0;
+    y+=hiss*(.045+.135*(1-fade))*on+hiss*.5*sq+pop*.14*on;   // v6：雑音を小さく（もとは .1+.3／1.2／.3）
+    if(tv>durV+.015&&tv<durV+.06)y+=.2*Math.sin(6.283*1760*t);
+    d[i]=y}
+  return i>=n}
+}
+
+/* ---------- 巨大な何かの声 ----------
+   とても低い声。声帯のような脈（1秒に20〜100回）と、息の雑音を、3つの共鳴に通して作る。脈はふぞろいで、ひとつおきに強弱がつき（割れた声）、いちばん下に、半分の高さのうなりを足す。
+   形ごとに、声の高さの動き・割れ方・共鳴・雑音の量がちがう。それぞれ「うなり」（短め）と「咆哮」（長く、大きい）の2種類。11kHz で作る（高い音は、どのみち遠くまで届かない）。
+   f0・fm・nf・ck は、声のはじめ(0)から終わり(1)までの動き。 */
+const MV_SR=11025;
+/* 7つの形の声は、どれも「やせた人の形」の声（うつろで、長い、泣くような声）の変奏。
+   澄んだ脈（ふぞろいや割れはごくわずか）、するどい共鳴がゆっくり下がっていく、高さがゆっくり動く、かすかな揺れ、というところは共通。
+   変えているのは、高さとその動き・重なる声の数と音程（det：2本目は 1+det 倍、3本目は 1−det×0.6 倍の高さ）・揺れの速さと深さ・共鳴の位置・長さ・うねり。
+   HV の引数：d 長さ[うなり,咆哮]／nv 声の数／det 音程／fg・fr 高さの動き（うなり・咆哮）／vib [深さ,速さ]／Fg・Fr 共鳴 [1つめ,下がり幅,2つめ,下がり幅]／am うねり [うなり,咆哮] */
+const HV=o=>r=>({dur:o.d[r],nv:o.nv[r],det:o.det,f0:u=>(r?o.fr(u):o.fg(u))*(1+o.vib[0]*Math.sin(u*o.vib[1])),jit:.012,rough:.12,pd:.1,nz:.06,nf:u=>500,am:o.am?o.am[r]:[0,0],
+  fm:u=>{const a=r?o.Fr:o.Fg;return[[a[0]-a[1]*u,7],[a[2]-a[3]*u,8],[2100,9]]},sub:.6}),HSW=(u,k)=>Math.sin(Math.PI*Math.min(1,u*k));
+const MVF=[
+  // 0 塊：いくつもの喉が、三度ずれて重なる。うなりのあるにごった和音
+  HV({d:[6.5,7.5],nv:[2,3],det:.26,fg:u=>58-10*u,fr:u=>66+20*HSW(u,1.6)-20*u,vib:[.03,34],Fg:[280,40,560,90],Fr:[380,110,760,230]}),
+  // 1 獣：急にせり上がって、長く長く落ちていく
+  HV({d:[5.5,7],nv:[1,2],det:.498,fg:u=>66-16*u,fr:u=>u<.18?60+50*(u/.18):110-62*Math.pow((u-.18)/.82,.6),vib:[.025,46],Fg:[320,60,640,120],Fr:[460,160,920,330]}),
+  // 2 クモ：細く高い声に、1オクターブ上が重なる。こまかく震える
+  HV({d:[5,6.5],nv:[1,2],det:1,fg:u=>78-10*u,fr:u=>86+16*HSW(u,2)-30*u,vib:[.04,70],Fg:[340,40,720,90],Fr:[430,100,900,220]}),
+  // 3 振り回すもの：力をこめるたびに、大きくふくらんでは沈む
+  HV({d:[6,7.5],nv:[1,2],det:.335,fg:u=>60-12*u,fr:u=>64+22*Math.pow(Math.sin(Math.PI*u*2),2)-14*u,vib:[.03,40],Fg:[300,50,600,100],Fr:[400,120,800,250],am:[[.6,.4],[.5,.55]]}),
+  // 4 三つ首の蛇：3つの声が、となりあう高さでぶつかる。ゆっくり大きく揺れる
+  HV({d:[6.5,7.5],nv:[2,3],det:.122,fg:u=>56-8*u,fr:u=>60+14*Math.sin(Math.PI*u)-10*u,vib:[.045,22],Fg:[300,30,600,60],Fr:[360,80,720,160]}),
+  // 5 やせた人の形：もとの声。うつろで、長い、泣くような声
+  r=>({dur:r?7:6,nv:r?2:1,det:.498,f0:u=>(r?70+26*Math.sin(Math.PI*Math.min(1,u*1.8))-24*u:62-12*u)*(1+.03*Math.sin(u*40)),jit:.012,rough:.12,pd:.1,nz:.06,nf:u=>500,am:[0,0],fm:u=>[[r?400-120*u:300-50*u,7],[r?800-250*u:600-100*u,8],[2100,9]],sub:.6}),
+  // 6 傘：いちばん低く、いちばん長い。ほとんど動かず、ゆっくり脈打つ
+  HV({d:[7,8.5],nv:[2,2],det:.498,fg:u=>50-5*u,fr:u=>56+8*Math.sin(Math.PI*u)-8*u,vib:[.015,30],Fg:[260,30,520,50],Fr:[320,60,640,120],am:[[.35,.25],[.35,.3]]})];
+const MV_TRIM=[.85,.9,.88,.9,.88,.85,.82];                    // 形ごとの音量の補正
+function monsterVoice(form,roar){
+  const P=MVF[form](roar),SR=MV_SR,n=(P.dur*SR)|0,out=new Float32Array(n),R=Math.random;
+  const flt=()=>({a:0,b:0,k:1,a1:0,a2:0,a3:0}),set=(F,f,q)=>{const g=Math.tan(Math.PI*Math.min(f,SR*.45)/SR);F.k=1/q;F.a1=1/(1+g*(g+F.k));F.a2=g*F.a1;F.a3=g*F.a2},
+    run=(F,x)=>{const v3=x-F.b,v1=F.a1*F.a+F.a2*v3,v2=F.b+F.a2*F.a+F.a3*v3;F.a=2*v1-F.a;F.b=2*v2-F.b;return v1*F.k};
+  const F=[flt(),flt(),flt()],NF=flt(),C1=flt(),C2=flt(),vg=P.vg==null?1:P.vg,kr=1-Math.exp(-6.283*26/SR);
+  const ph=[],sph=[],det=[];for(let v=0;v<P.nv;v++){ph.push(R());sph.push(0);det.push(v===0?1:v===1?1+P.det:1-P.det*.6)}
+  let rn=0,jit=0,f0=30,cp=0,ce=0,am=1,pk=1e-6,odd=0,prev=0,h1=0,h2=0;const kh=1-Math.exp(-6.283*52/SR);
+  for(let i=0;i<n;i++){const t=i/SR,u=i/n;
+    if((i&31)===0){f0=P.f0(u);const fm=P.fm(u);for(let k=0;k<3;k++)set(F[k],fm[k][0],fm[k][1]);set(NF,P.nf(u),2.5);if(P.ck){set(C1,P.ckf[0],9);set(C2,P.ckf[1],11)}
+      jit+=((R()-.5)-jit)*.25;am=P.am[0]?1-P.am[1]*(.5+.5*Math.sin(6.283*P.am[0]*t)):1}
+    const w=R()*2-1;rn+=(w-rn)*kr;
+    let src=0;
+    for(let v=0;v<P.nv;v++){ph[v]+=f0*det[v]*(1+P.jit*jit*4)/SR;if(ph[v]>=1){ph[v]-=1;if(v===0)odd^=1}
+      const x=ph[v],gl=x<.42?Math.pow(Math.sin(Math.PI*x/.42),2):0;                                   // 声帯の脈：ぱっと開いて、閉じる
+      src+=(gl-.21)*(1-P.pd*(v===0?odd:.5))*(v?.6:1)}
+    const d1=src-prev;prev=src;
+    let exc=d1*9*vg*(1-P.rough+P.rough*(.5+rn*9))+w*P.nz*.25;
+    if(P.ck){cp+=P.ck(u)/SR;if(cp>=1){cp-=1;ce=1}exc+=0}                                             // かちかち：短い打音を、2つの共鳴で鳴らす
+    let s=run(F[0],exc)+run(F[1],exc)*.8+run(F[2],exc)*.45+run(NF,w)*P.nz*.5;
+    if(P.ck){const c=ce*(R()*2-1);ce*=.9;s+=(run(C1,c)+run(C2,c)*.7)*2.2}
+    sph[0]+=f0*2/SR;s+=P.sub*.07*Math.sin(6.283*sph[0])*(.6+.4*rn*6);                                  // 低いうなりを足す（半分の速さで鳴らすと、声の高さと同じ30〜50Hzあたり＝地面を揺らす低音になる）
+    const e=Math.min(1,t/(roar?.35:.5))*Math.min(1,(P.dur-t)/(roar?1.6:1.2));
+    s*=e*am;h1+=(s-h1)*kh;s-=h1;h2+=(s-h2)*kh;s-=h2;                                                     // 聞こえないほど低い揺れ（鳴らすときの25Hz以下）は、音量を食うだけなので落とす
+    out[i]=s;const a=s<0?-s:s;if(a>pk)pk=a}
+  for(let i=0;i<n;i++)out[i]=Math.tanh(out[i]*1.6/pk)*.85;
+  /* 反響：山や谷に跳ね返る大きなこだまがいくつかと、長い尾。高い音ほど早く消える（こもっていく）。
+     この波形は半分の速さで鳴らすので、ここに書いた時間は、聞こえるときには倍に伸びる（こだまは0.2〜1.9秒遅れ、尾は3秒あまり） */
+  const TL=Math.round(SR*1.8),m=n+TL,y=new Float32Array(m),xl=new Float32Array(m);
+  {let l=0;const k=1-Math.exp(-6.283*1100/SR);for(let i=0;i<n;i++){l+=(out[i]-l)*k;xl[i]=l}}
+  for(const [dt,g] of [[.11,.4],[.23,.32],[.39,.25],[.62,.19],[.95,.13]]){const D=Math.round(dt*SR);for(let i=0;i<n;i++)y[i+D]+=xl[i]*g}
+  {const CD=[.0531,.0617,.0703,.0797].map(t=>Math.round(t*SR)),CB=CD.map(D=>new Float32Array(D)),CG=CD.map(D=>Math.pow(10,-3*D/SR/1.5)),CL=[0,0,0,0],CP=[0,0,0,0];
+   const AD=[.0113,.0037].map(t=>Math.round(t*SR)),AB=AD.map(D=>new Float32Array(D)),AP=[0,0];
+   for(let i=0;i<m;i++){const x=i<n?xl[i]:0;let w=0;
+     for(let c=0;c<4;c++){const b=CB[c],p=CP[c],o=b[p];CL[c]+=(o-CL[c])*.55;b[p]=x+CL[c]*CG[c];CP[c]=p+1===b.length?0:p+1;w+=o}
+     w*=.25;
+     for(let a=0;a<2;a++){const b=AB[a],p=AP[a],o=b[p],v=w+o*.6;b[p]=v;AP[a]=p+1===b.length?0:p+1;w=o-v*.6}
+     y[i]+=w*.55+(i<n?out[i]:0)}}
+  let p2=1e-6;for(let i=0;i<m;i++){const a=y[i]<0?-y[i]:y[i];if(a>p2)p2=a}
+  for(let i=0;i<m;i++)y[i]*=.88/p2;
+  return y;
+}
+
+
+/* ---------- シェーダー ----------
+   1) 熱線映像（白黒。熱いものが白い）を、512×384 の小さな絵（FBO）に描く。街も、這ってくるものも、巨大なものも、三角形で描く（軽い）。
+   2) その絵を、車内のブラウン管モニターに映して、砲手の目から見た眺めとして画面に出す。モニターは奥行きのある場所に置いてあり、頭が動くと、縁がずれ、近づくと大きくなる。 */
+const GLH=`precision highp float;
+float h21(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1.,0.)),f.x),mix(h21(i+vec2(0.,1.)),h21(i+vec2(1.,1.)),f.x),f.y);}
+`;
+// 景色：頂点。m=(材質, 種)。uMat.x が 0 以上なら、材質をまとめて上書きする（動くものを、同じ形の使い回しで描くとき）
+const VSS=`attribute vec3 a;attribute vec3 n;attribute vec2 uvA;attribute vec2 m;
+uniform mat4 uVP,uM;uniform vec2 uMat,uUV;varying vec3 vP,vN;varying vec2 vU,vM;
+void main(){vec4 w=uM*vec4(a,1.);vP=w.xyz;vN=mat3(uM)*n;vU=uvA*uUV;vM=uMat.x<0.?m:uMat;gl_Position=uVP*w;}`;
+/* 景色：色（＝温度）。材質ごとに、夜の街が赤外線でどう見えるかを決める。
+   0 車道（昼の熱が残って、やや明るい。白線、マンホール）／1 建物の壁（窓は、空を映して暗い。人のいた部屋だけ、ぬるい）／2 屋上（空へ熱を捨てて、冷たい）／3 車（種＝エンジンの余熱）／4 柱・金物／
+   5 熱いもの（自販機、変圧器、燃えているもの）／6 歩道／7 這ってくるもの（熱い。uHeat：死ぬと冷めていく）／8 巨大なもの（ぬるい体に、熱い筋がゆっくり流れる）／9 味方の戦車（種＝機関部の熱）／10 空 */
+const FSS=GLH+`varying vec3 vP,vN;varying vec2 vU,vM;uniform vec3 uEye,uFog;uniform float uT,uHeat,uGnd;
+void main(){vec3 N=normalize(vN);float mat=vM.x,sd=vM.y,d=length(vP-uEye),v;
+  if(mat<.5){vec2 q=vP.xz;float ax=abs(q.x);v=.3+.05*vn(q*.35)+.03*vn(q*2.1);
+    v+=.07*(smoothstep(.12,.06,abs(ax-4.5))*step(.5,fract(q.y/10.))+smoothstep(.12,.06,abs(ax-8.))*step(.5,fract(q.y/10.+.5))+smoothstep(.14,.07,abs(ax-11.5))+smoothstep(.12,.06,abs(ax-1.35)));
+    float cz=abs(mod(q.y-102.,96.)-48.);v+=.06*step(7.6,cz)*step(cz,10.4)*step(ax,12.)*step(1.6,ax)*step(.5,fract(q.x/.9));
+    v+=.18*smoothstep(.5,.4,length(vec2(q.x-6.2,mod(q.y,47.)-23.)));
+    if(uGnd>0.){float g1=vn(q*vec2(.085,.04)+3.),g2=vn(q*vec2(.3,.16)+11.);v+=uGnd*(.8*smoothstep(.07,.0,abs(g1-.5))+.3*smoothstep(.06,.0,abs(g2-.5))+.07*g1)*(.75+.25*sin(uT*.7-q.y*.03));}}
+  else if(mat<1.5){vec2 g=vU/vec2(3.3,3.1),ci=floor(g),cf=fract(g);float win=step(.18,cf.x)*step(cf.x,.82)*step(.3,cf.y)*step(cf.y,.82);
+    v=.2+.04*vn(vU*.4+sd)+.03*fract(sd*7.);
+    if(ci.y<1.)v=.17+.03*step(.5,fract(vU.y*6.))+.05*step(.9,h21(vec2(floor(vU.x/4.),sd)));
+    else v=mix(v,h21(ci+sd*17.)>.87?.46+.2*h21(ci*3.1+sd):.12,win);}
+  else if(mat<2.5)v=.14+.03*vn(vP.xz*.3);
+  else if(mat<3.5)v=.2+.3*sd*smoothstep(-.2,.6,N.y)+.03*vn(vU*3.);
+  else if(mat<4.5)v=.23;
+  else if(mat<5.5)v=.8+.12*vn(vU*8.+uT*.3);
+  else if(mat<6.5)v=.25+.04*vn(vP.xz*.8);
+  else if(mat<7.5)v=(.7+.3*vn(vU*5.+sd*9.))*uHeat+.12;
+  else if(mat<8.5){vec2 p=vU+sd*31.;float n1=vn(p*.055),n2=vn(p*.21+7.),n3=vn(p*.9);
+    float ve=smoothstep(.075,.0,abs(n1-.5))+.45*smoothstep(.06,.0,abs(n2-.5)),pu=.72+.28*sin(uT*.7-p.y*.045+sd);
+    v=.11+.08*n1+.05*n2+.04*n3+.05*step(.5,fract(p.y*.09+n2*1.5))+.46*ve*pu;float rim=1.-abs(dot(N,normalize(uEye-vP)));v*=1.-.62*rim*rim;}
+  else if(mat<9.5)v=.36+.5*sd;
+  else{vec3 r=normalize(vP-uEye);v=.035+.06*vn(r.xz/max(r.y,.06)*.7+uT*.004)*smoothstep(.0,.25,r.y);v=mix(v,uFog.y,uFog.z);gl_FragColor=vec4(v,v,v,1.);return;}
+  v*=.86+.14*abs(N.x)+.05*N.z;
+  v=mix(v,uFog.y,1.-exp(-d/uFog.x));
+  gl_FragColor=vec4(v,v,v,1.);}`;
+// 火・煙・曳光・土ぼこり：こちらを向いた四角。c=(温度, 濃さ)
+const VSP=`attribute vec3 a;attribute vec2 uvA;attribute vec2 c;uniform mat4 uVP;varying vec2 vU,vC;void main(){vU=uvA;vC=c;gl_Position=uVP*vec4(a,1.);}`;
+const FSP=`precision mediump float;varying vec2 vU,vC;void main(){float r=length(vU),a=vC.y*smoothstep(1.,.25,r);gl_FragColor=vec4(vec3(vC.x),a);}`;
+const VSQ=`attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
+/* 車内。砲手の目の前に、7インチの白黒ブラウン管がある。目（uCam：モニターの高さを1とした、頭のずれ。z は、近づく向きが正）から線を飛ばして、モニターの面のどこに当たるかを出す。
+   面の中なら、熱線映像（uScn）と、重ねる線・数字（uHud）を、ブラウン管らしく（ふくらみ、走査線、にじみ、四すみの暗さ）映す。外なら、枠と、うす暗い車内。
+   uS＝モニターの高さが、画面の何画素か。uC＝モニターのまんなかの画面上の場所。 */
+const FSM=GLH+`uniform sampler2D uScn,uHud;uniform vec2 uRes,uC,uDu;uniform vec3 uCam,uRot,uDl,uCd;uniform vec4 uLd;uniform float uS,uT,uPow,uStat,uFl,uBr,uRed,uSh,uLmp,uTr;
+float bx(vec2 p,vec2 b,float r){vec2 d=abs(p)-b;return length(max(d,0.))+min(max(d.x,d.y),0.)-r;}
+float sg(vec2 p,vec2 a,vec2 b){vec2 pa=p-a,ba=b-a;return length(pa-ba*clamp(dot(pa,ba)/dot(ba,ba),0.,1.));}
+void main(){vec2 p=(gl_FragCoord.xy-uC)/uS;float D=2.7;
+  vec3 rd=normalize(vec3(p,D));rd.xy+=vec2(-uRot.z*rd.y,uRot.z*rd.x);rd.x+=uRot.y;rd.y+=uRot.x;
+  vec3 ro=vec3(uCam.xy,-(D-uCam.z));float t=-ro.z/rd.z;vec2 q=ro.xy+rd.xy*t;
+  vec2 hs=vec2(.6667,.5);float gl=bx(q,hs-.04,.04),hsg=bx(q-vec2(0.,-.04),vec2(.775,.665),.022),v;vec3 col;      // gl＝画面のガラス（角は丸い）／hsg＝筐体（上にひさし、下につまみの帯）
+  float lk=(1.-.75*uSh)*(.94+.06*sin(uT*7.3));vec3 AMB=vec3(1.,.6,.28);                              // 室内灯（琥珀色。衝撃で、またたく）
+  if(gl<0.){vec2 uv=q/hs*.5;uv*=1.+.05*dot(uv,uv)*4.*.5;vec2 tu=uv+.5;
+    if(uTr>.001){tu.x+=uTr*(.035*step(.55,fract(tu.y*5.+uT*9.))*sin(uT*83.+tu.y*30.)+.006*sin(tu.y*190.+uT*50.));tu.y=fract(tu.y+uTr*uTr*.1*sin(uT*31.));}      // 衝撃で、同期が乱れる：帯になって横へずれ、縦に流れる
+    float s=texture2D(uScn,tu).r,hd=texture2D(uHud,vec2(tu.x,1.-tu.y)).a;
+    s+=.35*(texture2D(uScn,tu+vec2(.004,0.)).r-s)*step(.6,s);                                   // 明るいところが、横へ少し尾を引く
+    float nz=h21(gl_FragCoord.xy+floor(uT*30.)*13.);
+    v=s*1.15*uBr+hd*.9+uFl;v=mix(v,nz,max(uStat,uTr*.25));v+=.035*(nz-.5);
+    v*=.82+.18*sin(tu.y*384.*3.1416);                                                             // 走査線
+    v*=1.-.5*dot(uv,uv)*1.6;v*=uPow*(.96+.04*sin(uT*377.))*(1.-.3*uTr*step(.6,fract(uT*27.)));
+    float rc=smoothstep(.0,-.02,gl);v*=rc;
+    v+=.03*uPow*smoothstep(.9,.1,length(q-vec2(-.3,.35)));                                         // ガラスの照り
+    col=vec3(v*.93,v*.99,v*.95);
+    /* ガラスへの映りこみ：うしろ左の砲尾と、自分の頭の影。映像が暗いところでだけ、うっすら見える。
+       砲尾は、撃つと迫ってきて（反動）、装填角度で下がる。閉鎖機が開いているあいだは、暗い口があく。ラマーが、左下から弾を押してくる。 */
+    vec2 rq=q+uCam.xy*1.4+vec2(.006*sin(uT*.8),.004*sin(uT*1.13));
+    float occ=1.-max(smoothstep(.06,-.1,length((rq-vec2(.17,-.40))/vec2(.27,.36))-1.),smoothstep(.06,-.1,length((rq-vec2(.22,-.80))/vec2(.62,.3))-1.));
+    vec2 bc=vec2(-.44,-.02-.1*uLd.y);float bs=1.+.25*uLd.x;vec2 bp=(rq-bc)/bs;float sb=bx(bp,vec2(.1,.17),.04);
+    float br=smoothstep(.07,-.06,sb)*(.03+.1*exp(-pow((bp.x+.045)/.035,2.))+.05*exp(-pow((bp.y-.17)/.03,2.)));
+    br*=1.-.8*uLd.w*smoothstep(.07,-.03,length(bp-vec2(.015,.03))-.05);
+    vec2 rp=mix(vec2(-.86,-.5),bc+vec2(.015,.03),uLd.z);
+    float rm=smoothstep(.06,-.04,length(rq-rp)-mix(.08,.035,uLd.z))*.11*smoothstep(.0,.06,uLd.z);
+    float lg=.16*exp(-length(rq-vec2(-.52,.41))*11.)+.03*exp(-length(rq-vec2(-.52,.41))*3.);
+    col+=AMB*((br+rm+lg+.016)*occ*lk*rc);}
+  else if(hsg<0.){
+    /* 筐体：鋳物の枠。ガラスをゴムのふちが押さえ、内側の斜めの面が画面の光を受ける。上には短いひさし（その影で、上の枠は暗い）。四すみにねじ。
+       下の帯に、銘板・電源の灯・つまみ2つ（明るさ、コントラスト）。上の枠には、装填の段取りの灯り5つ */
+    float tex=.86+.14*h21(floor(q*110.)),lit=uPow*uBr;
+    v=.052*tex+.075*lit*exp(-gl*24.)*(.7+.3*smoothstep(.2,-.5,q.y));
+    v=mix(v,.011+.02*smoothstep(-.2,.5,q.y-q.x)*smoothstep(.016,.004,gl),smoothstep(.022,.016,gl));          // ゴムのふち
+    v+=.03*smoothstep(.005,.0,abs(gl-.024));
+    v+=.04*smoothstep(.012,.0,abs(hsg+.013))*(.35+.65*smoothstep(-.5,.5,q.y-q.x));                           // 外のふちの面取り（左上が、室内灯を拾う）
+    v*=1.-.5*smoothstep(.5,.6,q.y)*step(q.y,.607);                                                           // ひさしの影
+    float hd2=smoothstep(.604,.609,q.y);v=mix(v,(.075+.035*smoothstep(.61,.64,q.y))*tex,hd2);v*=1.-.5*smoothstep(.006,.0,abs(q.y-.607));     // ひさし
+    v*=1.-.55*smoothstep(.006,.0,abs(q.y+.607));                                                             // 下の帯との境の溝
+    float pl=smoothstep(.005,.0,bx(q-vec2(-.46,-.657),vec2(.21,.027),.004));v=mix(v,.08+.055*step(.5,fract(q.y*72.))*step(fract(q.x*9.+floor(q.y*72.)*.31),.68),pl*.92);   // 銘板
+    vec2 kq=vec2(abs(q.x-.55)-.085,q.y+.657);float kd=length(kq),ks=sign(q.x-.55);                           // つまみ2つ
+    v=mix(v,.028+.05*smoothstep(.036,.016,kd)+.06*smoothstep(.006,.0,abs(kd-.031))*smoothstep(-.03,.03,kq.y-kq.x*ks),smoothstep(.04,.036,kd));
+    v=mix(v,.16,smoothstep(.005,.002,sg(kq,vec2(0.),vec2(-.011*ks,.024)))*step(kd,.03));
+    col=vec3(v)+AMB*(.03*lk*smoothstep(-.3,.7,q.y-q.x*.7)*tex);
+    vec2 sq=abs(q-vec2(0.,-.045))-vec2(.735,.615);float sd=length(sq);                                        // ねじ
+    col=mix(col,vec3(.018),smoothstep(.017,.013,sd));col+=vec3(.045)*smoothstep(.0035,.0,abs(sq.x-sq.y))*smoothstep(.013,.009,sd);
+    float pd=length(q-vec2(.33,-.657));col=mix(col,vec3(.01),smoothstep(.016,.012,pd));col+=vec3(.25,1.,.45)*uPow*(smoothstep(.01,.005,pd)*.7+.05*exp(-pd*40.));       // 電源の灯
+    for(int i=0;i<5;i++){float fi=float(i),d=length(q-vec2(.24+.085*fi,.552)),on=mod(floor(uLmp/exp2(fi)+.01),2.);                  // 装填の段取り（開・角度・送弾・閉）と、装填よし（緑）
+      col=mix(col,vec3(.012),smoothstep(.02,.015,d));col+=(i==4?vec3(.3,1.,.42):vec3(1.,.6,.16))*(on*(smoothstep(.013,.007,d)*.95+.07*exp(-d*38.))+(1.-on)*smoothstep(.013,.007,d)*.035);}}
+  else{float t2=(.45-ro.z)/rd.z;vec2 w=ro.xy+rd.xy*t2;                                                                  // 奥の壁（モニターより後ろにあるので、頭が動くと、ずれ方がちがう）
+    vec2 g=vec2(fract(w.x*.9)-.5,fract(w.y*1.3+.2)-.5);
+    v=.022+.016*vn(w*3.)+.028*smoothstep(.02,.0,abs(g.x))+.022*smoothstep(.015,.0,abs(g.y));                              // 鉄板の継ぎ目
+    v+=.045*smoothstep(.028,.016,length((abs(g)-vec2(.42,.4))*vec2(1.11,.77)));                                          // ボルト
+    float pp=smoothstep(.04,.034,abs(w.y-.94));v=mix(v,.018+.04*smoothstep(.035,.0,abs(w.y-.955)),pp);                  // 横に走る配管
+    float pv=smoothstep(.03,.025,abs(w.x+1.18))*step(w.y,.9);v=mix(v,.016+.035*smoothstep(.028,.0,abs(w.x+1.19)),pv);   // 縦の電線管
+    float pl=smoothstep(.008,.0,bx(w-vec2(1.3,-.24),vec2(.19,.095),.01));v=mix(v,.034+.03*step(.45,fract(w.y*34.))*step(fract(w.x*6.+floor(w.y*34.)*.37),.72),pl);   // 銘板
+    float hb=abs(bx(w-vec2(.0,.9),vec2(.3,.0),.045));v=mix(v,.03+.07*smoothstep(.02,.0,abs(hb-.012))*smoothstep(-.05,.05,w.y-.9),smoothstep(.03,.022,hb));          // 手すり
+    float ar=smoothstep(.05,.042,abs(abs(w.y+.05)-.34))*step(.8,abs(w.x))*step(abs(w.x),1.04);v=mix(v,.03+.04*smoothstep(.04,.0,abs(abs(w.y+.05)-.355)),ar);          // モニターを支える腕
+    v=mix(v,.06,smoothstep(.03,.022,length(vec2(abs(w.x)-1.0,abs(w.y+.05)-.34))));
+    float cx2=.5+.05*sin(w.y*2.3),cbl=abs(w.x-cx2);v=mix(v,.012+.05*smoothstep(.02,.0,abs(w.x-cx2+.012)),smoothstep(.036,.03,cbl)*step(w.y,-.72));                     // 筐体の下から出る、太い電線
+    float ng=0.;vec2 dq=w-uDl.xy;float dr=length(dq);
+    if(dr<.2){float da=atan(dq.x,dq.y),face=smoothstep(.158,.152,dr);                                                     // 砲塔の向きの計器：丸い文字盤。車体の前が上。針が、砲の向き
+      v=mix(v,.045+.06*smoothstep(.014,.0,abs(dr-.168))*smoothstep(-.2,.2,dq.y-dq.x),smoothstep(.184,.178,dr));
+      float tk=smoothstep(.07,.0,abs(fract(da*1.9099+.5)-.5))*smoothstep(.118,.128,dr)+smoothstep(.04,.0,abs(fract(da*.6366+.5)-.5))*smoothstep(.1,.11,dr);
+      v=mix(v,.016+.1*tk*step(dr,.148),face);
+      v=mix(v,.09,face*smoothstep(.012,.006,bx(dq-vec2(0.,.0),vec2(.016,.028),.004)));                                    // まんなかの、車体の形
+      vec2 nd=vec2(sin(uDl.z),cos(uDl.z));ng=face*smoothstep(.011,.004,sg(dq,nd*.03,nd*.13));}
+    vec2 cp=uCd.xy,cdv=vec2(sin(uCd.z),-cos(uCd.z)),ce=cp+.3*cdv;float cd=sg(w,cp,ce);                                    // 壁の鉤から下がった、ひもと札（衝撃で振れる）
+    v=mix(v,.014+.06*smoothstep(.006,.0,cd),smoothstep(.011,.007,cd));v=mix(v,.075,smoothstep(.02,.014,length(w-cp)));
+    vec2 tq=w-ce-.05*cdv;tq=vec2(tq.x*(-cdv.y)+tq.y*cdv.x,-tq.x*cdv.x+tq.y*(-cdv.y));
+    v=mix(v,.07+.045*step(.5,fract(tq.y*38.))*step(abs(tq.x),.022)*step(abs(tq.y),.03),smoothstep(.004,.0,bx(tq,vec2(.032,.05),.006)));
+    v+=.05*uPow*uBr*exp(-max(hsg,0.)*3.5);col=vec3(v)+AMB*((.15*exp(-length(w-vec2(-1.05,1.1))*.95)+.012)*lk*(.55+.9*vn(w*3.)));
+    col+=vec3(.7,1.,.62)*ng*.3;
+    col*=1.-.55*smoothstep(.0,.1,uLd.z)*smoothstep(.6,.0,abs(w.x-mix(-2.6,-.55,uLd.z)));                                // ラマーが動くあいだ、影が壁をよぎる
+    col*=1.-.35*smoothstep(.12,.0,hsg)*smoothstep(-.9,.2,-w.y-w.x*.4);                                                    // 筐体が壁に落とす影（室内灯は左上）
+    col+=vec3(.25*smoothstep(.022,.012,length(w-vec2(1.05,.62)))+.2*smoothstep(.02,.011,length(w-vec2(1.05,.5)))*step(.5,fract(uT*.8)));}
+  if(gl>=0.){col+=vec3(uRed*.9,uRed*.12,uRed*.06)*(.5+.5*smoothstep(1.6,.2,length(p)));
+    if(uDu.y>.001){float du=0.;                                                                                           // 大きな衝撃のあと、天井からほこりが落ちてくる
+      for(int i=0;i<9;i++){float fi=float(i),h1=h21(vec2(fi,3.7)),h2=h21(vec2(fi,9.1));vec2 c=vec2((h1*2.-1.)*1.5+.05*sin(uDu.x*1.3+fi),.95-h2*.7-uDu.x*(.14+.2*h1)-(.015+.03*h2)*uDu.x*uDu.x);du+=smoothstep(.013,.0,length(p-c))*(.4+.6*h2);}
+      col+=AMB*(du*uDu.y*.2*lk*exp(-uDu.x*.5));}}
+  gl_FragColor=vec4(col,1.);}`;
+
+/* ---------- 台詞 ----------
+   [だれ, 合成器に渡す文（日本語はひらがなの分かち書き。英語は [ ] の中に発音記号）, 字幕]
+   日本語：空白で区切ったひとかたまりが、アクセントの1単位。拍のあとの ' が、アクセントの核（そこまで高く、次の拍で下がる）。' のない語は平板。
+   助詞の は・へ は、わ・え と書く。核の位置は、字幕の文を Open JTalk に読ませて出し、読みちがい（車長・対榴・呼出符号など）を手で直した
+   tc＝車長、dr＝操縦手（どちらも車内通話）、co＝中隊長（ハヤテ01）、t2＝2号車（ハヤテ12）、us＝米軍機（ダガー21）。自車は ハヤテ11。2号車は、うしろについている（映らない）。数字は、無線の読み方（0＝まる、1＝ひと、2＝ふた）。
+   無線は日本語。米軍機とのやりとりだけ、英語になる。 */
+const LN={
+in1:['co','はやて まるひとから か\'くしゃ。おおど\'おりを きたえ ぜんしん。ほ\'んたいにわ かま\'うな。は\'ってくる や\'つだけ う\'て。','ハヤテ01から各車。大通りを北へ前進。本体には構うな。這ってくるやつだけ撃て。'],
+in2:['tc','ひとひと、りょうかい。','11、了解。'],
+in2b:['t2','ひとふた、うしろに つ\'く。','12、後ろにつく。'],
+ap1:['p2','ふたひとから まるひと！かこまれた！か\'ずが お\'おい……か\'ずが','21から01！囲まれた！数が多い……数が——'],
+ap2:['co','ふたひと、ど\'うした。……ふたひと、おうとうしろ。','21、どうした。……21、応答しろ。'],
+ap3:['dr','しゃちょう。……ふたひとわ、このさきで\'す。','車長。……21は、この先です。'],
+ap4:['tc','ほ\'うしゅ、ま\'えを みて\'ろ。そうじゅ\'うしゅ、そ\'くど おとせ。','砲手、前を見てろ。操縦手、速度落とせ。'],
+ap5:['dr','おとしま\'す。','落とします。'],
+tg1:['tc','もくひょう、しょうめ\'ん。は\'ってくる。たいりゅう、う\'て。','目標、正面。這ってくる。対榴、撃て。'],
+tgR:['tc','みぎ、こうさてんから で\'た。きじゅうで とめろ。','右、交差点から出た。機銃で止めろ。'],
+tgL:['tc','ひだりから く\'る。こうさてん。','左から来る。交差点。'],
+tgB:['tc','でか\'いのが いる。たいりゅうで う\'て。','でかいのがいる。対榴で撃て。'],
+hit1:['tc','めいちゅう。','命中。'],
+hit2:['tc','げ\'きは。つぎ。','撃破。次。'],
+hit3:['dr','とまりま\'した。','止まりました。'],
+miss:['tc','はずれた。おちつけ。','外れた。落ち着け。'],
+halt:['tc','ていし。ここで う\'つ。','停止。ここで撃つ。'],
+rev:['tc','ちか\'い！こうたい、こうたい！','近い！後退、後退！'],
+adv:['tc','よ\'し。ま\'ええ。','よし。前へ。'],
+emp:['tc','たいりゅう、ざんだん な\'し。きじゅうで やれ。','対榴、残弾なし。機銃でやれ。'],
+hull1:['dr','とりつか\'れた！しゃたいを たた\'いてます！','取りつかれた！車体を叩いてます！'],
+hull2:['t2','ひとふた。そっちの しゃたいを そうしゃする。うご\'くな。','12。そっちの車体を掃射する。動くな。'],
+idle:['tc','ほ\'うしゅ、ど\'うした。……こっち\'で う\'つ。','砲手、どうした。……こっちで撃つ。'],
+gi1:['dr','しゃちょう。うえ……みえま\'すか。','車長。上……見えますか。'],
+gi2:['tc','み\'るな。ま\'えを み\'ろ。……あれわ、うちの あいて\'じゃない。','見るな。前を見ろ。……あれは、うちの相手じゃない。'],
+gi3:['tc','ほ\'んたいにわ う\'つな。きかないし、きづかれ\'る。','本体には撃つな。効かないし、気づかれる。'],
+gi4:['co','はやて まるひとから か\'くしゃ。ほ\'んたい、し\'んろを かえた。おおど\'おりえ よってく\'る。','ハヤテ01から各車。本体、進路を変えた。大通りへ寄ってくる。'],
+ft1:['tc','うえだ！あし\'が く\'る！とまれ！','上だ！足が来る！止まれ！'],
+ft1b:['tc','こうたい！ぜんそくこ\'うたい！','後退！全速後退！'],
+crush:['tc','ま\'ええ！ひけ！','前へ！轢け！'],
+ft2:['tc','ひとふた、おうとうしろ。……ひとふた。','12、応答しろ。……12。'],
+ft3:['dr','しゃちょう……うしろ、ふさがれてま\'す。あし\'です。','車長……後ろ、ふさがれてます。足です。'],
+ft4:['tc','……ほ\'うしゅ。あしも\'とから で\'てくるぞ。う\'て。','……砲手。足もとから出てくるぞ。撃て。'],
+us1:['us',"[ hA'jAteI 'zIroU 'wVn, 'd{g3 'tu 'wVn. 'tu 'mInIts 'aUt. 'mArk jOr p@'zIS@n. ]",'ハヤテ01、こちらダガー21。到着まで2分。位置を示せ。'],
+us2:['co',"[ 'd{g3 'tu 'wVn, hA'jAteI 'zIroU 'wVn. 'frEndli 't{Nks An D@ 'meIn '{v@nu. 'tArgIt Iz D@ 'bIg 'wVn. 'deIndZ3 'kloUs. ]",'ダガー21、ハヤテ01。大通りに味方の戦車。目標は、大きいほう。至近に味方あり。'],
+co2:['co','はやて まるひとから か\'くしゃ。こうくうこ\'うげきが は\'いる。ぜ\'んしゃ、こうたい。ほ\'んたいから はなれ\'ろ。','ハヤテ01から各車。航空攻撃が入る。全車、後退。本体から離れろ。'],
+us3:['us',"[ hA'jAteI, 'd{g3. 'wEp@nz @'weI. 'T34i 'sEk@ndz. 'kip jOr 'hEdz 'daUn. ]",'ハヤテ、ダガー。投下した。弾着まで30秒。頭を下げていろ。'],
+us4:['us',"[ 'gUd 'hIts. 'tArgIt Iz 'goUIN 'daUn. ]",'命中。目標、倒れる。'],
+end1:['dr','たおれ\'る……たおれま\'す！','倒れる……倒れます！'],
+end2:['tc','……たお\'れた。ほ\'うしゅ、よ\'く やった。','……倒れた。砲手、よくやった。'],
+end3:['dr','しゃちょう。……ろめんの お\'んどが、あがってま\'す。','車長。……路面の温度が、上がってます。'],
+};
+
+
+/* ---------- 行列（x 右、y 上、z 前。左手系） ---------- */
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],nrm3=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]};
+function mmul(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s}return o}
+function persp(fy,asp,n,f){const t=1/Math.tan(fy/2),o=new Float32Array(16);o[0]=t/asp;o[5]=t;o[10]=(f+n)/(f-n);o[11]=1;o[14]=-2*f*n/(f-n);return o}
+function viewM(e,fw,up){const x=nrm3(cross(up,fw)),y=cross(fw,x);return new Float32Array([x[0],y[0],fw[0],0,x[1],y[1],fw[1],0,x[2],y[2],fw[2],0,-dot3(x,e),-dot3(y,e),-dot3(fw,e),1])}
+const basisM=(X,Y,Z,T)=>new Float32Array([X[0],X[1],X[2],0,Y[0],Y[1],Y[2],0,Z[0],Z[1],Z[2],0,T[0],T[1],T[2],1]);
+// a から b へ伸びる、太さ r の筒（単位の筒は、y が 0〜1、半径1）
+function cylM(a,b,r){const Y=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],u=nrm3(Y),X=nrm3(cross(Math.abs(u[1])>.95?[1,0,0]:[0,1,0],u)),Z=cross(u,X);return basisM([X[0]*r,X[1]*r,X[2]*r],Y,[Z[0]*r,Z[1]*r,Z[2]*r],a)}
+const ellM=(c,sx,sy,sz,yaw)=>{const co=Math.cos(yaw||0),si=Math.sin(yaw||0);return basisM([co*sx,0,-si*sx],[0,sy,0],[si*sz,0,co*sz],c)};
+
+/* ---------- 街（動かないもの）：はじめに一度だけ作る。同じ種から作るので、いつも同じ街 ---------- */
+let seed=20261121;const R=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296},Rr=(a,b)=>a+R()*(b-a);
+const BLD=[],CROSS=[],RW=18;let TX=-2.75;                    // 建物の箱（当たり判定用）、交差点の z、自車の走る x、大通りのまんなかから建物の面まで
+function buildCity(){let V=[],I=[];const CH=[],flush=()=>{if(I.length){CH.push({v:new Float32Array(V),i:new Uint16Array(I)});V=[];I=[]}};
+  const quad=(p,n,uv,mat,sd)=>{if(V.length/10>64000)flush();const b=V.length/10;for(let i=0;i<4;i++)V.push(p[i][0],p[i][1],p[i][2],n[0],n[1],n[2],uv[i][0],uv[i][1],mat,sd);I.push(b,b+1,b+2,b,b+2,b+3)};
+  const box=(x0,x1,y0,y1,z0,z1,mat,sd,top)=>{
+    quad([[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0]],[0,0,-1],[[x0,y0],[x1,y0],[x1,y1],[x0,y1]],mat,sd);
+    quad([[x1,y0,z1],[x0,y0,z1],[x0,y1,z1],[x1,y1,z1]],[0,0,1],[[x1,y0],[x0,y0],[x0,y1],[x1,y1]],mat,sd);
+    quad([[x0,y0,z1],[x0,y0,z0],[x0,y1,z0],[x0,y1,z1]],[-1,0,0],[[z1,y0],[z0,y0],[z0,y1],[z1,y1]],mat,sd);
+    quad([[x1,y0,z0],[x1,y0,z1],[x1,y1,z1],[x1,y1,z0]],[1,0,0],[[z0,y0],[z1,y0],[z1,y1],[z0,y1]],mat,sd);
+    quad([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]],[0,1,0],[[x0,z0],[x1,z0],[x1,z1],[x0,z1]],top==null?mat:top,sd)};
+  box(-3000,3000,-20,2600,-3000,5000,10,0);                                                    // 空
+  quad([[-900,0,-400],[900,0,-400],[900,0,3800],[-900,0,3800]],[0,1,0],[[0,0],[1,0],[1,1],[0,1]],0,0);   // 地面
+  for(let k=0;k<30;k++)CROSS.push(150+96*k);
+  let za=-260;for(let k=0;k<=CROSS.length;k++){const zb=k<CROSS.length?CROSS[k]-6:za+90;
+    box(-1,1,0,.24,za+3,zb-3,6,0);                                                             // 中央分離帯
+    for(const sg of[-1,1]){
+      box(sg>0?13:-RW,sg>0?RW:-13,0,.16,za,zb,6,0);                                            // 歩道
+      let z=za+Rr(0,2);while(z<zb-9){const w=Math.min(Rr(12,27),zb-z),h=R()<.15?Rr(30,58):Rr(7,23),dp=Rr(16,26),x0=RW+(R()<.2?Rr(.5,2):0),xa=sg>0?x0:-x0-dp,xb=xa+dp;
+        box(xa,xb,0,h,z,z+w,1,R(),2);BLD.push({x0:xa,x1:xb,z0:z,z1:z+w,h});
+        if(R()<.3)box(sg>0?xa-.75:xb+.05,sg>0?xa-.05:xb+.75,0,1.85,z+w*.5-.5,z+w*.5+.5,5,0);                    // 自販機
+        z+=w+Rr(.3,1.2)}
+      z=za;while(z<zb-12){const w=Math.min(Rr(18,40),zb-z),h=Rr(16,70),x0=RW+30+Rr(0,14),xa=sg>0?x0:-x0-26,xb=xa+26;box(xa,xb,0,h,z,z+w,1,R(),2);BLD.push({x0:xa,x1:xb,z0:z,z1:z+w,h});z+=w+Rr(2,10)}
+      for(let z2=za+8;z2<zb-4;z2+=34){const x=sg*13.7;box(x-.16,x+.16,0,9,z2-.16,z2+.16,4,0);if(R()<.34)box(x-.4,x+.4,6.2,7.3,z2-.45,z2+.45,5,0)}       // 電柱と、変圧器
+      for(let z2=za+Rr(4,12);z2<zb-6;z2+=Rr(6,22)){const lane=R()<.28,x=sg*(lane?Rr(5.8,10.4):12.1),w=.9,l=2.2,sd=R()<.3?Rr(.4,1):0;                        // 車：路肩に止めたもの、車線に乗り捨てたもの
+        box(x-w,x+w,.28,1,z2-l,z2+l,3,sd);box(x-w*.9,x+w*.9,1,1.48,z2-l*.45,z2+l*.5,3,sd*.3)}
+      if(k<CROSS.length){const x=sg*13.5,zc=zb+(sg>0?12.2:-.2);box(x-.13,x+.13,0,6.4,zc-.13,zc+.13,4,0);box(Math.min(x,x-sg*8),Math.max(x,x-sg*8),6.1,6.35,zc-.1,zc+.1,4,0)}}
+    za=zb+12}
+  flush();return CH}
+// 使い回す形：筒、玉、箱（頂点は、場所3・法線3・uv2・材質2）
+function mkCyl(n){const V=[],I=[];for(let i=0;i<=n;i++){const a=i/n*6.2832,c=Math.cos(a),s=Math.sin(a);V.push(c,0,s,c,0,s,i/n*6,0,0,0,c,1,s,c,0,s,i/n*6,1,0,0)}for(let i=0;i<n;i++){const b=i*2;I.push(b,b+1,b+3,b,b+3,b+2)}return{v:new Float32Array(V),i:new Uint16Array(I)}}
+function mkSph(m,n){const V=[],I=[];for(let j=0;j<=m;j++){const t=j/m*PI,y=Math.cos(t),r=Math.sin(t);for(let i=0;i<=n;i++){const a=i/n*6.2832,x=r*Math.cos(a),z=r*Math.sin(a);V.push(x,y,z,x,y,z,i/n*4,j/m*2,0,0)}}
+  for(let j=0;j<m;j++)for(let i=0;i<n;i++){const b=j*(n+1)+i;I.push(b,b+1,b+n+2,b,b+n+2,b+n+1)}return{v:new Float32Array(V),i:new Uint16Array(I)}}
+function mkBox(){const V=[],I=[],f=[[[0,0,-1],[1,0,0],[0,1,0]],[[0,0,1],[-1,0,0],[0,1,0]],[[-1,0,0],[0,0,-1],[0,1,0]],[[1,0,0],[0,0,1],[0,1,0]],[[0,1,0],[1,0,0],[0,0,1]],[[0,-1,0],[1,0,0],[0,0,-1]]];
+  for(const [n,u,w] of f){const b=V.length/10;for(const [s,t] of[[-1,-1],[1,-1],[1,1],[-1,1]])V.push((n[0]+u[0]*s+w[0]*t)*.5,(n[1]+u[1]*s+w[1]*t)*.5,(n[2]+u[2]*s+w[2]*t)*.5,n[0],n[1],n[2],s,t,0,0);I.push(b,b+1,b+2,b,b+2,b+3)}
+  return{v:new Float32Array(V),i:new Uint16Array(I)}}
+
+/* ---------- 状態 ---------- */
+const S={t:0,ph:-9,evi:0,fade:0,black:0,blackT:0,hold:0,manT:-99,stage:0,msg:'',msgEnd:0,dust:0,white:0,stat:0,quake:0,pow:0,red:0,end:0,lost:0,idleSaid:0,sh:0,shP:0,tear:0,dustT:-99,dustK:0,said:{}};
+const T={z:0,v:0,vt:0,mode:'creep',xT:-2.75,yaw:0,laneT:0,block:0,noAdv:0,force:null,pitch:0,pitchV:0,hp:5,hitT:-99,bumpT:0,clearT:0};            // 自車
+const G={az:0,el:.01,azV:0,elV:0,rx:0,ry:0,zoom:0,fov:7.6*D2R,wpn:0,load:0,he:18,m127:100,m127T:500,belt:0,m762:1600,rpmT:0,rng:0,rngT:0,des:null,kick:0,auto:1,aimE:0,fireT:0,rec:0,gunOff:0,ram:0,open:0,lamp:16};
+const HEAD={x:0,y:0,z:0,vx:0,vy:0,vz:0,rl:0,rlV:0};                                                     // 砲手の頭（モニターに対して）
+const IN={fire:0,ax:0,ay:0,kx:0,ky:0,dx:0,dy:0};
+const EN=[],FX=[],SHELL=[],SCH=[];
+const GI={x:-518,z:792,zr:null,hy:235,f:[{x:-480,z:737,y:0,sw:0},{x:-540,z:847,y:0,sw:0}],next:0,fall:0,down:0,evt:0,evF:0,ox:0,oz:0,fx:1,fz:0,sp:6.8,last:0};
+const F2={x:2.75,z:-55,v:0,dead:0,fireT:0};                                                   // 2号車
+const ST={he:0,heHit:0,m127:0,m762:0,kill:0,killL:0,hull:0,miss:0};
+function at(d,fn){SCH.push({t:S.t+d,fn})}
+function hmsg(m,sec){S.msg=m;S.msgEnd=S.t+(sec||3)}
+
+/* ---------- 台詞（無線と、車内通話）。字幕つき ---------- */
+const RQ={q:[],busy:0};
+const WHO={tc:'車長',dr:'操縦手',co:'中隊長',t2:'2号車',us:'米軍機',p2:'2小隊'};
+function ln(id,delay,style){const L=LN[id];if(!L)return;RQ.q.push({id,who:L[0],text:L[1],sub:L[2],style:style||'calm',at:S.t+(delay||0)})}
+function once(id,delay,style){if(S.said[id])return false;S.said[id]=1;ln(id,delay,style);return true}
+const SUB=[{el:null,end:0},{el:null,end:0}];let subOn=store.get('oodori-sub')!=='0';
+function subShow(who,text,dur){if(!subOn||!text)return;const slot=SUB[0].end<=SUB[1].end?0:1,o=SUB[slot],e=$('sub'+slot);o.end=S.t+dur;e.firstChild.textContent=text.indexOf(WHO[who])===0?'':WHO[who];e.lastChild.textContent=text;e.classList.add('on')}
+function subTick(){for(let i=0;i<2;i++)if(SUB[i].end&&S.t>SUB[i].end){SUB[i].end=0;$('sub'+i).classList.remove('on')}}
+function subClear(){for(let i=0;i<2;i++){SUB[i].end=0;$('sub'+i).classList.remove('on')}}
+function radioTick(){const q=RQ.q;if(!q.length)return;q.sort((a,b)=>a.at-b.at);
+  if(!A.on){while(q.length&&q[0].at<=S.t){const it=q.shift();subShow(it.who,it.sub,clamp(it.sub.length*.17+1.2,2,7))}return}
+  for(let i=0,n=0;i<q.length&&n<3;i++)if(q[i].at-S.t<6&&!q[i].pb){q[i].pb=1;n++;A.radio({text:q[i].text,who:q[i].who,style:q[i].style,pre:1})}
+  const it=q[0];if(it.at>S.t||S.t<RQ.busy)return;const d=A.radio(it);
+  if(d>0){q.shift();RQ.busy=S.t+d+(it.style==='panic'?.05:.3);subShow(it.who,it.sub,d+.7)}else if(S.t-it.at>4){q.shift();subShow(it.who,it.sub,3)}}
+
+/* ---------- 当たり判定：照準の線が、何に当たるか ---------- */
+function eyePos(){return[TX+.45,2.25,T.z+.4]}
+function aimDir(az,el){const ce=Math.cos(el);return[Math.sin(az)*ce,Math.sin(el),Math.cos(az)*ce]}
+function cast(o,d,maxT){let t=maxT||3000,kind=null,obj=null;
+  if(d[1]<-1e-4){const tg=-o[1]/d[1];if(tg<t){t=tg;kind='gnd'}}
+  for(const b of BLD){if(b.z1<o[2]-50||b.z0>o[2]+t)continue;let t0=0,t1=t,ok=1;
+    for(const [a,lo,hi] of[[0,b.x0,b.x1],[1,0,b.h],[2,b.z0,b.z1]]){if(Math.abs(d[a])<1e-6){if(o[a]<lo||o[a]>hi){ok=0;break}}else{let u=(lo-o[a])/d[a],w=(hi-o[a])/d[a];if(u>w){const q=u;u=w;w=q}if(u>t0)t0=u;if(w<t1)t1=w;if(t0>t1){ok=0;break}}}
+    if(ok&&t0<t&&t0>0){t=t0;kind='bld';obj=b}}
+  for(const e of EN){if(e.gone)continue;const r=e.s*1.25,c=[e.x-o[0],e.hb-o[1],e.z-o[2]],b=dot3(c,d),q=dot3(c,c)-r*r,di=b*b-q;if(di>0){const te=b-Math.sqrt(di);if(te>0&&te<t){t=te;kind='en';obj=e}}}
+  for(const f of GI.f){const dx=f.x-o[0],dz=f.z-o[2],b=dx*d[0]+dz*d[2],dd=d[0]*d[0]+d[2]*d[2],q=dx*dx+dz*dz-25*25,di=b*b-dd*q;if(di>0){const te=(b-Math.sqrt(di))/dd;if(te>0&&te<t&&o[1]+d[1]*te>f.y){t=te;kind='gi'}}}
+  return{t,kind,obj,p:[o[0]+d[0]*t,o[1]+d[1]*t,o[2]+d[2]*t]}}
+
+/* ---------- 火・煙・曳光（粒）。k：0 閃光／1 火の玉／2 煙・土ぼこり／3 曳光／4 火花／5 残り火 ---------- */
+function fx(k,p,o){if(FX.length>260)FX.shift();FX.push(Object.assign({k,x:p[0],y:p[1],z:p[2],t:0,life:1,r:1,heat:1,a:1,vx:0,vy:0,vz:0,gr:0},o||{}))}
+function explode(p,big){const s=big?1:.4;fx(0,p,{life:.12,r:9*s,heat:1,a:1});fx(1,[p[0],p[1]+1.2*s,p[2]],{life:.7,r:5*s,gr:6*s,heat:1,a:.95,vy:3});
+  for(let i=0;i<(big?7:3);i++)fx(2,[p[0]+rnd(-2,2)*s,p[1]+rnd(.5,3)*s,p[2]+rnd(-2,2)*s],{life:rnd(2.5,5.5),r:rnd(2.5,4.5)*s,gr:rnd(.5,1.3)*s,heat:rnd(.3,.42),a:.5,vx:rnd(-1,1),vy:rnd(.8,2.6),vz:rnd(-1,1)});
+  for(let i=0;i<(big?12:4);i++)fx(4,p,{life:rnd(.4,1.1),r:.35,heat:1,a:1,vx:rnd(-14,14),vy:rnd(4,20),vz:rnd(-14,14)});
+  fx(5,[p[0],Math.max(p[1],.15),p[2]],{life:big?16:5,r:2.6*s,heat:.95,a:.9})}
+function fxTick(dt){for(let i=FX.length-1;i>=0;i--){const f=FX[i];f.t+=dt;if(f.t>f.life){FX.splice(i,1);continue}f.x+=f.vx*dt;f.y+=f.vy*dt;f.z+=f.vz*dt;f.r+=f.gr*dt;if(f.k===4)f.vy-=22*dt;if(f.k===2){f.vx*=1-dt*.5;f.vz*=1-dt*.5;f.gr*=1-dt*.25}}}
+
+/* ---------- 武装 ---------- */
+const WP=[{n:'HEAT',jp:'対榴'},{n:'12.7',jp:'重機'},{n:'7.62',jp:'連装'}];
+function muzzle(w){const e=eyePos(),d=aimDir(G.az,G.el),r=[Math.cos(G.az),0,-Math.sin(G.az)];
+  return w===0?[e[0]+d[0]*6.5-r[0]*.9,e[1]-.55+d[1]*6.5,e[2]+d[2]*6.5-r[2]*.9]:w===1?[e[0]+d[0]*1.6-r[0]*.9,e[1]+.6,e[2]+d[2]*1.6-r[2]*.9]:[e[0]+d[0]*2.4-r[0]*.9,e[1]-.55,e[2]+d[2]*2.4-r[2]*.9]}
+function fireMain(){if(G.load>0||G.he<=0||S.end)return;G.he--;G.load=LT;ST.he++;const e=eyePos(),d=aimDir(G.az,G.el),hit=cast(e,d),m=muzzle(0),dist=Math.hypot(hit.p[0]-m[0],hit.p[1]-m[1],hit.p[2]-m[2]);
+  SHELL.push({x:m[0],y:m[1],z:m[2],p:hit.p,kind:hit.kind,obj:hit.obj,t:0,T:dist/1140});
+  // 砲口の炎と、押し出された熱い空気。しばらく、画面の左下が白く飛ぶ
+  fx(0,[m[0]+d[0]*2,m[1],m[2]+d[2]*2],{life:.16,r:5,heat:1,a:1});for(let i=0;i<5;i++)fx(2,[m[0]+d[0]*(2+i*1.6),m[1]+rnd(-.3,.5),m[2]+d[2]*(2+i*1.6)],{life:rnd(.7,1.6),r:rnd(1.2,2),gr:rnd(2,4),heat:rnd(.55,.8),a:.8,vx:d[0]*rnd(4,12)+rnd(-1,1),vy:rnd(.2,1.4),vz:d[2]*rnd(4,12)+rnd(-1,1)});
+  for(let i=0;i<4;i++)fx(2,[e[0]+rnd(-4,4),.4,e[2]+rnd(1,7)],{life:rnd(1.5,3),r:rnd(1.5,3),gr:2,heat:.33,a:.5,vy:rnd(.5,1.5)});                      // 足もとの土ぼこり
+  // 反動：車体が後ろへ下がり、鼻が浮く。頭は、取り残されて前へ（モニターが近づく）。照準も、一瞬はねる
+  T.v-=1.1;T.pitchV+=.55;HEAD.vz+=3.4;HEAD.vy-=1.2;HEAD.rlV+=rnd(-.5,.5);G.kick=1;S.white=Math.max(S.white,.55);S.sh=1;A.gun();A.loader()}
+function fireMG(w){const e=eyePos(),sg=w===1?.0009:.0014,d=aimDir(G.az+rnd(-1,1)*sg+rnd(-1,1)*sg,G.el+rnd(-1,1)*sg+rnd(-1,1)*sg),hit=cast(e,d),m=muzzle(w),dist=Math.hypot(hit.p[0]-m[0],hit.p[1]-m[1],hit.p[2]-m[2]),v=w===1?890:850,tt=dist/v;
+  if(w===1){G.m127--;G.m127T--;ST.m127++}else{G.m762--;ST.m762++}
+  fx(3,m,{life:Math.min(tt,.6),tx:hit.p[0],ty:hit.p[1],tz:hit.p[2],r:w===1?.22:.13,heat:1,a:1});fx(0,m,{life:.05,r:w===1?.3:.18,heat:1,a:.9});
+  at(tt,()=>{if(hit.kind==='en'&&!hit.obj.gone)hurt(hit.obj,w===1?1:.45,hit.p);fx(4,hit.p,{life:.25,r:w===1?.5:.3,heat:1,a:1,vy:2});if(hit.kind!=='en'&&w===1&&Math.random()<.3)fx(2,hit.p,{life:1.2,r:.6,gr:1,heat:.3,a:.5,vy:1})});
+  HEAD.vz+=w===1?.28:.09;HEAD.vx+=rnd(-1,1)*(w===1?.22:.07);HEAD.vy+=rnd(-1,1)*(w===1?.2:.06);HEAD.rlV+=rnd(-1,1)*(w===1?.3:.08);A.mg(w)}
+function hurt(e,dmg,p){if(e.dead)return;e.hp-=dmg;e.stag=Math.min(1,e.stag+dmg*.22);e.hitT=S.t;if(e.hp<=0)kill(e,0)}
+function kill(e,byHe){if(e.dead)return;e.dead=1;e.dt=0;ST.kill++;if(e.big)ST.killL++;if(e.grab){e.grab=0}
+  if(S.t-(S.said.killT||-9)>7&&Math.random()<.6){S.said.killT=S.t;ln(anyOf(['hit1','hit2','hit3']),byHe?.9:.4)}}
+function shellTick(dt){for(let i=SHELL.length-1;i>=0;i--){const s=SHELL[i];s.t+=dt;if(s.t<s.T)continue;SHELL.splice(i,1);const p=s.p;explode(p,1);A.boom(Math.hypot(p[0]-TX,p[2]-T.z),1);
+    let n=0;for(const e of EN){if(e.dead||e.gone)continue;const d=Math.hypot(e.x-p[0],e.z-p[2]);if(d<(e.big?4.2:6)){kill(e,1);n++}else if(d<11)hurt(e,e.big?6:5,p)}
+    if(n)ST.heHit++;else{ST.miss++;if(s.kind==='gi')once('gi3',.6);else if(S.t-(S.said.missT||-9)>14&&EN.some(e=>!e.dead)){S.said.missT=S.t;ln('miss',.8)}}}}
+/* 120mm の装填（自動装填、4.6秒）。撃ったあとの段取り：
+   0.30 閉鎖機が開き、焼け残った底板が受けに落ちる → 0.55〜1.25 砲が装填角度へ上がって、かみ合う（動くあいだは無音）→ 0.72〜1.1 弾倉がひとつ送る → 1.9 隔壁の扉が開く
+   → 2.05〜2.95 ラマーが弾を押しこむ（座る）→ 3.0〜3.31 ラマーが戻り、扉が閉じる → 3.50 閉鎖機が上がり（ガシャ）、3.64 掛かって止まる（コン）→ 3.65〜4.35 砲が照準線へ戻る → 4.58 装填よし。
+   音は A.loader（LD2）。ここの時刻は、音の当たりの時刻に合わせてある。
+   砲が照準線を離れているあいだ、砲と同じ揺りかごについている 7.62mm は撃てない。 */
+const LT=4.6,LDE=[[.30,'open'],[1.25,'index'],[1.9,'door'],[2.95,'seat'],[3.31,'door2'],[3.50,'close'],[3.64,'lockd'],[4.35,'laid'],[4.58,'ready']];
+function ldEvent(n){const k=RM?.4:1;
+  if(n==='open'){HEAD.vy+=.7*k;HEAD.vx-=.4*k;S.sh=Math.max(S.sh,.35)}else if(n==='index'){HEAD.vy-=.6*k;HEAD.rlV+=.5*k;S.sh=Math.max(S.sh,.25)}
+  else if(n==='seat'){HEAD.vz+=.7*k;HEAD.vx-=.8*k;T.pitchV-=.03;S.sh=Math.max(S.sh,.4)}else if(n==='close'){HEAD.vy-=1.3*k;HEAD.vx-=.9*k;HEAD.rlV-=1.1*k;S.sh=Math.max(S.sh,.7)}
+  else if(n==='lockd'){HEAD.vy+=.55*k;HEAD.vz-=.3*k;S.sh=Math.max(S.sh,.35)}
+  else if(n==='laid'){HEAD.vy+=.5*k;S.sh=Math.max(S.sh,.2)}}
+function loadTick(dt){if(G.load<=0){G.rec=G.gunOff=G.ram=G.open=0;G.lamp=G.he>0?16:0;return}
+  const u0=LT-G.load;G.load=Math.max(0,G.load-dt);const u=LT-G.load;for(const [t,n] of LDE)if(u0<t&&u>=t)ldEvent(n);
+  G.rec=u<.07?u/.07:Math.exp(-(u-.07)*5.5);G.gunOff=sstep(.55,1.25,u)*(1-sstep(3.65,4.35,u));G.ram=sstep(2.05,2.95,u)*(1-sstep(3.0,3.34,u));G.open=sstep(.3,.42,u)*(1-sstep(3.5,3.63,u));
+  G.lamp=(u>=.3&&u<3.64?1:0)+(u>=1.25&&u<3.65?2:0)+((u>=.72&&u<1.1&&fr(u/.13)<.5)||(u>=1.9&&u<3.31)?4:0)+(u>=3.64?8:0)}
+function gunTick(dt){
+  loadTick(dt);G.kick=Math.max(0,G.kick-dt*2.2);G.fov=mix(G.fov,(G.zoom?2.7:7.6)*D2R,ease(dt,9));
+  if(G.belt>0){G.belt-=dt;if(G.belt<=0&&G.m127T>0)G.m127=Math.min(100,G.m127T)}
+  // 車長の指示：目標へ、砲塔を大まかに回してくれる（そのあいだ、砲手の操作はきかない）
+  let rx=IN.ax+IN.kx,ry=IN.ay+IN.ky,over=0;
+  if(G.des){const e=G.des.e;if(e.dead||e.gone||S.t>G.des.end)G.des=null;else{const b=wrapPi(Math.atan2(e.x-TX,e.z-T.z)-G.az),el=Math.atan2(e.hb-2.25,Math.hypot(e.x-TX,e.z-T.z))-G.el;
+      if(Math.abs(b)<.012&&Math.abs(el)<.012)G.des=null;else if(S.t<G.des.t0+G.des.hold){over=1;rx=clamp(b*4,-1,1)*(Math.abs(b)>.25?1:.45);ry=clamp(el*5,-1,1)*.4}}}
+  if(G.auto&&!over){autoGun(dt);rx=G.rx;ry=G.ry}
+  const k=G.zoom?.36:1,ma=.5*k,me=.22*k;                                                         // 旋回は毎秒30°まで。寄っているときは、こまかく
+  {const a0=G.azV,e0=G.elV;G.azV+=(rx*ma-G.azV)*ease(dt,over?3:7);G.elV+=(ry*me-G.elV)*ease(dt,7);HEAD.vx-=(G.azV-a0)*1.7;HEAD.rlV-=(G.azV-a0)*1.2;HEAD.vy-=(G.elV-e0)*1.5}
+  G.az=clamp(G.az+G.azV*dt,-1.9,1.9);G.el=clamp(G.el+G.elV*dt,-.122,.175);
+  // 測距：0.3秒ごとに、照準の先までの距離を出す
+  if(S.t>G.rngT){G.rngT=S.t+.3;const h=cast(eyePos(),aimDir(G.az,G.el));G.rng=h.t>2900?0:h.t;G.onE=h.kind==='en'&&!h.obj.dead?h.obj:null}
+  // 撃つ
+  const want=(IN.fire||G.autoFire)&&!S.end&&S.ph>-33&&!over;
+  if(want){if(G.wpn===0){if(G.load<=0&&G.he>0&&!G.held){fireMain();G.held=1}}
+    else if(S.t>G.rpmT){if(G.wpn===1){if(G.m127>0&&G.belt<=0){G.rpmT=S.t+.115;fireMG(1);if(G.m127<=0&&G.m127T>0){G.belt=5;A.belt()}}}else if(G.m762>0&&G.gunOff<.05){G.rpmT=S.t+.09;fireMG(2)}}}
+  else G.held=0;
+  if(G.he<=0&&G.load<=0)once('emp',.5);
+}
+// 砲手が触らないとき：車長が代わりにねらって撃つ（少し遅く、少し雑）
+function autoGun(dt){let best=null,bd=1e9;for(const e of EN){if(e.dead||e.gone)continue;const d=Math.hypot(e.x-TX,e.z-T.z);if(d<9)continue;const b=Math.abs(wrapPi(Math.atan2(e.x-TX,e.z-T.z)));if(b>1.8)continue;const sc=d+(e===G.autoT?-40:0);if(sc<bd){bd=sc;best=e}}
+  G.autoT=best;G.autoFire=0;if(!best){G.rx=clamp(-G.az*1.2,-1,1)*.5;G.ry=clamp((.012-G.el)*3,-1,1)*.4;return}
+  const d=Math.hypot(best.x-TX,best.z-T.z),b=wrapPi(Math.atan2(best.x+best.vx*.5-TX,best.z+best.vz*.5-T.z)-G.az),el=Math.atan2(best.hb-2.25,d)-G.el;
+  G.rx=clamp(b*5,-1,1);G.ry=clamp(el*6,-1,1);if(d>330)G.zoom=1;else if(d<250)G.zoom=0;
+  const useHe=G.he>0&&G.load<.7&&(best.big||d>280||EN.filter(e=>!e.dead&&Math.hypot(e.x-best.x,e.z-best.z)<7).length>1)&&d>38;
+  G.wpn=useHe?0:G.m127>0&&G.belt<=0&&(d>80||best.hp>4||G.gunOff>.05)?1:2;
+  const err=Math.hypot(b*d,el*d);G.aimE+=dt;if(err<(G.wpn===0?1.6:1.4)&&G.aimE>.45)G.autoFire=1;if(err>4)G.aimE=0}
+
+/* ---------- 這ってくるもの ----------
+   胴は熱い玉。6本の長い脚で、ひざを高く上げて這う。小さいほうでも、ひざの高さは3m をこえる。大通りの奥や、交差点の横から出てきて、こちらへ寄ってくる。
+   取りつかれると、砲は真下を向けないので、撃てない。2号車がいるうちは、2号車が払ってくれる。いなくなったら、下がって振り落とすしかない。 */
+function spawn(x,z,big,via){const s=big?2:rnd(1.05,1.35);const e={x,z,vx:0,vz:0,s,big:!!big,hp:big?26:10,hb:1.25*s,ph:rnd(0,1),th:PI,dead:0,dt:0,gone:0,stag:0,hitT:-9,via:via||null,sp:rnd(5,7.5)*(big?.75:1),lane:rnd(-11,11),grab:0,strT:0,gT:0,heat:1,wob:rnd(0,6),sd:Math.random()};EN.push(e);return e}
+function wave(n,big,src,des){const out=[];for(let i=0;i<n+big;i++){const B=i>=n;let e;
+    if(src==='ave')e=spawn(rnd(-11,11),T.z+rnd(330,440),B);
+    else if(src==='foot'){const f=GI.f[GI.evF||0];e=spawn(f.x+rnd(-16,16),f.z-rnd(14,30),B)}
+    else{const sg=src==='left'?-1:1,zc=CROSS.find(z=>z>T.z+115)||T.z+200;e=spawn(sg*(44+rnd(0,26)),zc+rnd(-3.5,3.5),B,[sg*rnd(2,10),zc+rnd(-2,2)])}
+    out.push(e)}
+  if(des)at(des.d||1.4,()=>{const e=out.find(q=>!q.dead);if(e){G.des={e,t0:S.t,hold:2.6,end:S.t+9}}});return out}
+function tankHit(){if(S.end)return;S.sh=1;T.hp--;ST.hull++;T.hitT=S.t;HEAD.vx+=rnd(-1,1)*5;HEAD.vy+=rnd(-1,1)*4;HEAD.rlV+=rnd(-1,1)*3;S.stat=Math.max(S.stat,.7);S.red=1;A.clang();once('hull1',.3,'panic');if(T.hp<=0&&!S.end)lost()}
+function enTick(dt){for(let i=EN.length-1;i>=0;i--){const e=EN[i];
+    if(e.dead){e.dt+=dt;e.heat=Math.max(.2,1-e.dt/38);e.hb+=(.45*e.s-e.hb)*ease(dt,3);if(e.dt>34)EN.splice(i,1);continue}
+    e.stag=Math.max(0,e.stag-dt*.8);const dT=Math.hypot(e.x-TX,e.z-T.z);
+    if(e.grab){e.x=TX+e.gx;e.z=T.z+e.gz;e.gT+=dt;e.ph+=dt*.6;if(S.t>e.strT){e.strT=S.t+2.6;tankHit()}
+      if(!F2.dead&&e.gT>3.2){once('hull2',0);if(e.gT>5.4){fx(4,[e.x,2,e.z],{life:.3,r:.6,heat:1,a:1});kill(e,0);ST.kill--}}                 // 2号車が払う
+      else if(Math.abs(T.v)>3.2&&e.gT>2.2){if(T.v>0){kill(e,0);HEAD.vy+=3.2;HEAD.rlV+=rnd(-2,2);T.pitchV+=.16;S.sh=Math.max(S.sh,.5);A.clunk(1.8);A.crush()}else{e.grab=0;e.stun=3.2;e.x=TX+rnd(-3,3);e.z=T.z+11}}continue}                                        // 下がって、振り落とす
+    if(e.stun>0){e.stun-=dt;continue}
+    let tx,tz;if(e.via){tx=e.via[0];tz=e.via[1];if(Math.hypot(tx-e.x,tz-e.z)<4)e.via=null}else if(dT>26){tx=e.lane+2.5*Math.sin(S.t*.5+e.wob);tz=T.z+3}else{tx=TX;tz=T.z+2}
+    const dx=tx-e.x,dz=tz-e.z,dd=Math.hypot(dx,dz)||1,sp=e.sp*(1-.75*e.stag)*(.6+.6*Math.max(0,Math.sin(S.t*1.3+e.wob)));
+    e.vx+=(dx/dd*sp-e.vx)*ease(dt,2.5);e.vz+=(dz/dd*sp-e.vz)*ease(dt,2.5);e.x+=e.vx*dt;e.z+=e.vz*dt;e.th=Math.atan2(e.vx,e.vz);e.ph=fr(e.ph+Math.hypot(e.vx,e.vz)*dt/(2.4*e.s));e.hb=1.25*e.s+.12*e.s*Math.sin(e.ph*12.56);
+    if(dT<6.2){e.grab=1;e.gT=0;e.gx=e.x-TX;e.gz=Math.max(3.4,e.z-T.z);e.strT=S.t+1.4}
+    if(e.z<T.z-40)e.gone=1}}
+
+/* ---------- 巨大なもの ----------
+   二本の脚で、とてもゆっくり歩く。腰の高さが235m。街の向こうを横切り、やがて大通りの上をこちらへ来る。
+   片足が、目の前の大通りに降りる。下がるうちに、もう片足が頭の上をこえて、うしろに降りる（2号車は、そこにいた）。しばらく、二本の脚のあいだに閉じこめられる。最後は、空からの攻撃で倒れる。
+   足は、ゆっくり持ち上がり、ゆっくり降りる（8〜10秒）。降りると、地面が揺れ、遅れて音が届く。 */
+const GK=[[-30,-640,800],[70,-60,760],[105,120,700],[150,-60,520],[205,0,180],[228,0,15],[248,0,15],[318,-52,420],[900,-52,420]];
+function footLanded(f,ev){
+  if(ev===1){ln('ft1b',.3,'panic');T.force=-7;GI.evt=3;GI.next=S.t+.3}
+  else{F2.dead=1;T.force=0;T.block=1;at(1.2,()=>{T.force=null});S.quake=1.7;S.sh=1;S.stat=Math.max(S.stat,.45);S.red=.7;HEAD.vy+=7;HEAD.vx+=rnd(-1,1)*4;HEAD.rlV+=rnd(-1,1)*3;T.pitchV-=.3;A.clang();
+    GI.evt=5;ln('ft2',2.6);ln('ft3',8.2);ln('ft4',12.6);at(9.5,()=>wave(5,0,'foot',{d:3}))}}
+function giTick(dt){const p=S.ph;let k=0;while(k<GK.length-2&&p>GK[k+1][0])k++;const a=GK[k],b=GK[k+1],u=clamp((p-a[0])/(b[0]-a[0]),0,1);
+  // 道筋の基準（前線）：自車が前へ出ているあいだ、毎秒5m で前へ進む。下がっても、追ってはこない。こちらへ来るあいだ（150〜205）だけは、自車に合わせる。足の出来事のあいだは、動かさない
+  if(GI.zr==null)GI.zr=T.z;else if(p>150&&p<205)GI.zr+=clamp(T.z-GI.zr,-6*dt,6*dt);else if((p<150||p>248)&&p>0&&(T.mode==='adv'||T.mode==='creep')&&T.force==null&&!T.noAdv&&!S.end&&T.z>GI.zr-70)GI.zr+=5*dt;
+  if(GI.fall>0){GI.fall=Math.min(1,GI.fall+dt/15);for(const f of GI.f){f.sw=0;f.y=Math.max(0,f.y-dt*16)}const q=GI.fall*GI.fall*(3-2*GI.fall);GI.hy=235*(1-.8*q*q);GI.ox=106*q;GI.oz=-28*q;
+    if(GI.fall>=1&&!GI.down){GI.down=1;const d=Math.hypot(GI.x-TX,GI.z-T.z);S.quake=1.4;S.sh=1;A.step(d,2.2);A.boom(d,3);S.wallT=S.t+d/70;HEAD.vy+=6;HEAD.vx+=3;
+      for(let j=0;j<34;j++)fx(2,[GI.x+rnd(-80,80),rnd(4,46),GI.z-rnd(40,110)],{life:d/70+rnd(2.5,5),r:rnd(20,34),gr:rnd(3,7),heat:rnd(.28,.35),a:.92,vx:rnd(-3,3),vy:rnd(0,1.2),vz:-rnd(62,78)})}return}
+  const nx=mix(a[1],b[1],u),nz=GI.zr+mix(a[2],b[2],u);
+  if(dt>0){const vx=(nx-GI.x)/dt,vz=(nz-GI.z)/dt,sp=Math.hypot(vx,vz);GI.sp+=(Math.min(sp,12)-GI.sp)*ease(dt,.5);if(sp>.3&&sp<40){GI.fx+=(vx/sp-GI.fx)*ease(dt,.3);GI.fz+=(vz/sp-GI.fz)*ease(dt,.3)}}
+  GI.x=nx;GI.z=nz;const fl=Math.hypot(GI.fx,GI.fz)||1,fwx=GI.fx/fl,fwz=GI.fz/fl;
+  for(let i=0;i<2;i++){const f=GI.f[i];if(!f.sw)continue;
+    f.t+=dt;const q=Math.min(1,f.t/f.dur),e=q*q*(3-2*q);f.x=mix(f.x0,f.x1,e);f.z=mix(f.z0,f.z1,e);f.y=(f.lift||42)*Math.pow(Math.sin(PI*q),1.3);
+    if(q>=1){f.sw=0;f.y=0;const d=Math.hypot(f.x-TX,f.z-T.z),k2=clamp(260/d,.12,1.6);S.quake=Math.max(S.quake,k2);S.sh=Math.max(S.sh,Math.min(1,k2));HEAD.vy+=4*k2;HEAD.vx+=rnd(-1,1)*2*k2;T.pitchV+=.2*k2;A.step(d,1);
+      for(let j=0;j<14;j++){const an=rnd(0,6.28);fx(2,[f.x+Math.cos(an)*rnd(16,26),rnd(1,6),f.z+Math.sin(an)*rnd(16,26)],{life:rnd(7,13),r:rnd(6,11),gr:rnd(2,5),heat:rnd(.27,.36),a:.8,vx:Math.cos(an)*rnd(3,9),vy:rnd(.5,2.5),vz:Math.sin(an)*rnd(3,9)})}
+      if(f.ev){const ev=f.ev;f.ev=0;footLanded(f,ev)}}}
+  if(!(GI.f[0].sw||GI.f[1].sw)&&S.t>GI.next){const i=1-GI.last,f=GI.f[i],sg=i?55:-55;
+    if(GI.evt===1){GI.evt=2;GI.evF=i;GI.last=i;Object.assign(f,{sw:1,t:0,dur:9.5,lift:46,x0:f.x,z0:f.z,x1:TX+3.5,z1:T.z+150,ev:1});GI.next=S.t+9.5}                 // 一歩め：目の前の大通りへ
+    else if(GI.evt===3){GI.evt=4;GI.evB=i;GI.last=i;Object.assign(f,{sw:1,t:0,dur:10,lift:76,x0:f.x,z0:f.z,x1:F2.x,z1:T.z-128,ev:2});GI.next=S.t+10}            // 二歩め：頭の上をこえて、うしろへ
+    else if(GI.evt===0&&!GI.hold){const dur=8.4,lead=GI.sp*(dur+8.6),tx=GI.x-fwz*sg+fwx*lead,tz=GI.z+fwx*sg+fwz*lead;GI.last=i;
+      if(Math.hypot(tx-f.x,tz-f.z)>30){Object.assign(f,{sw:1,t:0,dur,lift:42,x0:f.x,z0:f.z,x1:tx,z1:tz});GI.next=S.t+9.6;if(T.block&&i===GI.evB)T.block=0}else GI.next=S.t+.6}}
+}
+// 脚の骨：腰・ひざ・足首（ひざは、進む向きへ曲がる）
+function giLeg(i){const f=GI.f[i],fl=Math.hypot(GI.fx,GI.fz)||1,fwx=GI.fx/fl,fwz=GI.fz/fl,sg=i?55:-55,hip=[GI.x+GI.ox-fwz*sg,GI.hy,GI.z+GI.oz+fwx*sg],ft=[f.x,f.y+16,f.z],L=150;
+  const dx=ft[0]-hip[0],dy=ft[1]-hip[1],dz=ft[2]-hip[2],d=Math.min(Math.hypot(dx,dy,dz),2*L-2),h=Math.sqrt(Math.max(0,L*L-d*d/4)),mx=(hip[0]+ft[0])/2,my=(hip[1]+ft[1])/2,mz=(hip[2]+ft[2])/2;
+  // ひざの出る向き：脚の線に直角で、進む向きに近いほう
+  const ax=nrm3([dx,dy,dz]),fw=[fwx,.25,fwz],pr=dot3(fw,ax),kd=nrm3([fw[0]-ax[0]*pr,fw[1]-ax[1]*pr,fw[2]-ax[2]*pr]);
+  return{hip,knee:[mx+kd[0]*h,my+kd[1]*h,mz+kd[2]*h],ft,foot:[f.x,f.y,f.z]}}
+
+/* ---------- 自車と、2号車 ----------
+   操縦手まかせ。ふだんは前線に合わせて前へ進み、遅れたら速く走って追いつく（時速36kmまで）。敵が見えたら、撃ちながらゆっくり詰める（行進間射撃）。120m で止まり、60m まで寄られたら、下がりながら撃つ。
+   取りつかれたら、急に下がって振り落とす。うしろをふさがれているときは、前へ出て轢く。走っているあいだ、ときどき分離帯をまたいで隣の車線へ移る。
+   2号車は、うしろについている（砲手のモニターには映らない）。ときどき、肩ごしに曳光が飛んでいく。 */
+const TAG={a:0,v:0},RKG=1.4;                                                                  // 壁から下がっている札（振り子）
+function tankTick(dt){
+  let near=1e9,cnt=0,grab=0;for(const e of EN){if(e.dead||e.gone)continue;const dd=Math.hypot(e.x-TX,e.z-T.z);if(dd<near)near=dd;cnt++;if(e.grab&&e.gT>1.2)grab=1}
+  const giNear=!GI.down&&GI.z-T.z<230&&Math.abs(GI.x)<230,lag=GI.zr==null?0:GI.zr-T.z;let vt,m=T.mode;
+  if(T.force!=null)vt=T.force;else if(S.end)vt=0;
+  else{if(grab)m='shake';else if(near<(m==='rev'?88:60))m='rev';else if(near<(m==='halt'||m==='rev'?150:122))m='halt';else if(cnt&&near<290)m='creep';else m=S.t-T.clearT>2.2?'adv':m==='adv'?'adv':'creep';
+    if(cnt&&near<290)T.clearT=S.t;
+    vt=m==='shake'?(T.block?7:-7):m==='rev'?(T.block?0:-5.5):m==='halt'?0:m==='creep'?(lag<-12?0:4.2):clamp(5+lag*.4,0,S.ph>205?4.5:10);      // 前線より遅れていれば、速く走って追いつく
+    if(vt>0&&m!=='shake'&&(T.noAdv||giNear||T.z>2000))vt=0;
+    if(m!==T.mode){const pm=T.mode;T.mode=m;
+      if(m==='shake'&&T.block){if(S.t-(S.said.shT||-99)>9){S.said.shT=S.t;ln('crush',0,'panic')}}
+      else if(m==='rev'||m==='shake'){if(S.t-(S.said.revT||-99)>14){S.said.revT=S.t;ln('rev',0,'panic')}}
+      else if(m==='halt'&&T.v>2.5){if(S.t-(S.said.haltT||-99)>18){S.said.haltT=S.t;ln('halt',0)}}
+      else if(m==='adv'&&vt>0&&pm!=='creep'){if(S.t-(S.said.advT||-99)>24){S.said.advT=S.t;ln('adv',0)}}
+      if((m==='rev'||m==='adv')&&Math.random()<.55)T.laneT=0}}
+  const brk=Math.abs(vt)<Math.abs(T.v)-.01||vt*T.v<0,rate=brk?4.2:vt<0?2.6:1.9,a=clamp(vt-T.v,-rate*dt,rate*dt);T.v+=a;const acc=a/Math.max(dt,1e-4);T.z+=T.v*dt;
+  T.pitchV+=(-22*T.pitch-4.2*T.pitchV-acc*.035)*dt;T.pitch+=T.pitchV*dt;
+  const sp=Math.abs(T.v);
+  // 車線を移る：分離帯（高さ24cm）を、履帯が片方ずつ乗りこえる
+  if(sp>2.5&&S.t>T.laneT&&T.force==null&&!S.end&&S.ph>-29){T.laneT=S.t+rnd(8,17);T.xT=-T.xT}
+  {const yT=clamp((T.xT-TX)*.11,-.28,.28)*(T.v<0?-1:1),y0=T.yaw,x0=TX;T.yaw+=(yT-T.yaw)*ease(dt,1.6);TX+=T.v*Math.sin(T.yaw)*dt;
+    const dy=(T.yaw-y0)*T.v;HEAD.vx-=dy*.9;HEAD.rlV-=dy*.5;
+    for(const ed of[-2.45,-.45,.45,2.45])if((x0-ed)*(TX-ed)<0){const k=(.45+Math.min(1,sp/5))*(RM?.4:1),sd=ed===.45||ed===2.45?1:-1;HEAD.vy-=3*k;HEAD.rlV+=sd*3.4*k;HEAD.vx+=sd*1.2*k;T.pitchV+=.1*k;S.sh=Math.max(S.sh,.3);A.clunk(1.5)}}
+  // 路面の凹凸：走っているあいだ、でたらめな間で、突き上げがくる
+  if(sp>.5&&S.t>T.bumpT){T.bumpT=S.t+rnd(.25,1.6)/Math.max(.4,sp/4.6);const k=rnd(.2,1)*Math.min(1.3,sp/4);HEAD.vy+=rnd(-1,1)*3*k;HEAD.vx+=rnd(-1,1)*1.5*k;HEAD.rlV+=rnd(-1,1)*1.8*k;T.pitchV+=rnd(-1,1)*.2*k;if(k>.72)A.clunk(k)}
+  // 交差点のふち（横の通りとの継ぎ目）を、履帯が踏む。景色の中で交差点を通るとき、ごとん、と来る
+  {const z0=T.z-T.v*dt,e1=Math.floor((z0-144)/96)!==Math.floor((T.z-144)/96),e2=Math.floor((z0-156)/96)!==Math.floor((T.z-156)/96);
+    if((e1||e2)&&sp>.8){const k=(.5+.7*Math.min(1,sp/5))*(RM?.4:1);HEAD.vy-=2.4*k;HEAD.rlV+=rnd(-1,1)*1.2*k;T.pitchV+=(T.v>0?1:-1)*(e1?.13:-.1)*k;S.sh=Math.max(S.sh,.22);A.clunk(1.1*k)}}
+  const imx=HEAD.vx-(HEAD.pvx||0),imy=HEAD.vy-(HEAD.pvy||0);                             // このこまで、外から頭に加わった衝撃
+  // 頭：座席に、ばねでつながっている。車体が動くと、取り残される
+  const vib=(Math.min(sp,7)*.02+.012)*(RM?.3:1);
+  // 路面のうねり：走っているあいだ、ゆっくりした力が、上下・左右・傾きに、たえずかかる（速いほど大きい）
+  {const rk=Math.min(sp,8)*(RM?.3:1)*RKG;T.rx=(T.rx||0)+(rnd(-1,1)-(T.rx||0))*ease(dt,9);T.ry=(T.ry||0)+(rnd(-1,1)-(T.ry||0))*ease(dt,11);T.rr=(T.rr||0)+(rnd(-1,1)-(T.rr||0))*ease(dt,7);HEAD.vx+=T.rx*rk*3.2*dt;HEAD.vy+=T.ry*rk*6*dt;HEAD.rlV+=T.rr*rk*5*dt}
+  HEAD.vx+=(-90*HEAD.x-9*HEAD.vx)*dt+rnd(-1,1)*vib*dt*40;HEAD.vy+=(-110*HEAD.y-10*HEAD.vy)*dt+rnd(-1,1)*vib*dt*55;HEAD.vz+=(-55*HEAD.z-7.5*HEAD.vz-acc*2.2)*dt;
+  HEAD.x+=HEAD.vx*dt;HEAD.y+=HEAD.vy*dt;HEAD.z=clamp(HEAD.z+HEAD.vz*dt,-.8,.8);HEAD.rlV+=(-80*HEAD.rl-8*HEAD.rlV)*dt;HEAD.rl+=HEAD.rlV*dt;HEAD.pvx=HEAD.vx;HEAD.pvy=HEAD.vy;
+  TAG.v+=(-30*TAG.a-.5*TAG.v)*dt-(imx*.42+imy*.12)+rnd(-1,1)*sp*.02*dt;TAG.a=clamp(TAG.a+TAG.v*dt,-1.2,1.2);            // 札は、衝撃で振れて、しばらく揺れつづける
+  S.quake=Math.max(0,S.quake-dt*.5);S.white=Math.max(0,S.white-dt*1.6);S.stat=Math.max(S.end===2?1:0,S.stat-dt*1.5);S.red=Math.max(0,S.red-dt*.7);if(S.sh>S.shP+.25){if(S.sh>.62){S.tear=Math.max(S.tear,S.sh*.9);S.dustT=S.t;S.dustK=S.sh}else if(S.sh>.3)S.tear=Math.max(S.tear,S.sh*.4)}                 // 大きな衝撃：映像が乱れ、ほこりが落ちる
+  S.sh=Math.max(0,S.sh-dt*2.2);S.shP=S.sh;S.tear=Math.max(0,S.tear-dt*4.5);
+  // 2号車：55m うしろ、分離帯をはさんだ隣の車線
+  if(!F2.dead){F2.v+=(clamp((T.z-55-F2.z)*.8,-8,11)-F2.v)*ease(dt,1.5);F2.z+=F2.v*dt;
+    if(S.t>F2.fireT&&S.ph>14){F2.fireT=S.t+rnd(.8,6);const c=EN.filter(e=>!e.dead&&!e.grab&&e.z>T.z+45&&e!==G.onE);if(c.length){const e=anyOf(c);for(let j=0;j<5;j++)at(j*.1,()=>{if(F2.dead)return;fx(3,[F2.x+.6,2.3,F2.z+3],{life:.3,tx:e.x+rnd(-1.5,1.5),ty:e.hb+rnd(-1,1),tz:e.z,r:.2,heat:1,a:1});A.mgFar()});hurt(e,1.5,null)}}}
+}
+
+/* ---------- 進行 ---------- */
+const EV=[
+ [-30,farBurst],[-27,farBurst],[-24.5,farBurst],[-22,farBurst],[-20.3,farBurst],
+ [12,()=>{wave(2,0,'ave',{d:1.6});ln('tg1',.2)}],
+ [38,()=>{wave(3,0,'ave');wave(1,0,'right',{d:1.5});ln('tgR',.2)}],
+ [67,()=>{ln('gi1',0);ln('gi2',3.6)}],
+ [88,()=>{wave(3,0,'left',{d:1.5});ln('tgL',.2);at(8,()=>{wave(1,1,'ave',{d:1.6});ln('tgB',.4)})}],
+ [124,()=>{wave(3,1,'ave',{d:1.5});wave(2,0,'right')}],
+ [150,()=>{A.voice(1);S.quake=Math.max(S.quake,.4);ln('gi4',7)}],
+ [170,()=>{wave(2,0,'ave',{d:1.5});wave(2,0,'left')}],
+ [196,()=>{GI.hold=1}],
+ [205,()=>{GI.evt=1;T.force=0;ln('ft1',1.2,'panic')}],
+ [248,()=>{GI.evt=0;GI.hold=0}],
+ [256,()=>{ln('us1',0);ln('us2',.3);wave(2,1,'left',{d:1.5});wave(3,0,'right')}],
+ [284,()=>{ln('co2',0);at(6,()=>{T.force=-3.2});at(19,()=>{T.force=null;T.noAdv=1})}],
+ [297,()=>{ln('us3',0);wave(5,1,'ave',{d:1.5})}],
+ [324,()=>{A.strike();for(let i=0;i<6;i++)at(2.6+i*.45,()=>{const p=[GI.x+rnd(-60,60),GI.hy+rnd(-60,90),GI.z+rnd(-60,60)];explode(p,1);fx(1,p,{life:1.6,r:40,gr:30,heat:1,a:.95});S.white=.5;A.boom(Math.hypot(p[0]-TX,p[2]-T.z),2)})}],
+ [328,()=>{GI.fall=.001;A.voice(0);ln('us4',.5);ln('end1',3.4,'panic')}],
+ [357,()=>{T.force=0;S.settle=1;ln('end2',1);ln('end3',7);at(4,()=>{S.gnd=.001})}],
+ [374,()=>{blackout()}],
+];
+// 行軍のあいだの無線（ph, 台詞, 調子）。再開のときに、まとめて順番待ちに入れる（声を、鳴らす前に作っておけるように）
+const INTRO=[[-32.5,'in1'],[-24.3,'in2'],[-21.8,'in2b'],[-19,'ap1','panic'],[-14.6,'ap2'],[-8.6,'ap3'],[-3.7,'ap4'],[.7,'ap5']];
+// 遠くの爆発（先行の小隊の射撃）。大通りの先、前線より 250〜420m 向こう
+function farBurst(){const p=[rnd(-9,9),rnd(2,5),GI.zr+rnd(250,420)];fx(0,p,{life:.15,r:16,heat:1,a:1});fx(1,[p[0],p[1]+2,p[2]],{life:1.1,r:9,gr:9,heat:1,a:.95,vy:3});
+  for(let i=0;i<5;i++)fx(2,[p[0]+rnd(-3,3),p[1]+rnd(1,5),p[2]+rnd(-3,3)],{life:rnd(3,6),r:rnd(4,7),gr:rnd(.8,1.8),heat:rnd(.3,.42),a:.5,vx:rnd(-1,1),vy:rnd(.8,2.6),vz:rnd(-1,1)});A.boom(Math.hypot(p[0]-TX,p[2]-T.z),.7)}
+function blackout(){if(S.black)return;S.black=1;S.blackT=S.t+12;S.end=S.end||1;A.duck(1);subClear();RQ.q.length=0;syncKeys()}
+function lost(){S.end=2;S.lost=1;T.force=0;hmsg('',0);at(2.2,blackout)}
+function director(dt){if(S.end!==2)S.ph+=dt;if(S.gnd)S.gnd=Math.min(1,S.gnd+dt/9);while(S.evi<EV.length&&S.ph>=EV[S.evi][0]){EV[S.evi][1]();S.evi++}
+  for(let i=SCH.length-1;i>=0;i--)if(SCH[i]&&S.t>=SCH[i].t){const f=SCH[i].fn;SCH.splice(i,1);f()}
+  if(S.settle)S.dust=Math.max(.5,S.dust-dt/14);else if(S.wallT&&S.t>S.wallT)S.dust=Math.min(1,S.dust+dt/2.2);if(S.dust>.95&&!S.wallHit){S.wallHit=1;HEAD.vx+=6;HEAD.vy+=5;S.stat=.5}
+  // 触らないでいると、車長が代わりに撃つ
+  if(!G.auto&&S.t-S.manT>9){G.auto=1;if(S.ph>12&&!S.end)once('idle',0)}
+  S.fade=S.black?0:Math.min(1,S.fade+dt/2.2);S.pow=Math.min(1,S.pow+dt/1.6)}
+function restart(first){const p0=!first&&S.lost?-12:-34,ZR=355,z0=p0>-20?ZR-135:0,gu=clamp((p0+30)/100,0,1),gx=-640+580*gu,gz=ZR+800-40*gu;   // ZR＝前線。着くころに ph が 0 になる距離
+  Object.assign(S,{ph:p0,evi:Math.max(0,EV.findIndex(e=>e[0]>=p0)),fade:0,black:0,stage:0,settle:0,gnd:0,sh:0,shP:0,tear:0,dustT:-99,dustK:0,msg:'',msgEnd:0,dust:0,white:0,stat:0,quake:0,pow:0,red:0,end:0,lost:0,wallT:0,wallHit:0,said:{}});
+  TX=-2.75;Object.assign(T,{z:z0,v:10,mode:'adv',xT:-2.75,yaw:0,laneT:S.t+rnd(6,11),block:0,noAdv:0,force:null,pitch:0,pitchV:0,hp:5,clearT:-99});Object.assign(G,{az:0,el:.01,azV:0,elV:0,zoom:0,wpn:0,load:0,he:18,m127:100,m127T:500,belt:0,m762:1600,des:null,kick:0,auto:1,held:0,rec:0,gunOff:0,ram:0,open:0,lamp:16});
+  Object.assign(GI,{x:gx,z:gz,zr:ZR,hy:235,next:0,fall:0,down:0,evt:0,evDone:0,evF:0,evB:-1,hold:0,fx:1,fz:0,sp:6.8,last:0,ox:0,oz:0});Object.assign(GI.f[0],{x:gx+38,z:gz-55,y:0,sw:0,ev:0});Object.assign(GI.f[1],{x:gx-22,z:gz+55,y:0,sw:0,ev:0});
+  Object.assign(F2,{x:2.75,z:z0-55,v:10,dead:0,fireT:0});IN.dx=IN.dy=IN.fire=0;for(const k in ST)ST[k]=0;EN.length=FX.length=SHELL.length=SCH.length=RQ.q.length=0;RQ.busy=0;S.manT=-99;subClear();A.duck(0);syncKeys();
+  for(const [t,id,st] of INTRO)if(t>=p0)ln(id,t-p0,st)}
+function tick(dt){S.t+=dt;S.dtM=Math.max(dt,(S.dtM||0)*.97);if(S.black){if(S.t>S.blackT)restart(false);radioTick();subTick();return}
+  director(dt);tankTick(dt);aimTick(dt);shellTick(dt);enTick(dt);giTick(dt);fxTick(dt);radioTick();subTick();A.update(dt)}
+
+/* ---------- 音 ----------
+   砲手に聞こえるのは：車内の音（機関、履帯、砲塔の旋回、主砲、自動装填、機銃）、装甲ごしの外の音（こもる。爆発、足音、声）、無線と車内通話（日本語。ときどき英語）。 */
+let ac=null,userMuted=false;
+const A={on:false,an:null,setOn(){},sw(){},crush(){},mgFar(){},gun(){},loader(){},mg(){},belt(){},boom(){},clang(){},clunk(){},step(){},voice(){},strike(){},duck(){},update(){},radio(){return 0}};
+/* ---- 装填の音の道具（LD2）。金属の当たり＝多数の固有振動を短い接触で叩く。こすれ＝同じ面を、雑音でこする。発振器（音程を出すもの）は無い ---- */
+// ld2.js — 主砲の装填音の作り直し（候補）。うなり（モーター・歯車の音程）は使わない。
+//   金属の当たり＝たくさんの固有振動を、短い接触で叩く。すべり＝とびとびの引っかかりと、地のざらつきで、同じ固有振動をこする。
+//   物体（固有振動の組）は種で決まり、いつも同じ。叩く場所・強さ・間が毎回ちがう。
+function LD2(sr,seed){
+  let s=(seed||20261121)>>>0;
+  const R=()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296},rr=(a,b)=>a+(b-a)*R(),TAU=6.283185307179586;
+  const mk=len=>new Float32Array(Math.ceil(len*sr));
+  // 物体：[本数, 低い端Hz, 高い端Hz, 低い端の余韻秒(60dB), 高い端の余韻秒, 強さ]
+  const body=G=>{const M=[];for(const [n,f0,f1,d0,d1,amp] of G)for(let i=0;i<n;i++){const u=(i+R())/n;M.push([f0*Math.pow(f1/f0,u),d0*Math.pow(d1/d0,u)*rr(.75,1.3),amp*rr(.35,1)/Math.sqrt(n)])}return M};
+  // 励振 x を物体 M に通す。pos＝叩く場所による鳴り方のばらつき（0 で毎回同じ、1 でばらばら）
+  const ring=(out,x,M,gain,pos,fm,dm)=>{const n=Math.min(out.length,x.length);let i0=0;while(i0<n&&x[i0]===0)i0++;
+    for(const [f0,t0,a] of M){const f=f0*(fm||1),t60=t0*(dm||1);if(f>sr*.45)continue;const w=TAU*f/sr,r=Math.exp(-6.908/(t60*sr)),c1=2*r*Math.cos(w),c2=r*r,pp=f<220?pos*.3:pos,g=a*gain*Math.sin(w)*(1-pp+pp*rr(.15,1.7))*(R()<.5?-1:1);let y1=0,y2=0;
+      for(let i=i0;i<n;i++){const y=c1*y1-c2*y2+x[i];y2=y1;y1=y;out[i]+=y*g}}};
+  // 当たり：tc 秒の接触（短いほど硬く、明るい）。crunch 秒の、つぶれる雑音
+  const hit=(x,at,force,tc,crunch)=>{const i0=Math.round(at*sr),L=Math.max(2,Math.round(tc*sr));for(let i=0;i<L&&i0+i<x.length;i++)x[i0+i]+=force*(1-Math.cos(TAU*(i+.5)/L))/L;
+    if(crunch){const Lc=Math.round(crunch*sr),k=force*2.2/Math.sqrt(Lc);for(let i=0;i<Lc&&i0+i<x.length;i++)x[i0+i]+=k*(R()*2-1)*Math.exp(-4*i/Lc)}};
+  // がらつき：dur 秒のあいだに、n 回ほどの小さな当たりが、ばらばらに
+  const rattle=(x,at,dur,n,force,tc)=>{let t=at;for(let k=0;k<n*2;k++){t+=-Math.log(1-R()*.999)*dur/n;if(t>at+dur*1.6)break;hit(x,t,force*Math.exp(-(t-at)/dur*2.2)*rr(.3,1),tc*rr(.6,1.6),0)}};
+  // すべり：速さ vf(u)（0..1）。grain＝とびとびの引っかかり（速いほど数が増える）、smooth＝地のざらつき
+  const slide=(x,at,dur,vf,grain,smooth,rate,rough)=>{const i0=Math.round(at*sr),n=Math.round(dur*sr);let lp=1,am=1,amT=0;for(let i=0;i<n&&i0+i<x.length;i++){const v=vf(i/n);if(v<=0)continue;
+      if(--amT<=0){amT=(sr*rr(.004,.03))|0;am=rr(.3,1.4);if(rough!=null)am=1+(am-1)*rough}lp+=(am-lp)*.004;let e=smooth*(R()*2-1)*v*lp*.05;if(R()<rate*v/sr)e+=grain*rr(.2,1)*(R()<.5?-1:1)*Math.sqrt(v)*lp;x[i0+i]+=e}};
+  const peak=d=>{let m=1e-9;for(let i=0;i<d.length;i++){const a=Math.abs(d[i]);if(a>m)m=a}return m};
+  const scale=(d,k)=>{for(let i=0;i<d.length;i++)d[i]*=k;return d};
+  const norm=(d,pk)=>scale(d,(pk||.9)/peak(d));
+  const rmsOf=(d,a,b)=>{let q=0;for(let i=a;i<b;i++)q+=d[i]*d[i];return Math.sqrt(q/Math.max(1,b-a))};
+  const add=(o,d,k)=>{for(let i=0;i<o.length&&i<d.length;i++)o[i]+=d[i]*k;return o};
+  const tail=(d,ms)=>{const L=Math.min(d.length,(ms*sr/1000)|0);for(let i=0;i<L;i++)d[d.length-1-i]*=i/L;return d};
+  const B={
+    breech:body([[3,62,140,.11,.08,.9],[14,170,900,.34,.2,1],[22,900,3600,.24,.1,1.35],[8,3600,7500,.12,.06,1.3]]),   // 重い鋼のかたまり（閉鎖機、砲尾環）
+    ringy:body([[11,1900,6500,.38,.2,1]]),                                                                          // 硬く当たったときの「キン」の尾
+    sheet:body([[10,210,900,.34,.2,.95],[30,900,5200,.3,.1,1.65],[14,5200,9500,.13,.06,1.4]]),                      // 薄い鋼の板（受け、覆い）
+    latch:body([[2,105,220,.09,.07,1],[8,700,2400,.11,.06,2.3],[12,2400,7800,.1,.04,2.6]]),                         // 小さく硬い部品（爪、掛け金）
+    cup:body([[2,150,300,.09,.07,2],[7,520,2100,.16,.09,2.1],[10,2100,6200,.1,.04,2.2]]),                         // 底板（鋼の皿）
+    loose:body([[26,1500,9000,.09,.03,1]]),                                                                        // ゆるんだ小物（ピン、鎖の輪）
+    scrape:body([[26,700,6000,.12,.05,1]]),                                                                         // こすれて鳴る薄い板（低い山は持たせない）
+    tube:body([[8,110,450,.022,.018,.8],[16,450,2600,.03,.016,1],[12,2600,7000,.016,.01,.55]]),                    // こすれる面（よく減衰する。音程が立たないように、山を広く）
+    knock:body([[2,140,240,.12,.09,1.1],[5,520,1250,.26,.18,2.4],[7,1250,3400,.1,.05,.9]])};                     // 掛かって止まる「コン」（中ほどの山が少数、余韻は短い）
+  // 重い当たり。o：tc 接触の秒／pre 当たる前のすべりの秒／bounce はね返り／ringy キンの尾／rat がらつき／low 低い胴の足し
+  function clank(len,o){const out=mk(len),t0=o.pre||0,xb=mk(len),h=mk(len);
+    if(o.pre){const xs=mk(len),f=mk(len);slide(xs,0,o.pre,u=>.3+.7*u,1,.5,2200);ring(f,xs,B.tube,1,.4);add(out,norm(f,o.preG||.12),1)}
+    hit(xb,t0,1,o.tc,o.cr==null?.004:o.cr);if(o.bounce)hit(xb,t0+rr(.016,.034),o.bounce*rr(.6,1),o.tc*1.3,.003);
+    ring(h,xb,o.body||B.breech,1,.55);add(h,xb,o.dir||0);add(out,norm(h,.9),1);
+    if(o.low){const xl=mk(len),t=mk(len);hit(xl,t0,1,.0016,0);ring(t,xl,B.breech.slice(0,3),1,.3);add(out,norm(t,o.low),1)}
+    if(o.ringy){const t=mk(len);ring(t,xb,B.ringy,1,.4);add(out,norm(t,o.ringy),1)}
+    if(o.rat){const xl=mk(len),t=mk(len);hit(xl,t0,.6,.0002,0);rattle(xl,t0+.003,o.ratT||.15,o.ratN||10,1,.00018);ring(t,xl,B.sheet,1,.7);ring(t,xl,B.loose,.8,.9);add(out,norm(t,o.rat),1)}
+    return tail(norm(out),30)}
+  // 押しこむ／引きぬく。o：dur 秒／smooth, grain, rate すべりの質／chain 毎秒の輪の数（0 で無し）／seat 奥で止まる当たりの強さ／prof 速さの形
+  function ram(o){const dur=o.dur,len=dur+(o.seat?.5:.25),out=mk(len),xs=mk(len),f=mk(len),g=mk(len),prof=o.prof||(u=>Math.min(1,u/.12)*(.82+.18*Math.sin(u*9+1))),i1=Math.round(dur*sr),a0=(i1*.2)|0;
+    if(o.su){slide(xs,0,dur,prof,0,1,0,o.rough||0);const kh=1-Math.exp(-TAU*o.su[0]/sr),kl=1-Math.exp(-TAU*o.su[1]/sr);let h1=0,h2=0,l1=0,l2=0;for(let i=0;i<xs.length;i++){let v=xs[i];h1+=(v-h1)*kh;v-=h1;h2+=(v-h2)*kh;v-=h2;l1+=(v-l1)*kl;l2+=(l1-l2)*kl;f[i]=l2}
+      ring(g,xs,B.tube,1,.3);scale(f,1/rmsOf(f,a0,i1));add(f,g,(o.body==null?.22:o.body)/rmsOf(g,a0,i1))}
+    else{slide(xs,0,dur,prof,o.grain,o.smooth,o.rate||900);if(o.lp){const k=1-Math.exp(-TAU*o.lp/sr);let a=0;for(let i=0;i<xs.length;i++){a+=(xs[i]-a)*k;xs[i]=a}}ring(f,xs,B.tube,1,.3);ring(g,xs,B.scrape,1,.5);scale(f,1/rmsOf(f,a0,i1));add(f,g,(o.sheet==null?.3:o.sheet)/rmsOf(g,a0,i1));}
+    if(o.chain){const xc=mk(len),c=mk(len);let t=.01;while(t<dur){const v=prof(t/dur);hit(xc,t,rr(.35,1)*v,.0002,0);t+=rr(.7,1.4)/(o.chain*(.35+.65*v))}ring(c,xc,B.loose,1,.9);ring(c,xc,B.latch,.6,.8);add(f,c,(o.chainG||1)/rmsOf(c,a0,i1))}
+    scale(f,(o.lev||.16)/rmsOf(f,a0,i1));for(let i=0;i<f.length;i++)f[i]=Math.tanh(f[i]*1.4)/1.4;add(out,f,1);
+    if(o.seat){const xb=mk(len),h=mk(len);hit(xb,dur,1,o.seatTc||.0011,.005);ring(h,xb,B.breech,1,.5);const xc=mk(len);hit(xc,dur+.002,.5,.0003,.002);ring(h,xc,B.cup,.6,.6);add(out,norm(h,o.seat),1)}
+    if(o.stop){const xb=mk(len),h=mk(len);hit(xb,dur,1,.0004,.003);ring(h,xb,B.latch,1,.6);add(out,norm(h,o.stop),1)}
+    return tail(norm(out),30)}
+  const SUP=u=>Math.min(1,u/.07)*(.85+.15*u);   // 「スー」の速さの形：すっと立ち、わずかに強まり、奥で切れる
+  // 閉鎖機が閉じる「ガシャコン」：ガ（硬い当たり）＋シャ（上がりきるまでの、すべりと、がらつき）＋コン（掛かって止まる。短く、切れよく）。
+  //   o：gap ガからコンまでの秒／kf コンの高さ／kd コンの余韻／klow コンの低い胴／sha, rat シャの量
+  function gashakon(o){const len=o.gap+.42,out=mk(len),T=o.gap,pre=mk(len),xb=mk(len),h=mk(len),xs=mk(len),f=mk(len),xl=mk(len),r=mk(len),xk=mk(len),k=mk(len),xt=mk(len),t2=mk(len);
+    hit(xb,0,1,o.tc||.00025,.004);ring(h,xb,B.breech,1,.5);add(pre,norm(h,.8),1);
+    slide(xs,.004,T-.012,u=>.45+.55*(1-u),1,.6,2600);ring(f,xs,B.tube,1,.4);ring(f,xs,B.scrape,.5,.5);add(pre,norm(f,o.sha),1);
+    rattle(xl,.004,T*.8,o.ratN||9,1,.00018);ring(r,xl,B.sheet,1,.7);ring(r,xl,B.loose,.8,.9);add(pre,norm(r,o.rat),1);
+    const iT=Math.round(T*sr),i0=iT-Math.round(.03*sr);for(let i=i0;i<pre.length;i++)pre[i]*=i<iT?1-.8*(i-i0)/(iT-i0):.2*Math.exp(-(i-iT)/(.04*sr));   // コンの手前で、前の鳴りをおさえる（切れをよくする）
+    add(out,pre,1);hit(xk,T,1,o.ktc||.0004,.003);ring(k,xk,B.knock,1,.3,o.kf,o.kd);add(out,norm(k,.9),1);
+    hit(xt,T,1,.0014,0);ring(t2,xt,B.breech.slice(0,3),1,.3);add(out,norm(t2,o.klow==null?.3:o.klow),1);return tail(norm(out),25)}
+  const S={
+    // 閉鎖機が開く：短くすべって、重く止まり、はねて、まわりが鳴る
+    open:()=>clank(.8,{pre:rr(.05,.07),tc:.00035,bounce:.4,rat:.4,ratN:rr(9,14)|0,ratT:.16,low:.2}),
+    closeKon:()=>gashakon({gap:rr(.135,.15),sha:.3,rat:.4,ratN:9,kf:.82}),                                     // ガシャコン（標準）
+    closeKonHeavy:()=>gashakon({gap:rr(.165,.18),sha:.3,rat:.4,ratN:11,kf:.6,kd:1.25,klow:.5,ktc:.0006}),  // 重め（ガシャゴン）
+    closeKonFast:()=>gashakon({gap:rr(.098,.11),sha:.25,rat:.35,ratN:7,kf:1.15,kd:.55,klow:.2,ktc:.0003}),   // 速く鋭い（ガチャコッ）
+    // 閉鎖機が閉じる：いちばん硬く、いちばん大きい。3つの質
+    closeDull:()=>clank(.8,{pre:rr(.05,.07),preG:.1,tc:.0007,bounce:.3,low:.4,cr:.006}),                          // 重く鈍い
+    closeHard:()=>clank(.9,{pre:rr(.05,.07),preG:.1,tc:.00022,bounce:.3,ringy:.3,low:.3,rat:.12,ratN:5,ratT:.08}),   // 硬く鋭い（キンの尾）
+    closeLoose:()=>clank(.9,{pre:rr(.05,.07),preG:.1,tc:.00032,bounce:.5,low:.22,rat:.6,ratN:rr(14,20)|0,ratT:.2}),    // ばらける（まわりが鳴る）
+    // 底板が受けに落ちる：鈍い皿が、鋼の板の上で、はねる
+    stub:()=>{const len=1.1,out=mk(len),xc=mk(len),xs=mk(len),xl=mk(len);let t=0,f=1,gap=rr(.13,.2);for(let k=0;k<6;k++){hit(xc,t,f,.0004,.002);hit(xs,t,f*.8,.0007,.003);rattle(xl,t+.002,.03,2,f*.2,.0002);t+=gap;gap*=rr(.48,.72);f*=rr(.4,.62);if(gap<.018)break}
+      ring(out,xc,B.cup,1,.6);ring(out,xs,B.sheet,.55,.6);ring(out,xl,B.loose,.3,.9);return tail(norm(out),30)},
+    // 弾倉がひとつ送る：爪が外れ、重いものが動き、次の位置で止まる
+    index:()=>{const len=.8,out=mk(len),xa=mk(len),xr=mk(len),xb=mk(len),f=mk(len),h=mk(len),a=mk(len),ts=.36+rr(-.03,.04);
+      hit(xa,0,.8,.0003,.003);rattle(xa,.04,.3,rr(7,12)|0,.35,.00025);slide(xr,.03,ts-.04,u=>Math.pow(Math.sin(Math.PI*u),.6),.7,1,650);
+      hit(xb,ts,1,.0005,.004);hit(xb,ts+rr(.02,.04),.35,.0006,.003);
+      ring(a,xa,B.latch,1,.6);ring(a,xa,B.loose,.5,.9);ring(f,xr,B.tube,1,.4);ring(h,xb,B.breech,1,.5);ring(h,xb,B.sheet,.35,.7);
+      add(out,norm(a,.55),1);add(out,norm(f,.2),1);add(out,norm(h,.9),1);return tail(norm(out),30)},
+    // 砲がかみ合って止まる：低い当たりと、掛け金
+    lock:()=>{const len=.45,out=mk(len),xb=mk(len),xa=mk(len),h=mk(len),a=mk(len);hit(xb,0,1,.0009,.004);hit(xa,rr(.004,.012),.7,.00025,.002);ring(h,xb,B.breech,1,.5);ring(a,xa,B.latch,1,.6);add(out,norm(h,.9),1);add(out,norm(a,.4),1);return tail(norm(out),30)},
+    // 隔壁の扉：短くすべって、当たって止まる
+    door:()=>clank(.55,{pre:rr(.11,.15),preG:.3,tc:.0004,bounce:.3,body:B.sheet,rat:.2,ratN:5,ratT:.07,cr:.003}),
+    // 押しこむ：3つの質
+    ramSmooth:()=>ram({dur:.9,smooth:1,grain:.15,rate:500,sheet:.12,lp:700,seat:.9}),                         // なめらか（地のざらつきが主）
+    ramGrain:()=>ram({dur:.9,smooth:.3,grain:1,rate:1100,sheet:.35,seat:.9}),                          // ざらざら（引っかかりが主）
+    ramChain:()=>ram({dur:.9,smooth:.3,grain:1,rate:1100,sheet:.5,chain:95,chainG:.8,seat:.9}),       // ざらざら＋鎖のがらつき
+    ramBack:()=>ram({dur:.34,smooth:.4,grain:.8,rate:800,chain:0,lev:.11,stop:.5,prof:u=>Math.min(1,u/.1)*Math.min(1,(1-u)/.15+.4)}),
+    // 「スー」と押しこむ／戻る：帯の高さで3つ
+    ramSuLo:()=>ram({dur:.9,su:[500,2200],lev:.12,seat:.9,prof:SUP}),ramSu:()=>ram({dur:.9,su:[1000,4000],lev:.12,seat:.9,prof:SUP}),ramSuHi:()=>ram({dur:.9,su:[1800,7000],lev:.12,seat:.9,prof:SUP}),
+    ramBackSu:()=>ram({dur:.34,su:[1000,4000],lev:.085,stop:.5,prof:u=>Math.min(1,u/.1)*Math.min(1,(1-u)/.15+.4)}),
+    ramBackChain:()=>ram({dur:.34,smooth:.4,grain:.8,rate:800,chain:110,chainG:.9,lev:.11,stop:.5,prof:u=>Math.min(1,u/.1)*Math.min(1,(1-u)/.15+.4)}),
+    // 人が込める流れの部品：棚から抜く／砲尾に載せる／腕で押しこむ／掛け金
+    rack:()=>{const a=clank(.3,{tc:.0003,body:B.latch,rat:.25,ratN:4,ratT:.05,cr:.002}),f=ram({dur:.42,smooth:.5,grain:.8,rate:700,lev:.13,stop:.25,prof:u=>Math.sin(Math.PI*Math.min(1,u*1.15))**.7*(.5+.5*u)}),out=mk(.95);add(out,a,.7);for(let i=0;i<f.length;i++){const j=i+Math.round(.11*sr);if(j<out.length)out[j]+=f[i]}return tail(norm(out),30)},
+    bump:()=>{const len=.5,out=mk(len),xb=mk(len),xc=mk(len),h=mk(len),c=mk(len);hit(xb,0,1,.0013,.005);hit(xc,.001,1,.0005,.002);hit(xc,rr(.05,.09),.3,.0005,.002);ring(h,xb,B.breech,1,.5);ring(c,xc,B.cup,1,.6);ring(c,xc,B.sheet,.3,.6);add(out,norm(h,.9),1);add(out,norm(c,.45),1);return tail(norm(out),30)},
+    shove:()=>ram({dur:.45,smooth:.45,grain:1,rate:1300,seat:.9,seatTc:.0009,lev:.2,prof:u=>.25+.75*u*u}),
+    lever:()=>clank(.3,{tc:.00025,body:B.latch,bounce:.4,cr:.002}),
+    // 小さな金属音（ときどき、どこかで）
+    rat:()=>{const len=.35,out=mk(len),xl=mk(len);rattle(xl,0,rr(.05,.14),rr(3,7)|0,1,.00022);ring(out,xl,B.loose,1,.9);ring(out,xl,B.sheet,.5,.7);ring(out,xl,B.latch,.4,.8);return tail(norm(out),30)},
+    // 装填よし：継電器の、小さな音
+    rdy:()=>clank(.14,{tc:.0002,body:B.latch.slice(4),cr:.001})};
+  // 車内の響き（鋼の箱。短く、こもる）
+  function cabinIR(){const n=Math.round(.4*sr),d=new Float32Array(n);let a=0,b=0;for(let i=0;i<n;i++){const t=i/sr,w=R()*2-1;a+=(w-a)*(.5*Math.exp(-t*9)+.12);b+=(a-b)*.025;d[i]=(a-b)*Math.exp(-t*6.908/.28)*Math.min(1,t/.003)}
+    for(let k=0;k<7;k++)d[Math.round(rr(.0012,.011)*sr)]+=rr(.25,.6)*(R()<.5?-1:1)*.2;let q=0;for(let i=0;i<n;i++)q+=d[i]*d[i];return scale(d,1/Math.sqrt(q))}
+  // 何を何個つくるか。作るたびに、叩きかたがちがう
+  const KINDS={open:3,closeDull:3,closeHard:3,closeLoose:3,stub:3,index:3,lock:2,door:2,ramSmooth:2,ramGrain:3,ramChain:3,ramBack:2,ramBackChain:2,rack:2,bump:2,shove:3,lever:2,rat:3,rdy:1,ramSuLo:2,ramSu:3,ramSuHi:2,ramBackSu:2,closeKon:3,closeKonHeavy:2,closeKonFast:2};
+  // 一発ぶんの並び：[名前, 何個めか, 発砲からの秒, 音量, 速さ]。q＝{close, ram} で質を選ぶ。毎回ちがう
+  function seq(kind,q,rnd){q=q||{};const U=rnd||Math.random,ur=(a,b)=>a+(b-a)*U(),E=[],P=(n,t,v,r)=>E.push([n,(U()*((q.cnt&&q.cnt[n])||KINDS[n]))|0,t,v*ur(.85,1.1),(r||1)*ur(.95,1.05)]),cl=q.close||'closeHard',rm=q.ram||'ramGrain';
+    P('open',.30,.42);P('stub',.43+ur(0,.06),.3);
+    if(kind==='B'){P('rack',1.0+ur(-.1,.1),.34);if(U()<.7)P('rat',1.7+ur(-.15,.25),.15);P('bump',2.3+ur(-.06,.06),.34);P('shove',2.5,.45);P(cl,3.0,.55);P('lever',3.5+ur(-.1,.15),.26);if(U()<.5)P('rat',4.0+ur(-.1,.3),.12)}
+    else{P('index',.72+ur(-.04,.06),.34);P('lock',1.25,.26);if(U()<.6)P('rat',1.55+ur(-.1,.15),.12);P('door',1.9-.13,.26);P(rm,2.05,q.ramV||.42);P(rm==='ramChain'?'ramBackChain':rm.indexOf('ramSu')===0?'ramBackSu':'ramBack',3.0,.3);P('door',3.3-.13,.24,.93);P(cl,cl.indexOf('closeKon')===0?3.5:3.5-.06,.55);P('lock',4.33,.2,1.15);if(U()<.5)P('rat',3.95+ur(-.1,.2),.11)}
+    P('rdy',4.56,.2);return E}
+  const DBG={fSmooth:()=>ram({dur:.9,smooth:1,grain:.15,rate:500,sheet:.12,lp:700}),fGrain:()=>ram({dur:.9,smooth:.3,grain:1,rate:1100,sheet:.35}),fChain:()=>ram({dur:.9,smooth:.3,grain:1,rate:1100,sheet:.5,chain:95,chainG:.8})};
+  return {S,KINDS,DBG,cabinIR,seq,make(n){return (S[n]||DBG[n])()},seed(v){s=v>>>0},state(){return s}};
+}
+function initAudio(){
+  if(ac)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;try{ac=new AC({latencyHint:'playback'})}catch(e){ac=new AC()}
+  const sr=ac.sampleRate,op=fc=>1-Math.exp(-6.283*fc/sr),Gn=v=>{const x=ac.createGain();x.gain.value=v;return x},BQ=(t,f,q)=>{const b=ac.createBiquadFilter();b.type=t;b.frequency.value=f;if(q!=null)b.Q.value=q;return b},chain=(...n)=>{for(let i=0;i<n.length-1;i++)n[i].connect(n[i+1]);return n[n.length-1]};
+  const outG=Gn(0),comp=ac.createDynamicsCompressor();comp.threshold.value=-17;comp.ratio.value=4;comp.attack.value=.006;comp.release.value=.25;
+  const shp=ac.createWaveShaper(),cu=new Float32Array(1025);for(let i=0;i<1025;i++){const x=i/512-1;cu[i]=Math.tanh(x*1.6)/Math.tanh(1.6)*.95}shp.curve=cu;chain(outG,comp,shp,ac.destination);A.an=ac.createAnalyser();A.an.fftSize=2048;shp.connect(A.an);
+  const intG=Gn(1),extG=Gn(1),rdG=Gn(.9);chain(intG,outG);chain(extG,BQ('lowpass',620,.5),outG);chain(rdG,BQ('highpass',280,.5),outG);
+  const echoIn=Gn(1),eF=BQ('lowpass',850,.6),eD1=ac.createDelay(1),eD2=ac.createDelay(1),eFb=Gn(.4),eOut=Gn(.62);eD1.delayTime.value=.17;eD2.delayTime.value=.29;chain(echoIn,BQ('highpass',110,.6),eF,eD1,eOut,extG);eD1.connect(eD2);eD2.connect(eOut);eD2.connect(eFb);eFb.connect(eF);
+  const bake=(len,fn,pk)=>{const n=(len*sr)|0,b=ac.createBuffer(1,n,sr),d=b.getChannelData(0);fn(d,n);let m=1e-6;for(let i=0;i<n;i++){const a=Math.abs(d[i]);if(a>m)m=a}const k=(pk||.9)/m;for(let i=0;i<n;i++)d[i]*=k;return b};
+  const seam=(d,n,m)=>{for(let i=0;i<m;i++){const u=i/m;d[i]=d[i]*u+d[n-m+i]*(1-u)}return n-m};
+  const SND={},LOOP={},jobs=[],TRC={};
+  const play=(buf,o)=>{if(!buf||!A.on)return;o=o||{};const s=ac.createBufferSource();s.buffer=buf;s.playbackRate.value=o.rate||1;const g=Gn(o.vol==null?1:o.vol);s.connect(g);g.connect(o.dest||intG);s.start(ac.currentTime+(o.delay||0))};
+  const loop=(name,buf,vol,dest,len)=>{const s=ac.createBufferSource();s.buffer=buf;s.loop=true;if(len)s.loopEnd=len/sr;const g=Gn(vol);s.connect(g);g.connect(dest);s.start();LOOP[name]={s,g}};
+  // 機関：2ストロークのディーゼル。低い唸りと、排気のばらつき
+  jobs.push(()=>{const b=bake(3,(d,n)=>{let a=0,c=0;const k=op(260),k2=op(60);for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k;c+=(a-c)*k2;let v=0;for(let h=1;h<=15;h++)v+=Math.sin(6.283*22*h*t+h*1.3)/Math.pow(h,.55)*(h===3||h===6||h===9?1.7:1);
+      d[i]=v*(.75+.25*Math.sin(6.283*11*t))+c*9+(a-c)*3*(.5+.5*Math.sin(6.283*22*t))}});loop('eng',b,.1,intG)});
+  // 履帯：鉄の板が、つぎつぎに路面を打つ
+  jobs.push(()=>{let m=0;const b=bake(2,(d,n)=>{let e=0,r=0,rv=0,a=0;const k=op(1500);for(let i=0;i<n;i++){const w=Math.random()*2-1;if(i%((sr/13)|0)===0)e=rnd(.5,1);e*=.9988;a+=(w-a)*k;rv+=(e*a*3-r)*.02-rv*.03;r+=rv;d[i]=r+a*e*.4}m=seam(d,n,(sr*.2)|0)});loop('trk',b,0,intG,m)});
+  // 砲塔の旋回：電動の、うなり
+  jobs.push(()=>{const b=bake(2,(d,n)=>{let a=0;const k=op(1200);for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k;d[i]=Math.sin(6.283*310*t)+.6*Math.sin(6.283*465*t+1)+.4*Math.sin(6.283*155*t)+a*.5}});loop('trv',b,0,intG)});
+  // 主砲：車内では、鋭い破裂というより、重い衝撃と、鉄の鳴り
+  jobs.push(()=>{SND.gun=bake(2.2,(d,n)=>{let a=0,b2=0,c=0,ph=0,r=0,rv=0;const k1=op(180),k2=op(2600),k3=op(55);for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k1;c+=(w-c)*k2;b2+=(a-b2)*k3;ph+=6.283*(34+50*Math.exp(-t*9))/sr;rv+=(c*Math.exp(-t*30)*2-r)*.06-rv*.004;r+=rv;
+      d[i]=Math.sin(ph)*Math.exp(-t*3.2)*1.5+c*Math.exp(-t*26)*2.4+a*4*Math.exp(-t*7)+b2*9*Math.exp(-t*1.8)+r*.5*Math.exp(-t*2.5)}})});
+  /* 自動装填：部品は 44100Hz で作る（どの端末でも、同じ乱数から同じ音になる。種は、聞いて決めたときのもの）。
+     一発ごとに、どの叩きかたを使うか、こまかい間、音量、速さが変わる（A.loader）。車内の響き（鋼の箱）は、装填の音にだけ掛ける */
+  const LD=LD2(44100),LDB={},LDS={open:[3245165070,392413805,4262272188],stub:[4285600223,3643492609,729452609],index:[2692221275,2916503308,39387672],lock:[2474266175,3670028388],door:[2365136429,528410756],ramSu:[1592590339,1592590340,1592590341],ramBackSu:[1592590344,1592590345],closeKon:[1592590593,1592590594,1592590595],rat:[2823061929,3400109227,950190979],rdy:[1507550927]},LDIR=1133658911;
+  const ldG=Gn(1),ldCv=ac.createConvolver(),ldWet=Gn(.5);ldCv.normalize=false;ldG.connect(intG);ldG.connect(ldCv);ldCv.connect(ldWet);ldWet.connect(intG);const ldLow=Gn(.4);ldLow.connect(ldCv);   // ldLow：響きを控えめに掛ける口（閉じる音の、切れのため）
+  jobs.push(()=>{LD.seed(LDIR);const ir=LD.cabinIR(),m=Math.round(ir.length*sr/44100),bf=ac.createBuffer(1,m,sr),d=bf.getChannelData(0),q=Math.sqrt(44100/sr);for(let i=0;i<m;i++){const x=i*44100/sr,k=x|0,f=x-k;d[i]=((ir[k]||0)*(1-f)+(ir[k+1]||0)*f)*q}ldCv.buffer=bf});
+  for(const n in LDS)LDS[n].forEach((sd,i)=>jobs.push(()=>{LD.seed(sd);const d=LD.make(n),bf=ac.createBuffer(1,d.length,44100);bf.getChannelData(0).set(d);(LDB[n]=LDB[n]||[])[i]=bf}));
+  jobs.push(()=>{
+    SND.crush=bake(.9,(d,n)=>{let a=0,c=0,e=0;const k=op(1700),k2=op(260);for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k;c+=(a-c)*k2;if(Math.random()<60*Math.exp(-t*4)/sr)e=rnd(.5,1);e*=.997;d[i]=(a-c)*e*1.4+c*3*Math.exp(-t*5)*Math.min(1,t/.03)+Math.sin(6.283*46*t)*Math.exp(-t*6)}});});
+  // 機銃：12.7mm は重く遅く、7.62mm は軽く速い
+  jobs.push(()=>{SND.mg1=bake(.2,(d,n)=>{let a=0,c=0;const k=op(1100),k2=op(140);for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k;c+=(a-c)*k2;d[i]=a*Math.exp(-t*42)+c*5*Math.exp(-t*18)+Math.sin(6.283*82*t)*Math.exp(-t*20)*.9}});
+    SND.mg2=bake(.1,(d,n)=>{let a=0,c=0;const k=op(2600),k2=op(300);for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k;c+=(a-c)*k2;d[i]=a*Math.exp(-t*70)+c*3*Math.exp(-t*35)+Math.sin(6.283*170*t)*Math.exp(-t*45)*.5}});
+    SND.clk=bake(.12,(d,n)=>{let a=0;const k=op(3000);for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k;d[i]=a*Math.exp(-t*90)+Math.sin(6.283*1300*t)*Math.exp(-t*60)*.4+Math.sin(6.283*210*t)*Math.exp(-t*40)*.6}})});
+  // 外の爆発、車体を叩かれる音、突き上げ
+  jobs.push(()=>{SND.boom=bake(3,(d,n)=>{let a=0,c=0,ph=0;const k=op(260),k2=op(70);for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k;c+=(a-c)*k2;ph+=6.283*(30+40*Math.exp(-t*6))/sr;d[i]=Math.sin(ph)*Math.exp(-t*2.6)+a*3*Math.exp(-t*6)*Math.min(1,t/.01)+c*8*Math.exp(-t*1.4)}});
+    SND.clang=bake(1.2,(d,n)=>{let r1=0,v1=0,r2=0,v2=0;for(let i=0;i<n;i++){const t=i/sr,w=(Math.random()*2-1)*Math.exp(-t*60);v1+=(w-r1)*.012-v1*.0025;r1+=v1;v2+=(w-r2)*.05-v2*.004;r2+=v2;d[i]=r1*14+r2*9+Math.sin(6.283*60*t)*Math.exp(-t*9)*.6+w*.6}});
+    SND.clunk=bake(.5,(d,n)=>{let a=0;const k=op(300);for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k;d[i]=a*Math.exp(-t*20)+Math.sin(6.283*48*t)*Math.exp(-t*12)}})});
+  // 巨大なものの足音：もとを、半分より遅く鳴らす
+  jobs.push(()=>{SND.step=bake(3.4,(d,n)=>{let a=0,b2=0,c=0,e=0,ph=0,r1=0,r2=0;const k1=op(320),k2=op(95),k3=op(1300),k5=op(520),k6=op(180),f0=44;for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1;a+=(w-a)*k1;b2+=(a-b2)*k2;c+=(w-c)*k3;ph+=6.283*(f0+58*Math.exp(-t*4))/sr;
+      if(Math.random()<(26*Math.exp(-t*1.4)+2)/sr)e=rnd(.4,1)*(Math.random()<.5?-1:1);e*=.9992;r1+=(e*c*3-r1)*k5;r2+=(r1-r2)*k6;
+      d[i]=Math.sin(ph)*Math.exp(-t*1.6)*1.1+a*2.2*Math.exp(-t*3)*Math.min(1,t/.012)+c*.7*Math.exp(-t*13)+b2*7*Math.exp(-t*1.1)*Math.min(1,t/.03)+(r1-r2)*1.6*Math.min(1,t/.08)}})});
+  jobs.push(()=>{try{SND.voice=[0,1].map(r=>{const v=monsterVoice(2,r),b=ac.createBuffer(1,v.length,MV_SR);b.getChannelData(0).set(v);return b})}catch(e){}});
+  // 空からの攻撃：頭の上を抜ける音
+  jobs.push(()=>{SND.jet=bake(6,(d,n)=>{let a=0,c=0;for(let i=0;i<n;i++){const t=i/sr,w=Math.random()*2-1,f=500+2600*Math.exp(-Math.pow((t-2.6)/1.1,2));a+=(w-a)*op(f);c+=(a-c)*op(120);d[i]=(a-c)*Math.exp(-Math.pow((t-2.8)/1.5,2))}})});
+  (function run(){const j=jobs.shift();if(!j)return;try{j()}catch(e){}setTimeout(run,14)})();
+  const VO={tc:{f0:112,scale:.97,speed:1.03},dr:{f0:140,scale:1.03,speed:1.06},co:{f0:100,scale:.95,speed:.96},t2:{f0:124,scale:1,speed:1.02},us:{f0:107,scale:.96,speed:1},p2:{f0:131,scale:1.01,speed:1.1}};
+  Object.assign(A,{
+    setOn(v){A.on=v;outG.gain.setTargetAtTime(v?.9:0,ac.currentTime,.25)},
+    sw(){play(SND.clk,{vol:.22,rate:1.5})},gun(){play(SND.gun,{vol:1});play(SND.gun,{vol:.5,rate:.8,dest:echoIn})},crush(){play(SND.crush,{vol:.5})},mgFar(){play(SND.mg1,{vol:.1,rate:rnd(.8,.9),dest:extG})},
+    loader(){if(!A.on)return;const t0=ac.currentTime;for(const [n,i,t,v,r] of LD.seq('A',{close:'closeKon',ram:'ramSu',ramV:.38})){const bf=LDB[n]&&LDB[n][i];if(!bf)continue;const s=ac.createBufferSource(),g=Gn(v);s.buffer=bf;s.playbackRate.value=r;s.connect(g);if(n==='closeKon'){g.connect(intG);g.connect(ldLow)}else g.connect(ldG);s.start(t0+t)}},
+    mg(w){play(w===1?SND.mg1:SND.mg2,{vol:w===1?.5:.3,rate:rnd(.96,1.04)})},belt(){play(SND.clk,{vol:.5});play(SND.clk,{vol:.5,delay:.5,rate:.8});play(SND.clk,{vol:.6,delay:4.6,rate:.7})},
+    boom(d,k){const o={vol:clamp(140/(d+60),.12,1)*(k||1)*.8,delay:Math.min(4,d/340),rate:rnd(.8,1)/(k>1.5?1.6:1),dest:extG};play(SND.boom,o);o.vol*=.5;o.dest=echoIn;play(SND.boom,o)},
+    clang(){play(SND.clang,{vol:.9,rate:rnd(.8,1.1)})},clunk(k){play(SND.clunk,{vol:.25*k,rate:rnd(.8,1.2)})},
+    step(d,k){play(SND.step,{vol:clamp(700/(d+250),.25,1)*.95*(k>1.5?1.2:1),delay:Math.min(4,d/340),rate:rnd(.44,.54)/(k>1.5?1.3:1),dest:extG})},
+    voice(n){if(SND.voice)play(SND.voice[n%2],{vol:.5,rate:.5,dest:extG,delay:1.5})},
+    strike(){play(SND.jet,{vol:.62,dest:extG})},
+    duck(v){const t=ac.currentTime;intG.gain.setTargetAtTime(v?0:1,t,.3);extG.gain.setTargetAtTime(v?0:1,t,.3);rdG.gain.setTargetAtTime(v?0:.9,t,.2)},
+    update(dt){if(!LOOP.eng||!LOOP.trk||!LOOP.trv)return;const t=ac.currentTime,sp=Math.abs(T.v),rev=clamp(sp/9+(Math.abs((T.force!=null?T.force:0)-T.v)>1?.2:0),0,1.2);
+      LOOP.eng.s.playbackRate.setTargetAtTime(.85+.75*rev,t,.3);LOOP.eng.g.gain.setTargetAtTime(.09+.1*rev,t,.3);
+      LOOP.trk.s.playbackRate.setTargetAtTime(.5+sp/6,t,.2);LOOP.trk.g.gain.setTargetAtTime(Math.min(.2,sp*.035),t,.2);
+      const sl=Math.min(1,Math.abs(G.azV)/.5+Math.abs(G.elV)/.3);LOOP.trv.s.playbackRate.setTargetAtTime(.6+.8*sl,t,.08);LOOP.trv.g.gain.setTargetAtTime(sl>.02?.012+.03*sl:0,t,.06)},
+    radio(item){const sty=item.style||'calm',key=item.who+sty+item.text,b=TRC[key];
+      if(b&&b!==1){if(item.pre)return 0;play(b,{vol:(item.who==='tc'||item.who==='dr'?.235:.19)*(sty==='calm'?1:1.1),dest:rdG});return b.duration}
+      if(!b){TRC[key]=1;setTimeout(()=>{try{const v=RSP.speak(item.text,Object.assign({style:sty,jp:'new'},VO[item.who])),R=24000,n=Math.ceil((v.length/RSP.SRV+.42)*R),bf=ac.createBuffer(1,n,R),st=triRadio(bf.getChannelData(0),n,v,R),go=()=>{try{if(st(R>>1))TRC[key]=bf;else setTimeout(go,0)}catch(e){TRC[key]=0}};go()}catch(e){TRC[key]=0}},20)}
+      return 0}
+  });
+}
+function startAudio(){if(userMuted)return;initAudio();if(!ac)return;if(ac.state!=='running')ac.resume().catch(()=>{});A.setOn(true);syncUI()}
+
+/* ---------- GL ---------- */
+let gl,PS,PP,PM,glLost=false,DPR=1,W=0,H=0,resScale=1,FB=null,scnTex=null,hudTex=null;
+const SW=512,SH=384,B={},CITY=buildCity(),MONO='ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace';
+const hudC=document.createElement('canvas');hudC.width=SW;hudC.height=SH;const hudX=hudC.getContext('2d');
+const FXN=280,fxV=new Float32Array(FXN*28),fxI=new Uint16Array(FXN*6);for(let i=0;i<FXN;i++)fxI.set([i*4,i*4+1,i*4+2,i*4,i*4+2,i*4+3],i*6);
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s}
+function prog(vs,fs,attrs){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));attrs.forEach((a,i)=>gl.bindAttribLocation(p,i,a));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));const u={},n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);for(let i=0;i<n;i++){const nm=gl.getActiveUniform(p,i).name;u[nm.replace('[0]','')]=gl.getUniformLocation(p,nm)}return{p,u}}
+function mkBuf(o){const v=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,v);gl.bufferData(gl.ARRAY_BUFFER,o.v,gl.STATIC_DRAW);const i=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,i);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,o.i,gl.STATIC_DRAW);return{v,i,n:o.i.length}}
+function mkTex(w,h,data){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,data||null);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t}
+function setupGL(){
+  gl=cv.getContext('webgl',{antialias:false,alpha:false,depth:false,powerPreference:'high-performance'})||cv.getContext('experimental-webgl');if(!gl)return false;
+  PS=prog(VSS,FSS,['a','n','uvA','m']);PP=prog(VSP,FSP,['a','uvA','c']);PM=prog(VSQ,FSM,['a']);
+  B.city=CITY.map(mkBuf);B.cyl=mkBuf(mkCyl(10));B.sph=mkBuf(mkSph(7,12));B.box=mkBuf(mkBox());
+  B.quad=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,B.quad);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  B.fxv=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,B.fxv);gl.bufferData(gl.ARRAY_BUFFER,fxV,gl.DYNAMIC_DRAW);B.fxi=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,B.fxi);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,fxI,gl.STATIC_DRAW);
+  scnTex=mkTex(SW,SH);hudTex=mkTex(SW,SH);
+  const rb=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,rb);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,SW,SH);
+  FB=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,FB);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,scnTex,0);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,rb);
+  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw new Error('fbo');gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  resize();return true}
+
+/* ---------- 画面の割りつけ ----------
+   まんなかに、モニター（4:3）。枠は、モニターの高さの1割。横長：左に武装の切りかえ3つと倍率、右に撃発。縦長：上にモニター、下に切りかえの列、右下に撃発。
+   スイッチの絵は canvas に描き、その上に、見えない button を同じ場所に重ねる（L.k）。スイッチ以外の場所は、どこをなぞっても照準が動く。 */
+const L={land:true,cx:0,cy:0,mh:1,k:{}};
+function placeK(id,x,y,w,h){const e=$(id);e.style.left=x+'px';e.style.top=y+'px';e.style.width=w+'px';e.style.height=h+'px';L.k[id]={x,y,w,h}}
+/* モニターの筐体は、画面（高さ1）のまわりに枠 0.1、上にひさし、下につまみの帯。全体で 幅1.6×高さ1.38。画面のまんなかが、いつも表示のまんなか。
+   壁の計器（砲塔の向き）と、下がっている札は、向きによって置き場所を変える（L.dl、L.cd。壁の上の座標） */
+function layout(){const land=W>=H*1.05,sub=$('sub');L.land=land;
+  if(land){const side=clamp(W*.16,92,176),mh=Math.min(H/1.5,(W-2*side)/1.62);L.mh=mh;L.cx=W/2;L.cy=H/2-mh*.03;
+    const kw=side-26,kh=clamp(H*.1,32,48),g=7,x0=13+Math.max(0,(W/2-mh*.8-side)*.5),y0=H*.585-(kh*4+g*3+14)/2;
+    for(let i=0;i<3;i++)placeK('kw'+i,x0,y0+i*(kh+g),kw,kh);placeK('kz',x0,y0+3*(kh+g)+14,kw,kh);
+    const fs=Math.min(side-26,H*.32,124);placeK('kf',W-x0-fs-(kw-fs)/2,H*.66-fs/2,fs,fs);
+    const X=W/2/mh,Y=L.cy/mh;L.dl=[-(X+.8)/2/.857,(Y-.235)/.857];L.cd=[((X+.8)/2+.02)/.857,(Y+.04)/.857];
+  }else{const kh=clamp(H*.062,40,54),mh=Math.max(120,Math.min(W/1.62,H*.42,(H/2-kh-150)/.72));L.mh=mh;L.cx=W/2;L.cy=H/2;
+    const y0=L.cy+mh*.72+20,g=8,kw=(W-44-g*3)/4;
+    for(let i=0;i<3;i++)placeK('kw'+i,22+i*(kw+g),y0,kw,kh);placeK('kz',22+3*(kw+g),y0,kw,kh);
+    const fs=clamp(Math.min(W*.32,H-y0-kh-50),72,132);placeK('kf',W-30-fs,y0+kh+38+Math.max(0,(H-y0-kh-fs-68)*.4),fs,fs);
+    const Y=L.cy/mh;L.dl=[-.4/.857,Math.min(1.3,Y-.3)/.857];L.cd=[.5/.857,Math.min(1.62,Y+.04)/.857];}
+  sub.style.left=L.cx+'px';sub.style.bottom=(H-(L.cy+L.mh*.5)+L.mh*.095)+'px';sub.style.maxWidth=(L.mh*1.24)+'px';PNL='';
+  for(const e of[hc,$('ctl')])e.style.transformOrigin=L.cx+'px '+L.cy+'px';}
+function resize(){W=cv.clientWidth||innerWidth;H=cv.clientHeight||innerHeight;DPR=Math.min(window.devicePixelRatio||1,2)*resScale;
+  const w=Math.max(2,Math.round(W*DPR)),h=Math.max(2,Math.round(H*DPR)),d2=Math.min(window.devicePixelRatio||1,2),w2=Math.round(W*d2),h2=Math.round(H*d2);
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}if(hc.width!==w2||hc.height!==h2){hc.width=w2;hc.height=h2}layout()}
+
+/* ---------- 景色を描く ---------- */
+let curN=0;const I4=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+function useMesh(b){gl.bindBuffer(gl.ARRAY_BUFFER,b.v);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,b.i);gl.vertexAttribPointer(0,3,gl.FLOAT,false,40,0);gl.vertexAttribPointer(1,3,gl.FLOAT,false,40,12);gl.vertexAttribPointer(2,2,gl.FLOAT,false,40,24);gl.vertexAttribPointer(3,2,gl.FLOAT,false,40,32);curN=b.n}
+function dm(M,mat,sd){gl.uniformMatrix4fv(PS.u.uM,false,M);gl.uniform2f(PS.u.uMat,mat,sd);gl.drawElements(gl.TRIANGLES,curN,gl.UNSIGNED_SHORT,0)}
+const boxM=(c,sx,sy,sz,yaw)=>ellM(c,sx,sy,sz,yaw);
+// 這ってくるものの脚：腰・ひざ・足先。3本ずつ、交互に出す。ひざは、体よりずっと高い
+function enLegs(e){const s=e.s,c=Math.cos(e.th),sn=Math.sin(e.th),col=e.dead?Math.min(1,e.dt/1.1):0,mel=e.dead?1-.85*sstep(5,30,e.dt):1,out=[];
+  for(let i=0;i<6;i++){const sg=i<3?-1:1,r=(i%3)-1,g=(i%3+(i<3?0:1))%2,p=fr(e.ph+g*.5),st=1.3*s;let off,ly;
+    if(p<.5){off=st*(.5-p*2);ly=0}else{const u=(p-.5)*2;off=st*(u-.5);ly=.9*s*Math.sin(PI*u)}
+    if(e.grab&&r>0){ly=(1.6+1.2*Math.sin(S.t*3.1+i))*s;off=-1.2*s}                                          // 取りついているとき：前の脚を振り上げて、叩く
+    const hx=e.x+c*sg*.7*s+sn*r*.8*s,hz=e.z-sn*sg*.7*s+c*r*.8*s,sp=2.6*s*(r?.85:1)*(1+col*.3),fx_=e.x+c*sg*sp+sn*(r*1.9*s+off),fz=e.z-sn*sg*sp+c*(r*1.9*s+off);
+    const ky=mix(3.15*s+.22*s*Math.sin(p*6.283),.6*s*mel,col*col);
+    out.push([[hx,e.hb*mel,hz],[mix(hx,fx_,.42),ky,mix(hz,fz,.42)],[fx_,ly*(1-col),fz]])}
+  return out}
+function drawScene(){
+  const eye=eyePos(),kk=G.kick*G.kick,qk=S.quake*.0016*(RM?.3:1),fw=aimDir(G.az+rnd(-1,1)*qk+kk*.004,G.el+kk*.016+rnd(-1,1)*qk),V=viewM(eye,fw,[0,1,0]),VP=mmul(persp(G.fov,4/3,1.5,7000),V);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,FB);gl.viewport(0,0,SW,SH);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.disable(gl.BLEND);gl.clearColor(.05,.05,.05,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(PS.p);for(let i=0;i<4;i++)gl.enableVertexAttribArray(i);
+  const d2=S.dust*S.dust;gl.uniformMatrix4fv(PS.u.uVP,false,VP);gl.uniform3f(PS.u.uEye,eye[0],eye[1],eye[2]);gl.uniform1f(PS.u.uT,S.t);gl.uniform1f(PS.u.uHeat,1);gl.uniform1f(PS.u.uGnd,S.gnd||0);
+  gl.uniform3f(PS.u.uFog,1500*Math.pow(.017,S.dust),mix(.19,.31,d2),d2);gl.uniform2f(PS.u.uUV,1,1);
+  for(const b of B.city){useMesh(b);dm(I4,-1,0)}
+  // 這ってくるもの（見えていないものは、描かない）
+  const hf=Math.atan(Math.tan(G.fov/2)*4/3)+.01;
+  for(const e of EN){if(e.gone)continue;const dx=e.x-eye[0],dz=e.z-eye[2],d=Math.hypot(dx,dz);if(Math.abs(wrapPi(Math.atan2(dx,dz)-G.az))>hf+Math.atan2(4.5*e.s,d)&&d>9)continue;
+    const s=e.s,hot=e.heat*(S.t-e.hitT<.07?1.5:1);gl.uniform1f(PS.u.uHeat,hot);useMesh(B.sph);{const mel=e.dead?1-.85*sstep(5,30,e.dt):1;dm(ellM([e.x,e.hb*mel,e.z],.95*s,.72*s*mel,1.3*s,e.th),7,e.sd)}
+    gl.uniform1f(PS.u.uHeat,hot*.62);useMesh(B.cyl);for(const [h,k,f] of enLegs(e)){dm(cylM(h,k,.17*s),7,e.sd+.3);dm(cylM(k,f,.11*s),7,e.sd+.6)}}
+  // 巨大なもの：脚（腰〜ひざ〜足首）、足、体
+  gl.uniform1f(PS.u.uHeat,1);const yaw=Math.atan2(GI.fx,GI.fz),q=GI.fall*GI.fall*(3-2*GI.fall);
+  for(let i=0;i<2;i++){const Lg=giLeg(i),l1=Math.hypot(Lg.knee[0]-Lg.hip[0],Lg.knee[1]-Lg.hip[1],Lg.knee[2]-Lg.hip[2]),l2=Math.hypot(Lg.ft[0]-Lg.knee[0],Lg.ft[1]-Lg.knee[1],Lg.ft[2]-Lg.knee[2]);
+    useMesh(B.cyl);gl.uniform2f(PS.u.uUV,26,l1);dm(cylM(Lg.hip,Lg.knee,25),8,i*3.1);gl.uniform2f(PS.u.uUV,20,l2);dm(cylM(Lg.knee,Lg.ft,19),8,i*3.1+1.7);
+    useMesh(B.sph);gl.uniform2f(PS.u.uUV,45,45);dm(ellM(Lg.knee,29,29,29,0),8,i+5);gl.uniform2f(PS.u.uUV,47,40);dm(ellM([Lg.foot[0],Lg.foot[1]+11,Lg.foot[2]],25,15,34,yaw),8,i+7)}
+  useMesh(B.sph);gl.uniform2f(PS.u.uUV,150,145);dm(ellM([GI.x+GI.ox,GI.hy+62-q*30,GI.z+GI.oz],104,92,84,yaw),8,2.2);gl.uniform2f(PS.u.uUV,1,1);
+  // 火・煙・曳光
+  const X=[V[0],V[4],V[8]],Y=[V[1],V[5],V[9]];let n=0;
+  for(const f of FX){if(n>=FXN)break;const u=f.t/f.life;let x=f.x,y=f.y,z=f.z,r=f.r,heat=f.heat,a=f.a,o=n*28;
+    if(f.k===3){const dx=f.tx-f.x,dy=f.ty-f.y,dz=f.tz-f.z,dl=Math.hypot(dx,dy,dz)||1,u1=Math.min(1,u),u0=Math.max(0,u1-Math.min(.5,14/dl)),p1=[f.x+dx*u1,f.y+dy*u1,f.z+dz*u1],p0=[f.x+dx*u0,f.y+dy*u0,f.z+dz*u0],
+        px=G.fov/SH,d1=Math.hypot(p1[0]-eye[0],p1[1]-eye[1],p1[2]-eye[2]),d0=Math.hypot(p0[0]-eye[0],p0[1]-eye[1],p0[2]-eye[2]),w1=clamp(r,d1*px*.9,d1*px*2.6),w0=clamp(r,d0*px*.9,d0*px*2.6),sd=nrm3(cross([dx,dy,dz],[p1[0]-eye[0],p1[1]-eye[1],p1[2]-eye[2]]));
+      const P=[[p0,-1,-.9,w0],[p0,1,-.9,w0],[p1,1,.9,w1],[p1,-1,.9,w1]];for(let j=0;j<4;j++){const [p,s2,uu,w]=P[j],b=o+j*7;fxV[b]=p[0]+sd[0]*w*s2;fxV[b+1]=p[1]+sd[1]*w*s2;fxV[b+2]=p[2]+sd[2]*w*s2;fxV[b+3]=uu*.5;fxV[b+4]=s2;fxV[b+5]=1;fxV[b+6]=1}n++;continue}
+    if(f.k===0)a*=1-u;else if(f.k===1){a*=Math.pow(1-u,.7);heat=mix(1,.55,u)}else if(f.k===2){a*=Math.min(1,f.t/.25)*Math.pow(1-u,1.4)}else if(f.k===4){a*=1-u;r=Math.max(r,Math.hypot(x-eye[0],z-eye[2])*G.fov/SH*.9)}else{a*=(1-u)*(.75+.25*Math.sin(S.t*23+f.x))}
+    const C=[[-1,-1],[1,-1],[1,1],[-1,1]];for(let j=0;j<4;j++){const b=o+j*7,cx=C[j][0],cy=C[j][1];fxV[b]=x+(X[0]*cx+Y[0]*cy)*r;fxV[b+1]=y+(X[1]*cx+Y[1]*cy)*r;fxV[b+2]=z+(X[2]*cx+Y[2]*cy)*r;fxV[b+3]=cx;fxV[b+4]=cy;fxV[b+5]=heat;fxV[b+6]=a}n++}
+  if(n){gl.useProgram(PP.p);gl.disableVertexAttribArray(3);gl.uniformMatrix4fv(PP.u.uVP,false,VP);gl.bindBuffer(gl.ARRAY_BUFFER,B.fxv);gl.bufferSubData(gl.ARRAY_BUFFER,0,fxV.subarray(0,n*28));gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,B.fxi);
+    gl.vertexAttribPointer(0,3,gl.FLOAT,false,28,0);gl.vertexAttribPointer(1,2,gl.FLOAT,false,28,12);gl.vertexAttribPointer(2,2,gl.FLOAT,false,28,20);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+    gl.drawElements(gl.TRIANGLES,n*6,gl.UNSIGNED_SHORT,0);gl.depthMask(true);gl.disable(gl.BLEND)}
+  gl.disableVertexAttribArray(1);gl.disableVertexAttribArray(2);gl.disableVertexAttribArray(3);gl.disable(gl.DEPTH_TEST);gl.bindFramebuffer(gl.FRAMEBUFFER,null)}
+
+/* ---------- モニターに重ねる線と数字 ----------
+   照準の十字、距離、武装と残弾、装填、倍率、砲塔の向き、車長の指示。本物の画面に何が出るかは、調べがつかなかった。ここは、それらしく作ったもの。 */
+function hud(){const c=hudX;c.clearRect(0,0,SW,SH);if(S.pow<.4||S.black)return;c.strokeStyle=c.fillStyle='#fff';c.lineWidth=1.5;c.lineCap='butt';c.textBaseline='middle';
+  const cx=256,cy=192,bl=fr(S.t*2.2)<.6,F=(px,w)=>{c.font=`${w||600} ${px}px ${MONO}`};
+  c.beginPath();c.moveTo(cx-64,cy);c.lineTo(cx-13,cy);c.moveTo(cx+13,cy);c.lineTo(cx+64,cy);c.moveTo(cx,cy-44);c.lineTo(cx,cy-11);c.moveTo(cx,cy+11);c.lineTo(cx,cy+78);
+  for(let k=1;k<=4;k++){const y=cy+11+k*15,w=9-k*1.5;c.moveTo(cx-w,y);c.lineTo(cx+w,y)}c.moveTo(cx-64,cy-5);c.lineTo(cx-64,cy+5);c.moveTo(cx+64,cy-5);c.lineTo(cx+64,cy+5);c.stroke();c.fillRect(cx-1,cy-1,2,2);
+  // 照準が熱いものに乗っているとき：四すみの印
+  if(G.onE&&!G.onE.dead){const e=G.onE,d=Math.hypot(e.x-TX,e.z-T.z),h=clamp(3.4*e.s/d/G.fov*SH*.5,9,120);c.beginPath();for(const [sx,sy] of[[-1,-1],[1,-1],[1,1],[-1,1]]){c.moveTo(cx+sx*h,cy+sy*(h-6));c.lineTo(cx+sx*h,cy+sy*h);c.lineTo(cx+sx*(h-6),cy+sy*h)}c.stroke()}
+  // 砲の向き（照準線に対して）：装填のあいだ、砲は装填角度へ離れる
+  {const x=cx-104,gy=cy-G.gunOff*44;c.beginPath();c.moveTo(x,cy-50);c.lineTo(x,cy+6);for(const yy of[cy-44,cy-22,cy]){c.moveTo(x-4,yy);c.lineTo(x+4,yy)}c.stroke();c.beginPath();c.moveTo(x+7,gy);c.lineTo(x+16,gy-5);c.lineTo(x+16,gy+5);c.closePath();c.fill()}
+  // 距離
+  F(21);c.textAlign='right';c.fillText(G.rng?String(Math.round(G.rng/10)*10).padStart(4,'0'):'----',478,30);F(12);c.fillText('M',494,32);
+  // 砲塔の向き：車体の四角と、砲の線
+  c.save();c.translate(44,40);c.strokeRect(-7,-11,14,22);c.rotate(G.az-T.yaw);c.beginPath();c.moveTo(0,3);c.lineTo(0,-24);c.stroke();c.strokeRect(-4,-4,8,8);c.restore();
+  F(13);c.textAlign='left';c.fillText(G.zoom?'N':'W',72,30);c.fillText((G.az<0?'L':'R')+String(Math.round(Math.abs(G.az)/D2R)).padStart(3,'0'),72,48);
+  // 武装と残弾（いちばん下の一行）
+  const yb=365;F(17);c.textAlign='left';c.fillText(WP[G.wpn].n,18,yb);F(12);const xs=74;
+  if(G.wpn===0){if(G.he<=0)c.fillText('EMPTY',xs,yb+1);else if(G.load>0){if(bl)c.fillText('LOAD',xs,yb+1);c.strokeRect(xs+36.5,yb-4.5,52,9);c.fillRect(xs+38,yb-3,49*(1-G.load/LT),6)}else c.fillText('READY',xs,yb+1)}
+  else if(G.wpn===1){if(G.belt>0){if(bl)c.fillText('BELT',xs,yb+1)}else c.fillText(G.m127>0?'READY':'EMPTY',xs,yb+1)}else if(G.gunOff>=.05){if(bl)c.fillText('WAIT',xs,yb+1)}else c.fillText(G.m762>0?'READY':'EMPTY',xs,yb+1);
+  c.textAlign='right';F(17);const am=G.wpn===0?String(G.he).padStart(2,'0'):G.wpn===1?String(Math.max(0,G.m127)).padStart(3,'0'):String(G.m762).padStart(4,'0');
+  if(G.wpn===1){c.fillText(am,452,yb);F(12);c.fillText('/'+String(Math.max(0,G.m127T-Math.max(0,G.m127))).padStart(3,'0'),494,yb+1)}else c.fillText(am,494,yb);
+  // 車長の指示：目標が画面の外なら、そちらへ矢印
+  if(G.des){const e=G.des.e,b=wrapPi(Math.atan2(e.x-TX,e.z-T.z)-G.az),hf=Math.atan(Math.tan(G.fov/2)*4/3);if(bl){F(14);c.textAlign='center';c.fillText('TC',cx,26);
+      if(Math.abs(b)>hf*.8){const sx=b<0?-1:1,x=cx+sx*226;c.beginPath();c.moveTo(x+sx*14,cy);c.lineTo(x,cy-9);c.lineTo(x,cy+9);c.closePath();c.fill()}}}
+  if(S.t<S.msgEnd&&S.msg&&bl){F(15);c.textAlign='center';c.fillText(S.msg,cx,96)}
+  if(T.hp<=2&&bl){F(13);c.textAlign='center';c.fillText('HULL',cx,62)}}
+
+/* ---------- 手もとのスイッチ（絵） ---------- */
+let PNL='';
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function panel(){const ready=G.wpn===0?G.load<=0&&G.he>0:G.wpn===1?G.belt<=0&&G.m127>0:G.m762>0&&G.gunOff<.05,key=[G.wpn,G.zoom,IN.fire,ready,W,H,S.black,Math.round(S.fade*16),hc.width].join();if(key===PNL)return;PNL=key;
+  const c=hx,d=hc.width/W;c.setTransform(d,0,0,d,0,0);c.clearRect(0,0,W,H);if(S.black){report(c);return}c.globalAlpha=S.fade;c.textAlign='center';c.textBaseline='middle';
+  const sw=(id,txt,on,sub)=>{const r=L.k[id];if(!r)return;const g=c.createLinearGradient(0,r.y,0,r.y+r.h);g.addColorStop(0,'#191815');g.addColorStop(1,'#0b0b0a');rr(c,r.x,r.y,r.w,r.h,5);c.fillStyle=g;c.fill();c.strokeStyle='rgba(150,135,105,.28)';c.lineWidth=1;c.stroke();
+    rr(c,r.x+4,r.y+4,r.w-8,r.h-8,3);c.fillStyle=on?'rgba(233,179,107,.16)':'rgba(0,0,0,.35)';c.fill();c.strokeStyle=on?'rgba(233,179,107,.55)':'rgba(120,110,90,.16)';c.stroke();
+    c.fillStyle=on?'rgba(255,214,150,.95)':'rgba(190,170,135,.42)';c.font=`600 ${Math.round(clamp(r.h*.36,12,17))}px ${MONO}`;c.fillText(txt,r.x+r.w/2,r.y+r.h/2+(sub?-r.h*.1:0)+.5);
+    if(sub){c.font=`500 ${Math.round(clamp(r.h*.2,8,10))}px ${MONO}`;c.fillStyle=on?'rgba(255,214,150,.6)':'rgba(190,170,135,.28)';c.fillText(sub,r.x+r.w/2,r.y+r.h*.76)}};
+  const scr=(x,y)=>{c.beginPath();c.arc(x,y,2.6,0,6.2832);c.fillStyle='#070706';c.fill();c.strokeStyle='rgba(150,135,105,.3)';c.lineWidth=.8;c.stroke();c.beginPath();c.moveTo(x-1.7,y-1);c.lineTo(x+1.7,y+1);c.stroke()},
+    plate=(x,y,w,h,lab)=>{const g=c.createLinearGradient(0,y,0,y+h);g.addColorStop(0,'#161512');g.addColorStop(.5,'#100f0d');g.addColorStop(1,'#0a0a09');rr(c,x,y,w,h,7);c.fillStyle=g;c.fill();c.strokeStyle='rgba(160,145,112,.2)';c.lineWidth=1;c.stroke();
+      rr(c,x+1.5,y+1.5,w-3,h-3,6);c.strokeStyle='rgba(0,0,0,.6)';c.stroke();for(const [sx,sy] of[[x+8,y+8],[x+w-8,y+8],[x+8,y+h-8],[x+w-8,y+h-8]])scr(sx,sy);
+      if(lab){c.font=`500 8px ${MONO}`;c.fillStyle='rgba(190,170,135,.36)';c.textAlign='center';c.fillText(lab,x+w/2,y+9)}},
+    a=L.k.kw0,b=L.k.kz,f=L.k.kf;
+  if(a&&b&&f){if(L.land){plate(a.x-9,a.y-20,a.w+18,b.y+b.h-a.y+31,'WPN SEL');c.strokeStyle='rgba(160,145,112,.16)';c.beginPath();c.moveTo(a.x,b.y-7.5);c.lineTo(a.x+a.w,b.y-7.5);c.stroke()}
+    else plate(a.x-10,a.y-19,b.x+b.w-a.x+20,a.h+30,'WPN SEL · SIGHT');
+    plate(f.x-13,f.y-20,f.w+26,f.h+33,'FIRE CONT');c.textAlign='center'}
+  sw('kw0','120',G.wpn===0,'HEAT');sw('kw1','12.7',G.wpn===1,'HMG');sw('kw2','7.62',G.wpn===2,'COAX');sw('kz',G.zoom?'NARROW':'WIDE',!!G.zoom);
+  const r=L.k.kf;if(r){const x=r.x+r.w/2,y=r.y+r.h/2,R=r.w/2;c.beginPath();c.arc(x,y,R,0,6.2832);c.fillStyle='#0d0c0b';c.fill();c.strokeStyle='rgba(150,135,105,.3)';c.lineWidth=1;c.stroke();
+    c.beginPath();c.arc(x,y,R*.78,0,6.2832);const g=c.createRadialGradient(x,y-R*.2,R*.1,x,y,R*.8);g.addColorStop(0,IN.fire?'rgba(255,120,80,.75)':ready?'rgba(190,50,34,.5)':'rgba(90,30,24,.4)');g.addColorStop(1,IN.fire?'rgba(180,40,26,.6)':ready?'rgba(110,24,18,.42)':'rgba(50,18,15,.4)');c.fillStyle=g;c.fill();
+    c.strokeStyle=ready?'rgba(255,120,90,.6)':'rgba(160,80,64,.3)';c.lineWidth=1.5;c.stroke();c.fillStyle=ready?'rgba(255,220,205,.9)':'rgba(230,180,165,.4)';c.font=`600 ${Math.round(clamp(R*.3,12,18))}px ${MONO}`;c.fillText('FIRE',x,y+1)}
+  c.globalAlpha=1}
+function report(c){const u=Math.min(W,H)/520,cx=W/2;let y=H/2-80*u;c.globalAlpha=.85;c.fillStyle='#cfd8cf';c.textBaseline='middle';const Fn=px=>{c.font=`${Math.round(px*u)}px ${MONO}`};
+  const R=[['120MM HEAT  FIRED',ST.he+' / 18'],['120MM HEAT  HITS',String(ST.heHit)],['12.7MM  ROUNDS',String(ST.m127)],['7.62MM  ROUNDS',String(ST.m762)],['TARGETS DESTROYED',String(ST.kill)],['HULL STRIKES',ST.hull+' / 5'],['NO.2 VEHICLE',F2.dead?'NO RESPONSE':'---']];
+  Fn(15);c.textAlign='center';c.fillText(S.lost?'VEHICLE LOST':'ENGAGEMENT REPORT',cx,y);y+=30*u;Fn(12.5);for(const[a,b]of R){c.textAlign='left';c.fillText(a,cx-150*u,y);c.textAlign='right';c.fillText(b,cx+150*u,y);y+=21*u}c.globalAlpha=1}
+
+/* ---------- 一枚ぶん ---------- */
+function draw(){
+  if(S.black){gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,cv.width,cv.height);gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);if(L.tf){L.tf='';hc.style.transform=$('ctl').style.transform=''}panel();return}
+  drawScene();hud();
+  gl.viewport(0,0,cv.width,cv.height);gl.useProgram(PM.p);gl.bindBuffer(gl.ARRAY_BUFFER,B.quad);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,hudTex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,hudC);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,scnTex);
+  const u=PM.u,qk=S.quake*.012*(RM?.3:1),m=RM?.35:1;gl.uniform1i(u.uScn,0);gl.uniform1i(u.uHud,1);gl.uniform2f(u.uRes,cv.width,cv.height);gl.uniform2f(u.uC,L.cx*DPR,(H-L.cy)*DPR);gl.uniform1f(u.uS,L.mh*DPR);
+  /* 頭の位置と向き。機関の震え（止まっていても、小刻みに。回すほど強く）と、履帯の震え（速さに比例）を、ごく小さく重ねる */
+  const sp=Math.abs(T.v),rev=clamp(sp/9+(T.force!=null&&Math.abs(T.force-T.v)>1?.3:0),0,1.2),eng=(.0007+.0016*rev)*Math.sin(S.t*69)+(.0004+.0006*rev)*Math.sin(S.t*113+1),trk=Math.min(1,sp/6)*.0018*Math.sin(S.t*(40+sp*22));
+  const cxm=(HEAD.x*.17+rnd(-1,1)*qk)*m,cym=(HEAD.y*.17+rnd(-1,1)*qk+trk)*m,czm=clamp(HEAD.z*.9*m,-.5,.5),rxm=(T.pitch*.6+HEAD.vy*.005)*m,rym=HEAD.vx*.005*m,rzm=(HEAD.rl*.05+eng)*m;
+  gl.uniform3f(u.uCam,cxm,cym,czm);gl.uniform3f(u.uRot,rxm,rym,rzm);
+  gl.uniform3f(u.uDl,L.dl[0],L.dl[1],G.az-T.yaw);gl.uniform3f(u.uCd,L.cd[0],L.cd[1],TAG.a*m);gl.uniform2f(u.uDu,S.t-S.dustT,S.t-S.dustT<7?S.dustK:0);gl.uniform1f(u.uTr,clamp(S.tear,0,1)*m);
+  // 手もとの操作盤は、モニターより手前にある。頭が動くと、モニターより大きくずれる（絵と、押す場所を、いっしょに動かす）
+  {const K=L.mh,tf=`translate(${(-(cxm*1.29+rym*2.1)*K).toFixed(2)}px,${((cym*1.29+rxm*2.1)*K).toFixed(2)}px) rotate(${rzm.toFixed(5)}rad) scale(${(2.1/(2.1-czm)).toFixed(4)})`;if(tf!==L.tf){L.tf=tf;hc.style.transform=tf;$('ctl').style.transform=tf}}
+  gl.uniform4f(u.uLd,G.rec,G.gunOff,G.ram,G.open);gl.uniform1f(u.uSh,clamp(S.sh,0,1));gl.uniform1f(u.uLmp,G.lamp);gl.uniform1f(u.uT,S.t);gl.uniform1f(u.uPow,S.pow);gl.uniform1f(u.uStat,clamp(S.stat,0,1));gl.uniform1f(u.uFl,S.white*.8);gl.uniform1f(u.uBr,S.fade);gl.uniform1f(u.uRed,(S.red*.5+(T.hp<=2&&!S.end?.1*(fr(S.t*1.4)<.5?1:0):0))*S.fade);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);panel()}
+
+/* ---------- 操作 ----------
+   なぞる：なぞったぶんだけ、照準が動く（砲塔の速さには限りがある）。矢印・WASD：押しているあいだ、回る。Space・FIRE：撃つ。1・2・3：武装。Z：倍率。 */
+function manual(){S.manT=S.t;if(G.auto){G.auto=0;G.autoFire=0;IN.dx=IN.dy=0}}
+function aimTick(dt){const over=G.des&&S.t<G.des.t0+G.des.hold;if(over||G.auto)IN.dx=IN.dy=0;const k=G.zoom?.36:1;IN.ax=clamp(IN.dx*8/(.5*k),-1,1);IN.ay=clamp(IN.dy*8/(.22*k),-1,1);
+  const a0=G.az,e0=G.el;gunTick(dt);if(!over&&!G.auto){if(IN.dx){const n=IN.dx-(G.az-a0);IN.dx=n*IN.dx<=0?0:n}if(IN.dy){const n=IN.dy-(G.el-e0);IN.dy=n*IN.dy<=0?0:n}if(Math.abs(G.az)>=1.9)IN.dx=0;if(G.el<=-.122||G.el>=.175)IN.dy=0}}
+let msgT=0;function say(t){const m=$('msg');m.textContent=t;m.hidden=false;clearTimeout(msgT);msgT=setTimeout(()=>{m.hidden=true},5200)}
+function syncKeys(){$('ctl').hidden=!!S.black;$('ui').style.visibility=S.black?'hidden':'';for(let i=0;i<3;i++)$('kw'+i).setAttribute('aria-pressed',String(G.wpn===i));$('kz').setAttribute('aria-pressed',String(!!G.zoom))}
+function setWpn(i){manual();if(G.wpn!==i){G.wpn=i;G.held=1;A.sw()}syncKeys()}
+function toggleZoom(){manual();G.zoom=G.zoom?0:1;A.sw();syncKeys()}
+let last=0,slow=0;
+function loop(now){requestAnimationFrame(loop);if(glLost||document.hidden||S.hold)return;if(now-last<15)return;const dt=Math.min(.1,(now-last)/1000),gap=now-last;last=now;
+  if(cv.clientWidth!==W||cv.clientHeight!==H)resize();tick(dt);draw();
+  slow=slow*.96+(gap>42?1:0)*.04;if(slow>.6&&resScale>.45){resScale*=.8;slow=0;resize()}}
+let glOK=false;try{glOK=setupGL()}catch(e){console.error(e)}
+if(!glOK){$('nogl').hidden=false;$('ui').hidden=true;$('ctl').hidden=true;hc.hidden=true;return}
+addEventListener('resize',resize);
+let drag=null;
+cv.addEventListener('pointerdown',e=>{startAudio();wake();if(drag)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;wake();manual();const k=G.fov/L.mh*1.25;IN.dx=clamp(IN.dx+(e.clientX-drag.x)*k,-.5,.5);IN.dy=clamp(IN.dy-(e.clientY-drag.y)*k,-.2,.2);drag.x=e.clientX;drag.y=e.clientY});
+const up=e=>{if(drag&&e.pointerId===drag.id)drag=null};cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+{const b=$('kf'),dn=e=>{e.preventDefault();startAudio();manual();IN.fire=1;try{b.setPointerCapture(e.pointerId)}catch(_){}wake()},u=()=>{IN.fire=0;b.blur()};
+  b.addEventListener('pointerdown',dn);for(const n of['pointerup','pointercancel','lostpointercapture'])b.addEventListener(n,u);b.addEventListener('contextmenu',e=>e.preventDefault());
+  b.addEventListener('keydown',e=>{if(e.key==='Enter'){manual();IN.fire=1}});b.addEventListener('keyup',e=>{if(e.key==='Enter')IN.fire=0})}
+for(let i=0;i<3;i++)$('kw'+i).addEventListener('click',e=>{startAudio();setWpn(i);wake();if(e.detail>0)e.currentTarget.blur()});
+$('kz').addEventListener('click',e=>{startAudio();toggleZoom();wake();if(e.detail>0)e.currentTarget.blur()});
+const KX={ArrowLeft:-1,ArrowRight:1,a:-1,d:1,A:-1,D:1},KY={ArrowUp:1,ArrowDown:-1,w:1,s:-1,W:1,S:-1};
+addEventListener('keydown',e=>{const k=e.key;if(e.target&&e.target.tagName==='BUTTON'&&(k===' '||k==='Enter'))return;
+  if(k===' '){IN.fire=1;manual();startAudio();e.preventDefault()}else if(KX[k]){IN.kx=KX[k];manual();e.preventDefault()}else if(KY[k]){IN.ky=KY[k];manual();e.preventDefault()}
+  else if(e.repeat)return;else if(k==='1'||k==='2'||k==='3')setWpn(+k-1);else if(k==='z'||k==='Z')toggleZoom()});
+addEventListener('keyup',e=>{const k=e.key;if(k===' ')IN.fire=0;else if(KX[k])IN.kx=0;else if(KY[k])IN.ky=0});
+addEventListener('blur',()=>{IN.fire=IN.kx=IN.ky=0;drag=null});
+// 小さなボタン
+const ui=$('ui'),bs=$('bs'),bf=$('bf'),bc=$('bc');let idleT=0;
+function wake(){ui.classList.remove('idle');clearTimeout(idleT);idleT=setTimeout(()=>ui.classList.add('idle'),3500)}
+function syncUI(){bs.setAttribute('aria-pressed',String(A.on));$('bs1').style.display=A.on?'':'none';$('bs0').style.display=A.on?'none':'';bc.setAttribute('aria-pressed',String(subOn));bf.setAttribute('aria-pressed',String(!!(document.fullscreenElement||document.webkitFullscreenElement)))}
+bs.addEventListener('click',()=>{if(A.on){userMuted=true;A.setOn(false);syncUI()}else{userMuted=false;startAudio()}wake()});
+bc.addEventListener('click',()=>{subOn=!subOn;store.set('oodori-sub',subOn?'1':'0');if(!subOn)subClear();syncUI();wake()});
+const fsEl=document.documentElement,reqFS=fsEl.requestFullscreen||fsEl.webkitRequestFullscreen;if(!reqFS)bf.hidden=true;
+bf.addEventListener('click',()=>{try{if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen).call(document);else{const r=reqFS.call(fsEl);if(r&&r.catch)r.catch(()=>{})}}catch(_){}wake()});
+document.addEventListener('fullscreenchange',syncUI);document.addEventListener('webkitfullscreenchange',syncUI);
+cv.addEventListener('webglcontextlost',e=>{e.preventDefault();glLost=true});
+cv.addEventListener('webglcontextrestored',()=>{try{setupGL();glLost=false}catch(e){}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(ac&&ac.state==='running')ac.suspend().catch(()=>{})}else{last=performance.now();if(ac&&A.on)ac.resume().catch(()=>{})}});
+let wl=null;
+function keepAwake(){try{if(navigator.wakeLock&&!wl&&!document.hidden)navigator.wakeLock.request('screen').then(x=>{wl=x;x.addEventListener('release',()=>{wl=null})}).catch(()=>{})}catch(_){}}
+addEventListener('pointerdown',keepAwake);document.addEventListener('visibilitychange',()=>{if(!document.hidden)keepAwake()});
+restart(true);syncUI();wake();
+requestAnimationFrame(loop);
+say(TOUCH?'画面に触れると、音が出ます':'画面に触れると、音が出ます　｜　ドラッグ・矢印：ねらう　Space：撃つ　1 2 3：武装　Z：倍率');
+window.__kj={get TX(){return TX},TAG,S,T,G,HEAD,IN,EN,FX,SHELL,GI,F2,ST,L,A,RQ,LN,EV,BLD,CROSS,CITY,tick,draw,restart,wave,spawn,cast,eyePos,aimDir,fireMain,blackout,giLeg,manual,setWpn};
+})();
+
+</script>
+</body>
+</html>
