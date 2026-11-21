@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OtoSing 歌声合成</title>
+<style>
+/* 配置：本文は1段（読む幅 46rem）。頭に、曲を鳴らす帯（構成を小節の長さどおりに並べた線つき）。色は、夜の藍と、夜明けの橙 */
+:root{
+  --bg:#f2f4f8; --surface:#ffffff; --ink:#1a2233; --dim:#5a6579; --line:#d6dce7; --accent:#2c56c4; --dawn:#c9622a; --soft:#e7ecf6; --code:#f6f8fc;
+  --f-text:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,"Noto Sans Mono",monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f131c; --surface:#171d2a; --ink:#e7ebf3; --dim:#98a4b9; --line:#2a3447; --accent:#86a6ff; --dawn:#f0a36b; --soft:#1e2636; --code:#131926; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0f131c; --surface:#171d2a; --ink:#e7ebf3; --dim:#98a4b9; --line:#2a3447; --accent:#86a6ff; --dawn:#f0a36b; --soft:#1e2636; --code:#131926; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-text);font-size:16px;line-height:1.8;margin:0}
+.wrap{max-width:46rem;margin:0 auto;padding-block:1.5rem 4rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:2.6rem}
+header h1{font-size:clamp(2rem,6vw,2.9rem);line-height:1.15;margin:0;letter-spacing:.01em;font-weight:800}
+header h1 small{font-family:var(--f-mono);font-size:.34em;font-weight:500;color:var(--dim);margin-left:.6em;letter-spacing:0}
+.lead{margin:.8rem 0 0;font-size:1.05rem}
+.facts{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;list-style:none;padding:0;margin:1rem 0 0;font-size:.9rem;color:var(--dim)}
+.facts b{color:var(--ink);font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:700}
+section{display:flex;flex-direction:column;gap:.9rem;min-width:0}
+h2{font-size:1.35rem;line-height:1.35;margin:0;text-wrap:balance;font-weight:800}
+h3{font-size:1.02rem;margin:.6rem 0 0;font-weight:700}
+p{margin:0}
+.note{color:var(--dim);font-size:.9rem}
+code,.mono{font-family:var(--f-mono);font-size:.9em}
+code{background:var(--soft);padding:.05em .35em;border-radius:4px}
+a{color:var(--accent)}
+button{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.45rem .9rem;cursor:pointer;line-height:1.3}
+button:hover{border-color:var(--accent)}
+button:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+button:disabled{opacity:.5;cursor:default}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700;padding:.6rem 1.3rem}
+/* 曲を鳴らす帯 */
+.player{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.1rem;display:flex;flex-direction:column;gap:.9rem}
+.np{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem 1rem}
+.np b{font-size:1.25rem}
+.np span{color:var(--dim);font-size:.88rem}
+.kara{min-height:3.4em;display:flex;align-items:center;font-size:clamp(1.35rem,5.2vw,2.1rem);font-weight:700;letter-spacing:.08em;line-height:1.5;flex-wrap:wrap}
+.kara i{font-style:normal;color:var(--dim);transition:color .08s}
+.kara i.done{color:var(--ink)}
+.kara i.now{color:var(--dawn)}
+.kara .hint{font-size:.9rem;font-weight:400;letter-spacing:0;color:var(--dim)}
+.tl{position:relative;display:flex;gap:2px;height:2.6rem}
+.tl button{flex:var(--bars) 1 0;min-width:0;padding:0;border-radius:4px;border:0;background:var(--soft);color:var(--dim);font-size:.72rem;overflow:hidden;white-space:nowrap}
+.tl button[data-k="c"]{background:color-mix(in srgb,var(--dawn) 26%,var(--soft))}
+.tl button[data-k="b"]{background:color-mix(in srgb,var(--dawn) 12%,var(--soft))}
+.tl button[data-k="d"]{background:color-mix(in srgb,var(--accent) 22%,var(--soft))}
+.tl button[aria-current="true"]{color:var(--ink);font-weight:700;box-shadow:inset 0 -3px 0 var(--dawn)}
+.tl .head{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);left:0;pointer-events:none;border-radius:1px}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.pos{font-family:var(--f-mono);font-size:.85rem;color:var(--dim);font-variant-numeric:tabular-nums;margin-left:auto}
+.status{font-size:.88rem;color:var(--dim);min-height:1.6em}
+/* 流れの図：上から下へ、1段ずつ */
+.flow{list-style:none;padding:0;margin:0;counter-reset:st;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.flow li{display:grid;grid-template-columns:minmax(9rem,11.5rem) minmax(0,1fr);gap:.1rem 1rem;padding:.6rem .9rem;border-bottom:1px solid var(--line);font-size:.9rem;line-height:1.6;counter-increment:st}
+.flow li:last-child{border-bottom:0}
+.flow li b::before{content:counter(st);font-family:var(--f-mono);color:var(--dawn);margin-right:.6em}
+.flow li span{color:var(--dim)}
+@media (max-width:520px){ .flow li{grid-template-columns:minmax(0,1fr)} }
+/* 部品を聴く */
+.bench{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1rem;display:flex;flex-direction:column;gap:.9rem}
+.grp{display:flex;flex-direction:column;gap:.4rem}
+.grp>span{font-size:.85rem;color:var(--dim)}
+canvas{width:100%;height:120px;background:var(--code);border-radius:8px;display:block}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem;line-height:1.55}
+th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:700;color:var(--dim);font-size:.8rem}
+td.n,th.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lessons{display:flex;flex-direction:column;gap:1.1rem}
+.lessons>div{border-left:3px solid var(--line);padding-left:.9rem;display:flex;flex-direction:column;gap:.3rem}
+.lessons h3{margin:0}
+ul.pts{margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.35rem}
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.6rem .9rem}
+summary{cursor:pointer;font-weight:700}
+pre{margin:.6rem 0 0;background:var(--code);border-radius:8px;padding:.8rem;overflow-x:auto;font-family:var(--f-mono);font-size:.78rem;line-height:1.55;max-height:26rem}
+textarea{width:100%;min-height:16rem;font-family:var(--f-mono);font-size:.78rem;line-height:1.55;background:var(--code);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:.8rem;resize:vertical}
+ul.msgs{list-style:none;padding:0;margin:0;font-size:.85rem;color:var(--dim)}
+ul.msgs .e{color:var(--dawn)}
+footer{color:var(--dim);font-size:.85rem;border-top:1px solid var(--line);padding-top:1rem}
+@media (prefers-reduced-motion: reduce){ .kara i{transition:none} }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>OtoSing<small id="ver"></small></h1>
+  <p class="lead">録音を1つも使わない、計算だけの歌声です。音符とかなを書くと歌います。音源は JavaScript 1ファイル（39KB）で、テキストの楽譜を鳴らすエンジン TextScore に、楽器のひとつとして入っています。同じような物を自分で作ってみる人の参考になるように、作りと、つまずいた所を書きました。</p>
+  <ul class="facts">
+    <li>録音・音声ファイル <b>0</b></li><li>歌声の音源 <b>39 KB</b></li><li>楽譜エンジンこみ <b>209 KB</b>・依存なし</li><li>出力 <b>32 kHz</b> モノラル</li>
+  </ul>
+</header>
+
+<section aria-labelledby="h-song">
+  <h2 id="h-song">まず聴く</h2>
+  <div class="player">
+    <div class="np"><b>ほどける夜</b><span>リキッド・ドラムンベース　174BPM　144小節　3分19秒（前奏のあと、2分57秒をくり返す）</span></div>
+    <div class="kara" id="kara" aria-live="off"><span class="hint">再生を押すと、歌っているかなが、ここに出ます。</span></div>
+    <div class="tl" id="tl" role="group" aria-label="曲の構成（押すと、その区間から鳴らす）"><div class="head" id="head"></div></div>
+    <div class="row">
+      <button class="primary" id="play">再生</button>
+      <button id="stop" disabled>止める</button>
+      <button id="solo" aria-pressed="false" disabled>歌だけ</button>
+      <button id="kar" aria-pressed="false" disabled>伴奏だけ</button>
+      <span class="pos" id="pos">– 小節</span>
+    </div>
+    <div class="status" id="status" aria-live="polite">はじめて鳴らすときは、歌4本ぶんを先に計算するので、数秒待ちます。</div>
+  </div>
+  <p class="note">詞・旋律・伴奏とも、この見本のために作ったものです。女声の主旋律、サビのハモり、前奏と終わりの囁き声、最後のサビの上の裏声の4本を、同じ音源が歌っています。伴奏のパッド、エレピ、ピアノ、ベース、ドラムも、同じエンジンの合成音です。</p>
+</section>
+
+<section aria-labelledby="h-how">
+  <h2 id="h-how">しくみ</h2>
+  <p>人の声の作りを、そのまま小さくなぞっています。声帯にあたる波を作り、口の形にあたる共鳴に通す、という古くからある方法（ソース・フィルタ）です。新しい技術は使っていません。</p>
+  <ol class="flow">
+    <li><b>音符とかな</b><span>かな1つを、音符1つに当てる。かなは、子音・半母音・母音に分ける。</span></li>
+    <li><b>口の動きの下書き</b><span>音符ごとに、共鳴の高さ・声の強さ・雑音の強さの「通過点」を時刻つきで並べる。子音は拍の手前に置く。</span></li>
+    <li><b>高さ</b><span>ばねのような追いかけ方で、次の音へ移る。跳ぶほどゆっくり、少し行きすぎて戻る。のばす音に、遅れてビブラート。</span></li>
+    <li><b>声帯の波</b><span>ゆっくり開いて、すばやく閉じる波。開いている割合と、閉じ方の鋭さで、地声・裏声・囁きを作り分ける。</span></li>
+    <li><b>口の共鳴</b><span>3つの共鳴を並べて通す。高さは母音ごとの表から。高い声では、第1共鳴を声の高さの上へ逃がす。</span></li>
+    <li><b>子音と息</b><span>雑音を別の共鳴に通して足す。破裂・摩擦・鼻音・はじきを、区間の並びで作り分ける。</span></li>
+    <li><b>大きさをそろえる</b><span>倍音が共鳴に乗るかどうかで音量が変わるので、見積もって打ち消す。</span></li>
+  </ol>
+  <p class="note">1標本ずつ計算するのは 4〜7 だけで、口の形や高さは 16標本（0.5ミリ秒）ごとに更新しています。歌は、鳴らす前に1本ぶんをまとめて計算し、音符ごとに切り出して、ほかの楽器と同じ道（音量・左右・残響・エコー）へ流します。</p>
+</section>
+
+<section aria-labelledby="h-parts">
+  <h2 id="h-parts">部品を聴く</h2>
+  <p>同じひとふしを、部品を足したり外したりして歌わせます。下の波形は、歌いだして少しあとの 20ミリ秒です。</p>
+  <div class="bench">
+    <div class="grp"><span>声ができるまで（あいうえお）</span><div class="row" id="d1"></div></div>
+    <div class="grp"><span>子音（さくらがさいた）</span><div class="row" id="d2"></div></div>
+    <div class="grp"><span>高い声で母音を保つ（E5 で、あいうえお）</span><div class="row" id="d3"></div></div>
+    <div class="grp"><span>声の出し方（そらへとべ）</span><div class="row" id="d4"></div></div>
+    <canvas id="wave" width="900" height="240" aria-label="最後に鳴らした音の波形"></canvas>
+    <div class="status" id="dstat" aria-live="polite">ボタンを押すと鳴ります。</div>
+  </div>
+</section>
+
+<section aria-labelledby="h-lessons">
+  <h2 id="h-lessons">つまずいた所</h2>
+  <p>作っていて、はっきり効いたこと、やってみて駄目だったことです。数値は、下の「測った値」と同じ測り方によるものです。</p>
+  <div class="lessons">
+    <div><h3>高い声では、母音が消える</h3>
+      <p>声が高くなると、倍音の間隔が広がって、共鳴の山に倍音が1本も乗らなくなります。D5（約600Hz）から上で目立ちます。効いたのは3つです。第1共鳴を声の高さのすぐ上へ逃がすこと。奥の母音（う・お）だけ第3共鳴を弱めて、明るさの差を残すこと。音符の頭に、一瞬だけ息の雑音を足すこと（雑音は倍音の間を埋めるので、共鳴の形が聞こえる）。</p></div>
+    <div><h3>音符ごとに、大きさが 15dB も変わる</h3>
+      <p>倍音が共鳴の山に乗った音符だけ、大きく鳴ります。倍音ごとの通り方から大きさを見積もって、8割ほどを打ち消しています。全部は打ち消しません（母音ごとの自然な差まで消えるため）。</p></div>
+    <div><h3>子音は、「口のどこで閉じたか」が命</h3>
+      <p>はじめは、どの子音も「母音と、あいまいな口の形のあいだ」から始めていて、ぱ・た・か が聞きわけられませんでした。閉じる場所（唇・歯ぐき・奥）ごとに決まる共鳴の出発点から母音へ動かし、破裂（閉じる → はじける → 短い息）と鼻音（低いこもった音）を作り分けると、音声認識での子音の聞きまちがいが 35% から 8% に減りました。逆に、語中の が行 を鼻にかける工夫は、聞きまちがいが増えたので、やめました。</p></div>
+    <div><h3>子音は、拍の前に置く</h3>
+      <p>拍に合うのは母音の頭です。子音を拍から始めると、歌が遅れて聞こえます。子音の長さを決め打ちにしていたころは、速い曲で、歌詞がだんだん遅れていきました（8分音符の連続で、平均 0.42秒）。次の拍までに収まらないときは、子音を 45% まで縮めるようにして、192BPM の8分音符でも、遅れは最大 0.013秒になりました。</p></div>
+    <div><h3>囁きの息は、どの共鳴に通すかで高さが変わる</h3>
+      <p>息の雑音を3つの共鳴に同じように通すと、いちばん低い共鳴の分が目立って、高い裏声では、息が声より低く鳴りました（重心が約 1kHz）。低い共鳴から外すと高くなりますが、第2共鳴の息まで外すと、母音が分からなくなります。高い声では、息が母音の手がかりを運んでいるためです。</p></div>
+    <div><h3>耳の代わりに、音声認識に聞かせる</h3>
+      <p>調整のたびに人が聴くのは大変なので、歌わせた文を音声認識にかけ、正解と結果をどちらも音素に直して、子音がいくつ別の音になったかを数えました。作りのちがうモデルを3つ使い、調整に使う文と、確かめるだけの文を分けています。認識器は、文として自然なほうへ寄せて聞くので、数値そのものより、前後の差を見ます。仕上がりは人が聴いて、直す所を決めています。</p></div>
+    <div><h3>前の音を変えない仕組みを、先に作る</h3>
+      <p>乱数の種が同じなら、1標本も違わない波形になるようにしてあります。新しい機能は、使わなければ前と同じ波形になることを、波形の照合で確かめてから入れています。それでも一度、足した変数の名前が外の名前と重なって、歌詞のない音符だけが止まる不具合を出しました。確認に、その場合が入っていなかったためです。</p></div>
+    <div><h3>休みのあいだに、計算が何倍も遅くなる</h3>
+      <p>音が止まると、共鳴の中の値は 0 へ向かって小さくなりつづけ、ついには非正規化数になって、計算が極端に遅くなります。この曲の歌4本の計算は、測った環境で 12秒かかっていましたが、十分に小さくなった値を 0 に切るだけで、4秒になりました（出力は1標本も変わりません）。長い休みのある歌で起きます。</p></div>
+  </div>
+</section>
+
+<section aria-labelledby="h-num">
+  <h2 id="h-num">測った値</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>声帯の波（共鳴に通す前）</th><th class="n">文献</th><th class="n">この音源</th></tr></thead>
+    <tbody>
+      <tr><td>声帯が開いている割合　地声</td><td class="n">0.39〜0.55</td><td class="n">0.45</td></tr>
+      <tr><td>声帯が開いている割合　裏声</td><td class="n">0.6〜0.8</td><td class="n">0.75</td></tr>
+      <tr><td>基音と第2倍音の差　地声</td><td class="n">3.1〜14.9 dB</td><td class="n">4.3〜4.5 dB</td></tr>
+      <tr><td>基音と第2倍音の差　裏声</td><td class="n">10.7〜34.3 dB</td><td class="n">16.6〜18.4 dB</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>子音の聞きまちがい（音声認識。調整に使っていない30文 × 5条件）</th><th class="n">前の子音</th><th class="n">作り直した子音</th></tr></thead>
+    <tbody>
+      <tr><td>ReazonSpeech</td><td class="n">35.3%</td><td class="n">8.2%</td></tr>
+      <tr><td>SenseVoice</td><td class="n">37.6%</td><td class="n">9.0%</td></tr>
+      <tr><td>Whisper small</td><td class="n">23.1%</td><td class="n">15.3%</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>この曲の歌い方で（30文、ReazonSpeech ／ SenseVoice）</th><th class="n">子音の聞きまちがい</th></tr></thead>
+    <tbody>
+      <tr><td>Aメロ（息まじり）</td><td class="n">20.7% ／ 18.0%</td></tr>
+      <tr><td>サビ（息なし、少し高い）</td><td class="n">22.8% ／ 17.7%</td></tr>
+      <tr><td>ブリッジ（囁き）</td><td class="n">20.4% ／ 20.4%</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">条件は、男女のふつうの高さ・女声の高い声・速いテンポの5つ。聞き手は認識器で、人の耳ではありません。この曲の値が上の表より悪いのは、高さと息のためです。共鳴の高さの表と息の量は、実測ではなく、見積もりです。</p>
+</section>
+
+<section aria-labelledby="h-limit">
+  <h2 id="h-limit">できないこと</h2>
+  <ul class="pts">
+    <li>日本語の、かなだけです。母音の無声化（です・した）や、アクセントは扱いません。高さは音符で決まります。</li>
+    <li>高い声、囁き、早口ほど、歌詞は聞き取りにくくなります。</li>
+    <li>声は1本ずつで、歌い手ごとの個性は、4種の共鳴の表（女・男・高い男声・子供）と、出し方の設定だけです。</li>
+    <li>歌は、鳴らす前にまとめて計算します。長い曲では、最初に数秒待ちます（別スレッドで計算する形には、まだしていません）。</li>
+    <li>動作を確かめたのは Chrome 系のブラウザです。</li>
+  </ul>
+</section>
+
+<section aria-labelledby="h-score">
+  <h2 id="h-score">譜面と、音源のソース</h2>
+  <p>譜面はテキストです。<code>@名前 楽器</code> の下に音符を書き、歌声のトラックは、音符の行のあとに、かなの行を書きます。歌詞の中の <code>【囁0.6】</code> は、その場所から囁きの量を変える印です。書き方のぜんぶは、エンジンのファイルの頭のコメントにあります。</p>
+  <details>
+    <summary>「ほどける夜」の譜面（書きかえて鳴らせます）</summary>
+    <textarea id="src" spellcheck="false" aria-label="譜面のテキスト"></textarea>
+    <div class="row" style="margin-top:.6rem"><button id="run">この譜面で鳴らす</button><button id="copy1">譜面をコピー</button><span class="note" id="st1" aria-live="polite"></span></div>
+    <ul class="msgs" id="msgs" aria-live="polite"></ul>
+  </details>
+  <details id="osd">
+    <summary>歌声の音源 otosing.js（39KB）</summary>
+    <div class="row" style="margin-top:.6rem"><button id="copy2">ソースをコピー</button><span class="note" id="st2" aria-live="polite"></span></div>
+    <pre id="osrc">開くと、ここに出ます。</pre>
+  </details>
+  <p class="note">楽譜エンジン（TextScore、209KB）は、このページに組み込んであります。<code>TextScore.bgm(譜面)</code> で鳴り、<code>TextScore.OtoSing.singNotes(音符, 設定)</code> で、歌声の波形だけを取り出せます。</p>
+  <p class="note">ファイルは、このページと同じ場所に置いてあります：<a href="otosing.js">otosing.js</a>（歌声の音源）、<a href="textscore.js">textscore.js</a>（楽譜エンジン。頭のコメントに、使い方と譜面の書き方）、<a href="hodokeru-yoru.txt">hodokeru-yoru.txt</a>（この曲の譜面）。</p>
+</section>
+
+<section aria-labelledby="h-ref">
+  <h2 id="h-ref">参考にしたもの</h2>
+  <ul class="pts">
+    <li><a href="https://www.fon.hum.uva.nl/david/ma_ssp/doc/Klatt-1990-JAS000820.pdf">Klatt と Klatt 1990</a>（息まじりの声の手がかり）</li>
+    <li><a href="https://www.lam.jussieu.fr/Membres/Castellengo/publications/2004d-Voix%20mixte-ISMA.pdf">Castellengo ら 2004</a>（ミックスボイスと、声帯が開いている割合）</li>
+    <li><a href="https://www5.pucsp.br/liaac/download/g.l.salomao.sp2008_revised_version.pdf">Salomão ら 2008</a>（地声と裏声の、基音と第2倍音の差）</li>
+    <li><a href="https://www.phys.unsw.edu.au/jw/reprints/m1m2.pdf">UNSW の測定</a>（地声と裏声での共鳴のちがい）</li>
+    <li><a href="https://www.pure.ed.ac.uk/ws/files/14560064/Raitio_Suni_et_al_2013_Analysis_and_Synthesis_of_Shouted_Speech.pdf">Raitio ら 2013</a>（叫び声の分析と合成）</li>
+    <li><a href="https://lab3sr.gricad-pages.univ-grenoble-alpes.fr/people/bailly/pdf/Bailly_etal_JSLHR2014.pdf">Bailly ら 2014</a>（仮声帯のふるえ）</li>
+  </ul>
+</section>
+
+<footer>
+  <p>(c) Toshiaki Yokoda。実装と調整は Claude（Anthropic）と行いました。値は文献と測定から決め、聞き取りは音声認識で数え、できあがりを人が聴いて、直す所を決めています。</p>
+</footer>
+</div>
+
+<script type="text/plain" id="song">
+title ほどける夜
+// 歌つきのリキッド・ドラムンベース。ハ短調、174BPM、144小節（約3分19秒。前奏16小節のあと、128小節＝約2分57秒をくり返す）
+// 構成：前奏16・A16・B8・サビ16・間奏8・A16・B8・サビ16・ブリッジ16（ハーフタイム）・サビ16・終わり8
+// 歌：女声。Aメロは息まじり（whisper=0.3）、Bメロで息を減らし、サビは息を切って歌う。ブリッジは囁き。息の雑音は air= で高い帯域へ
+//     サビの後半に3度下のハモり。最後のサビは、頭からハモりと、上で裏声の声（歌詞なし）。前奏と終わりに、歌詞のない囁き声
+// 伴奏：パッドとエレピの和音（2小節ずつ）、リースベース、kit=dnb のツーステップ。ピアノが前奏・Aメロの合いの手・間奏を弾く
+tempo 174
+intro 16
+reverb 3.2
+delay 0.75
+
+// ---- 和音（パッド、2小節ずつ） ----
+def PAb = Ab3+C4+Eb4+G4:8 |
+def PBb = Bb3+D4+F4+G4:8 |
+def PCm = Eb3+G3+Bb3+D4:8 |
+def PGm = G3+Bb3+D4+F4:8 |
+def PFm = F3+Ab3+C4+G4:8 |
+def PEb = Eb3+G3+Bb3+D4:8 |
+def PBs = Bb3+Eb4+F4+Ab4:8 |
+// ---- エレピの刻み（2小節で4打） ----
+def EAb = C4+Eb4+G4:1.5 C4+Eb4+G4:1 -:1.5 C4+Eb4+G4:0.5 -:1 C4+Eb4+G4:2.5 |
+def EBb = D4+F4+G4+Bb4:1.5 D4+F4+G4+Bb4:1 -:1.5 D4+F4+G4+Bb4:0.5 -:1 D4+F4+G4+Bb4:2.5 |
+def ECm = Eb4+G4+Bb4+D5:1.5 Eb4+G4+Bb4+D5:1 -:1.5 Eb4+G4+Bb4+D5:0.5 -:1 Eb4+G4+Bb4+D5:2.5 |
+def EGm = D4+F4+G4+Bb4:1.5 D4+F4+G4+Bb4:1 -:1.5 D4+F4+G4+Bb4:0.5 -:1 D4+F4+G4+Bb4:2.5 |
+def EFm = C4+Eb4+F4+Ab4:1.5 C4+Eb4+F4+Ab4:1 -:1.5 C4+Eb4+F4+Ab4:0.5 -:1 C4+Eb4+F4+Ab4:2.5 |
+def EEb = D4+Eb4+G4+Bb4:1.5 D4+Eb4+G4+Bb4:1 -:1.5 D4+Eb4+G4+Bb4:0.5 -:1 D4+Eb4+G4+Bb4:2.5 |
+def EBs = Eb4+F4+Ab4+Bb4:1.5 Eb4+F4+Ab4+Bb4:1 -:1.5 Eb4+F4+Ab4+Bb4:0.5 -:1 Eb4+F4+Ab4+Bb4:2.5 |
+// ---- ベース（2小節。終わりの音で、次の和音へ寄る） ----
+def BAbB = Ab1:1.5 -:1 Ab1:1.5 | Ab1:2 -:0.5 Bb1:1.5 |
+def BBbC = Bb1:1.5 -:1 Bb1:1.5 | Bb1:2 -:0.5 C2:1.5 |
+def BBbG = Bb1:1.5 -:1 Bb1:1.5 | Bb1:2 -:0.5 G1:1.5 |
+def BBbE = Bb1:1.5 -:1 Bb1:1.5 | Bb1:2 -:0.5 Eb2:1.5 |
+def BCmG = C2:1.5 -:1 C2:1.5 | C2:2 -:0.5 G1:1.5 |
+def BCmA = C2:1.5 -:1 C2:1.5 | C2:2 -:0.5 Ab1:1.5 |
+def BGmA = G1:1.5 -:1 G1:1.5 | G1:2 -:0.5 Ab1:1.5 |
+def BGmF = G1:1.5 -:1 G1:1.5 | G1:2 -:0.5 F1:1.5 |
+def BGmC = G1:1.5 -:1 G1:1.5 | G1:2 -:0.5 C2:1.5 |
+def BFmG = F1:1.5 -:1 F1:1.5 | F1:2 -:0.5 G1:1.5 |
+def BEbB = Eb2:1.5 -:1 Eb2:1.5 | Eb2:2 -:0.5 Bb1:1.5 |
+def BBsA = Bb1:1.5 -:1 Bb1:1.5 | Bb1:2 -:0.5 Ab1:1.5 |
+// ---- ドラム（16分で1小節。s?? はゴーストノート） ----
+def g1   = k - - - s - - s?? - s?? k - s - - - |
+def g2   = k - - - s - - s?? - - k - s - k? - |
+def g3   = k - - k? s - - s?? - s?? k - s - s?? - |
+def fill = k - - - s - - s?? - s?? k - s s? s s |
+def roll = s?? s?? s? s? s? s? s s s s s! s! s! s! s! s! |
+def half = k - - - - - - - s - - - - - k? - |
+def hal2 = k - - - - - - - s - - s?? - s?? k? - |
+def dend = k - - - - - - - - - - - - - - - |
+// ---- ピアノ：前奏の主題、Aメロの合いの手、間奏、ブリッジ ----
+def pm1 = -:1 G5 Eb5 C5 | Bb4:1.5 C5:0.5 Eb5:2 |
+def pm2 = -:1 F5 D5 Bb4 | G4:1.5 Bb4:0.5 D5:2 |
+def pm3 = -:1 G5 Eb5 D5 | C5:1.5 D5:0.5 Eb5:2 |
+def pm4 = -:1 F5 D5 Bb4 | D5:3 -:1 |
+def pa1 = -:1 D5:0.5 F5:0.5 G5 F5 | D5:1.5 Bb4:0.5 G4:2 |
+def pa2 = -:1 Bb4:0.5 D5:0.5 F5 G5 | Bb5:3 -:1 |
+def px1 = -:1 Eb5 G5 Bb5 | Ab5:1.5 G5:0.5 Eb5:2 |
+def px2 = -:1 D5 F5 Bb5 | G5:1.5 F5:0.5 D5:2 |
+def px3 = -:1 Eb5:0.5 G5:0.5 C6 Bb5 | G5:1.5 Eb5:0.5 D5:2 |
+def px4 = -:1 D5 F5 G5 | Bb5:3 -:1 |
+def pd1 = -:1 Ab5 G5 Eb5 | C5:3 -:1 |
+// ---- プラックの分散和音（サビ。8分で1小節） ----
+def kAb = Ab4 C5 Eb5 G5 Eb5 C5 G5 Eb5 |
+def kBb = Bb4 D5 F5 G5 F5 D5 G5 F5 |
+def kGm = G4 Bb4 D5 F5 D5 Bb4 F5 D5 |
+def kCm = C5 Eb5 G5 Bb5 G5 Eb5 Bb5 G5 |
+def kEb = Eb5 G5 Bb5 D6 Bb5 G5 D6 Bb5 |
+def kBs = Bb4 Eb5 F5 Ab5 F5 Eb5 Ab5 F5 |
+// ---- 歌（2小節でひとこと） ----
+def v1 = G4:1.5 Bb4:1.5 C5 | Eb5:1.5 C5 Bb4 -:0.5 |
+def v2 = F4:1.5 G4:1.5 Bb4 | D5:1.5 Bb4 G4 -:0.5 |
+def v3 = G4 G4 Bb4 C5 | Eb5:1.5 D5 C5 -:0.5 |
+def v4 = C5:1.5 Bb4:1.5 G4 | Bb4:1.5 C5 Eb5 -:0.5 |
+def v5 = D5:1.5 C5:1.5 Bb4 | F5:1.5 D5 Bb4 -:0.5 |
+def v6 = Eb5 D5 C5 Bb4 | C5:2 G4:1.5 -:0.5 |
+def b1 = Ab4 Ab4 C5 C5 | Eb5:1.5 C5 Ab4 -:0.5 |
+def b2 = Bb4 Bb4 D5 D5 | F5:1.5 D5 Bb4 -:0.5 |
+def b3 = C5 C5 Eb5 Eb5 | G5:2 Eb5:1.5 -:0.5 |
+def b4 = D5 D5 F5 F5 | G5:1.5 F5:2 -:0.5 |
+def c1 = C5:1.5 Eb5:2.5 | D5:2 C5:1.5 -:0.5 |
+def c2 = Bb4:1.5 D5:2.5 | C5:2 Bb4:1.5 -:0.5 |
+def c3 = Bb4 Bb4 D5 F5 | F5:1.5 D5 Bb4 -:0.5 |
+def c4 = C5 C5 G4 C5 | Eb5:2 C5:1.5 -:0.5 |
+def c5 = Eb5:1.5 G5:2.5 | F5:2 Eb5:1.5 -:0.5 |
+def c6 = D5:1.5 F5:2.5 | Eb5:2 D5:1.5 -:0.5 |
+def c7 = Bb4 Bb4 Eb5 G5 | G5:1.5 F5 Eb5 -:0.5 |
+def c8 = F5 F5 Eb5 F5 | G5:2 F5:1.5 -:0.5 |
+def d1 = D5:1.5 Bb4:1.5 G4 | Bb4:1.5 C5 D5 -:0.5 |
+def d2 = C5:1.5 Bb4:1.5 Ab4 | C5:1.5 Eb5 C5 -:0.5 |
+def d3 = D5:1.5 C5:1.5 Bb4 | D5:1.5 F5 D5 -:0.5 |
+def d4 = Bb4:1.5 D5:1.5 D5 | F5:1.5 D5 Bb4 -:0.5 |
+def d5 = C5 C5 Eb5 Eb5 | G5:2 Eb5:1.5 -:0.5 |
+// ハモり（3度〜6度下）
+def h1 = Ab4:1.5 C5:2.5 | Bb4:2 Ab4:1.5 -:0.5 |
+def h2 = G4:1.5 Bb4:2.5 | G4:2 G4:1.5 -:0.5 |
+def h3 = G4 G4 Bb4 D5 | D5:1.5 Bb4 G4 -:0.5 |
+def h4 = G4 G4 Eb4 G4 | C5:2 G4:1.5 -:0.5 |
+def h5 = C5:1.5 Eb5:2.5 | C5:2 C5:1.5 -:0.5 |
+def h6 = Bb4:1.5 D5:2.5 | Bb4:2 Bb4:1.5 -:0.5 |
+def h7 = G4 G4 Bb4 Eb5 | Eb5:1.5 D5 Bb4 -:0.5 |
+def h8 = D5 D5 Bb4 D5 | Eb5:2 D5:1.5 -:0.5 |
+// ---- 区間ごとの伴奏 ----
+def PA = $PAb $PBb $PCm $PGm
+def PB = $PFm $PGm $PAb $PBs
+def PC = $PAb $PBb $PGm $PCm $PAb $PBb $PEb $PBs
+def EA = $EAb $EBb $ECm $EGm
+def EB = $EFm $EGm $EAb $EBs
+def EC = $EAb $EBb $EGm $ECm $EAb $EBb $EEb $EBs
+def BA = $BAbB $BBbC $BCmG $BGmA
+def BAe = $BAbB $BBbC $BCmG $BGmF
+def BB = $BFmG $BGmA $BAbB $BBsA
+def BC = $BAbB $BBbG $BGmC $BCmA $BAbB $BBbE $BEbB $BBsA
+def DA = [$g1 $g2]*7 $g1 $fill
+def DB = [$g1 $g3]*3 $g1 $roll
+def DC = [$g1 $g2]*3 $g1 $fill [$g1 $g2]*3 $g1 $fill
+def KC = $kAb $kAb $kBb $kBb $kGm $kGm $kCm $kCm $kAb $kAb $kBb $kBb $kEb $kEb $kBs $kBs
+
+@uta voice vol=1.3 rev=0.45 dly=0.18 whisper=0.3 air=1
+-:64 |
+$v1
+よふけのみち
+$v2
+ぬれたほどう
+$v3
+あかりがにじむ
+-:8 |
+$v4
+いえないまま
+$v5
+むねのおくで
+$v6
+ゆれているよ
+-:8 |
+$b1
+【囁0.15】たちどまるたび
+$b2
+【囁0.15】おもいだすのわ
+$b3
+【囁0.1】あのひのこえ
+$b4
+【囁0】よるがあける
+$c1
+【囁0】ほどけて
+$c2
+【囁0】ほどけて
+$c3
+【囁0】よるがほどける
+$c4
+【囁0】あさのほうえ
+$c5
+【囁0】ひらいて
+$c6
+【囁0】ひらいて
+$c7
+【囁0】まどのむこうに
+$c8
+【囁0】ひかりがさす
+-:32 |
+$v1
+とおいそらが
+$v2
+しらんでゆく
+$v3
+とりがなきだす
+-:8 |
+$v4
+かたむすびを
+$v5
+ゆびでほどき
+$v6
+わらえるかな
+-:8 |
+$b1
+【囁0.15】たちどまるたび
+$b2
+【囁0.15】おもいだすのわ
+$b3
+【囁0.1】あのひのこえ
+$b4
+【囁0】よるがあける
+$c1
+【囁0】ほどけて
+$c2
+【囁0】ほどけて
+$c3
+【囁0】よるがほどける
+$c4
+【囁0】あさのほうえ
+$c5
+【囁0】ひらいて
+$c6
+【囁0】ひらいて
+$c7
+【囁0】まどのむこうに
+$c8
+【囁0】ひかりがさす
+-:8 |
+$d1
+【囁0.6】ねむれぬまま
+$d2
+【囁0.6】かぞえたほし
+$d3
+【囁0.6】ひとつきえた
+Ab4:4 | C5:3.5 -:0.5 |
+【囁0.6】うー
+$d4
+【囁0.4】けれどあさわ
+$d5
+【囁0.2】かならずくる
+F5:4 | G5:3 -:1 |
+【囁0】あー
+$c1
+【囁0】ほどけて
+$c2
+【囁0】ほどけて
+$c3
+【囁0】よるがほどける
+$c4
+【囁0】あさのほうえ
+$c5
+【囁0】ひらいて
+$c6
+【囁0】ひらいて
+$c7
+【囁0】まどのむこうに
+$c8
+【囁0】ひかりがさす
+-:32 |
+
+@hamo voice vol=0.62 rev=0.5 pan=0.3 vib=0.6 whisper=0.25 air=1
+-:64 | -:64 | -:32 |
+-:32 |
+$h5
+ひらいて
+$h6
+ひらいて
+$h7
+まどのむこうに
+$h8
+ひかりがさす
+-:32 | -:64 | -:32 |
+-:32 |
+$h5
+ひらいて
+$h6
+ひらいて
+$h7
+まどのむこうに
+$h8
+ひかりがさす
+-:64 |
+$h1
+ほどけて
+$h2
+ほどけて
+$h3
+よるがほどける
+$h4
+あさのほうえ
+$h5
+ひらいて
+$h6
+ひらいて
+$h7
+まどのむこうに
+$h8
+ひかりがさす
+-:32 |
+
+// 歌詞のない囁き声（前奏と終わり）
+@ko voice vol=0.7 rev=0.55 dly=0.25 pan=-0.25 whisper=0.6 air=1.5 vib=0.5
+-:32 |
+Eb5:4 | D5:3.5 -:0.5 | D5:4 | F5:3.5 -:0.5 | C5:4 | Eb5:3.5 -:0.5 | D5:4 | -:4 |
+-:64 | -:32 | -:64 | -:32 | -:64 | -:32 | -:64 | -:64 | -:64 |
+Eb5:4 | D5:3.5 -:0.5 | D5:4 | F5:3.5 -:0.5 | Eb5:8 | -:8 |
+
+// 最後のサビの上で鳴る、裏声の声（歌詞なし）
+@ad voice vol=0.9 rev=0.6 dly=0.3 pan=0.2 reg=falsetto whisper=0.4 air=1.5 onset=0.5 vib=0.6
+-:64 | -:64 | -:32 | -:64 | -:32 | -:64 | -:32 | -:64 | -:64 |
+-:4 | G5:3.5 -:0.5 | -:4 | F5:3.5 -:0.5 | -:4 | Bb5:3.5 -:0.5 | -:4 | G5:3.5 -:0.5 |
+-:2 G5:2 | Bb5:3.5 -:0.5 | -:2 F5:2 | Bb5:3.5 -:0.5 | -:2 G5:2 | Bb5:3.5 -:0.5 | Bb5:4 | Ab5:3 -:1 |
+-:32 |
+
+@pad pad vol=0.42 cut=2400 rev=0.55 pan=-0.15
+$PA $PAb $PBb $PCm $PCm
+$PA $PA $PB $PC
+$PA
+$PA $PA $PB $PC
+$PB $PFm $PGm $PAb $PBs
+$PC
+$PAb $PBb $PCm $PCm
+
+@keys epiano vol=0.5 rev=0.4 dly=0.22 pan=0.2 chorus=0.4
+-:32 | $EAb $EBb $ECm $ECm
+$EA $EA $EB $EC
+$EA
+$EA $EA $EB $EC
+-:32 | $EFm $EGm $EAb $EBs
+$EC
+$EAb $EBb -:16 |
+
+@piano piano vol=0.5 rev=0.45 dly=0.2 pan=-0.1
+$pm1 $pm2 $pm3 $pm4 -:32 |
+-:24 | $pa1 -:24 | $pa2 -:32 | -:64 |
+$px1 $px2 $px3 $px4
+-:24 | $pa1 -:24 | $pa2 -:32 | -:64 |
+$pd1 -:24 | $pd1 -:24 |
+-:64 |
+$pm1 $pm2 -:16 |
+
+@pluck pluck len=0.5 vol=0.24 rev=0.4 dly=0.3 pan=0.35
+-:64 | -:64 | -:32 |
+$KC
+-:32 | -:64 | -:32 |
+$KC
+-:64 |
+$KC
+-:32 |
+
+@bass reese vol=0.85 cut=900 rev=0.08
+-:60 | -:2 G1:2 |
+$BA $BAe $BB $BC
+$BA
+$BA $BAe $BB $BC
+F1:8 | G1:8 | Ab1:8 | Bb1:8 | F1:8 | G1:8 | Ab1:8 | Bb1:6 -:2 |
+$BC
+Ab1:8 | Bb1:8 | C2:8 | C2:4 -:4 |
+
+@drums drums kit=dnb len=1/4 vol=1.0 rev=0.14
+-:60 | $roll
+$DA $DB $DC
+[$g1 $g2]*3 $g1 $fill
+$DA $DB $DC
+[$half]*7 $hal2 [$half]*7 $roll
+$DC
+[$half]*4 $dend -:12 |
+
+@hats drums kit=dnb len=1/2 vol=0.9 rev=0.15 pan=0.25
+-:32 | [h??]*56 -:4 |
+[h? h??]*160
+[h? h??]*32
+[h? h??]*160
+[h?? -]*64
+[h? h??]*64
+[h?? -]*16 -:16 |
+
+@ride drums kit=dnb len=1/2 vol=0.65 rev=0.25 pan=-0.3
+-:64 | -:64 | -:32 |
+[z? z??]*64
+-:32 | -:64 | -:32 |
+[z? z??]*64
+-:64 |
+[z? z??]*64
+-:32 |
+
+@crash drums kit=dnb len=4 vol=0.9 rev=0.4
+-:64 | y? | -:60 | y?? | -:28 | y | -:60 | y?? | -:28 |
+y? | -:60 | y?? | -:28 | y | -:60 |
+y?? | -:60 | y | -:60 | y?? | -:28 |
+</script>
+
+<script src="textscore.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+if(typeof TextScore==='undefined'){ $('status').textContent='エンジンを読みこめませんでした。'; $('play').disabled=true; return; }
+$('ver').textContent='TextScore '+TextScore.version+' / OtoSing '+TextScore.OtoSing.VERSION;
+let SONG=$('song').textContent.replace(/^\n/,''); $('src').value=SONG;
+const SECS=[['前奏',16,'i'],['A',16,'a'],['B',8,'b'],['サビ',16,'c'],['間奏',8,'i'],['A',16,'a'],['B',8,'b'],['サビ',16,'c'],['ブリッジ',16,'d'],['サビ',16,'c'],['終わり',8,'i']];
+let sg=TextScore.parse(SONG), P=null, marks=[], lines=[], solo=false, kar=false, secEls=[], custom=false;
+
+/* 構成の線：区間の幅は、小節の数どおり */
+function buildTimeline(){
+  const tl=$('tl'); for(const b of [...tl.querySelectorAll('button')]) b.remove(); secEls=[];
+  if(custom){ const b=document.createElement('button'); b.type='button'; b.style.setProperty('--bars',1); b.textContent='書きかえた譜面'; b.addEventListener('click',()=>start(0)); tl.insertBefore(b,$('head')); secEls.push({a:0,b:sg.length,el:b}); return; }
+  let bar=0;
+  for(const [name,bars,k] of SECS){ const a=bar*sg.meter, e=(bar+bars)*sg.meter, b=document.createElement('button'); b.type='button'; b.style.setProperty('--bars',bars); b.dataset.k=k; b.textContent=name; b.title=name+'（'+(bar+1)+'小節目から、'+bars+'小節）';
+    b.addEventListener('click',()=>start(a)); tl.insertBefore(b,$('head')); secEls.push({a,b:e,el:b}); bar+=bars; }
+}
+/* 主旋律の歌詞：ひとことずつ。かなごとに、歌う拍を覚えておく */
+function buildLyrics(){
+  marks=[]; lines=[];
+  const vt=sg.tracks.filter(t=>/^voice/.test(t.inst))[0]; if(!vt) return;
+  const evs=sg.events.filter(e=>e.track===vt&&e.ly); let line=null, prevEnd=-9;
+  for(const e of evs){ if(!line||e.t-prevEnd>1e-6){ line={a:e.t,b:e.t,els:[]}; lines.push(line); }
+    const i=document.createElement('i'); i.textContent=e.ly.ch+(e.ly.q?'っ':''); line.els.push(i); line.b=e.t+e.d; marks.push({a:e.t,b:e.t+e.d,el:i,line}); prevEnd=e.t+e.d; }
+}
+let shown=null;
+function tick(){
+  requestAnimationFrame(tick);
+  if(!P||!(P.playing||P.paused)) return;
+  const p=P.position, beat=p.beat, len=sg.length||1;
+  $('head').style.left=(100*Math.min(1,beat/len))+'%';
+  $('pos').textContent=p.bar+' 小節 '+Math.floor(p.beatInBar)+' 拍　'+Math.floor(p.seconds/60)+':'+String(Math.floor(p.seconds%60)).padStart(2,'0');
+  for(const s of secEls) s.el.setAttribute('aria-current',String(beat>=s.a&&beat<s.b));
+  let ln=null; for(const l of lines){ if(beat>=l.a-1&&beat<l.b+0.5){ ln=l; break; } }
+  if(ln!==shown){ shown=ln; const k=$('kara'); k.textContent=''; if(ln) for(const el of ln.els) k.append(el); }
+  if(ln) for(const m of marks){ if(m.line!==ln) continue; m.el.className=beat>=m.b?'done':beat>=m.a?'now':''; }
+}
+function applyMute(){
+  if(!P) return; const tr=P.tracks, vox=tr.filter(t=>/^voice/.test(t.inst)).map(t=>t.name), oth=tr.filter(t=>!/^voice/.test(t.inst)).map(t=>t.name);
+  P.mute(vox,kar); P.mute(oth,solo); $('solo').setAttribute('aria-pressed',String(solo)); $('kar').setAttribute('aria-pressed',String(kar));
+}
+const frame=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,30)));
+let busy=false, warmed=false;
+async function start(from){
+  if(busy) return; busy=true; stopDemo();
+  try{
+    if(!warmed){ $('status').textContent='歌を計算しています…（数秒かかります）'; $('play').disabled=true; await frame(); }
+    await TextScore.unlock();
+    if(P) P.stop();
+    const t0=performance.now();
+    P=new TextScore.Player({loop:true}).load(SONG); P.play({from:from||0}); applyMute();
+    const ms=performance.now()-t0;
+    $('status').textContent=warmed?'再生中。構成の線を押すと、その区間へ飛びます。':'再生中（歌の計算に '+(ms/1000).toFixed(1)+' 秒かかりました）。構成の線を押すと、その区間へ飛びます。';
+    warmed=true; for(const id of ['stop','solo','kar']) $(id).disabled=false; $('play').disabled=false; $('play').textContent='一時停止';
+  }catch(e){ $('status').textContent='鳴らせませんでした：'+e.message; $('play').disabled=false; }
+  busy=false;
+}
+$('play').addEventListener('click',()=>{ if(P&&P.playing&&!P.paused){ P.pause(); $('play').textContent='再開'; $('status').textContent='一時停止中。'; } else if(P&&P.paused){ stopDemo(); P.resume(); $('play').textContent='一時停止'; $('status').textContent='再生中。'; } else start(0); });
+$('stop').addEventListener('click',()=>{ if(P){ P.stop(); } $('play').textContent='再生'; $('status').textContent='止めました。'; $('head').style.left='0%'; shown=null; $('kara').innerHTML='<span class="hint">再生を押すと、歌っているかなが、ここに出ます。</span>'; for(const s of secEls) s.el.setAttribute('aria-current','false'); });
+$('solo').addEventListener('click',()=>{ solo=!solo; if(solo) kar=false; applyMute(); });
+$('kar').addEventListener('click',()=>{ kar=!kar; if(kar) solo=false; applyMute(); });
+
+/* 譜面を書きかえて鳴らす */
+function report(){
+  const m=$('msgs'); m.textContent=''; const add=(c,t)=>{ const li=document.createElement('li'); li.className=c; li.textContent=t; m.append(li); };
+  for(const e of sg.errors) add('e',e.line+'行目: '+e.msg); for(const w of sg.warns) add('e',w.line+'行目: '+w.msg);
+  if(!sg.errors.length&&!sg.warns.length) add('',(sg.length/sg.meter)+'小節、'+Math.round(sg.length*60/sg.tempo)+'秒。エラーなし。');
+}
+$('run').addEventListener('click',()=>{ const t=$('src').value; custom=t!==$('song').textContent.replace(/^\n/,''); SONG=t; sg=TextScore.parse(SONG); warmed=false; buildTimeline(); buildLyrics(); report(); start(0); });
+function copyFrom(get,st){ return ()=>{ const text=get(); const ok=()=>{ $(st).textContent='コピーしました'; }, ng=()=>{ $(st).textContent='コピーできませんでした。文字を選んでコピーしてください'; };
+  try{ navigator.clipboard.writeText(text).then(ok,ng); }catch(e){ ng(); } }; }
+$('copy1').addEventListener('click',copyFrom(()=>$('src').value,'st1'));
+$('copy2').addEventListener('click',copyFrom(()=>$('osrc').textContent,'st2'));
+let osLoaded=false;
+$('osd').addEventListener('toggle',()=>{ if(!$('osd').open||osLoaded) return; osLoaded=true; const el=$('otosrc');
+  if(el){ $('osrc').textContent=el.textContent.replace(/^\n/,''); return; }
+  fetch('otosing.js').then(r=>r.ok?r.text():Promise.reject(new Error(r.status))).then(t=>{ $('osrc').textContent=t; },()=>{ $('osrc').textContent='ソースを読みこめませんでした。'; osLoaded=false; }); });
+
+/* 部品を聴く：音源を直に呼んで、波形を1本だけ鳴らす */
+const O=TextScore.OtoSing, MEL=[0,2,4,5,7];
+let demoSrc=null;
+function stopDemo(){ if(demoSrc){ try{ demoSrc.stop(); }catch(e){} demoSrc=null; } }
+function sing(text,base,opt,step,mel){
+  const T=O.kana(text), s=step||0.42, N=T.map((m,k)=>({t:0.2+k*s,dur:k===T.length-1?s*2.4:s,midi:base+(mel||MEL)[k%(mel||MEL).length],m,vel:1,join:k<T.length-1}));
+  return {pcm:O.singNotes(N,Object.assign({pad:0.1,seed:1},opt)),t1:0.3+0.5*s};
+}
+function draw(pcm,t1){
+  const c=$('wave'), g=c.getContext('2d'), W=c.width, H=c.height, cs=getComputedStyle(document.documentElement);
+  g.clearRect(0,0,W,H); const a=Math.floor(t1*O.SR), n=Math.floor(0.02*O.SR); let pk=1e-6; for(let i=a;i<a+n;i++) pk=Math.max(pk,Math.abs(pcm[i]||0));
+  g.strokeStyle=cs.getPropertyValue('--line'); g.lineWidth=1; g.beginPath(); g.moveTo(0,H/2); g.lineTo(W,H/2); g.stroke();
+  g.strokeStyle=cs.getPropertyValue('--accent'); g.lineWidth=3; g.lineJoin='round'; g.beginPath();
+  for(let i=0;i<n;i++){ const x=i/(n-1)*W, y=H/2-(pcm[a+i]||0)/pk*H*0.42; i?g.lineTo(x,y):g.moveTo(x,y); } g.stroke();
+}
+async function demo(label,text,base,opt,step,mel){
+  $('dstat').textContent='計算しています…'; await frame();
+  try{
+    await TextScore.unlock(); if(P&&P.playing&&!P.paused){ P.pause(); $('play').textContent='再開'; $('status').textContent='一時停止中。'; }
+    stopDemo(); const t0=performance.now(), r=sing(text,base,opt,step,mel), ms=performance.now()-t0, pcm=r.pcm, ctx=TextScore.context;
+    let pk=1e-6; for(let i=0;i<pcm.length;i++) pk=Math.max(pk,Math.abs(pcm[i])); const out=new Float32Array(pcm.length), gn=0.5/pk; for(let i=0;i<pcm.length;i++) out[i]=pcm[i]*gn;
+    const buf=ctx.createBuffer(1,out.length,O.SR); buf.copyToChannel(out,0); const src=ctx.createBufferSource(); src.buffer=buf; src.connect(ctx.destination); src.start(); demoSrc=src;
+    draw(pcm,r.t1); $('dstat').textContent=label+'　'+(pcm.length/O.SR).toFixed(1)+'秒の歌を '+Math.round(ms)+' ミリ秒で計算';
+  }catch(e){ $('dstat').textContent='鳴らせませんでした：'+e.message; }
+}
+const D={
+  d1:[['声帯の波だけ','あいうえお',57,{voice:'onna',src:1,vib:0,expr:0}],['共鳴に通す','あいうえお',57,{voice:'onna',vib:0,expr:0}],['歌いまわしを足す','あいうえお',57,{voice:'onna'}]],
+  d2:[['出発点なし（前の作り）','さくらがさいた',57,{voice:'onna',artic:0},0.3],['出発点あり','さくらがさいた',57,{voice:'onna'},0.3]],
+  d3:[['工夫なし','あいうえお',76,{voice:'onna',tune:0,shape:0,onset:0},0.42,[0,0,0,0,0]],['工夫あり','あいうえお',76,{voice:'onna'},0.42,[0,0,0,0,0]]],
+  d4:[['地声','そらえとべ',52,{voice:'otoko',reg:'chest'}],['裏声','そらえとべ',64,{voice:'otoko',reg:'falsetto'}],['囁き','そらえとべ',60,{voice:'onna',whisper:0.7,air:1}],['叫び','そらえとべ',57,{voice:'otoko',reg:'chest',shout:1,rough:0}],['荒れ','そらえとべ',52,{voice:'otoko',reg:'chest',rough:0.8}],['鋭い高い声','そらえとべ',69,{voice:'tenor',reg:'mix',edge:1}]]
+};
+for(const id in D) for(const [label,text,base,opt,step,mel] of D[id]){ const b=document.createElement('button'); b.type='button'; b.textContent=label; b.addEventListener('click',()=>demo(label,text,base,opt,step,mel)); $(id).append(b); }
+
+buildTimeline(); buildLyrics(); report(); requestAnimationFrame(tick);
+})();
+</script>
+
+</body>
+</html>
