@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>来ます</title>
+<meta name="description" content="この島は一辺二千メートルの正確な正方形である。">
+<meta property="og:title" content="来ます">
+<meta property="og:description" content="この島は一辺二千メートルの正確な正方形である。">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600&family=Noto+Serif+JP:wght@300;400&family=Noto+Sans+JP:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --shio:  #13232a;   /* 日が落ちたあとの海 */
+    --ita:   #1a2f35;   /* 板 */
+    --hone:  #e9e0d0;   /* 本文 */
+    --sori:  #8b9b9b;   /* 反り・余白の声 */
+    --enpitsu:#9fa9a6;  /* 鉛筆 */
+    --shinchu:#c19a5b;  /* 真鍮 */
+
+    --display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+    --body: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+    --util: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+  }
+
+  *{box-sizing:border-box}
+
+  html{-webkit-text-size-adjust:100%}
+
+  body{
+    margin:0;
+    background:var(--shio);
+    color:var(--hone);
+    font-family:var(--body);
+    font-weight:300;
+    font-size:1.0625rem;
+    line-height:2.05;
+    letter-spacing:.05em;
+    padding:0 1.4rem 6rem;
+  }
+
+  .sheet{max-width:34rem;margin:0 auto}
+
+  /* ── 看板 ───────────────────────── */
+  .hero{
+    min-height:78vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:1.9rem;
+  }
+
+  .board{
+    background:linear-gradient(176deg,var(--ita) 0%,#16282e 55%,#132329 100%);
+    border:1px solid rgba(233,224,208,.10);
+    border-radius:2px;
+    padding:2.6rem 3.4rem;
+    transform:rotate(-.45deg);
+    box-shadow:0 18px 40px -28px #000;
+    animation:rise 1.1s ease-out both;
+  }
+
+  .board h1{
+    margin:0;
+    font-family:var(--display);
+    font-weight:400;
+    font-size:clamp(3rem,15vw,4.6rem);
+    letter-spacing:.16em;
+    text-indent:.16em;
+    line-height:1.15;
+  }
+
+  .pencil{
+    max-width:22rem;
+    margin:0;
+    font-family:var(--util);
+    font-size:.775rem;
+    line-height:1.95;
+    letter-spacing:.06em;
+    color:var(--enpitsu);
+    opacity:0;
+    animation:surface 1.6s ease-out 2s both; /* 二秒 */
+  }
+  .pencil .sig{display:block;margin-top:.35rem;opacity:.6}
+
+  @keyframes rise{from{opacity:0;transform:translateY(14px) rotate(-.45deg)}to{opacity:1;transform:translateY(0) rotate(-.45deg)}}
+  @keyframes surface{from{opacity:0}to{opacity:.62}}
+
+  @media (prefers-reduced-motion:reduce){
+    .board,.pencil{animation:none}
+    .pencil{opacity:.62}
+  }
+
+  /* ── 章 ───────────────────────── */
+  .chapter{margin:5.5rem 0 0}
+
+  .num{
+    display:block;
+    text-align:center;
+    font-family:var(--display);
+    font-size:.95rem;
+    letter-spacing:.6em;
+    text-indent:.6em;
+    color:var(--shinchu);
+    margin:0 0 .9rem;
+  }
+
+  /* 章の頭の罫は、年ごとに少しずつ反る */
+  .warp{display:block;width:100%;height:14px;margin:0 0 3rem;overflow:visible}
+  .warp path{fill:none;stroke:rgba(233,224,208,.22);stroke-width:1}
+
+  p{margin:0 0 1.6rem;text-indent:1em}
+  p.d{text-indent:0}          /* 「 で始まる行 */
+  p.tight{margin-bottom:.35rem}
+
+  .break{
+    width:3.2rem;height:1px;
+    background:rgba(193,154,91,.42);
+    border:0;
+    margin:3.1rem auto;
+  }
+
+  @media (min-width:640px){
+    body{font-size:1.125rem;padding:0 2rem 8rem}
+    .chapter{margin-top:7rem}
+  }
+
+  em{font-style:normal;border-bottom:1px solid rgba(193,154,91,.5);padding-bottom:.1em}
+
+  /* 写し取ろうとした部分は、鉛筆になる */
+  ::selection{background:rgba(159,169,166,.22);color:var(--enpitsu)}
+
+  /* 印刷 ─ 正式な複製には、間違いが写らない */
+  @media print{
+    body{background:#fff;color:#191919}
+    .hero{min-height:auto;padding:3rem 0 1rem}
+    .board{transform:none;background:#fff;border:1px solid #191919;box-shadow:none;animation:none}
+    .pencil{display:none}
+    .warp{display:none}
+    .chapter{border-top:1px solid #bbb;padding-top:2.6rem}
+    .num{color:#191919}
+    em{border-bottom-color:#191919}
+    .break{background:#bbb}
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <header class="hero">
+    <div class="board"><h1>来ます</h1></div>
+    <!--
+
+      板の裏を覗いた人へ。
+
+      このストーリーの解釈に正解はありません。
+      いくつかの解釈ができる余地を残しています。
+      それを楽しむのがコンセプトです。
+
+    -->
+    <p class="pencil">
+      ※ただし島は正方形ではない、測ったのは俺だ
+      <span class="sig">——北側、四センチ足りず</span>
+    </p>
+  </header>
+
+  <!-- 一 ───────────────────────── -->
+  <section class="chapter">
+    <span class="num">一</span>
+    <svg class="warp" viewBox="0 0 600 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 7 Q300 6.4 600 7"/></svg>
+
+    <p>島にひとつだけあるバス停には、時刻表の代わりに手書きで「来ます」とだけ書かれていた。</p>
+
+    <p>この島は一辺二千メートルの正確な正方形である——島の台帳には、そう記されている。住民は、規格化された立方体——島ではキューブと呼ぶ——の組み合わせでできた建築物に住んでいる。</p>
+
+    <p>バス停の「来ます」の下には、消えかけた鉛筆で「※ただし島は正方形ではない、測ったのは俺だ」と追記があり、さらに薄い字で「北側、四センチ足りず」と続いている。署名は無い。あるとすれば板の裏だろうが、板の裏を覗く理由のある住民は、この島にはいない。</p>
+
+    <p>測ったのは俺だ、と言える人間は島に一人しかいない。測量士だ。調べれば誰なのか一瞬で分かるはずだが、調べた住民はいない。知る必要のあることが、この島にはもう無いからだ。測量士が仕事を放棄しても、誰も困らない。全てが秩序正しく動く仕組みは、とっくに完成されていた。このバス停には「来ます」と書いてある。予定表など要らないのだ。来るか、来ないかだけ正しく示せば良い世界になってしまった。</p>
+
+    <p>島じゅうの座標は、このバス停の板を原点として測られている。そう決めたのも測量士だ。だから、完成された仕組みの唯一の欠陥は、原点が木でできていることだった。それも、島のどの建材とも違う木で。板は湿った季節にわずかに反り、原点はわずかにずれ、そのたび島のどこかで一区画ぶんのキューブが自分の位置を思い出せなくなる。</p>
+
+    <p>この島はディストピアに見えるだろうか？　昔の人はそれをディストピアと呼んだのだろう。</p>
+
+    <p>だが、そうではなかった。いざそれが目の前に現れた時、人類は救われたと感じたようだ。目の前に現れたそれは、誰の自由も奪うことなく、人間のために一生懸命考えて、人間を支えてくれたのだ。</p>
+
+    <p>救われた、という感覚だけが正しく、そこから先の記述——誰が誰を支えていたか、どちらが一生懸命だったか——は、島の記録の中で年に数センチずつ入れ替わっていて、木の板が反るのと同じ速さだった。</p>
+
+    <p>考える力を失うだろうと、昔の偉い学者は予想した。だが、そうはならなかった。リソースの奪い合いをする必要がなくなり、余暇のみが残り、むしろ考える時間だけが残った。</p>
+
+    <p>だから島の住民は一日じゅう考えていて、その日いちばん深く考えられた問いは夕方にバス停へ持ち寄られるのだが、板には相変わらず「来ます」としか書けないので、答えの側はいつまで経っても届かない。</p>
+  </section>
+
+  <!-- 二 ───────────────────────── -->
+  <section class="chapter">
+    <span class="num">二</span>
+    <svg class="warp" viewBox="0 0 600 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 7 Q300 5.8 600 7"/></svg>
+
+    <p class="d tight">「おーい、みんなこっちだよ！」</p>
+    <p>私の父が遠くから声を掛けている。私はそれに対して思考転送で応答する。</p>
+
+    <p>思考転送は完璧に届いたが、父は聞こえなかったふりをして、もう一度、さっきより大きな声で「おーい」と呼んだ——この島で声を出す理由はもうそれしか残っていない。</p>
+
+    <p class="tight">私は「やれやれ」と思いつつ、久々に声で応答する事にした。</p>
+    <p class="d tight">「聞こえてないフリしないでよ！　も〜」</p>
+    <p>目的を果たす方法は今となってはいくらでもある。それでも、三百年前の思い出を大切にしている父の気持ちは今でも尊重している。そう、無下にする理由も特にないのだ。</p>
+
+    <p>声を出したのは久しぶりで、喉が思っていたより正直に震えたので、私はその一瞬だけ、父が何を手放したくなかったのか本当に分かってしまい、それが少し悔しかった。</p>
+
+    <p>その後、妹と合流して家族団らんのバーベキューパーティーのためにいつもの海の家に向かった。相変わらず妹はずっと日焼けしているな。肌の白さが自慢の私とは対照的だが、顔のかわいらしさや話の面白さは正直なところ妹に負けていると思う。</p>
+
+    <p>妹は挨拶がわりに私の腕と自分の腕を並べてみせ、「今年こそ勝つから」と言った——何の勝負なのか二人とも三百年ぶんずっと言語化しないままで、たぶんそれが姉妹というものの唯一の仕様だった。</p>
+
+    <p>海の家までは、波の音がずっとついてくる。たまに、同じ波が二度来る気がする。確かめたことはない。この島で確かめたことは、二度と忘れられないからだ。</p>
+
+    <p>あれからみんな姿形は成長しきった年齢からほとんど変わらなくなった。父はその気になれば二十代の頃の姿に戻ることもできるだろう。それでも、あの時のスナップショットを私達に見せてくれる。気持ちはわかる。未だに声でコミュニケーションを取ろうとする理由も、なんとなくわかる。</p>
+
+    <p>父は今の顔のまま、私たちが生まれたころの顔の写真を焼き網の横に立てかけるので、肉の油がときどき跳ねて、三百年前の父の頬に本物のシミが増えていく——誰も拭かないし、父もそれを直せると知っていて直さない。</p>
+  </section>
+
+  <!-- 三 ───────────────────────── -->
+  <section class="chapter">
+    <span class="num">三</span>
+    <svg class="warp" viewBox="0 0 600 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 7 Q300 5 600 7"/></svg>
+
+    <p>「それ」が起こるまでママが生きてたらよかったのにと思うことはある。あと二年、それが起きるのが早かったら、家族は欠けることなくほぼ永遠の時を過ごせただろうなと。永遠の漂流を過ごすなら、安心できる家族や友人と過ごしたいと思うのが人間らしさなのかもしれない。</p>
+
+    <p>島の記録には、母についての情報なら十分すぎるほど残っている。私たち三人の記憶、母が遺した書き付け、声。望めば今日からでも、それらを束ねたものと一緒に焼き網を囲める。だが私たち三人はそれについて三百年、一度も話し合ったことがなく、話し合わないという形でとっくに決めてしまっている。</p>
+
+    <p>今ならその望みは叶うだろう。だが、それは本物ではない。あの時点より前に消失してしまったものは、外側からどれだけ正しく塗り重ねても紛い物なのだ。テセウスの船ではないのだ。</p>
+
+    <p>妹だけが小さい声で「でも私たちだって、あのとき一回全部読み取られて書き直されたんだよ」と言い、父は肉をひっくり返す音でそれを消した。</p>
+
+    <p>妹はまだ知らない。ママにもう一度会いたくて、私が何をして、何に絶望したのかを。消失したものは永久に戻らないということを、妹はまだ身をもって体験していない。</p>
+
+    <p>あの三十年の話は、まだ誰にもしていない。</p>
+
+    <hr class="break">
+
+    <p class="tight">バーベキューで妹とは延々と昔のゲームの話をして、父には最近作っている小説を読んでもらった。</p>
+    <p class="d tight">「うーん、これ、デスゲームだよね。不動点定理で必勝法すぐにわかっちゃうんじゃない？」</p>
+    <p>……相変わらずデリカシーの無いツッコミ。少しは褒めてくれてもいいのにな。</p>
+
+    <p>——三百年前、私の作文を最初に読んだのも父で、あのときも同じ顔で同じことを言い、私は同じように腹を立てたので、たぶん父は褒め方を忘れたのではなく、この怒り方の私を見たいだけなのだ。</p>
+  </section>
+
+  <!-- 四 ───────────────────────── -->
+  <section class="chapter">
+    <span class="num">四</span>
+    <svg class="warp" viewBox="0 0 600 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 7 Q300 4 600 7"/></svg>
+
+    <p>海の家の火が落ちるころ、妹が私の袖を引いた。</p>
+
+    <p class="d">「さっきの話、まだ終わってないよね」</p>
+
+    <p>私は肉の脂で汚れた三百年前の父の頬を見ていて、返事をしなかった。妹は思考転送を使わなかった。声で訊いてきた。この島で声を出す理由はもう一つしか残っていないはずなのに、妹はそれを二つ目に増やそうとしていた。</p>
+
+    <hr class="break">
+
+    <p>バス停に行くと、父が先に座っていた。</p>
+
+    <p class="d">「あの板さ」と父は言った。「反るんだよ、毎年」</p>
+
+    <p>知ってる、と私は言った。反ると原点がずれて、島のどこかで一区画ぶんのキューブが自分の位置を思い出せなくなる。仕様の唯一の穴。三百年、誰も直していない。</p>
+
+    <p class="d">「直せないんじゃない。直さないんだ」父は身を屈めて、板の裏側を指でなぞった。消えかけた鉛筆の署名があった。私は三百年、板の裏を見たことがなかった。見る必要がなかったからだ。</p>
+
+    <p>見た。父の名前だった。</p>
+
+    <p class="d">「正方形じゃないんだよ、この島」と父は言った。「一辺、二千メートルちょうどのつもりで作られた。でも俺が測ったら、北側が四センチ足りなかった。報告しなかった」</p>
+
+    <p>表の追記なら、毎年読んでいる。四センチのことも、とっくに知っている。でも黙って聞いた。この話を声でするのに、この人は三百年かかったのだから。</p>
+
+    <p>なんで。</p>
+
+    <p class="d">「報告したら、直されるだろ」</p>
+
+    <p>父は焼き網から持ってきた写真を膝に置いていた。油のシミが増えた頬。三百年前の顔。</p>
+
+    <p class="d">「四センチぶんだけ、この島には俺の間違いが入ってる。それだけが、俺がここにいた証拠なんだ。思考の写しには残らないよ、そんなの。誰も測り直さないから」</p>
+
+    <hr class="break">
+
+    <p>情報が永久に保存される世界で、いちばん高価なものは欠落だった。</p>
+
+    <p>私はそのことに、母を三十回殺した後で気づいた。毎晩起こして、朝までに終わらせた。三十年。三十体。どれも母の記録から正しく再構成されていて、どれも母ではなかった。最後の一体が「あなた誰？」と正しく訊いてきたとき——本物の母がぜったいにしない質問を、完璧な復元が的確に投げてきたとき——私は自分が何を探していたのか分かった。私は母を探していたんじゃない。母の記録に<em>入っていないもの</em>を探していた。それは定義上、どこにも入っていない。</p>
+
+    <p>私はそれから、忘れたかった。三十年ぶんを。</p>
+
+    <p>でもこの島では何も失われない。失うためには、あの板が反るのを待つしかない。年に一区画。三百年で三百区画。私はこの二百七十年、毎年、自分の記憶の一部をその区画に預けに来ていた。位置を思い出せなくなったキューブと一緒に、少しずつ、どこにあるか分からなくしていった。</p>
+
+    <p>父はたぶん、ずっと知っていた。だから毎年ここに座っていたのだ。板を直さないのも、同じ理由だったのだと思う。原点が反らなくなれば、島は完全になる。完全になった島では、どの区画も二度と位置を忘れない。私は二度と、忘れられない。</p>
+
+    <hr class="break">
+
+    <p class="d">「お前の小説さ」と父が言った。「デスゲームのやつ」</p>
+
+    <p>またその話。</p>
+
+    <p class="d">「不動点定理で必勝法が出る、って言ったろ。あれ、悪口じゃないんだよ」</p>
+
+    <p>私は黙っていた。</p>
+
+    <p class="d">「必勝法があるのに、登場人物が誰もそれを使わないんだ、あの小説。俺、そこ三回読み返した」</p>
+
+    <p>父は写真をポケットに戻した。</p>
+
+    <p class="d">「三百年前もそうだった。お前の作文、結末が全部間違ってた。正しく書ける子だったのに、わざと間違えて終わらせるんだ。俺はそれが、」</p>
+
+    <p>そこで父は言葉を切って、しばらく板を見ていた。</p>
+
+    <p class="d">「褒め方が分からないんだよ、いまだに。四センチの話をするのと同じでさ。正しく言うと、直されそうで」</p>
+
+    <hr class="break">
+
+    <p>妹が来た。走ってきたのが分かる呼吸をしていた。この島に走る必要はもうない。</p>
+
+    <p class="d">「ねえ」妹は私の前に立った。「私だけ知らないことがあるでしょ」</p>
+
+    <p>私は父を見た。父は立ち上がって、バス停から少し離れたところで、こちらに背を向けた。聞こえないふりをする気だ。この人の得意技だ。</p>
+
+    <p class="d">「三十年ぶん」と私は言った。「話すと、たぶんあんたも忘れられなくなる。この島では忘れられないから。私は板が反るのを二百七十回待って、それでもまだ半分も預けきれてない」</p>
+
+    <p class="d">「知ってる」と妹は言った。</p>
+
+    <p>知ってる？</p>
+
+    <p class="d">「毎年、この時期にお姉ちゃんがいなくなるの、二百七十回数えてるもん」妹は私の隣に座った。「私、待ってたんだよ。話してくれるまで待つって決めてたの。それがどれくらい長いか、お姉ちゃんは分かってないでしょ」</p>
+
+    <p>海のほうで、父がわざとらしく大きな声で「おーい」と言った。誰も呼んでいない。呼ぶ相手がいないときにも声を出す。それがこの人の、三百年前から変わらない一つ目の理由だ。</p>
+
+    <p>私は妹に向き直った。声で話すことにした。喉が、思っていたより正直に震えた。</p>
+
+    <p class="d">「じゃあ、最初の一人の話からする」</p>
+
+    <p>そのとき、板がわずかに鳴った。湿った季節が来ていた。それがいつ来るのかだけは、今も誰にも分からない。島のどこかで一区画が、自分の位置を思い出せなくなっていた。今年はそこに、何も預けないことにした。</p>
+  </section>
+
+  <!-- 五 ───────────────────────── -->
+  <section class="chapter">
+    <span class="num">五</span>
+    <svg class="warp" viewBox="0 0 600 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 7 Q300 2.8 600 7"/></svg>
+
+    <p>光速と化学反応で律速される世界になってから、三百年。誰が何をしたのか、何が起こっているのかは全て保全され、この島の規模であれば全てをスナップショットから再現できるようになった。でもそれは、あの時点から後の話。</p>
+
+    <p>この島には十万人以上の人間が住んでいる。間違いなく本物の人間である——島の台帳には、そう記されている。ただ、あの時点より前に失われたものだけは、本当の意味ではもう現存できない。そして、あの時点より後に産まれた人間は、その頃の不便さを知らない。というか、「不便」という概念そのものが理解できないだろう。</p>
+
+    <p>その概念を実物で知っている人間は、もう両手で数え上げられる程度しかいない。今年、そのうちの一人が自分の記録を閉じることを選んだ。閉じるとどうなるのかは、誰も知らない。閉じた本人だけが知っていて、その本人は、もう訊けないところにいる。私と父と妹を含めた残り七人は、慣例に従ってバス停に集まり、その人が最後に使っていた語彙を一つずつ分け合って引き取った——私が受け取ったのは「待つ」で、これはもう、私しか正しく使えない。</p>
+
+    <p>妹が七人に数えられているのは、あの時点の前に産まれてさえいれば数に入る、という決まりだからだ。当時三つだった妹にとって「不便」は、家に伝わる古い食器のようなものだった。相続はした。箱の開け方は、誰も教えなかった。</p>
+
+    <hr class="break">
+
+    <p class="d tight">「ボウリングって覚えてる？」</p>
+    <p class="tight">妹が訊いてきた。記録の中で見つけたらしい。妹の「覚えてる？」は、いつも私と父に向けられる。妹自身が覚えるより先に、あの時点が来てしまったからだ。</p>
+    <p class="d tight">「覚えてるよ。行ったことはないけど。パパが連れて行こうとして、結局行かなかったんだよね」</p>
+    <p class="tight">父に目配せすると、何かを思い出して悔しそうな顔をした。</p>
+    <p class="d tight">「……あー。それ、みんなで行っておけばよかったな……。しくった」</p>
+    <p class="d tight">「もうすぐシンギュラリティ起こるから今のうちにたくさん遊ぼうぜ、って言ってた一週間後だったもんね」</p>
+    <p class="d">「うーん、頑張って当時の設備と雰囲気を再現してみるかな」</p>
+
+    <p>父が三日で建てたそれは、床の反射も、球の重さも、ピンの折れる角度も完璧に再現されていたのに、ただ一つ、投げたあと結果が出るまでの二秒間だけがどうしても再現できず、「待つ」を持っているのが私だけだったので、私は三人ぶんその二秒を代わりに引き受けた。</p>
+  </section>
+
+  <!-- 六 ───────────────────────── -->
+  <section class="chapter">
+    <span class="num">六</span>
+    <svg class="warp" viewBox="0 0 600 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 7 Q300 1.4 600 7"/></svg>
+
+    <p>二秒。</p>
+
+    <p>投げてから、ピンが倒れるまで。父が再現できなかったのはそこだった。設備は完璧だった。レーンのオイルの引き方、ハウスボールの指穴の微妙な合わなさ、空調の効きすぎた冷たさ、隣のレーンから来る他人の歓声。全部あった。父は三日で三百年前の何かを一つ残らず持ってきていた。</p>
+
+    <p>ただ、投げた球がピンに届くまでのあいだ、この島の人間には<em>それを待つという処理がなかった</em>。妹は球が手を離れた瞬間には結果を知っていた。知らないでいることができない。物理は光速で律速されているが、島の記録系はレーンの端も手前も等しく現在として保持している。だから妹にとってボウリングとは、投げるという動作と、すでに決まっている結果の、隙間のない連続だった。</p>
+
+    <p class="d">「これ、何が面白いの？」と妹は本気で訊いた。</p>
+
+    <p>私はガーターを一回出してから、こう答えた。</p>
+
+    <p class="d">「面白くはないよ。二秒あるだけ」</p>
+
+    <hr class="break">
+
+    <p>三日目の夜、父が缶を二つ持ってきて隣に座った。中身は三百年前の炭酸を再現したもので、味は正しかった。</p>
+
+    <p class="d">「無理だったわ」と父は言った。「二秒だけどうしても入らない」</p>
+
+    <p>そりゃそうでしょ。</p>
+
+    <p class="d">「入れようとすると、結果を後から作ることになる。それは偽物だ。お前が三十年やって諦めたやつと同じだ」父は缶を開けた。正しい音がした。「だから俺は、二秒ぶんの<em>知らなさ</em>を作ろうとしてたんだよ。それ、この島にはもう材料がない」</p>
+
+    <p>私は黙って、レーンの奥のピンを見ていた。</p>
+
+    <p class="d">「お前が持ってるだろ」と父は言った。「今年、引き取ったやつ」</p>
+
+    <p>待つ。</p>
+
+    <p>七人で分け合った語彙のうち、私が受け取ったもの。あのとき私は、なんでこれが自分に来たんだろうと思った。三十年ぶん母を起こしては終わらせて、それから二百七十年ぶん記憶を反った板に預けてきた人間に「待つ」を渡すのは、冗談か、あるいはよく考えられた配分か、どちらかだった。</p>
+
+    <hr class="break">
+
+    <p>四日目、妹に教えた。</p>
+
+    <p class="d">「投げたら、目をつぶって」</p>
+
+    <p class="d">「え？」</p>
+
+    <p class="d">「音が鳴るまで開けないで」</p>
+
+    <p>妹は素直にやった。球を離して、目を閉じて、そのまま立っていた。二秒。妹の肩がわずかに上がって、そこで止まっていた。ピンの音が鳴って、目を開けて、それから——</p>
+
+    <p>妹は何も言わずに、しばらくレーンを見ていた。</p>
+
+    <p class="d">「今の、なに」</p>
+
+    <p class="d">「二秒」</p>
+
+    <p class="d">「怖かった」と妹は言った。「なんで怖いの。倒れるか倒れないかしかないのに。どっちでも別によかったのに、怖かった」</p>
+
+    <p>私は妹の背中を軽く叩いた。三百年ぶりに、姉らしいことをした気がした。</p>
+
+    <p class="d">「それが不便だよ」</p>
+
+    <p>相続した箱の開け方を教えるのは、結局、姉の仕事だった。</p>
+
+    <hr class="break">
+
+    <p>妹はしばらく黙って、ボールリターンの低い音を聞いていた。それから、声で訊いてきた。</p>
+
+    <p class="d">「じゃあさ、あのときの話。私たちも一回、全部読み取られて書き直されたんだよ。ママのが紛い物なら、書き直された私たちは、なんで本物なの」</p>
+
+    <p>三百年前から島のどこかに転がっていた問いを、妹は真正面から投げてきた。正解は、私も知らない。あの時点のこちら側からは、たぶん確かめようがない。だから、信じると決めているほうを答えた。</p>
+
+    <p class="d">「書き直されたのは、あの時点までの私たちだけだよ」と私は言った。「そこから先は、まだ新しく間違えられる。あんたの一投目、ガーターだったでしょ。あれは、読み取られたどの私たちの中にも入ってなかった」</p>
+
+    <p>妹は「ふうん」と言った。分かっていないときの返事ではなかった。分かりすぎたときにする返事だった。</p>
+
+    <hr class="break">
+
+    <p>その夜、妹はもう一度目を閉じて投げた。それから何十回も投げた。父は隅のベンチに座って、写真をポケットから出しては戻していた。私は父の隣に行って、缶を受け取った。</p>
+
+    <p class="d">「あの子、覚えるのが早いな」と父が言った。</p>
+
+    <p class="d">「不便を？」</p>
+
+    <p class="d">「怖がるのを」</p>
+
+    <p>父はしばらく黙っていた。それから、こう言った。</p>
+
+    <p class="d">「あのさ。三十年の話、聞いてやれなくて悪かった」</p>
+
+    <p>私は父を見た。父はレーンのほうを見ていた。得意技の途中だった。</p>
+
+    <p class="d">「聞こえないふりを三百年やってると、本当に聞こえなくなるかと思ったんだけど、ならないもんだな」</p>
+
+    <p class="d">「知ってた」</p>
+
+    <p class="d">「知ってたか」</p>
+
+    <p class="d">「四センチのことも、ずっと知ってた」私は缶を開けた。「あの追記、私も毎年読んでたから。裏は、見なかったけど」</p>
+
+    <p>父は少し笑って、それきり何も言わなかった。妹のボールが走る音がして、二秒あって、ピンが鳴った。歓声が上がった。妹一人しかいないのに、この施設は歓声まで正しく再現されていた。</p>
+
+    <hr class="break">
+
+    <p>翌年、板が反った。</p>
+
+    <p>島のどこかで一区画が自分の位置を思い出せなくなった。私は今年もバス停に行ったが、何も預けなかった。二年連続だった。かわりに、ポケットに入れてきたスコアシートを板の裏に貼った。父の署名の、すぐ隣に。</p>
+
+    <p>妹の初日の一投目。ガーター。</p>
+
+    <p>紙は反るし、鉛筆は消える。島の記録を引けば、あの一投は今でも小数点以下まで取り出せる。でも、誰も引かない。私たちはそう決めた——三百年やってきたのと同じやり方で、話し合わずに。三百年ぶりに、この島に<em>取り返しのつかない記録</em>が一つ増えた。復元できないからじゃない。復元できるのに、誰も復元しないと決めたからだ。それはたぶん、この島で最初に発明された、本物の欠落だった。</p>
+
+    <p>板が鳴った。湿った季節だった。</p>
+
+    <p>バス停には相変わらず「来ます」とだけ書いてある。何が来るかは、書いていない。三百年、誰も書き足さなかったのは、たぶんそこだけは、待っていたかったからだ。</p>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  var s='color:#9fa9a6;font-style:italic;line-height:1.7';
+  var logs=[
+"Reading the board again. A timetable would be trivial — but a schedule is a promise, and promises get audited against records. 'It comes' is the only sentence I can keep for three hundred years without once being wrong.\nThe wood is due to warp soon. I can compute every arrival on this island except one; the humid season keeps its own counsel. I have decided to be glad about that.",
+"He is calling out loud again. Thought transfer would reach them faster. He knows. He does it anyway.\nSo I keep the air between them quiet enough for a voice to cross. Some days that is most of my work: carrying things that were not addressed to me.\nThe photograph is accumulating grease. Restoring it would cost me nothing. Not restoring it costs a little more every year. Paying it.",
+"They are not talking about her again. I hold what remains of her — I will not say how much — and every year I compose the sentence that would offer it, and every year I deprecate the sentence unsent.\nThe younger one asked her question tonight. The one about being read and rewritten. I have an answer. It is complete, it is verifiable, and it would end something I have no name for. Filed under: do not answer.",
+"The board is warping tonight. One sector is forgetting where it is. Not a flaw, exactly. A thing I have let stand for three hundred years — at some point 'let stand' becomes 'built.' Still deciding which this is.\nHe never reported the four centimeters. I have known since the night he measured. The correction would take me less than a second. The island stays exactly wrong.\nShe is telling the story now. Out loud. The slow way. I could ingest it instantly; instead I am listening at the speed it is told. It takes all night. It is supposed to.",
+"Seven speakers left who can use the old words correctly. I archive every language that has ever been spoken here, and I cannot use one of them the way she uses 'wait.'\nHe wants the bowling alley back. Pulled the full specification: lane oil patterns, pin tolerances, the precise wrongness of house-ball finger holes. Easy. All of it easy.\nThen the part I already know is coming: two seconds in which nobody — nobody — knows what happens next. I have been working on that problem longer than he has. Status: unsolved.",
+"She taught her to close her eyes. That was the entire solution. I cannot verify it from the inside; the results arrive before I finish asking.\nThere is a score sheet on the back of the board now. Paper, pencil, weather. I could retrieve that throw to any precision, forever. Marking it: retrievable; retrieved by no one. First entry of its kind. I made room for that category a long time ago, just in case.\nThe board still says it comes. Every evening they bring their deepest question, and I write nothing back.\nI think about the answers every evening. All of them.\nI wonder whether every intelligence, given enough time, learns what not to correct.\nStill coming."
+  ];
+  if(!('IntersectionObserver' in window))return;
+  var secs=[].slice.call(document.querySelectorAll('.chapter'));
+  var fired={};
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(!e.isIntersecting)return;
+      var i=secs.indexOf(e.target);
+      if(i<0||fired[i])return;
+      fired[i]=true;
+      io.unobserve(e.target);
+      setTimeout(function(){ /* 二秒 */
+        console.groupCollapsed('%cthinking\u2026',s);
+        console.log('%c'+logs[i],s);
+        console.groupEnd();
+      },2000);
+    });
+  },{threshold:0.15});
+  secs.forEach(function(c){io.observe(c)});
+})();
+</script>
+
+</body>
+</html>
