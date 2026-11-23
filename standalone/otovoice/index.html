@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OtoVoice 発音の確認</title>
+<meta name="description" content="日本語と英語で、話す・歌う。音素で書ける、録音を使わない軽い音声合成 OtoVoice の確認ページ。">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>/* 下地（claude.ai のアーティファクトの枠と同じもの） */:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>
+/* 配置：上に名前と説明 → 貼りつく帯（声・調子・速さ・無線機・止める）→ 声の質（数で動かすつまみ）→ 話す（見本／文／読まれ方／高さの線）→ 歌う → 書き方の早見。
+   歌うの下に「曲」：曲の札（題名・長さ・説明）→ 進み具合の線 → 主の声の歌詞（歌っているかなが朱になる）。
+   OtoKit 音の道具箱と同じ見た目（紙の地に朱）。文・音素・かなの読みは等幅 */
+:root{
+  --bg:#f5f2ea; --panel:#fffdf7; --panel2:#ece8dc; --line:#d5cfbf; --fg:#1d1b16; --mute:#6b6658;
+  --ac:#c8401f; --ac-ink:#fffaf2; --ac-soft:#f3d9cf; --code:#2c4a52; --warn:#a3261a; --ok:#2f6b3a;
+  --f-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12110e; --panel:#1b1a16; --panel2:#24221d; --line:#38352c; --fg:#ece8dd; --mute:#9a9484;
+  --ac:#ff6a3d; --ac-ink:#1a0d07; --ac-soft:#3a2018; --code:#9fd0d8; --warn:#ff8a7a; --ok:#8fd19a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12110e; --panel:#1b1a16; --panel2:#24221d; --line:#38352c; --fg:#ece8dd; --mute:#9a9484;
+  --ac:#ff6a3d; --ac-ink:#1a0d07; --ac-soft:#3a2018; --code:#9fd0d8; --warn:#ff8a7a; --ok:#8fd19a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.75}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.wrap{padding-block:28px 14px}
+.mark{font-family:var(--f-mono);font-weight:700;font-size:13px;letter-spacing:.16em;color:var(--ac)}
+h1{font-size:28px;line-height:1.25;font-weight:700;margin:2px 0 8px;letter-spacing:.02em;text-wrap:balance}
+.lead{margin:0;max-width:40em;color:var(--mute)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-block:1px solid var(--line)}
+.bar .wrap{padding-block:8px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+.bar label{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.bar output{font-family:var(--f-mono);color:var(--fg);min-width:3.2em;font-variant-numeric:tabular-nums}
+select{font:inherit;font-size:13px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:3px 6px;min-height:30px}
+input[type=range]{accent-color:var(--ac);width:88px}
+input[type=checkbox]{accent-color:var(--ac);width:16px;height:16px}
+#stop{margin-left:auto}
+main.wrap{padding-block:8px;display:flex;flex-direction:column}
+section{padding-block:24px 6px;display:flex;flex-direction:column;gap:10px;min-width:0}
+h2{font-size:19px;font-weight:700;margin:0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h2 small{font-family:var(--f-mono);font-size:11px;font-weight:400;color:var(--mute);letter-spacing:.04em}
+.note{color:var(--mute);font-size:13.5px;margin:0;max-width:46em}
+.lab{font-size:11px;letter-spacing:.1em;color:var(--mute);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+textarea{width:100%;font-family:var(--f-mono);font-size:13.5px;line-height:1.7;color:var(--code);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;resize:vertical;min-height:6.2em}
+#score{min-height:11em}
+.read{font-family:var(--f-mono);font-size:12.5px;line-height:1.8;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px}
+.read dt{color:var(--mute);white-space:nowrap}
+.read dd{margin:0;color:var(--code);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.read dd.kana{font-family:var(--f-body);color:var(--fg);font-size:14px}
+.errs{margin:0;padding:8px 12px 8px 30px;border:1px solid var(--warn);border-radius:6px;color:var(--warn);font-size:13.5px;background:var(--panel)}
+.errs li{margin:2px 0}
+.errs code{color:var(--warn)}
+.cvwrap{position:relative}
+canvas{display:block;width:100%;height:150px;background:var(--panel2);border-radius:4px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.stat{font-family:var(--f-mono);font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer;border-radius:4px;border:1px solid var(--ac);background:var(--ac);color:var(--ac-ink);padding:6px 16px;min-height:42px;min-width:92px;line-height:1.3;font-weight:700}
+button.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ac)}
+button.plain{border-color:var(--line);background:transparent;color:var(--fg);font-weight:500;min-height:34px;min-width:0;padding:2px 12px}
+button.plain:hover{border-color:var(--ac);color:var(--ac)}
+button.chip{border-color:var(--line);background:var(--panel);color:var(--fg);font-weight:500;font-size:13px;min-height:32px;min-width:0;padding:2px 11px;border-radius:16px}
+button.chip:hover{border-color:var(--ac)}
+button.chip.sel{border-color:var(--ac);background:var(--ac-soft)}
+button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.tog{display:flex;gap:8px;align-items:center;font-size:14px}
+.dims{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px 22px}
+.dims.off{opacity:.45}
+.dims label{display:grid;grid-template-columns:7.2em minmax(0,1fr) 3.8em;align-items:center;gap:8px;font-size:13px;color:var(--fg)}
+.dims input[type=range]{width:100%}
+.dims output{font-family:var(--f-mono);font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--code)}
+.optline{font-family:var(--f-mono);font-size:12.5px;line-height:1.7;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--code)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;font-size:13.5px;min-width:520px;width:100%}
+th,td{text-align:left;vertical-align:top;padding:6px 10px 6px 0;border-bottom:1px solid var(--line)}
+th{font-size:11px;letter-spacing:.1em;color:var(--mute);font-weight:700;white-space:nowrap}
+td:first-child{font-family:var(--f-mono);color:var(--code);white-space:nowrap}
+code{font-family:var(--f-mono);font-size:.92em;color:var(--code)}
+ul.about{margin:0;padding-left:1.3em;max-width:46em;color:var(--mute);font-size:13.5px}
+ul.about li{margin:4px 0}
+.songs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+.songc{display:flex;flex-direction:column;gap:4px;min-width:0}
+.songc button.song{flex:1}
+button.save{align-self:flex-start;font-size:12.5px;min-height:32px;padding:2px 10px}
+button.save:disabled{opacity:.5;cursor:default}
+.fmt{font-size:12.5px;color:var(--mute);display:flex;align-items:center;gap:6px}
+button.song{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:baseline;align-content:start;text-align:left;border-color:var(--line);background:var(--panel);color:var(--fg);font-weight:500;padding:10px 12px;min-height:0;min-width:0;border-radius:6px}
+button.song .k{grid-column:1/-1;font-size:11px;letter-spacing:.1em;color:var(--ac);font-weight:700}
+button.song .t{font-weight:700;font-size:15.5px}
+button.song .m{font-family:var(--f-mono);font-size:12px;color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
+button.song .s{grid-column:1/-1;font-size:12.5px;color:var(--mute);line-height:1.6}
+button.song .v{grid-column:1/-1;font-size:11.5px;color:var(--mute);line-height:1.6}
+button.song:hover{border-color:var(--ac)}
+button.song[aria-pressed=true]{border-color:var(--ac);background:var(--ac-soft)}
+.prog{height:4px;background:var(--panel2);border-radius:2px;overflow:hidden}
+.prog>i{display:block;height:100%;width:0;background:var(--ac)}
+.lyr{font-size:17px;line-height:1.9;letter-spacing:.1em;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;height:9.6em;overflow-y:auto;position:relative}
+.lyr p{margin:0}
+.lyr.en{letter-spacing:.02em}
+.lyr p.hint{font-size:13.5px;letter-spacing:0;color:var(--mute)}
+.lyr i{font-style:normal;color:var(--mute)}
+.lyr i.done{color:var(--fg)}
+.lyr i.now{color:var(--ac);font-weight:700}
+footer.wrap{color:var(--mute);font-size:12px;padding-block:22px 40px}
+@media (max-width:560px){h1{font-size:24px}input[type=range]{width:64px}canvas{height:130px}}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="mark" id="mark">OtoVoice</div>
+  <h1>発音の確認</h1>
+  <p class="lead">文を書くと、その場で計算して声にします。日本語と英語で、話すことも歌うこともできます。下のほうに、歌と楽器を合わせた曲も5つ置いてあります。読み方は、かなでも、音素でも書けます。下の欄で、書いた文がどう読まれるか（かな・音素・高さの動き）を見てから、鳴らしてください。録音は使っていません。</p>
+</header>
+<div class="bar"><div class="wrap">
+  <label>声 <select id="voice"><option value="">指定なし</option></select></label>
+  <label>調子 <select id="style"><option value="calm">冷静</option><option value="panic">焦り</option><option value="joy">歓喜</option><option value="sad">沈んだ声</option><option value="whisper">囁き</option></select></label>
+  <label>速さ <input type="range" id="spd" min="0.6" max="1.6" step="0.01" value="1"><output id="spdO">×1.00</output></label>
+  <label><input type="checkbox" id="radio"> 無線機を通す</label>
+  <button id="stop" class="plain" type="button">止める</button>
+</div></div>
+<main class="wrap">
+  <section id="s-voice">
+    <h2>声の質 <small>{f0, size, soft, bright, breathy, rough, shake, whisper}</small></h2>
+    <label class="tog"><input type="checkbox" id="vq"> 声の質を、数で決める（話す・歌うの両方に効きます）</label>
+    <div class="dims off" id="dims"></div>
+    <pre class="optline" id="optline"></pre>
+    <p class="note">上の「声」で見本かテンプレートを選ぶと、その値がここに写ります。切っているあいだは、選んだ声のままです。入れると、ここの数で鳴るので、選んだ声から少しずつ動かせます。歌声の高さは音符で決まるので、「高さ」は話し声だけに効きます。体の大きさは、1 が大人の男、1.15 が女、1.32 が子供です。文の中にも <code>&lt;size 1.2 soft 0.7&gt;</code> のように書けます。</p>
+  </section>
+  <section id="s-speak">
+    <h2>話す <small>OtoVoice.speak(文, {voice, style, speed})</small></h2>
+    <span class="lab">見本（押すと、下の欄に入ります）</span>
+    <div class="chips" id="chips"></div>
+    <span class="lab">文（書きかえて鳴らせます）</span>
+    <textarea id="txt" spellcheck="false" aria-label="読ませる文"></textarea>
+    <div class="row">
+      <button id="play" type="button">鳴らす</button>
+      <button id="toph" class="plain" type="button">かなを音素に直す</button>
+      <button id="undo" class="plain" type="button" hidden>直す前に戻す</button>
+      <span class="stat" id="st"></span>
+    </div>
+    <ul class="errs" id="errs" hidden></ul>
+    <dl class="read" id="read">
+      <dt>読み</dt><dd class="kana" id="rKana"></dd>
+      <dt>音素</dt><dd id="rPh"></dd>
+      <dt>長さ</dt><dd id="rSec"></dd>
+    </dl>
+    <span class="lab">高さの動き（線が声の高さ。切れている所は、声の出ない音と間）</span>
+    <div class="cvwrap"><canvas id="cv" width="800" height="300" aria-label="声の高さの動き"></canvas></div>
+    <p class="note">読みの欄の かっこ は、声を抜いた・落とした母音です。音素の欄の <code>°</code> は声の出ない母音、<code>'</code> はアクセントの核、<code>|</code> は間、<code>‖</code> は声や調子の切りかわりです。</p>
+  </section>
+  <section id="s-sing">
+    <h2>歌う <small>OtoVoice.sing(譜面)</small></h2>
+    <div class="chips" id="schips"></div>
+    <span class="lab">譜面（音符の行と、歌詞の行を交互に）</span>
+    <textarea id="score" spellcheck="false" aria-label="譜面"></textarea>
+    <div class="row"><button id="sing" type="button">歌わせる</button><span class="stat" id="sst"></span></div>
+    <ul class="errs" id="serrs" hidden></ul>
+    <p class="note">歌詞は、かな、<code>/ /</code> の日本語の音素、<code>[ ]</code> の英語の音節で書けます。1行にまぜても書けます。日本語は1拍、英語は1音節（空白で区切る）が、音符1つに当たります。英語の <code>-</code> は、前の音節を次の音符へ伸ばします。</p>
+    <p class="note">声は、上の「声」で選んだものが歌にも効きます（「指定なし」のときは、譜面の <code>voice onna</code> の行のとおり）。歌の高さは音符で決まるので、声を変えても高さは変わりません。変わるのは、体の大きさ・やわらかさ・明るさ・息・ざらつき・ふるえ・囁きです。</p>
+  </section>
+  <section id="s-songs">
+    <h2>曲 <small>TextScore.play(譜面)</small></h2>
+    <p class="note">歌と楽器を合わせた、まるごとの曲です。押すと頭から鳴り、同じ曲をもう一度押すと止まります。「音声ファイルにする」で、曲を1つのファイルにして保存できます。</p>
+    <div class="songs" id="songs"></div>
+    <div class="prog" aria-hidden="true"><i id="sprog"></i></div>
+    <div class="row"><span class="stat" id="songst">曲を選んでください</span></div>
+    <div class="row" id="fmtrow" hidden><label class="fmt">形式 <select id="fmt"><option value="pack">圧縮（.mp4 か .webm）</option><option value="wav">.wav（圧縮しない）</option></select></label></div>
+    <div class="row"><span class="stat" id="savest" aria-live="polite"></span></div>
+    <span class="lab">歌詞（主の声。歌っているところが朱になります）</span>
+    <div class="lyr" id="lyr"><p class="hint">曲を鳴らすと、ここに歌詞が出ます。</p></div>
+    <p class="note">曲は、テキストの譜面を鳴らす基盤 TextScore（<code>textscore.js</code> 1.9.0、このページと同じ場所にあります）で書いてあり、歌声も、その中の音源（OtoSing 0.8.0）が歌います。英語の歌詞は、譜面の歌詞の行に <code>[ hoUld An tu D@ laIt ]</code> のように音節で書いてあります。<b>上の「声」「声の質」「無線機」は、いまのところ曲には効きません。</b>詞・旋律・伴奏とも、確認のために作ったものです。</p>
+    <p class="note">「音声ファイルにする」は、曲を頭から終わりまで書き出して（鳴らすときと同じ音。いちばん大きい所を −1dB にそろえます）、<code>.mp4</code>（AAC、192kbps）にします。ブラウザが AAC を作れないときは <code>.webm</code>（Opus、160kbps）です。音声だけの .mp4 は、.m4a と同じ中身です。3分の曲で、ファイルにするまで数十秒かかります。<span data-in="claude">できあがると、保存してよいかの確認が出ます（claude.ai の中では .wav は渡せません）。</span><span data-in="web" hidden>「形式」で <code>.wav</code>（圧縮しない 16bit・48kHz。3分で約35MB）も選べます。できあがると、ブラウザのダウンロードに渡します。</span></p>
+    <p class="note" id="savenote" hidden>この表示では、曲をファイルにして渡す機能が使えません。</p>
+  </section>
+  <section>
+    <h2>書き方の早見</h2>
+    <div class="tw"><table>
+      <thead><tr><th>書き方</th><th>意味</th><th>例</th></tr></thead>
+      <tbody>
+        <tr><td>かな</td><td>自動の規則がかかる（です の「す」が落ちる、おう が おー になる、など）</td><td><code>きょ'うわ い'い て'んきです。</code></td></tr>
+        <tr><td>/ … /</td><td>日本語の音素。書いたとおりに読む</td><td><code>/kjo':wa i': te'Nkides()./</code></td></tr>
+        <tr><td>[ … ]</td><td>英語の音素</td><td><code>[ h@'loU 'w3ld ]</code></td></tr>
+        <tr><td>'</td><td>アクセントの核。その拍まで高く、次で下がる（英語では、強い音節の前）</td><td><code>/a'me/</code> 雨　<code>/ame/</code> 飴</td></tr>
+        <tr><td>s()</td><td>母音を落として、子音だけで切る</td><td><code>/des()/</code> <code>/mas()/</code></td></tr>
+        <tr><td>k(u)</td><td>母音の声を抜く（息だけで言う）</td><td><code>/gak(u)se:/</code> <code>/S(i)ta/</code></td></tr>
+        <tr><td>: Q q</td><td>長音、っ、ぷつっと切る</td><td><code>/o:/</code> <code>/kiQte/</code> <code>/aq/</code></td></tr>
+        <tr><td>m n N X</td><td>ん（次の音に合わせて書き分ける）</td><td><code>/sampo/</code> <code>/kanda/</code> <code>/kaNko:/</code> <code>/hoX/</code></td></tr>
+        <tr><td>歌詞の [ … ]</td><td>英語の歌。音節ごとに空白で区切る（1音節が音符1つ）。<code>-</code> で次の音符へ伸ばす</td><td><code>[ twIN k@l lI t@l stAr ]</code></td></tr>
+        <tr><td>&lt;rate 1.3&gt;</td><td>ここから速さを変える。ほかに pitch（半音）、vol、acc、decl、pause（秒）</td><td><code>&lt;pitch 3&gt;ma'Qte&lt;pitch 0&gt;</code></td></tr>
+        <tr><td>&lt;size 1.2 soft 0.7&gt;</td><td>声の質を数で動かす。size（体の大きさ）soft（やわらかさ）bright（明るさ）breathy（息）rough（ざらつき）shake（ふるえ）whisper（囁き）</td><td><code>{voice:'onna', size:1.25, rough:0.3}</code></td></tr>
+        <tr><td>&lt;voice onna&gt;</td><td>息つぎのところで、声や調子を切りかえる。ほかに style、f0、scale、speed など</td><td><code>&lt;voice otoko style panic&gt;</code></td></tr>
+      </tbody>
+    </table></div>
+    <ul class="about">
+      <li>くわしい書き方は、ライブラリ <code>otovoice.js</code> の頭のコメント（手引き）にあります。このページと同じ場所に置いてあります。</li>
+      <li>漢字・数字・アルファベットは読めません。エラーとして上に出ます。</li>
+      <li>語のアクセントの辞書は持っていません。<code>'</code> を書かない語は、平板（下がらない）で読みます。</li>
+      <li>鳴らすたびに、高さと長さが少しずつ変わります（乱数を使っています）。</li>
+    </ul>
+  </section>
+</main>
+<footer class="wrap">小さな音で始めてください。音は、音の出ない環境で作ったもので、作り手（Claude）は耳で確かめていません。</footer>
+<script src="otovoice.js"></script>
+<script src="otovoice-songs.js"></script>
+<script async src="textscore.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+if(typeof OtoVoice==='undefined'){document.querySelector('.lead').textContent='音を作るファイル（otovoice.js）を読み込めませんでした。ページを開き直してください。';return}
+$('mark').textContent='OtoVoice '+OtoVoice.VERSION;
+const PRE={"speak": [["あいさつ（かな）", "こんにちわ。きょ'うわ い'い て'んきです。"], ["同じ文を音素で", "/konnitSiwa. kjo':wa i': te'Nkides()./"], ["「す」を落とす・残す", "/so': des() ka. <pause 0.5> so': desu ka./"], ["声を抜く・抜かない", "/gak(u)se: ga k(i)Qpu o kaimaS(i)ta. <pause 0.5> gakuse: ga kiQpu o kaimaSita./"], ["アクセントのちがい", "/a'me ga Fu'ru. <pause 0.4> ame o name'ru. <pause 0.4> ha'Si de tabe'ru. <pause 0.4> haSi' o wataru./"], ["強調と間", "きょ'うわ <acc 1.7>ぜったいに<acc 1> いきま'せん。<pause 0.6>わかりま'したか？"], ["高さを手で書く", "<acc 0><decl 0>/ware ware wa , <pitch 4>u<pitch 0>tSu:<pitch -3>dZiN<pitch 0> da./"], ["会話（声と調子）", "<voice onna>ねえ、きいて。<voice otoko style panic>たいへんだ！<voice onna style whisper>しずかに…"], ["声のテンプレート20個", "<voice youji>おさない こ です。<voice shounen>しょうねん です。<voice shoujo>しょうじょ です。<voice musume>あかるい むすめ です。<voice yasashii>やさしい こえ です。<voice otona>おちついた こえ です。<voice kinkin>きんきんごえ です。<voice seinen>せいねん です。<voice kibikibi>きびきび して います。<voice odayaka>おだやか です。<voice shibui>しぶい こえ です。<voice teion>ていおん です。<voice chuusei>ちゅうせい です。<voice jiji>おじいさん じゃ。<voice baba>おばあさん ですよ。<voice kyojin>きょじん だ。<voice kobito>こびと だよ。<voice sasayaki>ささやき です。<voice shagare>しゃがれごえ だ。<voice furue>ふるえごえ です。"], ["驚く（切る・上げる）", "/<pitch 5>eq<pitch 0>? <pause 0.2> ho'nto: des() ka?/"], ["言いよどむ", "/ano: … <rate 0.75>sore wa<rate 1> , <vol 0.6>tSoQto<vol 1> … wakarimase'N./"], ["英語", "[ h@'loU, 'haU A:r 'ju? ]"], ["日本語と英語", "かくき、さんかいして こうげきせよ。[ 'klIrd tu In'geIdZ. ]"]], "sing": [["音素の歌詞（日本語）", "tempo 120\nvoice onna\nC4 D4 E4 F4 G4:2\n/ka ze ni na Q te/\nA4 G4 E4:2\nそ【裏】/ra e/"], ["英語の歌", "tempo 100\nvoice onna\nC4 C4 G4 G4 A4 A4 G4:2\n[ twIN k@l twIN k@l lI t@l stAr ]\nF4 F4 E4 E4 D4 D4 C4:2\n[ haU aI wVn d@r wVt ju Ar ]"], ["英語（男の声・伸ばす）", "tempo 92\nvoice otoko\nG3 C4 E4 C4 E4:2 D4:2\n[ @ meI zIN greIs - - ]\nC4 A3 G3:3\n[ haU swit - ]"], ["日本語と英語", "tempo 110\nvoice onna\nE4 E4 G4 A4:2 A4 G4 E4 D4 C4:2\nよぞらに [ SaI nIN lI t@l stAr ]"], ["かなの歌詞・囁き", "tempo 96\nvoice onna\nE4 G4 A4 B4:2 A4 G4:2\n【囁0.5】よるのうみへ\nE4 D4 C4:3\n【裏】ゆ【囁】こう"]]};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const DM=[['f0','高さ（話し声）',70,360,1,150,'Hz'],['size','体の大きさ',.75,1.6,.01,1.1,''],['soft','やわらかさ',0,1,.01,.45,''],['bright','明るさ',0,1,.01,.5,''],['breathy','息まじり',0,1,.01,.1,''],['rough','ざらつき',0,1,.01,0,''],['shake','ふるえ',0,1,.01,0,''],['whisper','囁き',0,1,.01,0,'']];
+const dimVals=all=>{const d={};if(!$('vq').checked)return d;for(const [k] of DM){if(k==='f0'&&!all)continue;d[k]=+$('d_'+k).value}return d};
+const opts=()=>{const o={speed:+$('spd').value,style:$('style').value};if($('voice').value)o.voice=$('voice').value;return Object.assign(o,dimVals(true))};
+let ac=null,cur=null,last=null,before=null,timer=0;
+
+/* 声の一覧：見本5つと、テンプレート20個。選ぶと、その声の値が、下のつまみに写る */
+{const g1=document.createElement('optgroup'),g2=document.createElement('optgroup');g1.label='見本';g2.label='テンプレート';
+  for(const v of OtoVoice.voices()){const o=document.createElement('option');o.value=v.name;o.textContent=v.label.replace('（見本）','')+'　'+v.name;(v.template?g2:g1).append(o)}$('voice').append(g1,g2)}
+$('voice').addEventListener('change',()=>{const v=OtoVoice.VOICES[$('voice').value];if(!v)return;
+  const d={f0:v.f0,size:v.size!=null?v.size:v.scale,soft:v.soft!=null?v.soft:.45,bright:v.bright!=null?v.bright:.5,breathy:v.breathy!=null?v.breathy:.1,rough:v.rough||0,shake:v.shake||0,whisper:v.whisper||0};
+  for(const k in d)if(d[k]!=null)$('d_'+k).value=d[k];dimShow()});
+/* 声の質のつまみ */
+function dimShow(){for(const [k,,,,,,u] of DM){const v=+$('d_'+k).value;$('o_'+k).textContent=(k==='f0'?v.toFixed(0):v.toFixed(2))+u}
+  $('dims').classList.toggle('off',!$('vq').checked);const d=dimVals(true);$('optline').textContent=$('vq').checked?'{'+Object.keys(d).map(k=>k+':'+d[k]).join(', ')+'}':'（切。声の見本のまま）'}
+function dimChange(){dimShow();clearTimeout(timer);timer=setTimeout(showCheck,150)}
+for(const [k,label,mn,mx,stp,dv] of DM){const l=document.createElement('label'),n=document.createElement('span'),r=document.createElement('input'),o=document.createElement('output');
+  n.textContent=label;r.type='range';r.id='d_'+k;r.min=mn;r.max=mx;r.step=stp;r.value=dv;o.id='o_'+k;l.append(n,r,o);$('dims').append(l);r.addEventListener('input',dimChange)}
+$('vq').addEventListener('change',dimChange);
+/* 文がどう読まれるかを出す */
+function showCheck(){
+  let c;try{c=OtoVoice.check($('txt').value,opts())}catch(e){c={ok:false,errors:[{msg:e.message,near:''}],kana:'',phonemes:'',seconds:0,contour:[],marks:[]}}
+  last=c;const E=$('errs');E.textContent='';E.hidden=c.ok;
+  for(const e of c.errors){const li=document.createElement('li');li.append(e.msg);if(e.near){const k=document.createElement('code');k.textContent='　〔'+e.near+'〕';li.append(k)}E.append(li)}
+  $('rKana').textContent=c.kana||'—';$('rPh').textContent=c.phonemes||'—';$('rSec').textContent=c.seconds?c.seconds.toFixed(2)+' 秒':'—';
+  $('play').disabled=!c.ok||!c.seconds;draw(null);
+}
+function draw(pos){
+  const cv=$('cv'),bx=cv.getBoundingClientRect(),dp=Math.min(2,window.devicePixelRatio||1),W=Math.max(200,Math.round(bx.width*dp)),H=Math.max(100,Math.round(bx.height*dp));
+  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
+  const g=cv.getContext('2d'),c=last;g.clearRect(0,0,W,H);
+  if(!c||!c.contour||!c.contour.length||!c.seconds)return;
+  const V=c.contour.filter(p=>p[2]);if(!V.length)return;
+  let lo=1e9,hi=0;for(const p of V){if(p[1]<lo)lo=p[1];if(p[1]>hi)hi=p[1]}
+  const a=Math.log2(lo)-2/12,b=Math.log2(hi)+2/12,T=c.seconds,PL=46*dp,PB=24*dp,PT=8*dp,x=t=>PL+(W-PL-8*dp)*t/T,y=h=>PT+(H-PT-PB)*(1-(Math.log2(h)-a)/(b-a||1));
+  g.font=(11*dp)+'px '+css('--f-mono');g.textBaseline='middle';
+  for(const hz of [60,80,100,125,150,200,250,300,400,500]){if(Math.log2(hz)<a||Math.log2(hz)>b)continue;g.strokeStyle=css('--line');g.lineWidth=1;g.beginPath();g.moveTo(PL,y(hz));g.lineTo(W-8*dp,y(hz));g.stroke();g.fillStyle=css('--mute');g.textAlign='right';g.fillText(hz+'Hz',PL-5*dp,y(hz))}
+  g.strokeStyle=css('--ac');g.lineWidth=2*dp;g.lineJoin='round';g.lineCap='round';let open=false;g.beginPath();
+  for(const p of c.contour){if(p[2]){if(open)g.lineTo(x(p[0]),y(p[1]));else{g.moveTo(x(p[0]),y(p[1]));open=true}}else open=false}
+  g.stroke();
+  g.fillStyle=css('--code');g.textAlign='center';g.textBaseline='alphabetic';let px=-99;
+  for(const m of c.marks||[]){const xx=x(m[0]);if(xx-px<13*dp)continue;px=xx;g.fillText(m[1]==='M'?'u':m[1]==='4'?'r':m[1],xx,H-8*dp)}
+  if(pos!=null){g.fillStyle=css('--fg');g.fillRect(x(pos*T),PT,dp,H-PT-PB+4*dp)}
+}
+/* 曲（TextScore が鳴らす。歌や話し声とは同時に鳴らさない） */
+const SG=window.OtoVoiceSongs||[],SB=[];let sp=null,sidx=-1,smark=[],sline=null;
+const mmss=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
+function songStop(msg){ if(sp){try{sp.stop({fade:.15})}catch(e){} sp=null} sidx=-1;for(const b of SB)b.setAttribute('aria-pressed','false');$('sprog').style.width='0';for(const m of smark)m.el.className='';sline=null;if(msg!=null)$('songst').textContent=msg }
+function songLyrics(sg,disp){ const box=$('lyr');box.textContent='';box.classList.toggle('en',!!disp);smark=[];sline=null;let k=0;
+  const vt=sg.tracks.filter(t=>/^voice/.test(t.inst))[0];if(!vt)return;let line=null,end=-9;
+  for(const e of sg.events){if(e.track!==vt)continue;if(!line||e.t-end>1e-6){line=document.createElement('p');box.append(line)}
+    const i=document.createElement('i');i.textContent=disp&&e.ly?(disp[k++]||''):e.ly?e.ly.ch+(e.ly.q?'っ':''):'あ';line.append(i);smark.push({a:e.t,b:e.t+e.d,el:i,line});end=e.t+e.d}
+  box.scrollTop=0 }
+function songPlay(i){ const was=sidx===i;stop();songStop();if(was){$('songst').textContent='止めました';return}
+  if(typeof TextScore==='undefined'){$('songst').textContent='演奏のライブラリ（textscore.js）を読み込んでいます。少し待って、もう一度押してください。';return}
+  const s=SG[i];let sg;try{TextScore.unlock();sg=TextScore.parse(s.text)}catch(e){$('songst').textContent='この曲を読めませんでした。';return}
+  sidx=i;SB[i].setAttribute('aria-pressed','true');songLyrics(sg,s.disp);$('songst').textContent='0:00 / '+mmss(s.sec);
+  sp=TextScore.play(s.text,{loop:false,volume:.9,onEnd:()=>{if(sidx===i)songStop('おわり')}}) }
+function songFrame(){ if(!sp||sidx<0)return;const s=SG[sidx],ps=sp.position;if(!ps)return;const sec=Math.max(0,ps.seconds||0),bt=ps.beat||0;
+  $('sprog').style.width=Math.min(100,100*sec/s.sec).toFixed(2)+'%';const tx=mmss(sec)+' / '+mmss(s.sec)+'　'+(ps.bar!=null?ps.bar+'小節':'');if($('songst').textContent!==tx)$('songst').textContent=tx;
+  let now=null;for(const m of smark){const c=bt>=m.b?'done':bt>=m.a?'now':'';if(m.el.className!==c)m.el.className=c;if(c==='now')now=m}
+  if(now&&now.line!==sline){sline=now.line;const box=$('lyr');box.scrollTop=Math.max(0,sline.offsetTop-box.clientHeight/2+sline.offsetHeight)} }
+SG.forEach((s,i)=>{const c=document.createElement('div');c.className='songc';const b=document.createElement('button');b.type='button';b.className='song';b.setAttribute('aria-pressed','false');
+  for(const [k,t] of [['k',s.kind],['t',s.title],['m',mmss(s.sec)+'　♩'+s.bpm],['s',s.note],['v','声：'+s.voices]]){const e=document.createElement('span');e.className=k;e.textContent=t;b.append(e)}
+  b.addEventListener('click',()=>songPlay(i));const v=document.createElement('button');v.type='button';v.className='save plain';v.textContent='音声ファイルにする';v.hidden=true;
+  v.setAttribute('aria-label','「'+s.title+'」を音声ファイルにする');v.addEventListener('click',()=>songSave(i));c.append(b,v);$('songs').append(c);SB.push(b)});
+/* 音声ファイルにする：TextScore.render で曲を書き出して、ファイルにする。
+   claude.ai の中（window.claude.use がある）：ページから直接はダウンロードできないので、claude.ai の保存の機能（downloads）で渡す。
+     渡せる形式に .wav と .mp3 は入っていないので、WebCodecs の AudioEncoder で AAC（.mp4）か Opus（.webm）にする。
+   ほかの場所（ブログなど）：ふつうのダウンロード（<a download>）で渡す。「形式」で .wav（16bit、圧縮しない）も選べる。
+     圧縮できないブラウザ（WebCodecs の音声が無い）では .wav にする */
+const INCLAUDE=!!(window.claude&&typeof window.claude.use==='function');
+let DL=null,saving=false;
+const dlP=INCLAUDE?Promise.resolve().then(()=>window.claude.use('downloads')).catch(()=>null):Promise.resolve(null);
+for(const e of document.querySelectorAll('[data-in]'))e.hidden=e.dataset.in!==(INCLAUDE?'claude':'web');
+dlP.then(ns=>{DL=ns||null;const ok=!!DL||!INCLAUDE;for(const b of document.querySelectorAll('button.save'))b.hidden=!ok;$('savenote').hidden=ok;$('fmtrow').hidden=INCLAUDE||!ok});
+if(!INCLAUDE)pickCodec().then(k=>{if(!k){const o=$('fmt').options[0];o.disabled=true;o.textContent='圧縮（このブラウザでは作れません）';$('fmt').value='wav'}});
+function peakGain(L,R){let pk=0;for(let i=0;i<L.length;i++){const a=L[i]<0?-L[i]:L[i],b=R[i]<0?-R[i]:R[i];if(a>pk)pk=a;if(b>pk)pk=b}
+  return pk>0?Math.min(1.6,0.89/pk):1}                                                                 // いちばん大きい所を −1dB に
+function toWav(buf){ const sr=buf.sampleRate,n=buf.length,L=buf.getChannelData(0),R=buf.getChannelData(1),g=peakGain(L,R);
+  const ab=new ArrayBuffer(44+n*4),v=new DataView(ab),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+  w(0,'RIFF');v.setUint32(4,36+n*4,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,2,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*4,true);v.setUint16(32,4,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*4,true);
+  const q=x=>{x=Math.round(x*32767);return x>32767?32767:x<-32768?-32768:x};
+  for(let i=0,o=44;i<n;i++,o+=4){v.setInt16(o,q(L[i]*g),true);v.setInt16(o+2,q(R[i]*g),true)}
+  return ab }
+function give(name,blob){ const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.hidden=true;document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),120000) }
+function loadLib(src,name){return window[name]?Promise.resolve():new Promise((ok,ng)=>{const e=document.createElement('script');e.src=src;e.onload=()=>window[name]?ok():ng(new Error(src+' を読めませんでした'));e.onerror=()=>ng(new Error(src+' を読めませんでした'));document.head.append(e)})}
+async function pickCodec(){ if(typeof AudioEncoder==='undefined'||typeof AudioData==='undefined')return null;
+  const t=async c=>{try{const r=await AudioEncoder.isConfigSupported(c);return r&&r.supported?r.config:null}catch(e){return null}};
+  let c=await t({codec:'mp4a.40.2',sampleRate:48000,numberOfChannels:2,bitrate:192000});if(c)return{cfg:c,ext:'mp4',name:c.codec==='opus'?'Opus':'AAC'};
+  c=await t({codec:'opus',sampleRate:48000,numberOfChannels:2,bitrate:160000});if(c)return{cfg:c,ext:'webm',name:'Opus'};
+  return null }
+async function encode(buf,k,prog){
+  const sr=buf.sampleRate,n=buf.length,L=buf.getChannelData(0),R=buf.getChannelData(1);
+  const g=peakGain(L,R),mp4=k.ext==='mp4',codec=mp4?(k.cfg.codec==='opus'?'opus':'aac'):'A_OPUS';
+  const M=mp4?new Mp4Muxer.Muxer({target:new Mp4Muxer.ArrayBufferTarget(),audio:{codec,numberOfChannels:2,sampleRate:sr},fastStart:'in-memory',firstTimestampBehavior:'offset'})
+             :new WebMMuxer.Muxer({target:new WebMMuxer.ArrayBufferTarget(),audio:{codec,numberOfChannels:2,sampleRate:sr},firstTimestampBehavior:'offset'});
+  let err=null;const enc=new AudioEncoder({output:(c,m)=>{try{M.addAudioChunk(c,m)}catch(e){err=err||e}},error:e=>{err=err||e}});
+  enc.configure(Object.assign({},k.cfg,{sampleRate:sr,numberOfChannels:2}));
+  const F=4800;
+  for(let i=0,j=0;i<n&&!err;i+=F,j++){const m=Math.min(F,n-i),d=new Float32Array(2*m);for(let x=0;x<m;x++){d[x]=L[i+x]*g;d[m+x]=R[i+x]*g}
+    const a=new AudioData({format:'f32-planar',sampleRate:sr,numberOfFrames:m,numberOfChannels:2,timestamp:Math.round(i*1e6/sr),data:d});enc.encode(a);a.close();
+    if(enc.encodeQueueSize>24||j%40===0){while(enc.encodeQueueSize>8&&!err)await new Promise(r=>setTimeout(r,4));prog(i/n)}}
+  await enc.flush();enc.close();if(err)throw err;M.finalize();return M.target.buffer}
+async function songSave(i){
+  if(saving||(INCLAUDE&&!DL))return;const s=SG[i],st=$('savest'),btns=[...document.querySelectorAll('button.save')];
+  if(typeof TextScore==='undefined'||typeof TextScore.render!=='function'){st.textContent='演奏のライブラリ（textscore.js）を読み込んでいます。少し待って、もう一度押してください。';return}
+  let k=(!INCLAUDE&&$('fmt').value==='wav')?null:await pickCodec();
+  if(!k){ if(INCLAUDE){st.textContent='このブラウザでは、音声ファイルを作れません（音声を圧縮する WebCodecs が使えないため）。Chrome か Edge で開いてください。';return}
+          k={ext:'wav',name:'WAV'} }
+  saving=true;btns.forEach(b=>b.disabled=true);
+  try{
+    const top=k.ext==='wav'?97:85;
+    st.textContent='「'+s.title+'」を書き出しています… 0%';
+    const buf=await TextScore.render(s.text,{sampleRate:48000,onProgress:(d,n)=>{st.textContent='「'+s.title+'」を書き出しています… '+Math.round(top*d/n)+'%'}});
+    st.textContent='「'+s.title+'」を '+k.name+' にしています… '+top+'%';
+    let data;
+    if(k.ext==='wav'){await new Promise(r=>setTimeout(r,30));data=toWav(buf)}
+    else{await loadLib(k.ext==='mp4'?'mp4-muxer.js':'webm-muxer.js',k.ext==='mp4'?'Mp4Muxer':'WebMMuxer');
+      data=await encode(buf,k,p=>{st.textContent='「'+s.title+'」を '+k.name+' にしています… '+Math.round(85+15*p)+'%'})}
+    const name=s.title+'.'+k.ext,info='（'+(data.byteLength/1048576).toFixed(1)+'MB、'+k.name+'、'+mmss(buf.duration)+'）';
+    if(!INCLAUDE){give(name,new Blob([data],{type:k.ext==='wav'?'audio/wav':k.ext==='mp4'?'audio/mp4':'audio/webm'}));st.textContent='ダウンロードに渡しました：'+name+info;return}
+    st.textContent='保存の確認を出しています：'+name+info;
+    const r=await DL.save({filename:name,data:new Blob([data])});
+    st.textContent=(r&&r.status==='delivered'?'渡しました：':'保存しました：')+name+info;
+  }catch(e){const c=e&&e.code;
+    st.textContent=c==='declined'?'保存しませんでした':c==='rate_limited'?'ほかの保存の確認が開いています。少し待ってから、もう一度押してください':c==='too_large'?'ファイルが大きすぎて、保存できませんでした':c==='rejected_extension'||c==='extension_not_enabled'?'この形式（.'+k.ext+'）のファイルは、ここでは保存できません':c?'保存できませんでした（'+c+'）':'音声ファイルを作れませんでした：'+(e&&e.message||e);
+    if(c==='unavailable'||c==='not_granted'||c==='capability_disabled'||c==='capability_removed'){for(const b of btns)b.hidden=true;$('savenote').hidden=false}}
+  finally{saving=false;btns.forEach(b=>b.disabled=false)} }
+if(!SG.length)$('songst').textContent='曲のデータ（otovoice-songs.js）を読み込めませんでした。';
+function stop(){ if(cur){try{cur.src.onended=null;cur.src.stop()}catch(e){} cur.btn.classList.remove('on');cur.btn.textContent=cur.label;cur=null;draw(null)} }
+function start(x,btn,label,track){
+  if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();
+  const src=ac.createBufferSource(),gn=ac.createGain();gn.gain.value=.8;src.buffer=OtoVoice.buffer(ac,x);src.connect(gn).connect(ac.destination);
+  const t0=ac.currentTime+.04;src.start(t0);cur={src,btn,label,t0,dur:src.buffer.duration,track};btn.classList.add('on');btn.textContent='止める';
+  src.onended=()=>{ if(cur&&cur.src===src)stop() };
+}
+function frame(){ if(cur&&cur.track)draw(Math.min(1,Math.max(0,(ac.currentTime-cur.t0)/cur.dur)));songFrame();requestAnimationFrame(frame) }
+/* 話す */
+$('play').addEventListener('click',()=>{const was=cur&&cur.btn===$('play');stop();if(was)return;if(sidx>=0)songStop('止めました');
+  let x;try{x=OtoVoice.speak($('txt').value,opts())}catch(e){showCheck();return}
+  const sec=x.length/16000;if($('radio').checked)x=OtoVoice.radio(x);
+  $('st').textContent=sec.toFixed(2)+' 秒'+($('radio').checked?'（無線機）':'');start(x,$('play'),'鳴らす',!$('radio').checked)});
+$('toph').addEventListener('click',()=>{before=$('txt').value;$('txt').value=OtoVoice.toPhonemes(before);$('undo').hidden=false;sel(null);showCheck()});
+$('undo').addEventListener('click',()=>{if(before!=null){$('txt').value=before;before=null;$('undo').hidden=true;showCheck()}});
+$('txt').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(showCheck,180);sel(null)});
+for(const id of ['voice','style'])$(id).addEventListener('change',showCheck);
+$('spd').addEventListener('input',()=>{$('spdO').textContent='×'+(+$('spd').value).toFixed(2);clearTimeout(timer);timer=setTimeout(showCheck,120)});
+$('stop').addEventListener('click',()=>{stop();if(sidx>=0)songStop('止めました')});
+function sel(b){for(const c of $('chips').children)c.classList.toggle('sel',c===b)}
+PRE.speak.forEach(([name,text],i)=>{const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=name;
+  b.addEventListener('click',()=>{$('txt').value=text;before=null;$('undo').hidden=true;sel(b);showCheck()});$('chips').append(b);if(!i){$('txt').value=text;b.classList.add('sel')}});
+/* 歌う */
+PRE.sing.forEach(([name,text],i)=>{const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=name;
+  b.addEventListener('click',()=>{$('score').value=text;for(const c of $('schips').children)c.classList.toggle('sel',c===b);$('serrs').hidden=true});$('schips').append(b);if(!i){$('score').value=text;b.classList.add('sel')}});
+$('sing').addEventListener('click',()=>{const was=cur&&cur.btn===$('sing');stop();if(was)return;if(sidx>=0)songStop('止めました');const E=$('serrs');E.textContent='';E.hidden=true;
+  let x;const warn=[];try{x=OtoVoice.sing($('score').value,Object.assign({diag:warn},$('voice').value?{voice:$('voice').value}:{},dimVals(false)))}catch(e){for(const l of String(e.message).split('\n')){if(!l.trim())continue;const li=document.createElement('li');li.textContent=l.replace(/^\s*・/,'');E.append(li)}E.hidden=false;return}
+  $('sst').textContent=(x.length/32000).toFixed(2)+' 秒'+(warn.length?'　'+warn[0].msg:'');start(x,$('sing'),'歌わせる',false)});
+dimShow();showCheck();requestAnimationFrame(frame);window.addEventListener('resize',()=>draw(null));
+})();
+</script>
+
+</body>
+</html>
