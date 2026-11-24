@@ -1,4 +1,4 @@
-/*! Jikkyo 1.1.0 — ゲームを遊びながらしゃべる VTuber の配信のような動画を、ブラウザの中で作る土台
+/*! Jikkyo 1.3.0 — ゲームを遊びながらしゃべる VTuber の配信のような動画を、ブラウザの中で作る土台
  *
  * 画面：左に大きくゲーム、右下に VTuber（腰から上。ゲームの右下の角に重ねる）、右上に視聴者の書き込みが流れる、下に小さく字幕。
  * ゲームは、自作の HTML のゲームを、そのまま同じページの中（iframe）で動かす。遊ぶのは「自動の遊び手」（回のファイルが書く）。
@@ -26,11 +26,28 @@
  *   reply           [ { t: '{name}さん、ありがとう！', k: '{name}さん、ありがとう！', m, g, early: true（はじめの4分だけ）, to: /すき|いい/（この書き込みにだけ） } ]  ふつうの書き込みに答える（{name} に名前の読みが入る）
  *   talk            { every: [最短, 最長]秒, items: [ { q: '視聴者の問いかけ', when(g, t) → 出してよいか, a: 答えのセリフ（{name}、vars の名前が使える）,
  *                     vars(g) → { n: ['字幕の文字', '読み'] }, act(g, J) 答えたあとに遊び手がすること, once: false（何度も使う） } ] }  掛け合い
- *   J（step などで使う） emit(出来事) say(セリフ, 優先度, vars) chat(書き込み, [名前, 読み]) later(秒, 関数) talking()（視聴者に向いて話している） mood(表情) phase(段階)
+ *   J（step などで使う） emit(出来事) say(セリフ, 優先度, vars) chat(書き込み, [名前, 読み], { sc: { amount } }) → 書き込み（.hl = J.t で光らせられる）
+ *                   later(秒, 関数) talking()（視聴者に向いて話している） speaking() mood(表情) phase(段階) character()（いまの出演者の id）
+ *                   chat の3つめに { sc: { amount: 500 } } を渡すと、投げ銭（金額で色の変わるカード）として書き込み欄に出る
+ *   allLines(id)    → [ ['場所の名前', セリフ], … ] 回が自分で読むセリフ（雑談など）。台本チェックに入り、id（出演者）のぶんは声を先に作っておく（なくてもよい）
  *   end(g, t)       → true になったら、配信を終わる（録画も止まる）
+ *   zatsu           雑談（なくてもよい）。{ every: [最短, 最長]秒, introAt: 秒, tipEvery: [最短, 最長]秒, outro: 締めの雑談の秒,
+ *                     quiet(g, t) → 話しはじめてよいか, vars(g) → 振り返りに入れる値, bits: [掛け合い…], after: [振り返りの掛け合い…], sc: [投げ銭…], auto: false（回が自分で J.zatsu を動かす） }
+ *                   掛け合い ＝ [ ['c', '書き込み'], ['s', セリフ], ['c2', '別の人'], ['s', セリフ], … ]  c2・c3 は別の人、w は待つ秒、sc は投げ銭 [ 'sc', 金額, '書き込み' ]、do は関数
+ *                     { on: 'open mid end play', bit: [...] } の形なら、使う場面をしぼれる（open はじめ、mid 合間、end 締め、play 遊んでいる最中）。回の bits で on のないものは、遊んでいる最中だけ。['need', '印'] で始まるものは J.zatsu.flag('印') のあとだけ
+ *                   自動では：はじめに出演者の自己紹介 → 静かなときに every ごとに掛け合い（回の話・出演者の話・世間話）→ ときどき投げ銭とお礼
+ *                   outro があると、'bye' の出来事を一度あずかって、締めの雑談（after → 投げ銭 → 締めの話）をしてから、'wrap'、そして 'bye' を言う
+ *   J.zatsu         queue(掛け合い, vars) pick('play' など) tip() intro() flag('印') pending()（残りの数） busy()   回が雑談を自分で進めるとき
+ *
+ * ■ 雑談の話（共通）と、英語で話す出演者
+ *   Jikkyo.zatsudan({ cast: { 出演者id: { intro, big, bits } }, common: [{ on, bit }], sc: [{ a: 金額, w: 出やすさ, text, r: セリフ }], thanks: { small, mid, big }, wrap: [セリフ], chat: { outro: [書き込み] } })
+ *   Jikkyo.english({ speakers: ['aoi', 'rei'], lines: { '日本語の字幕': ['英語の字幕', '英語の読み'] }, chat: [書き込み], names: [[名前, 読み]] })
+ *     英語で話す出演者のときは、セリフを英語にして、字幕の下に日本語を小さく出す。セリフに en: ['英語の字幕', '英語の読み'] を書いてもよい
+ *     英語の読みは OtoVoice の [ ] の中の書き方（例 "[ 'hEloU ]"）。{name} などの差しこみは [ ] の外に置く（{name}さん、[ 'hAI! ]）
+ *     差しこむ値は ['字幕', '読み', '英語の字幕', '英語の読み']。英語がなければ、数字は自動で英語の数にする（Jikkyo.enNum(数) → 読み）
  *
  * ■ 決まり
- *   字幕は1行 全角28字くらいまで（2行まで出る）。読みは OtoVoice.check(k).ok が true であること。Jikkyo.check(回) で調べられる
+ *   字幕は1行 全角28字くらいまで（2行まで出る）。読みは OtoVoice.check(k).ok が true であること。Jikkyo.check(回) で調べられる（英語の訳も）
  *
  * ■ 知っておくこと
  *   ・録画は実時間（10分の配信は10分かかる）。録画のあいだは、このタブを前に出しておく（隠れると止まる）
@@ -38,11 +55,94 @@
  */
 const Jikkyo = (() => {
   'use strict';
-  const VERSION = '1.1.0';
+  const VERSION = '1.3.0';
+  // 投げ銭の色（金額で変わる）：bg 見出し、body 本文、ink 見出しの字、bodyInk 本文の字
+  function scTier(n) {
+    if (n >= 10000) return { bg: '#c4161c', body: '#e62117', ink: '#ffffff', bodyInk: '#ffffff' };
+    if (n >= 5000) return { bg: '#b0124f', body: '#e0245e', ink: '#ffffff', bodyInk: '#ffffff' };
+    if (n >= 2000) return { bg: '#d35400', body: '#ef6c00', ink: '#ffffff', bodyInk: '#ffffff' };
+    if (n >= 1000) return { bg: '#e09a00', body: '#ffb300', ink: '#2a1b00', bodyInk: '#2a1b00' };
+    if (n >= 500) return { bg: '#00a88f', body: '#1de9b6', ink: '#00241f', bodyInk: '#00241f' };
+    if (n >= 200) return { bg: '#0097b8', body: '#00e5ff', ink: '#002a33', bodyInk: '#002a33' };
+    return { bg: '#1257a8', body: '#1e88e5', ink: '#ffffff', bodyInk: '#ffffff' };
+  }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t, rnd = (a, b) => a + Math.random() * (b - a), pick = a => a[(Math.random() * a.length) | 0];
   const plays = {};
   const play = p => { plays[p.id] = p; return p; };
   const zen = s => [...String(s || '')].reduce((a, c) => a + (c.charCodeAt(0) < 0x2000 ? 0.5 : 1), 0);
+
+  /* ---------- 数の読み（日本語・英語） ---------- */
+  const KD = ['', 'いち', 'に', 'さん', 'よん', 'ご', 'ろく', 'なな', 'はち', 'きゅう'];
+  function kanaNum(n) {
+    n = Math.max(0, Math.floor(n)); if (!n) return 'ぜろ';
+    let s = ''; const man = Math.floor(n / 10000); if (man) { s += kanaNum(man) + 'まん'; n %= 10000; }
+    const sen = Math.floor(n / 1000); if (sen) { s += sen === 1 ? 'せん' : sen === 3 ? 'さんぜん' : sen === 8 ? 'はっせん' : KD[sen] + 'せん'; n %= 1000; }
+    const hy = Math.floor(n / 100); if (hy) { s += hy === 1 ? 'ひゃく' : hy === 3 ? 'さんびゃく' : hy === 6 ? 'ろっぴゃく' : hy === 8 ? 'はっぴゃく' : KD[hy] + 'ひゃく'; n %= 100; }
+    const ju = Math.floor(n / 10); if (ju) { s += (ju === 1 ? '' : KD[ju]) + 'じゅう'; n %= 10; }
+    return s + (n ? KD[n] : '');
+  }
+  const EN1 = ["'zIroU", "'wVn", "'tu", "'Tri", "'fOr", "'faIv", "'sIks", "'sEv@n", "'eIt", "'naIn", "'tEn", "I'lEv@n", "'twElv", "T3'tin", "fOr'tin", "fIf'tin", "sIks'tin", "sEv@n'tin", "eI'tin", "naIn'tin"];
+  const EN10 = ['', '', "'twEnti", "'T3ti", "'fOrti", "'fIfti", "'sIksti", "'sEv@nti", "'eIti", "'naInti"];
+  // 英語の数の読み（OtoVoice の [ ] の中の書き方。[ ] はつけない）
+  function enNum(n) {
+    n = Math.max(0, Math.floor(n)); if (n < 20) return EN1[n];
+    if (n < 100) return EN10[(n / 10) | 0] + (n % 10 ? ' ' + EN1[n % 10] : '');
+    if (n < 1000) return EN1[(n / 100) | 0] + " 'hVndr@d" + (n % 100 ? ' ' + enNum(n % 100) : '');
+    if (n < 1e6) return enNum((n / 1000) | 0) + " 'TaUz@nd" + (n % 1000 ? ' ' + enNum(n % 1000) : '');
+    return enNum((n / 1e6) | 0) + " 'mIlj@n" + (n % 1e6 ? ' ' + enNum(n % 1e6) : '');
+  }
+  // 金額の差しこみ：['字幕', '読み', '英語の字幕', '英語の読み']
+  const yen = n => [n.toLocaleString('ja-JP') + '円', kanaNum(n) + 'えん', '¥' + n.toLocaleString('en-US'), '[ ' + enNum(n) + " 'jEn ]"];
+
+  /* ---------- 英語で話す出演者 ---------- */
+  const EN = { who: new Set(), dict: new Map(), chat: [], names: [] };
+  function english(o) {
+    o = o || {}; if (o.speakers) EN.who = new Set(o.speakers);
+    for (const [ja, v] of Object.entries(o.lines || {})) EN.dict.set(ja, v);
+    if (o.chat) EN.chat.push(...o.chat); if (o.names) EN.names.push(...o.names);
+  }
+  const isEN = id => EN.who.has(id);
+  // 英語で話す出演者なら、セリフを英語に差しかえる（tr に日本語を残す。訳がなければ、そのまま日本語で話す）
+  function localize(L, id) {
+    if (!L || !isEN(id)) return L; const e = L.en || EN.dict.get(L.t); if (!e) return L;
+    return Object.assign({}, L, { t: e[0], k: e[1], tr: L.t, en: null });
+  }
+  // 差しこむ値：['字幕', '読み'（, '英語の字幕', '英語の読み'）]。英語がないときは、数字なら英語の数にする
+  function varPair(b, en) {
+    const a = Array.isArray(b) ? b : [String(b), String(b)];
+    if (en) { if (a.length >= 4) return [a[2], a[3]]; const m = /^(\d[\d,]*)/.exec(String(a[0])); if (m) return [m[1], '[ ' + enNum(+m[1].replace(/,/g, '')) + ' ]']; }
+    return [a[0], a[1] != null ? a[1] : a[0]];
+  }
+
+  /* ---------- 雑談の話（共通。出演者ごとの話・世間話・投げ銭・お礼） ---------- */
+  const ZD = { cast: {}, common: [], sc: [], thanks: { small: [], mid: [], big: [] }, wrap: [], chat: { outro: [] } };
+  function zatsudan(o) {
+    o = o || {}; Object.assign(ZD.cast, o.cast || {}); ZD.common.push(...(o.common || [])); ZD.sc.push(...(o.sc || [])); ZD.wrap.push(...(o.wrap || []));
+    for (const k of ['small', 'mid', 'big']) ZD.thanks[k].push(...((o.thanks || {})[k] || []));
+    for (const [k, v] of Object.entries(o.chat || {})) (ZD.chat[k] = ZD.chat[k] || []).push(...v);
+  }
+  const bitOf = x => (Array.isArray(x) ? x : x && x.bit) || [];
+  // 雑談で話すセリフを、場所の名前つきで並べる（台本チェックと、声の先読みに）。id があれば、その出演者のぶんだけ
+  function zLines(P, id) {
+    const out = [], add = (w, L) => { if (!L) return; if (L.if) { const e = L.if === 'en'; if (!e || !id || isEN(id)) out.push([w + '(はい)', L.yes]); if (!e || !id || !isEN(id)) out.push([w + '(いいえ)', L.no]); } else out.push([w, L]); };
+    const bits = (w, list) => (list || []).forEach((x, i) => bitOf(x).forEach(s => s[0] === 's' && add(`${w}#${i + 1}`, s[1])));
+    const ids = id ? [id] : Object.keys(ZD.cast);
+    for (const cid of ids) { const C = ZD.cast[cid]; if (!C) continue; add(`雑談(${cid})自己紹介`, C.intro); add(`雑談(${cid})使い道`, C.big); bits(`雑談(${cid})`, C.bits); }
+    bits('世間話', ZD.common); ZD.sc.forEach((e, i) => add(`投げ銭#${i + 1}`, e.r)); ZD.wrap.forEach((L, i) => add(`締め#${i + 1}`, L));
+    for (const [tier, list] of Object.entries(ZD.thanks)) list.forEach((L, i) => add(`お礼(${tier})#${i + 1}`, L));
+    const Z = P && P.zatsu; if (Z) { bits('回の雑談', Z.bits); bits('振り返り', Z.after); (Z.sc || []).forEach((e, i) => add(`回の投げ銭#${i + 1}`, e.r)); }
+    return out;
+  }
+  // 回のセリフをぜんぶ並べる（出来事・間つなぎ・返事・掛け合い・回が読むもの・雑談）
+  function playLines(P, id) {
+    const out = [];
+    for (const [ev, o] of Object.entries(P.lines || {})) (o.say || []).forEach((L, i) => out.push([`${ev}#${i + 1}`, L]));
+    for (const [ph, v] of Object.entries(P.idle || {})) if (Array.isArray(v)) v.forEach((L, i) => out.push([`間(${ph})#${i + 1}`, L]));
+    (P.reply || []).forEach((L, i) => out.push([`返事#${i + 1}`, L]));
+    ((P.talk && P.talk.items) || []).forEach((it, i) => out.push([`掛け合い#${i + 1}`, it.a]));
+    if (typeof P.allLines === 'function') { try { for (const x of P.allLines(id) || []) out.push(x); } catch (e) { console.warn('allLines', e); } }
+    return out.concat(zLines(P, id));
+  }
 
   /* 画面の割りつけ（1280×720 で考えた値。ほかの大きさでは、そのまま倍率をかける） */
   const LAY = {
@@ -62,11 +162,19 @@ const Jikkyo = (() => {
     const out = [];
     const each = (where, L) => { if (!L || !L.t) return; if (zen(L.t) > 56) out.push(`${where}：字幕が長い（全角${zen(L.t)}字。56字まで）「${L.t}」`);
       const k = String(L.k || '').replace(/\{name\}/g, 'ななし').replace(/\{\w+\}/g, 'いち'); try { const r = OtoVoice.check(k); if (!r.ok) out.push(`${where}：読み「${L.k}」：${(r.issues || r.errors || []).map(e => e.message || e.msg || JSON.stringify(e)).join('、') || '読めない'}`); } catch (e) { out.push(`${where}：読み「${L.k}」：${e.message}`); } };
-    for (const [ev, o] of Object.entries(P.lines || {})) (o.say || []).forEach((L, i) => each(`${ev}#${i + 1}`, L));
-    for (const [ph, v] of Object.entries(P.idle || {})) if (Array.isArray(v)) v.forEach((L, i) => each(`間(${ph})#${i + 1}`, L));
-    (P.reply || []).forEach((L, i) => each(`返事#${i + 1}`, L));
-    ((P.talk && P.talk.items) || []).forEach((it, i) => { if (zen(it.q) > 30) out.push(`掛け合い#${i + 1}：問いかけが長い「${it.q}」`); each(`掛け合い#${i + 1}`, Object.assign({}, it.a, { k: String(it.a.k).replace(/\{(?!name\})\w+\}/g, 'いち') })); });
-    for (const [n, k] of (P.chat && P.chat.names) || []) { try { if (!OtoVoice.check(k).ok) out.push(`名前「${n}」の読み「${k}」が読めない`); } catch (e) { out.push(`名前「${n}」：${e.message}`); } }
+    ((P.talk && P.talk.items) || []).forEach((it, i) => { if (zen(it.q) > 30) out.push(`掛け合い#${i + 1}：問いかけが長い「${it.q}」`); });
+    // 日本語のセリフ（雑談は、全員のぶん）
+    const all = playLines(P); for (const [where, L] of all) each(where, L);
+    // 英語で話す出演者のぶん：訳があるか、英語の字幕と読み
+    for (const id of EN.who) {
+      const mine = playLines(P, id), seen = new Set();
+      for (const [where, L] of mine) {
+        const list = L && L.if ? (L.if === 'en' ? [L.yes] : [L.yes, L.no]) : [L];
+        for (const L1 of list) { if (!L1 || !L1.t || seen.has(L1.t)) continue; seen.add(L1.t); const X = localize(L1, id);
+          if (X === L1) out.push(`英語(${id}) ${where}：訳がない「${L1.t}」`); else each(`英語(${id}) ${where}`, X); }
+      }
+    }
+    for (const [n, k] of ((P.chat && P.chat.names) || []).concat(EN.names)) { try { if (!OtoVoice.check(k).ok) out.push(`名前「${n}」の読み「${k}」が読めない`); } catch (e) { out.push(`名前「${n}」：${e.message}`); } }
     return out;
   }
 
@@ -141,7 +249,8 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
     // 決まったセリフは、先に作っておく（その場で作ると、1こま止まることがある）
     let warmJob = 0;
     function prewarm() {
-      const all = []; for (const ev of Object.values(P.lines || {})) for (const L of ev.say || []) all.push(L); for (const [k, v] of Object.entries(P.idle || {})) if (Array.isArray(v)) for (const L of v) all.push(L);
+      const id = VT && VT.id, all = [];
+      for (const [, L] of playLines(P, id)) { const list = L && L.if ? (L.if === 'en' ? [L.yes] : [L.yes, L.no]) : [L]; for (const L1 of list) { const X = localize(L1, id); if (X && X.k) all.push(X); } }
       const job = ++warmJob; let i = 0;
       const step = () => { if (job !== warmJob) return; const t0 = performance.now(); while (i < all.length && performance.now() - t0 < 12) { const L = all[i++]; if (!/\{\w+\}/.test(L.k)) synth(L.k, L.st); } emit('progress', { kind: 'voice', done: i, total: all.length }); if (i < all.length) setTimeout(step, 30); };
       step();
@@ -149,8 +258,11 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
     let cur = null; const queue = [];
     function speak(L, pri, vars) {
       if (!L) return false;
-      let k = L.k, t = L.t; if (vars) for (const [a, b] of Object.entries(vars)) { k = k.split('{' + a + '}').join(b[1] || b); t = t.split('{' + a + '}').join(b[0] || b); }
-      const item = { L, k, t, pri: pri || 1, at: st.t };
+      // 英語で話す出演者なら、英語のセリフに差しかえる（字幕の下に、日本語を訳として出す）
+      const X = localize(L, VT && VT.id), en = X !== L;
+      let k = X.k, t = X.t, tr = en ? X.tr : null;
+      if (vars) for (const [a, b] of Object.entries(vars)) { const key = '{' + a + '}', v = varPair(b, en); k = k.split(key).join(v[1]); t = t.split(key).join(v[0]); if (tr) tr = tr.split(key).join(varPair(b, false)[0]); }
+      const item = { L: X, k, t, tr, pri: pri || 1, at: st.t };
       if (cur && st.t < cur.end) {
         if (item.pri >= 3 && cur.pri < 3 && st.t - cur.start > .5) { stopCur(); }
         else { if (item.pri >= 2 || queue.length === 0) { queue.push(item); queue.sort((a, b) => b.pri - a.pri); queue.length = Math.min(queue.length, 2); } return false; }
@@ -164,7 +276,7 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
       cur = Object.assign(it, { v, src: s, g, start: st.t + .03, end: st.t + .03 + v.dur, subEnd: st.t + v.dur + 1.6 });
       st.lastSpeak = st.t;
       if (VT && it.L.g) VT.gesture(it.L.g, it.L.m || 'neutral', Math.max(1100, v.dur * 1000 * .9));
-      emit('line', { t: it.t, who: VT && VT.person().name });
+      emit('line', { t: it.t, tr: it.tr || null, who: VT && VT.person().name });
     }
     function talkLevel() { if (!cur || st.t >= cur.end) return 0; const f = Math.floor((st.t - cur.start) * 60), e = cur.v.env; return f < 0 ? 0 : e[Math.min(e.length - 1, f)] || 0; }
 
@@ -175,9 +287,13 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
     /* ---------- 出来事 → ひとこと ---------- */
     const lastSaid = {};
     function event(name, data) {
+      // 締めの雑談があるときは、'bye' を一度あずかる（雑談のあとで言う）
+      if (name === 'bye' && PZ && PZ.outro && PZ.auto !== false && !Z.outroDone) { if (!Z.outro && st.live) zOutroStart(); return; }
+      if (name === 'bye') st.byeSaid = true;
       emit('event', { name, data, t: st.t });
       chatBurst(name);
       const E = (P.lines || {})[name]; if (!E || !E.say || !E.say.length) return;
+      if (st.byeSaid && name !== 'bye') return;          // さよならを言ったあとは、しゃべらない（書き込みは流れる）
       if (lastSaid[name] != null && st.t - lastSaid[name] < (E.cd || 8)) return;
       if (Math.random() > (E.ch == null ? 1 : E.ch)) return;
       // 同じセリフが続かないように、言っていないものから選ぶ
@@ -189,19 +305,123 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
     /* ---------- 視聴者の書き込み ---------- */
     const chat = [], CH = P.chat || {};
     const hue = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
-    function postChat(text, who) { const n = who || pick(CH.names || [['ななし', 'ななし']]); chat.push({ who: n, text, at: st.t, h: hue(n[0]) }); if (chat.length > 40) chat.shift(); emit('chat', chat[chat.length - 1]); }
+    function postChat(text, who, extra) {
+      const n = who || pick(CH.names || [['ななし', 'ななし']]), it = { who: n, text, at: st.t, h: hue(n[0]) };
+      if (extra && extra.sc && extra.sc.amount > 0) it.sc = { amount: Math.round(extra.sc.amount) };
+      if (extra && extra.en) it.en = true;
+      chat.push(it); if (chat.length > 40) chat.shift(); emit('chat', it); return it;
+    }
     let nextChat = 0, burst = [];
     const burstAt = {};
     function chatBurst(name) { const pool = (CH.on || {})[name]; if (!pool || st.t - (burstAt[name] || -99) < 3) return; burstAt[name] = st.t; const n = 1 + ((Math.random() * (name === 'down' || name === 'kill3' ? 6 : 3)) | 0); for (let i = 0; i < n; i++) burst.push({ at: st.t + rnd(.4, 3.2) + i * .25, text: pick(pool) }); st.viewers += (Math.random() * 4) | 0; }
     let nextReply = 0, nextTalk = 0, pendingTalk = null; const later = [];
     const busy = () => { try { return !!(P.busy && P.busy(G, st.t)); } catch (e) { return false; } };
+
+    /* ---------- 雑談：掛け合い（書き込み → 答え → 別の人 → 答え…）を順に流す。投げ銭とお礼も ---------- */
+    const PZ = P.zatsu || null;
+    const Z = { q: [], next: 0, last: null, used: new Set(), flags: new Set(), nextAuto: 1e9, nextTip: 1e9, intro: false, outro: null, outroDone: false, tips: 0 };
+    function zReset() {
+      Z.q.length = 0; Z.next = 0; Z.last = null; Z.used.clear(); Z.flags.clear(); Z.intro = false; Z.outro = null; Z.outroDone = false; Z.tips = 0; st.alert = null;
+      Z.nextAuto = PZ ? (PZ.introAt || 22) : 1e9; Z.nextTip = PZ ? rnd(...(PZ.firstTip || [80, 140])) : 1e9;
+    }
+    const zPersona = () => ZD.cast[VT && VT.id] || null;
+    function zName(ex) { const N = CH.names || [['ななし', 'ななし']], c = N.filter(n => !ex.includes(n)); return pick(c.length ? c : N); }
+    function zQueue(bit, vars) {
+      bit = bitOf(bit); if (!bit.length) return false;
+      const A = zName([]), B = zName([A]), C = zName([A, B]);
+      for (const s of bit) if (s[0] !== 'need') Z.q.push({ s, A, B, C, vars: vars || {} });
+      return true;
+    }
+    const zOk = x => { const b = bitOf(x); return !(b[0] && b[0][0] === 'need') || Z.flags.has(b[0][1]); };
+    // 場面（tag は 'play mid' のように、いくつ書いてもよい）に合うか。回の話で on のないものは、遊んでいる最中だけ（締めの雑談では使わない）
+    const zTag = (x, tag, game) => { if (!tag) return true; const T = tag.split(' '); if (Array.isArray(x) || !x.on) return !game || T.includes('play'); return x.on.split(' ').some(o => T.includes(o)); };
+    // まだ使っていないものから選ぶ（ぜんぶ使ったら、また全部から）
+    function zFresh(list, tag, game) {
+      list = (list || []).filter(x => zOk(x) && zTag(x, tag, game));
+      const c = list.filter(x => !Z.used.has(x)), pool = c.length ? c : list; if (!pool.length) return null;
+      const it = pick(pool); Z.used.add(it); return bitOf(it);
+    }
+    // 次の掛け合い：回の話・出演者の話・世間話から（遊んでいる最中は、短めの出演者の話だけ）
+    function zPick(tag) {
+      const C = zPersona(), own = ((C && C.bits) || []).filter(b => tag !== 'play' || bitOf(b).length <= 4);
+      const pools = [[(PZ && PZ.bits) || [], .4, true], [own, .3], [ZD.common, .3]];
+      const okIn = (p, fresh) => p[0].some(x => zOk(x) && zTag(x, tag, p[2]) && (!fresh || !Z.used.has(x)));
+      let use = pools.filter(p => okIn(p, true)); if (!use.length) use = pools.filter(p => okIn(p, false)); if (!use.length) return null;
+      let r = Math.random() * use.reduce((a, p) => a + p[1], 0), ch = use[0];
+      for (const p of use) { r -= p[1]; if (r <= 0) { ch = p; break; } }
+      return zFresh(ch[0], tag, ch[2]);
+    }
+    // 投げ銭：書き込み（カード）→ 金額に合わせたお礼 → ひとこと（大きいときは、出演者ごとの使い道の話も）
+    function zTip() {
+      const all = ZD.sc.concat((PZ && PZ.sc) || []).filter(e => !e.need || Z.flags.has(e.need)); if (!all.length) return null;
+      const fr = all.filter(e => !Z.used.has(e)), L = fr.length ? fr : all;
+      let r = Math.random() * L.reduce((n, e) => n + (e.w || 1), 0), e = L[0]; for (const x of L) { r -= x.w || 1; if (r <= 0) { e = x; break; } }
+      Z.used.add(e);
+      const tier = e.a >= 5000 ? 'big' : e.a >= 500 ? 'mid' : 'small', th = ZD.thanks[tier], C = zPersona();
+      const bit = [['sc', e.a, e.text]]; if (th.length) bit.push(['s', pick(th)]); if (e.r) bit.push(['s', e.r]); if (tier === 'big' && C && C.big) bit.push(['s', C.big]);
+      Z.tips++; return { bit, vars: { amt: yen(e.a) } };
+    }
+    function chime(amount) {
+      try {
+        const t0 = actx.currentTime + .02, notes = amount >= 5000 ? [1046.5, 1318.5, 1568, 2093] : amount >= 1000 ? [1318.5, 1568, 2093] : [1568, 2093];
+        notes.forEach((f, i) => { const o = actx.createOscillator(), g = actx.createGain(), t = t0 + i * .085; o.type = 'triangle'; o.frequency.value = f;
+          g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.13, t + .008); g.gain.exponentialRampToValueAtTime(.0008, t + .55); o.connect(g); g.connect(master); o.start(t); o.stop(t + .6); });
+      } catch (e) { /* 鳴らなくてもよい */ }
+    }
+    function zTick() {
+      if (cur && st.t < cur.end) { Z.next = Math.max(Z.next, st.t + .9); return; }
+      if (!Z.q.length || st.t < Z.next) return;
+      const it = Z.q.shift(), s = it.s, kind = s[0], vars = Object.assign({ name: it.A, name2: it.B, name3: it.C, en: isEN(VT && VT.id) }, it.vars);
+      if (kind === 'c' || kind === 'c2' || kind === 'c3') { Z.last = postChat(s[1], kind === 'c' ? it.A : kind === 'c2' ? it.B : it.C); Z.next = st.t + rnd(1.6, 3); }
+      else if (kind === 's') { let L = s[1]; if (L && L.if) L = vars[L.if] ? L.yes : L.no; if (Z.last) Z.last.hl = st.t; if (L) speak(Object.assign({ cam: true }, L), 2, vars); Z.next = st.t + .8; }
+      else if (kind === 'sc') { Z.last = postChat(s[2], it.A, { sc: { amount: s[1] } }); st.alert = { name: it.A[0], amount: s[1], text: s[2], at: st.t }; chime(s[1]); st.viewers += 2; Z.next = st.t + rnd(2.2, 3.4); }
+      else if (kind === 'w') Z.next = st.t + s[1];
+      else if (kind === 'do') { try { s[1].call(P, G, J); } catch (e) { console.error(e); } }
+    }
+    const zBusy = () => !!(Z.q.length || (Z.outro && Z.outro.stage !== 'done') || st.byeSaid);
+    const zVars = () => { try { return (PZ && PZ.vars && PZ.vars.call(P, G)) || {}; } catch (e) { return {}; } };
+    // 自動：はじめに自己紹介 → 静かなときに掛け合い → ときどき投げ銭
+    function zAuto() {
+      if (!PZ || PZ.auto === false || Z.q.length) return;
+      const quiet = (!cur || st.t > cur.end + 1.4) && !queue.length;
+      if (Z.outro) { if (quiet) zOutro(); return; }
+      if (st.ended || st.byeSaid || st.t < Z.nextAuto || !quiet || (cur && st.t < cur.end + 2.5) || busy() || pendingTalk) return;
+      try { if (PZ.quiet && !PZ.quiet.call(P, G, st.t)) return; } catch (e) { return; }
+      let b = null;
+      if (!Z.intro) { Z.intro = true; const C = zPersona(); if (C && C.intro) b = { bit: [['s', C.intro]] }; }
+      else if (st.t >= Z.nextTip) { Z.nextTip = st.t + rnd(...(PZ.tipEvery || [120, 200])); b = zTip(); }
+      if (!b) { const bit = zPick(st.t < 150 ? 'open play mid' : 'play mid'); b = bit && { bit, vars: zVars() }; }
+      if (b) zQueue(b.bit, b.vars);
+      Z.nextAuto = st.t + rnd(...(PZ.every || [24, 38]));
+    }
+    // 締めの雑談：'bye' をあずかって、振り返り → 投げ銭 → 締めの話 → wrap → bye
+    function zOutro() {
+      const O = Z.outro;
+      if (O.stage === 'chat') {
+        if (st.t > O.end) { O.stage = 'wrap'; O.wrapAt = st.t; if (P.lines && P.lines.wrap) event('wrap'); else { const W = fresh(ZD.wrap); if (W) speak(Object.assign({ cam: true }, W), 2); } return; }
+        let b = null;
+        if (O.first) { O.first = false; const bit = zFresh(PZ.after); if (bit) b = { bit, vars: zVars() }; }
+        if (!b && st.t >= O.tipAt) { O.tipAt = 1e9; b = zTip(); }
+        if (!b) { const left = (PZ.after || []).filter(x => zOk(x) && !Z.used.has(x)); if (left.length && Math.random() < .5) b = { bit: zFresh(left), vars: zVars() }; }
+        if (!b) { const bit = zPick('end mid'); b = bit && { bit, vars: zVars() }; }
+        if (b) zQueue(b.bit, b.vars); else O.end = st.t;
+      } else if (O.stage === 'wrap') { if (st.t - O.wrapAt > 1) { O.stage = 'bye'; Z.outroDone = true; O.byeAt = st.t; event('bye'); } }
+      else if (O.stage === 'bye' && st.t - O.byeAt > 1.5) { O.stage = 'done'; st.ended = true; st.endAt = st.t + 4; }
+    }
+    function zOutroStart() { Z.outro = { at: st.t, end: st.t + PZ.outro, first: true, tipAt: Math.random() < .8 ? st.t + rnd(12, 20) : 1e9, stage: 'chat' }; st.mood = 'smile'; }
     function chatTick(dt) {
       if (!st.live) return;
       for (let i = burst.length - 1; i >= 0; i--) if (burst[i].at <= st.t) { postChat(burst[i].text); burst.splice(i, 1); }
-      if (st.t >= nextChat) { nextChat = st.t + rnd(.6, 2.6) / (CH.rate || 1); if (Math.random() < .8) postChat(pick((st.phase && CH[st.phase]) || CH.base || ['…'])); }
+      if (st.t >= nextChat) {
+        nextChat = st.t + rnd(.6, 2.6) / (CH.rate || 1);
+        // 英語で話す出演者のときは、英語の書き込みもまじる。締めの雑談のあいだは、締めの書き込み
+        const pool = Z.outro ? (CH.outro || (ZD.chat.outro.length && ZD.chat.outro) || CH.late || CH.base) : (st.phase && CH[st.phase]) || CH.base;
+        if (Math.random() < .8) { if (isEN(VT && VT.id) && EN.chat.length && EN.names.length && Math.random() < .2) postChat(pick(EN.chat), pick(EN.names), { en: true }); else postChat(pick(pool || ['…'])); }
+      }
+      zTick(); zAuto();
       // 掛け合い：視聴者の問いかけ（書き込み）に、名前を呼んで答える。答えに合わせて、遊び手が動くこともある（act）
       const T = P.talk;
-      if (T && T.items && st.t > nextTalk && !pendingTalk && (!cur || st.t > cur.end + 1) && !queue.length && !busy()) {
+      if (T && T.items && st.t > nextTalk && !pendingTalk && (!cur || st.t > cur.end + 1) && !queue.length && !busy() && !zBusy()) {
         nextTalk = st.t + rnd((T.every || [28, 46])[0], (T.every || [28, 46])[1]);
         const cand = T.items.filter(i => !(i.once !== false && i._done) && (!i.when || i.when.call(P, G, st.t)));
         if (cand.length) {
@@ -216,9 +436,9 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
         if (p.it.act) later.push({ at: st.t + .9, fn: () => p.it.act.call(P, G, J) });
       }
       // ときどき、ふつうの書き込みにも答える（黙っているときだけ）
-      if (st.t > nextReply && !pendingTalk && (!cur || st.t > cur.end + 1.5) && chat.length && P.reply && P.reply.length && !busy()) {
+      if (st.t > nextReply && !pendingTalk && (!cur || st.t > cur.end + 1.5) && chat.length && P.reply && P.reply.length && !busy() && !zBusy()) {
         nextReply = st.t + rnd(45, 80); const c = chat[chat.length - 1 - ((Math.random() * Math.min(3, chat.length)) | 0)];
-        const L = fresh(P.reply, r => (!r.early || st.t < 240) && (!r.to || r.to.test(c.text))); if (L) { c.hl = st.t; speak(Object.assign({}, L, { cam: true }), 1, { name: c.who }); }
+        const L = !c.en && !c.sc && fresh(P.reply, r => (!r.early || st.t < 240) && (!r.to || r.to.test(c.text))); if (L) { c.hl = st.t; speak(Object.assign({}, L, { cam: true }), 1, { name: c.who }); }
       }
       st.viewers = Math.max(3, st.viewers + (Math.random() - .45) * dt * 3);
     }
@@ -239,10 +459,10 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
         for (const [tt, name] of P.script || []) if (tt <= st.t && !scriptDone.has(tt + name)) { scriptDone.add(tt + name); event(name); }
         for (let i = later.length - 1; i >= 0; i--) if (later[i].at <= st.t) { const f = later[i].fn; later.splice(i, 1); try { f(); } catch (e) { console.error(e); } }
         if ((!cur || st.t > cur.end) && queue.length) { const it = queue.shift(); if (st.t - it.at < 4.5) startItem(it); }
-        const I = P.idle; if (I && (!cur || st.t > cur.end + 1) && st.t - st.lastSpeak > (I.after || 16) && st.t > 8 && !busy()) { st.lastSpeak = st.t; speak(fresh(st.phase && I[st.phase] || I.say), 1); }
+        const I = P.idle; if (I && (!cur || st.t > cur.end + 1) && st.t - st.lastSpeak > (I.after || 16) && st.t > 8 && !busy() && !zBusy()) { st.lastSpeak = st.t; speak(fresh(st.phase && I[st.phase] || I.say), 1); }
         chatTick(dt);
         if (!st.ended && P.end && P.end(G, st.t)) { st.ended = true; st.endAt = st.t + (P.endDelay || 10); }
-        if (st.ended && st.t >= st.endAt) stopLive('end');
+        if (st.ended && st.t >= st.endAt && !Z.q.length && !(Z.outro && Z.outro.stage !== 'done')) stopLive('end');
       }
       // VTuber：口、表情、目線
       if (VT) {
@@ -262,7 +482,9 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
     /* ---------- 描く ---------- */
     const accent = () => (VT && VT.person().accent) || '#c6a1d9';
     function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
-    function wrap(text, maxW) { const out = []; let line = ''; for (const ch of String(text)) { if (ctx.measureText(line + ch).width > maxW && line) { if ('、。！？」』）…ー'.includes(ch)) { out.push(line + ch); line = ''; continue; } out.push(line); line = ch; } else line += ch; } if (line) out.push(line); return out; }
+    function wrap(text, maxW) { const out = []; let line = '';
+      // 英語（日本語の字がない文）は、単語の切れ目で折り返す
+      if (String(text).split(' ').length >= 3) { for (const wd of String(text).split(' ')) { const nx = line ? line + ' ' + wd : wd; if (ctx.measureText(nx).width > maxW && line) { out.push(line); line = wd; } else line = nx; } if (line) out.push(line); return out; } for (const ch of String(text)) { if (ctx.measureText(line + ch).width > maxW && line) { if ('、。！？」』）…ー'.includes(ch)) { out.push(line + ch); line = ''; continue; } out.push(line); line = ch; } else line += ch; } if (line) out.push(line); return out; }
     let bgPat = null, fadeCv = null;
     function draw() {
       const s = S; ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -277,6 +499,7 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
       ctx.save(); rr(gx, gy, gw, gh, 10 * s); ctx.fillStyle = '#000'; ctx.fill(); ctx.clip();
       if (G.layers) for (const c of G.layers) { try { if (c.width && c.height) ctx.drawImage(c, gx, gy, gw, gh); } catch (e) {} }
       if (P.overlay) P.overlay(ctx, gx, gy, gw, gh, s);
+      drawOutro(gx, gy, gw, gh, s); drawAlert(gx, gy, gw, s);
       if (st.state === 'loading' || !st.live) { ctx.fillStyle = 'rgba(5,8,20,.55)'; ctx.fillRect(gx, gy, gw, gh); }
       ctx.restore();
       ctx.lineWidth = 2 * s; ctx.strokeStyle = 'rgba(255,255,255,.14)'; rr(gx, gy, gw, gh, 10 * s); ctx.stroke();
@@ -315,7 +538,26 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
       // 新しいものを下に。上へ流れて消える
       const fs = 12.5 * s, lh = fs * 1.42, pad = 12 * s; let yy = y + h - 10 * s;
       for (let i = chat.length - 1; i >= 0 && yy > y + 34 * s; i--) {
-        const c = chat[i], age = st.t - c.at; ctx.font = `700 ${fs}px ${FB}`; const nw = ctx.measureText(c.who[0]).width + 8 * s;
+        const c = chat[i], age = st.t - c.at;
+        if (c.sc) {
+          // 投げ銭：見出し（名前と金額）と本文の2段のカード
+          const T = scTier(c.sc.amount), ip = 9 * s, head = fs * 1.6;
+          ctx.font = `500 ${fs}px ${FB}`; const ls = c.text ? wrap(c.text, w - 12 * s - ip * 2) : [];
+          const bh = head + (ls.length ? ls.length * lh + ip * .9 : 0);
+          if (yy - bh < y + 34 * s) break;
+          yy -= bh; const a2 = clamp(age / .3, 0, 1); ctx.globalAlpha = a2;
+          const bx = x + 6 * s, bw = w - 12 * s, by = yy + (1 - a2) * 10 * s;
+          ctx.save(); rr(bx, by, bw, bh, 7 * s); ctx.clip();
+          ctx.fillStyle = T.body; ctx.fillRect(bx, by, bw, bh); ctx.fillStyle = T.bg; ctx.fillRect(bx, by, bw, head);
+          if (age < 1.2) { ctx.fillStyle = `rgba(255,255,255,${(.35 * (1 - age / 1.2)).toFixed(3)})`; ctx.fillRect(bx, by, bw, bh); }
+          ctx.restore();
+          ctx.textBaseline = 'middle'; ctx.font = `800 ${fs}px ${FB}`; ctx.fillStyle = T.ink; ctx.fillText(c.who[0], bx + ip, by + head / 2);
+          ctx.textAlign = 'right'; ctx.fillText('¥' + c.sc.amount.toLocaleString('ja-JP'), bx + bw - ip, by + head / 2); ctx.textAlign = 'left';
+          ctx.textBaseline = 'top'; ctx.font = `600 ${fs}px ${FB}`; ctx.fillStyle = T.bodyInk; ls.forEach((ln, k) => ctx.fillText(ln, bx + ip, by + head + ip * .45 + k * lh));
+          yy -= 7 * s; ctx.globalAlpha = 1;
+          continue;
+        }
+        ctx.font = `700 ${fs}px ${FB}`; const nw = ctx.measureText(c.who[0]).width + 8 * s;
         ctx.font = `500 ${fs}px ${FB}`; const lines = wrap(c.text, w - pad * 2 - nw); const bh = lines.length * lh;
         if (yy - bh < y + 34 * s) break;
         yy -= bh; const a = clamp(age / .25, 0, 1); ctx.globalAlpha = a; const slide = (1 - a) * 8 * s;
@@ -326,16 +568,56 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
       }
       ctx.restore();
     }
+    // 締めの雑談のあいだ：ゲームの画面を少し暗くして、「雑談タイム」の札を出す（結果の画面は、しばらく見せてから）
+    function drawOutro(x, y, w, h, s) {
+      const O = Z.outro; if (!O) return; const a = clamp((st.t - O.at - 9) / 2.5, 0, 1); if (a <= 0) return;
+      ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(6,8,20,.62)'; ctx.fillRect(x, y, w, h);
+      const ac = accent(), cx = x + w / 2, cy = y + h / 2, bw = 320 * s, bh = 104 * s;
+      rr(cx - bw / 2, cy - bh / 2, bw, bh, 14 * s); ctx.fillStyle = 'rgba(14,16,34,.86)'; ctx.fill(); ctx.strokeStyle = ac; ctx.globalAlpha = a * .55; ctx.lineWidth = 1.5 * s; ctx.stroke(); ctx.globalAlpha = a;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `700 ${11 * s}px ${FM}`; ctx.fillStyle = ac; ctx.fillText('AFTER TALK', cx, cy - 30 * s);
+      ctx.font = `800 ${26 * s}px ${FD}`; ctx.fillStyle = '#fff'; ctx.fillText('雑談タイム', cx, cy + 2 * s);
+      ctx.font = `600 ${12 * s}px ${FB}`; ctx.fillStyle = '#c9cdea'; ctx.fillText((P.short || P.title || '') + ' をあそんだあとで', cx, cy + 32 * s, bw - 30 * s);
+      ctx.restore();
+    }
+    // 投げ銭の知らせ：ゲームの画面の上に、金額で色の変わる帯（6.5秒）
+    function drawAlert(x, y, w, s) {
+      const A = st.alert; if (!A) return; const age = st.t - A.at; if (age > 6.5 || age < 0) { if (age > 6.5) st.alert = null; return; }
+      const T = scTier(A.amount), k = Math.min(1, age / .35), out = clamp((6.5 - age) / .5, 0, 1), ease = 1 - Math.pow(1 - k, 3);
+      const bw = 430 * s, hh = 38 * s, bh = A.text ? 78 * s : hh, bx = x + (w - bw) / 2, by = y + 14 * s - (1 - ease) * 30 * s;
+      ctx.save(); ctx.globalAlpha = Math.min(ease, out);
+      ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 16 * s; rr(bx, by, bw, bh, 10 * s); ctx.fillStyle = T.body; ctx.fill(); ctx.shadowBlur = 0;
+      ctx.save(); rr(bx, by, bw, bh, 10 * s); ctx.clip(); ctx.fillStyle = T.bg; ctx.fillRect(bx, by, bw, hh);
+      if (age < 1) { ctx.fillStyle = `rgba(255,255,255,${(.4 * (1 - age)).toFixed(3)})`; ctx.fillRect(bx, by, bw, bh); }
+      ctx.restore();
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = T.ink; ctx.font = `800 ${17 * s}px ${FD}`; ctx.fillText(A.name + ' さんから', bx + 16 * s, by + hh / 2, bw * .62);
+      ctx.textAlign = 'right'; ctx.font = `900 ${21 * s}px ${FD}`; ctx.fillText('¥' + A.amount.toLocaleString('ja-JP'), bx + bw - 16 * s, by + hh / 2); ctx.textAlign = 'left';
+      if (A.text) { ctx.fillStyle = T.bodyInk; ctx.font = `700 ${16 * s}px ${FB}`; ctx.fillText(A.text, bx + 16 * s, by + hh + (bh - hh) / 2, bw - 32 * s); }
+      ctx.restore();
+    }
     function drawSub(s) {
       if (!st.subs || !cur || st.t > cur.subEnd || st.t < cur.start - .05) return;
       const a = clamp((st.t - cur.start + .05) / .12, 0, 1) * clamp((cur.subEnd - st.t) / .3, 0, 1);
       const x = LAY.sub.x * s, y = LAY.sub.y * s, w = LAY.sub.w * s, h = LAY.sub.h * s, fs = 19 * s, lh = fs * 1.42;
       ctx.globalAlpha = a; rr(x, y, w, h, 10 * s); ctx.fillStyle = 'rgba(6,8,20,.7)'; ctx.fill();
       ctx.fillStyle = accent(); ctx.fillRect(x, y + 12 * s, 4 * s, h - 24 * s);
-      ctx.font = `800 ${fs}px ${FD}`; let f = fs, ls = wrap(cur.t, w - 40 * s); while (ls.length > 2 && f > fs * .7) { f *= .93; ctx.font = `800 ${f}px ${FD}`; ls = wrap(cur.t, w - 40 * s); }
-      ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = f * .2; ctx.strokeStyle = 'rgba(0,0,0,.6)';
-      const top = y + h / 2 - (Math.min(2, ls.length) - 1) * lh / 2;
-      ls.slice(0, 2).forEach((ln, k) => { ctx.strokeText(ln, x + 22 * s, top + k * lh); ctx.fillStyle = '#fff'; ctx.fillText(ln, x + 22 * s, top + k * lh); });
+      const tx = x + 22 * s, mw = w - 40 * s;
+      ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(0,0,0,.6)';
+      if (cur.tr) {
+        // 英語のセリフ：英語を大きく（2行まで）、その下に日本語の訳を小さく1行
+        let f = fs * .92; ctx.font = `800 ${f}px ${FD}`; let ls = wrap(cur.t, mw); while (ls.length > 2 && f > fs * .62) { f *= .93; ctx.font = `800 ${f}px ${FD}`; ls = wrap(cur.t, mw); }
+        let f2 = 13.5 * s; ctx.font = `600 ${f2}px ${FB}`; while (ctx.measureText(cur.tr).width > mw && f2 > 10 * s) { f2 *= .95; ctx.font = `600 ${f2}px ${FB}`; }
+        const n = Math.min(2, ls.length), lh2 = f * 1.28, gap = f2 * .55, tot = n * lh2 + gap + f2 * 1.2, top = y + (h - tot) / 2 + lh2 / 2;
+        ctx.font = `800 ${f}px ${FD}`; ctx.lineWidth = f * .2;
+        ls.slice(0, 2).forEach((ln, k) => { ctx.strokeText(ln, tx, top + k * lh2); ctx.fillStyle = '#fff'; ctx.fillText(ln, tx, top + k * lh2); });
+        ctx.font = `600 ${f2}px ${FB}`; ctx.lineWidth = f2 * .18; const ty = top + (n - 1) * lh2 + lh2 / 2 + gap + f2 * .6;
+        ctx.strokeText(cur.tr, tx, ty, mw); ctx.fillStyle = '#c9cdea'; ctx.fillText(cur.tr, tx, ty, mw);
+      } else {
+        ctx.font = `800 ${fs}px ${FD}`; let f = fs, ls = wrap(cur.t, mw); while (ls.length > 2 && f > fs * .7) { f *= .93; ctx.font = `800 ${f}px ${FD}`; ls = wrap(cur.t, mw); }
+        ctx.lineWidth = f * .2;
+        const top = y + h / 2 - (Math.min(2, ls.length) - 1) * lh / 2;
+        ls.slice(0, 2).forEach((ln, k) => { ctx.strokeText(ln, tx, top + k * lh); ctx.fillStyle = '#fff'; ctx.fillText(ln, tx, top + k * lh); });
+      }
       ctx.globalAlpha = 1;
     }
 
@@ -390,13 +672,17 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
     /* ---------- 始める・止める ---------- */
     async function startLive() {
       if (st.live) return; await actx.resume();
-      st.live = true; st.ended = false; st.phase = null; st.t = 0; st.viewers = rnd(28, 60); chat.length = 0; nextChat = 1.2; nextReply = rnd(30, 45); nextTalk = rnd(42, 55); pendingTalk = null; later.length = 0; scriptDone.clear(); for (const k in lastSaid) delete lastSaid[k];
+      st.live = true; st.ended = false; st.byeSaid = false; st.phase = null; st.t = 0; st.viewers = rnd(28, 60); chat.length = 0; nextChat = 1.2; nextReply = rnd(30, 45); nextTalk = rnd(42, 55); pendingTalk = null; later.length = 0; scriptDone.clear(); for (const k in lastSaid) delete lastSaid[k]; zReset();
       P.start && P.start(G, J); st.state = 'live'; emit('state', st.state);
     }
     function stopLive(why) { if (!st.live) return; st.live = false; st.state = 'ended'; emit('state', st.state); emit('ended', why); }
 
     const J = { emit: event, say: (L, p, vars) => speak(L, p || 2, vars), chat: postChat, later: (sec, fn) => later.push({ at: st.t + sec, fn }),
-      talking: () => !!(cur && st.t < cur.end && cur.L.cam), speaking: () => !!(cur && st.t < cur.end), mood: m => { st.mood = m; }, phase: ph => { st.phase = ph; }, get t() { return st.t; }, gesture: (g, e, ms) => VT && VT.gesture(g, e, ms) };
+      talking: () => !!(cur && st.t < cur.end && cur.L.cam), speaking: () => !!(cur && st.t < cur.end), mood: m => { st.mood = m; }, phase: ph => { st.phase = ph; }, get t() { return st.t; }, gesture: (g, e, ms) => VT && VT.gesture(g, e, ms),
+      character: () => VT && VT.id, english: () => isEN(VT && VT.id),
+      // 回が雑談を自分で進めるとき（zatsu.auto: false）
+      zatsu: { queue: zQueue, pick: zPick, fresh: zFresh, flag: k => { Z.flags.add(k); }, pending: () => Z.q.length, busy: zBusy, persona: zPersona,
+        tip() { const b = zTip(); return !!(b && zQueue(b.bit, b.vars)); }, intro() { const C = zPersona(); return !!(C && C.intro && zQueue([['s', C.intro]])); } } };
 
     const ready = (async () => {
       setSize(o.height || 720);
@@ -413,8 +699,10 @@ try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){re
       setSubtitles(v) { st.subs = !!v; }, setZoom(z) { if (VT) VT.cam.zoom = z; }, setChat(v) { st.chatOn = !!v; }, get voices() { return voice; },
       setVoice(name, speed) { voice = [name, speed || 1]; cache.clear(); prewarm(); },
       play: P, LAY,
+      // 雑談のいまの様子（確かめ用）：積んである数、締めの雑談の段階、投げ銭の数
+      get zatsu() { return { queued: Z.q.length, outro: Z.outro ? Z.outro.stage : null, tips: Z.tips, english: isEN(VT && VT.id) }; },
     };
     return api;
   }
-  return { VERSION, LAY, play, plays, mount, check, zen };
+  return { VERSION, LAY, play, plays, mount, check, zen, scTier, zatsudan, english, enNum, kanaNum, yen, localize };
 })();
