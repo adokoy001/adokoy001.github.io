@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jikkyo スタジオ</title>
+<meta name="description" content="自作のゲームを自動の遊び手が遊び、VTuber がしゃべりながら配信しているような動画を、ブラウザの中で作る。視聴者の書き込み、字幕、声はその場で合成。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>/* 下地（claude.ai のアーティファクトの枠と同じもの） */:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>
+:root{
+  --bg:#f4f3f8;--paper:#ffffff;--ink:#1b1a2b;--muted:#5d5b75;--rule:#dcd9e8;--accent:#7a4fa3;--accent-ink:#fff;--live:#e5334b;--warn:#b5531c;--ok:#2f7d5b;
+  --font-ui:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;--font-head:"Zen Maru Gothic","Hiragino Maru Gothic ProN",var(--font-ui);--font-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e0d18;--paper:#181727;--ink:#ecebf7;--muted:#a6a3c0;--rule:#2c2a42;--accent:#b28ad9;--accent-ink:#140f1c;--warn:#f0a070;--ok:#7fd1a8;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e0d18;--paper:#181727;--ink:#ecebf7;--muted:#a6a3c0;--rule:#2c2a42;--accent:#b28ad9;--accent-ink:#140f1c;--warn:#f0a070;--ok:#7fd1a8;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:15px/1.6 var(--font-ui)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top .eyebrow{font:500 12px var(--font-mono);letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+header.top h1{font:900 clamp(22px,3.2vw,30px)/1.25 var(--font-head);margin:4px 0 14px;text-wrap:balance}
+.stage{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#0b1020;box-shadow:0 10px 40px rgba(20,10,40,.25)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cover{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:10px;background:rgba(8,10,24,.35)}
+.cover .go{font:800 18px var(--font-head);padding:14px 26px;border-radius:999px;border:0;background:var(--live);color:#fff;cursor:pointer;box-shadow:0 6px 20px rgba(229,51,75,.4)}
+.cover .go:disabled{background:#5b5873;box-shadow:none;cursor:default}
+.cover .note{color:#e8e6ff;font-size:13px;text-shadow:0 1px 3px #000;text-align:center;padding-inline:16px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:12px}
+.btn{font:700 14px var(--font-ui);padding:8px 14px;border-radius:9px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.rec{background:var(--live);border-color:var(--live);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.time{font:500 13px var(--font-mono);color:var(--muted);min-width:7.5em}
+.tg{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.desk{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+@media (max-width:820px){.desk{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:16px 18px;min-width:0}
+.card h2{font:800 16px var(--font-head);margin:0 0 8px}
+.card p{margin:0 0 10px;color:var(--muted);font-size:13.5px}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:8px 0}
+label{font-size:13.5px}
+select,input[type=range]{accent-color:var(--accent)}
+select{font:inherit;font-size:13.5px;padding:5px 8px;border-radius:7px;border:1px solid var(--rule);background:var(--bg);color:var(--ink)}
+.cast{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cast button{font:700 13px var(--font-ui);padding:8px 6px;border-radius:9px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer;line-height:1.3}
+.cast button small{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+.cast button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.status{font-size:13px;color:var(--muted);min-height:1.5em}
+.games{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.games button{font:700 14px var(--font-ui);text-align:left;padding:8px 14px;border-radius:10px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer;line-height:1.35;min-width:0}
+.games button small{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}
+.games button[aria-current="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.games .lbl{align-self:center;font:500 12px var(--font-mono);letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-right:4px}
+.prog{height:6px;border-radius:3px;background:var(--rule);overflow:hidden}.prog i{display:block;height:100%;width:0;background:var(--live)}
+.issues{margin:6px 0 0;padding-left:1.2em;font-size:13px;color:var(--warn)}
+.how ol{margin:0;padding-left:1.3em;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+code{font-family:var(--font-mono);font-size:12.5px;background:var(--bg);border:1px solid var(--rule);border-radius:5px;padding:0 4px}
+.badge{font:700 11px var(--font-mono);padding:2px 7px;border-radius:99px;background:var(--rule);color:var(--muted);vertical-align:middle}
+.badge.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+[hidden]{display:none!important}
+#gamehost{position:fixed;left:-5000px;top:0;width:1px;height:1px;overflow:visible}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <div class="eyebrow">Jikkyo スタジオ · 体は翠卓、声は OtoVoice、ゲームは自作</div>
+    <h1 id="title">読み込んでいます</h1>
+    <nav class="games" id="games" aria-label="遊ぶゲーム"><span class="lbl">Game</span></nav>
+  </header>
+
+  <section aria-label="配信の画面">
+    <div class="stage" id="stage">
+      <canvas id="out" aria-label="ゲームの画面と、右下のVTuber、右上の書き込み、下の字幕を重ねた配信の画面"></canvas>
+      <div class="cover" id="cover">
+        <button class="go" id="coverGo" type="button" disabled>準備しています</button>
+        <div class="note" id="coverNote">キャラクターとゲームを読み込んでいます</div>
+      </div>
+    </div>
+    <div class="bar">
+      <button class="btn primary" id="go" type="button" disabled>配信を始める</button>
+      <button class="btn" id="stop" type="button" disabled>止める</button>
+      <span class="time" id="time">0:00</span>
+      <label class="tg"><input type="checkbox" id="tSub" checked>字幕</label>
+      <label class="tg"><input type="checkbox" id="tChat" checked>書き込み</label>
+    </div>
+  </section>
+
+  <div class="desk">
+    <section class="card" aria-labelledby="hRec">
+      <h2 id="hRec">動画に録画する</h2>
+      <p>配信をそのまま録画します（実時間。ゲームが終わるまで<span id="recMin">約11分</span>）。録画のあいだは、このタブを前に出したままにしてください。</p>
+      <div class="row">
+        <label>形式 <select id="fmt"><option value="webm">WebM</option><option value="mp4">MP4</option></select></label>
+        <label>長さ <select id="len"><option value="0">ゲームの終わりまで</option><option value="180">3分</option><option value="360">6分</option></select></label>
+      </div>
+      <div class="row">
+        <button class="btn rec" id="rec" type="button" disabled>録画して配信を始める</button>
+        <button class="btn" id="recStop" type="button" hidden>録画を止めて保存</button>
+      </div>
+      <div class="prog" aria-hidden="true"><i id="recBar"></i></div>
+      <div class="status" id="recStatus" aria-live="polite"></div>
+    </section>
+
+    <section class="card" aria-labelledby="hCast">
+      <h2 id="hCast">出演</h2>
+      <p>翠卓の8人から選べます。配信中でも替えられます。</p>
+      <div class="cast" id="cast"></div>
+      <div class="row">
+        <label>声 <select id="voice"></select></label>
+        <label>速さ <input type="range" id="speed" min="0.85" max="1.25" step="0.01" value="1.08"></label>
+      </div>
+      <div class="row">
+        <label>映りの大きさ <input type="range" id="zoom" min="0.75" max="1.35" step="0.01" value="1"></label>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="hSnd">
+      <h2 id="hSnd">音</h2>
+      <div class="row">
+        <label>ゲーム <input type="range" id="vGame" min="0" max="1.4" step="0.05" value="0.8"></label>
+        <label>声 <input type="range" id="vVoice" min="0" max="1.6" step="0.05" value="1"></label>
+      </div>
+      <div class="status" id="sndStatus"></div>
+    </section>
+
+    <section class="card" aria-labelledby="hChk">
+      <h2 id="hChk">台本チェック <span class="badge" id="chkBadge"></span></h2>
+      <p id="chkSum"></p>
+      <ul class="issues" id="chkList"></ul>
+    </section>
+
+    <section class="card how" aria-labelledby="hHow" style="grid-column:1/-1">
+      <h2 id="hHow">ほかのゲームで作るとき</h2>
+      <ol>
+        <li>ゲームの HTML を <code>games/</code> に置き、回のファイル（<code>play-hidari.js</code>、<code>play-joukuu.js</code> が見本）を写します。</li>
+        <li>回のファイルに、自動の遊び手（<code>step</code>）、出来事ごとのセリフ（<code>lines</code>）、書き込みの言葉（<code>chat</code>）、視聴者との掛け合い（<code>talk</code>）を書きます。書き方は <code>jikkyo.js</code> の頭の手引きにあります。</li>
+        <li>ゲームの中身を外から読めると、遊び手も出来事も書きやすくなります。どちらのゲームも、中身を <code>window.__kj</code> に出しています。</li>
+        <li>ページの頭に <code>&lt;script src="play-xxx.js"&gt;</code> を足すと、上の「Game」に並びます。リンクの末尾に <code>#joukuu</code> のように書くと、そのゲームで開きます。</li>
+      </ol>
+    </section>
+  </div>
+  <div id="gamehost" aria-hidden="true"></div>
+</main>
+
+<script src="otovoice.js"></script>
+<script src="suitaku-chara.js"></script>
+<script src="chara-common.js"></script>
+<script src="vtuber.js"></script>
+<script src="jikkyo.js"></script>
+<script src="play-hidari.js"></script>
+<script src="play-joukuu.js"></script>
+<script>
+/* Jikkyo スタジオ：ページの部品と、配信の土台（Jikkyo.mount）をつなぐ */
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  // 遊ぶゲーム：リンクの末尾（#hidari、#joukuu）で選ぶ。書いていなければ、いちばん新しい回
+  const PLAYS = Object.values(Jikkyo.plays), P = Jikkyo.plays[location.hash.slice(1)] || PLAYS[PLAYS.length - 1];
+  for (const q of PLAYS) { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-current', String(q === P));
+    b.innerHTML = `${q.short || q.id}<small>${q.blurb || ''}</small>`; b.addEventListener('click', () => { if (q === P) return; location.hash = q.id; location.reload(); }); $('games').append(b); }
+  addEventListener('hashchange', () => { const q = Jikkyo.plays[location.hash.slice(1)]; if (q && q !== P) location.reload(); });
+  $('title').textContent = P.title; $('recMin').textContent = '約' + (P.minutes || 11) + '分'; document.title = 'Jikkyo スタジオ · ' + (P.short || P.id);
+  const mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const K = Jikkyo.mount({ play: P, canvas: $('out'), host: $('gamehost'), character: P.character, height: 720 });
+  window.__jk = K;
+
+  // 出演
+  const castEl = $('cast');
+  function drawCast(cur) {
+    castEl.innerHTML = '';
+    for (const id of VTuber.IDS) { const p = VTuber.person(id), b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(id === cur));
+      b.innerHTML = `${p.name || id}<small>${p.role || ''}</small>`; b.addEventListener('click', () => choose(id)); castEl.append(b); }
+  }
+  let busyCast = false;
+  async function choose(id) {
+    if (busyCast) return; busyCast = true; [...castEl.children].forEach(b => b.disabled = true);
+    try { await K.setCharacter(id); const v = VTuber.VOICE[id]; $('voice').value = v[0]; $('speed').value = v[1]; drawCast(id); }
+    catch (e) { $('sndStatus').textContent = 'キャラクターを読めませんでした：' + e.message; }
+    busyCast = false; [...castEl.children].forEach(b => b.disabled = false);
+  }
+  for (const v of OtoVoice.voices()) { const o = document.createElement('option'); o.value = v.name; o.textContent = v.label; $('voice').append(o); }
+  const setV = () => K.setVoice($('voice').value, +$('speed').value);
+  $('voice').addEventListener('change', setV); $('speed').addEventListener('change', setV);
+  $('vGame').addEventListener('input', e => K.setVolume({ game: +e.target.value }));
+  $('vVoice').addEventListener('input', e => K.setVolume({ voice: +e.target.value }));
+  $('tSub').addEventListener('change', e => K.setSubtitles(e.target.checked));
+  $('zoom').addEventListener('input', e => K.setZoom(+e.target.value));
+  $('tChat').addEventListener('change', e => K.setChat(e.target.checked));
+  K.on('progress', p => { if (p.kind === 'voice') $('sndStatus').textContent = p.done < p.total ? `セリフの声を作っています ${p.done}/${p.total}` : `セリフ ${p.total} 本の声ができました`; });
+
+  // 台本チェック
+  const issues = K.check(); $('chkBadge').textContent = issues.length ? issues.length + ' 件' : '0 件'; $('chkBadge').className = 'badge' + (issues.length ? '' : ' ok');
+  const nLines = Object.values(P.lines).reduce((n, e) => n + e.say.length, 0) + P.idle.say.length + (P.idle.late || []).length + P.reply.length;
+  $('chkSum').textContent = `セリフ ${nLines} 本、書き込み ${P.chat.base.length + Object.values(P.chat.on).reduce((n, a) => n + a.length, 0)} 種。字幕の長さと、読み（OtoVoice が読めるか）を調べています。`;
+  for (const s of issues) { const li = document.createElement('li'); li.textContent = s; $('chkList').append(li); }
+
+  // 始める・止める
+  K.ready.then(() => {
+    drawCast(K.vt.id); const v = VTuber.VOICE[K.vt.id]; $('voice').value = v[0]; $('speed').value = v[1];
+    $('go').disabled = false; $('coverGo').disabled = false; $('coverGo').textContent = '配信を始める'; $('rec').disabled = false;
+    $('coverNote').textContent = 'ゲームは自動の遊び手が遊びます。音が出ます';
+  }).catch(e => { $('coverGo').textContent = '読み込めませんでした'; $('coverNote').textContent = e.message; });
+  const start = async () => { $('cover').hidden = true; $('go').disabled = true; $('stop').disabled = false; await K.start(); };
+  $('go').addEventListener('click', () => { if (K.state === 'idle') start(); }); $('coverGo').addEventListener('click', start);
+  $('stop').addEventListener('click', () => { K.stop('user'); });
+  K.on('tick', t => { $('time').textContent = mmss(t); if (rec) { const L = +$('len').value; $('recBar').style.width = (L ? Math.min(100, (t - rec.t0) / L * 100) : Math.min(100, (t - rec.t0) / ((P.minutes || 11) * 60 + 30) * 100)) + '%'; $('recStatus').textContent = `録画中 ${mmss(t - rec.t0)}`; } });
+  K.on('state', s => { if (s === 'ended') { $('stop').disabled = true; if (rec) finish(); $('go').textContent = 'もう一度（読み直す）'; $('go').disabled = false; $('go').onclick = () => location.reload(); } });
+
+  // 録画：claude.ai の中では保存の機能（downloads）で渡す。外では、ふつうのダウンロード
+  const INCLAUDE = !!(window.claude && typeof window.claude.use === 'function');
+  let DL = null; const dlP = INCLAUDE ? Promise.resolve().then(() => window.claude.use('downloads')).catch(() => null) : Promise.resolve(null);
+  dlP.then(ns => { DL = ns || null; if (INCLAUDE && !DL) { $('rec').hidden = true; $('recStatus').textContent = 'この表示では、ファイルの保存が使えません。claude.ai の中で開くと録画できます。'; } });
+  function give(name, blob) { const u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; a.hidden = true; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 120000); }
+  let rec = null;
+  $('rec').addEventListener('click', async () => {
+    try {
+      $('cover').hidden = true; $('rec').disabled = true; $('go').disabled = true;
+      if (K.state !== 'live') await K.start();
+      const r = K.record({ format: $('fmt').value, seconds: +$('len').value }); rec = { t0: K.t, mime: r.mime };
+      $('recStop').hidden = false; $('stop').disabled = false; $('recStatus').textContent = '録画中 0:00';
+    } catch (e) { $('recStatus').textContent = e.code === 'nomime' ? 'このブラウザでは、その形式で録画できません。もう一方の形式を選んでください。' : '録画を始められませんでした：' + e.message; $('rec').disabled = false; }
+  });
+  K.on('recLimit', () => { if (rec) { K.stop('limit'); } });
+  $('recStop').addEventListener('click', () => { if (rec) K.stop('user'); });
+  async function finish() {
+    if (!rec) return; const r0 = rec; rec = null; $('recStop').hidden = true; $('recStatus').textContent = '録画をまとめています…';
+    const r = await K.stopRecord(); if (!r) return;
+    const name = `${P.title.replace(/[【】\/\\:*?"<>|]/g, ' ').trim().slice(0, 40)}.${r.ext}`, info = `（${(r.blob.size / 1048576).toFixed(1)}MB、${mmss(r.seconds)}）`;
+    try {
+      if (!INCLAUDE) { give(name, r.blob); $('recStatus').textContent = 'ダウンロードに渡しました：' + name + info; }
+      else { $('recStatus').textContent = '保存の確認を出しています：' + name + info; const res = await DL.save({ filename: name, data: r.blob }); $('recStatus').textContent = (res && res.status === 'delivered' ? '渡しました：' : '保存しました：') + name + info; }
+    } catch (e) { $('recStatus').textContent = (e && e.code === 'declined' ? '保存をやめました。' : '保存できませんでした：' + (e && e.message || e)) + info; }
+    $('recBar').style.width = '100%';
+  }
+})();
+</script>
+
+</body>
+</html>
