@@ -134,10 +134,10 @@ code{font-family:var(--font-mono);font-size:12.5px;background:var(--bg);border:1
     <section class="card how" aria-labelledby="hHow" style="grid-column:1/-1">
       <h2 id="hHow">ほかのゲームで作るとき</h2>
       <ol>
-        <li>ゲームの HTML を <code>games/</code> に置き、回のファイル（<code>play-hidari.js</code>、<code>play-joukuu.js</code> が見本）を写します。</li>
+        <li>ゲームの HTML を <code>games/</code> に置き、回のファイル（<code>play-hidari.js</code>、<code>play-joukuu.js</code>、<code>play-circuit.js</code> が見本）を写します。</li>
         <li>回のファイルに、自動の遊び手（<code>step</code>）、出来事ごとのセリフ（<code>lines</code>）、書き込みの言葉（<code>chat</code>）、視聴者との掛け合い（<code>talk</code>）を書きます。書き方は <code>jikkyo.js</code> の頭の手引きにあります。</li>
-        <li>ゲームの中身を外から読めると、遊び手も出来事も書きやすくなります。どちらのゲームも、中身を <code>window.__kj</code> に出しています。</li>
-        <li>ページの頭に <code>&lt;script src="play-xxx.js"&gt;</code> を足すと、上の「Game」に並びます。リンクの末尾に <code>#joukuu</code> のように書くと、そのゲームで開きます。</li>
+        <li>ゲームの中身を外から読めると、遊び手も出来事も書きやすくなります。射手の2本は <code>window.__kj</code>、サーキットは <code>window.__ng</code> に中身を出しています。サーキットの回は、ゲームの入力（<code>IN.get</code>）を差しかえて、ゲームの自動運転の線とペダルを、人の手らしく遅らせて渡しています。</li>
+        <li>ページの頭に <code>&lt;script src="play-xxx.js"&gt;</code> を足すと、上の「Game」に並びます。リンクの末尾に <code>#joukuu</code>・<code>#circuit</code> のように書くと、そのゲームで開きます。</li>
       </ol>
     </section>
   </div>
@@ -151,12 +151,13 @@ code{font-family:var(--font-mono);font-size:12.5px;background:var(--bg);border:1
 <script src="jikkyo.js"></script>
 <script src="play-hidari.js"></script>
 <script src="play-joukuu.js"></script>
+<script src="play-circuit.js"></script>
 <script>
 /* Jikkyo スタジオ：ページの部品と、配信の土台（Jikkyo.mount）をつなぐ */
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  // 遊ぶゲーム：リンクの末尾（#hidari、#joukuu）で選ぶ。書いていなければ、いちばん新しい回
+  // 遊ぶゲーム：リンクの末尾（#hidari、#joukuu、#circuit）で選ぶ。書いていなければ、いちばん新しい回
   const PLAYS = Object.values(Jikkyo.plays), P = Jikkyo.plays[location.hash.slice(1)] || PLAYS[PLAYS.length - 1];
   for (const q of PLAYS) { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-current', String(q === P));
     b.innerHTML = `${q.short || q.id}<small>${q.blurb || ''}</small>`; b.addEventListener('click', () => { if (q === P) return; location.hash = q.id; location.reload(); }); $('games').append(b); }
