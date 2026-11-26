@@ -29,6 +29,160 @@ delay 0.75
 [[h? - h?? h? - h?? |]*8]*R
 ` };
   // のぼりつづける：シェパード音階。6オクターブを重ね、半音ずつ上がる。音量は対数周波数の上の釣鐘（F#4 が頂点）なので、
+  // ひろがる：オルガンの細かい音型と、時計の刻み。3拍子。sodai1 → 2 → 3 と、同じ8小節のまま楽器が増える
+  B.kyo_sodai1 = { label: '巨大数：ひろがる（うすい）', gain: 0.95, score: `
+title kyo_sodai1
+tempo 108
+meter 3
+reverb 5.5
+delay 0.5
+def o1 = D5 F5 D5 F5 D5 F5 | E5 G5 E5 G5 E5 G5 | F5 A5 F5 A5 F5 A5 | F5 A5 F5 A5 D6 A5 | F5 Bb5 F5 Bb5 F5 Bb5 | G5 C6 G5 C6 G5 C6 | A5 C6 A5 C6 A5 C6 | G5 C6 G5 C6 E5 G5 |
+def ch = Bb2+F3+Bb3+D4:3 | C3+G3+C4+E4:3 | D3+A3+D4+F4:3 | D3+A3+D4+F4:3 | Bb2+F3+Bb3+D4:3 | C3+G3+C4+E4:3 | F3+C4+F4+A4:3 | E3+C4+E4+G4:3 |
+def chH = D4+F4+Bb4:3 | E4+G4+C5:3 | F4+A4+D5:3 | F4+A4+D5:3 | F4+Bb4+D5:3 | G4+C5+E5:3 | A4+C5+F5:3 | G4+C5+E5:3 |
+def bs = Bb1:3 | C2:3 | D2:3 | D2:3 | Bb1:3 | C2:3 | F1:3 | E1:3 |
+def mel = D5:3 | E5:3 | F5:6 | F5:3 | G5:3 | A5:3 | G5:2 E5:1 |
+def mel2 = A5:3 | G5:3 | A5:6 | D6:3 | C6:3 | C6:3 | C6:2 G5:1 |
+@ost organ vol=0.34 rev=0.6 dly=0.2 len=0.5
+[$o1]*R
+@tick drums vol=0.13 len=0.5
+[[w? - w?? - w?? - |]*8]*R
+@pad pad vol=0.16 rev=0.7 cut=1800
+[$ch]*R
+@sub sub vol=0.26
+[$bs]*R
+` };
+  // ひろがる：弦の長い旋律とコーラスを重ねる
+  B.kyo_sodai2 = { label: '巨大数：ひろがる（弦とコーラス）', gain: 0.95, score: `
+title kyo_sodai2
+tempo 108
+meter 3
+reverb 5.5
+delay 0.5
+def o1 = D5 F5 D5 F5 D5 F5 | E5 G5 E5 G5 E5 G5 | F5 A5 F5 A5 F5 A5 | F5 A5 F5 A5 D6 A5 | F5 Bb5 F5 Bb5 F5 Bb5 | G5 C6 G5 C6 G5 C6 | A5 C6 A5 C6 A5 C6 | G5 C6 G5 C6 E5 G5 |
+def ch = Bb2+F3+Bb3+D4:3 | C3+G3+C4+E4:3 | D3+A3+D4+F4:3 | D3+A3+D4+F4:3 | Bb2+F3+Bb3+D4:3 | C3+G3+C4+E4:3 | F3+C4+F4+A4:3 | E3+C4+E4+G4:3 |
+def chH = D4+F4+Bb4:3 | E4+G4+C5:3 | F4+A4+D5:3 | F4+A4+D5:3 | F4+Bb4+D5:3 | G4+C5+E5:3 | A4+C5+F5:3 | G4+C5+E5:3 |
+def bs = Bb1:3 | C2:3 | D2:3 | D2:3 | Bb1:3 | C2:3 | F1:3 | E1:3 |
+def mel = D5:3 | E5:3 | F5:6 | F5:3 | G5:3 | A5:3 | G5:2 E5:1 |
+def mel2 = A5:3 | G5:3 | A5:6 | D6:3 | C6:3 | C6:3 | C6:2 G5:1 |
+@ost organ vol=0.34 rev=0.6 dly=0.2 len=0.5
+[$o1]*R
+@tick drums vol=0.13 len=0.5
+[[w? - w?? - w?? - |]*8]*R
+@pad pad vol=0.16 rev=0.7 cut=1800
+[$ch]*R
+@sub sub vol=0.26
+[$bs]*R
+@str strings vol=0.32 rev=0.75
+[$mel]*R
+@cho choir vol=0.24 rev=0.8
+[$chH]*R
+` };
+  // ひろがる：低いオルガンの厚い和音・金管・太鼓・高い鐘まで全部
+  B.kyo_sodai3 = { label: '巨大数：ひろがる（全部）', gain: 0.95, score: `
+title kyo_sodai3
+tempo 108
+meter 3
+reverb 5.5
+delay 0.5
+def o1 = D5 F5 D5 F5 D5 F5 | E5 G5 E5 G5 E5 G5 | F5 A5 F5 A5 F5 A5 | F5 A5 F5 A5 D6 A5 | F5 Bb5 F5 Bb5 F5 Bb5 | G5 C6 G5 C6 G5 C6 | A5 C6 A5 C6 A5 C6 | G5 C6 G5 C6 E5 G5 |
+def ch = Bb2+F3+Bb3+D4:3 | C3+G3+C4+E4:3 | D3+A3+D4+F4:3 | D3+A3+D4+F4:3 | Bb2+F3+Bb3+D4:3 | C3+G3+C4+E4:3 | F3+C4+F4+A4:3 | E3+C4+E4+G4:3 |
+def chH = D4+F4+Bb4:3 | E4+G4+C5:3 | F4+A4+D5:3 | F4+A4+D5:3 | F4+Bb4+D5:3 | G4+C5+E5:3 | A4+C5+F5:3 | G4+C5+E5:3 |
+def bs = Bb1:3 | C2:3 | D2:3 | D2:3 | Bb1:3 | C2:3 | F1:3 | E1:3 |
+def mel = D5:3 | E5:3 | F5:6 | F5:3 | G5:3 | A5:3 | G5:2 E5:1 |
+def mel2 = A5:3 | G5:3 | A5:6 | D6:3 | C6:3 | C6:3 | C6:2 G5:1 |
+@ost organ vol=0.34 rev=0.6 dly=0.2 len=0.5
+[$o1]*R
+@tick drums vol=0.13 len=0.5
+[[w? - w?? - w?? - |]*8]*R
+@pad pad vol=0.16 rev=0.7 cut=1800
+[$ch]*R
+@sub sub vol=0.26
+[$bs]*R
+@str strings vol=0.32 rev=0.75
+[$mel2]*R
+@cho choir vol=0.24 rev=0.8
+[$chH]*R
+@big organ vol=0.5 rev=0.8
+[$ch]*R
+@brs brass vol=0.3 rev=0.7
+[Bb2:3 | C3:3 | D3:6 | Bb2:3 | C3:3 | F3:3 | E3:3 |]*R
+@hi bell vol=0.16 rev=0.8 dly=0.3 len=0.5 oct=1
+[$o1]*R
+@tim drums vol=0.55 rev=0.6 len=1
+[[k - - | - - - | k - - | - - k? |]*2]*R
+` };
+  // かけあがる：同じ和音を4拍子で速く。オルガンの16分音符に、4つ打ちのキックとシンセベース（クラシックの楽器＋テクノのリズム）
+  B.kyo_drive1 = { label: '巨大数：かけあがる', gain: 0.9, score: `
+title kyo_drive1
+tempo 138
+reverb 4.5
+delay 0.75
+def o1 = D5 F5 D5 F5 D5 F5 D5 F5 D5 F5 D5 F5 D5 F5 D5 F5 | E5 G5 E5 G5 E5 G5 E5 G5 E5 G5 E5 G5 E5 G5 E5 G5 | F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 | F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 D6 A5 F5 A5 | F5 Bb5 F5 Bb5 F5 Bb5 F5 Bb5 F5 Bb5 F5 Bb5 F5 Bb5 F5 Bb5 | G5 C6 G5 C6 G5 C6 G5 C6 G5 C6 G5 C6 G5 C6 G5 C6 | A5 C6 A5 C6 A5 C6 A5 C6 A5 C6 A5 C6 A5 C6 A5 C6 | G5 C6 G5 C6 G5 C6 G5 C6 E5 G5 E5 G5 E5 G5 E5 G5 |
+def ac = Bb1 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb2 | C2 C2 C3 C2 C2 C3 C2 C3 C2 C2 C3 C2 C2 C3 C2 C3 | D2 D2 D3 D2 D2 D3 D2 D3 D2 D2 D3 D2 D2 D3 D2 D3 | D2 D2 D3 D2 D2 D3 D2 D3 D2 D2 D3 D2 D2 D3 D2 D3 | Bb1 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb2 | C2 C2 C3 C2 C2 C3 C2 C3 C2 C2 C3 C2 C2 C3 C2 C3 | F1 F1 F2 F1 F1 F2 F1 F2 F1 F1 F2 F1 F1 F2 F1 F2 | E1 E1 E2 E1 E1 E2 E1 E2 E1 E1 E2 E1 E1 E2 E1 E2 |
+def st = D4+F4 D4+F4 D4+F4 D4+F4 D4+F4 D4+F4 D4+F4 D4+F4 | E4+G4 E4+G4 E4+G4 E4+G4 E4+G4 E4+G4 E4+G4 E4+G4 | F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 | F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 | F4+Bb4 F4+Bb4 F4+Bb4 F4+Bb4 F4+Bb4 F4+Bb4 F4+Bb4 F4+Bb4 | G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 | A4+C5 A4+C5 A4+C5 A4+C5 A4+C5 A4+C5 A4+C5 A4+C5 | G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 |
+def ar = Bb4 D5 F5 Bb5 Bb4 D5 F5 Bb5 Bb4 D5 F5 Bb5 Bb4 D5 F5 Bb5 | C5 E5 G5 C6 C5 E5 G5 C6 C5 E5 G5 C6 C5 E5 G5 C6 | D5 F5 A5 D6 D5 F5 A5 D6 D5 F5 A5 D6 D5 F5 A5 D6 | D5 A5 D6 F6 D5 A5 D6 F6 D5 A5 D6 F6 D5 A5 D6 F6 | Bb4 F5 Bb5 D6 Bb4 F5 Bb5 D6 Bb4 F5 Bb5 D6 Bb4 F5 Bb5 D6 | C5 G5 C6 E6 C5 G5 C6 E6 C5 G5 C6 E6 C5 G5 C6 E6 | F5 A5 C6 F6 F5 A5 C6 F6 F5 A5 C6 F6 F5 A5 C6 F6 | E5 G5 C6 E6 E5 G5 C6 E6 E5 G5 C6 E6 E5 G5 C6 E6 |
+def ch = Bb2+F3+Bb3+D4:4 | C3+G3+C4+E4:4 | D3+A3+D4+F4:4 | D3+A3+D4+F4:4 | Bb2+F3+Bb3+D4:4 | C3+G3+C4+E4:4 | F3+C4+F4+A4:4 | E3+C4+E4+G4:4 |
+def chH = D4+F4+Bb4:4 | E4+G4+C5:4 | F4+A4+D5:4 | F4+A4+D5:4 | F4+Bb4+D5:4 | G4+C5+E5:4 | A4+C5+F5:4 | G4+C5+E5:4 |
+def bs = Bb1:4 | C2:4 | D2:4 | D2:4 | Bb1:4 | C2:4 | F1:4 | E1:4 |
+def mel = D4:4 | E4:4 | F4:6 A4:2 | D5:4 | C5:4 | A4:4 | G4:2 E4:2 |
+def mel2 = A4:4 | G4:4 | A4:6 D5:2 | F5:4 | E5:4 | C5:4 | C5:2 E5:2 |
+@ost organ vol=0.3 rev=0.55 dly=0.2 len=0.25
+[$o1]*R
+@pad pad vol=0.18 rev=0.7 cut=1800
+[$ch]*R
+@hat drums vol=0.2 len=0.25
+[[- - h?? - - - h? - - - h?? - - - h? - |]*8]*R
+@kick drums vol=0.6 len=0.25
+[[k - - - k - - - k - - - k - - - |]*8]*R
+@acid acid vol=0.3 len=0.25 cut=1400
+[$ac]*R
+@sub sub vol=0.26
+[$bs]*R
+` };
+  // かけあがる：スネア・弦の刻み・金管の旋律・厚いオルガン・コーラス・シンセのアルペジオまで全部
+  B.kyo_drive2 = { label: '巨大数：かけあがる（全部）', gain: 0.9, score: `
+title kyo_drive2
+tempo 138
+reverb 4.5
+delay 0.75
+def o1 = D5 F5 D5 F5 D5 F5 D5 F5 D5 F5 D5 F5 D5 F5 D5 F5 | E5 G5 E5 G5 E5 G5 E5 G5 E5 G5 E5 G5 E5 G5 E5 G5 | F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 | F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 F5 A5 D6 A5 F5 A5 | F5 Bb5 F5 Bb5 F5 Bb5 F5 Bb5 F5 Bb5 F5 Bb5 F5 Bb5 F5 Bb5 | G5 C6 G5 C6 G5 C6 G5 C6 G5 C6 G5 C6 G5 C6 G5 C6 | A5 C6 A5 C6 A5 C6 A5 C6 A5 C6 A5 C6 A5 C6 A5 C6 | G5 C6 G5 C6 G5 C6 G5 C6 E5 G5 E5 G5 E5 G5 E5 G5 |
+def ac = Bb1 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb2 | C2 C2 C3 C2 C2 C3 C2 C3 C2 C2 C3 C2 C2 C3 C2 C3 | D2 D2 D3 D2 D2 D3 D2 D3 D2 D2 D3 D2 D2 D3 D2 D3 | D2 D2 D3 D2 D2 D3 D2 D3 D2 D2 D3 D2 D2 D3 D2 D3 | Bb1 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb1 Bb2 Bb1 Bb2 | C2 C2 C3 C2 C2 C3 C2 C3 C2 C2 C3 C2 C2 C3 C2 C3 | F1 F1 F2 F1 F1 F2 F1 F2 F1 F1 F2 F1 F1 F2 F1 F2 | E1 E1 E2 E1 E1 E2 E1 E2 E1 E1 E2 E1 E1 E2 E1 E2 |
+def st = D4+F4 D4+F4 D4+F4 D4+F4 D4+F4 D4+F4 D4+F4 D4+F4 | E4+G4 E4+G4 E4+G4 E4+G4 E4+G4 E4+G4 E4+G4 E4+G4 | F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 | F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 F4+A4 | F4+Bb4 F4+Bb4 F4+Bb4 F4+Bb4 F4+Bb4 F4+Bb4 F4+Bb4 F4+Bb4 | G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 | A4+C5 A4+C5 A4+C5 A4+C5 A4+C5 A4+C5 A4+C5 A4+C5 | G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 G4+C5 |
+def ar = Bb4 D5 F5 Bb5 Bb4 D5 F5 Bb5 Bb4 D5 F5 Bb5 Bb4 D5 F5 Bb5 | C5 E5 G5 C6 C5 E5 G5 C6 C5 E5 G5 C6 C5 E5 G5 C6 | D5 F5 A5 D6 D5 F5 A5 D6 D5 F5 A5 D6 D5 F5 A5 D6 | D5 A5 D6 F6 D5 A5 D6 F6 D5 A5 D6 F6 D5 A5 D6 F6 | Bb4 F5 Bb5 D6 Bb4 F5 Bb5 D6 Bb4 F5 Bb5 D6 Bb4 F5 Bb5 D6 | C5 G5 C6 E6 C5 G5 C6 E6 C5 G5 C6 E6 C5 G5 C6 E6 | F5 A5 C6 F6 F5 A5 C6 F6 F5 A5 C6 F6 F5 A5 C6 F6 | E5 G5 C6 E6 E5 G5 C6 E6 E5 G5 C6 E6 E5 G5 C6 E6 |
+def ch = Bb2+F3+Bb3+D4:4 | C3+G3+C4+E4:4 | D3+A3+D4+F4:4 | D3+A3+D4+F4:4 | Bb2+F3+Bb3+D4:4 | C3+G3+C4+E4:4 | F3+C4+F4+A4:4 | E3+C4+E4+G4:4 |
+def chH = D4+F4+Bb4:4 | E4+G4+C5:4 | F4+A4+D5:4 | F4+A4+D5:4 | F4+Bb4+D5:4 | G4+C5+E5:4 | A4+C5+F5:4 | G4+C5+E5:4 |
+def bs = Bb1:4 | C2:4 | D2:4 | D2:4 | Bb1:4 | C2:4 | F1:4 | E1:4 |
+def mel = D4:4 | E4:4 | F4:6 A4:2 | D5:4 | C5:4 | A4:4 | G4:2 E4:2 |
+def mel2 = A4:4 | G4:4 | A4:6 D5:2 | F5:4 | E5:4 | C5:4 | C5:2 E5:2 |
+@ost organ vol=0.3 rev=0.55 dly=0.2 len=0.25
+[$o1]*R
+@pad pad vol=0.18 rev=0.7 cut=1800
+[$ch]*R
+@hat drums vol=0.2 len=0.25
+[[- - h?? - - - h? - - - h?? - - - h? - |]*8]*R
+@kick drums vol=0.6 len=0.25
+[[k - - - k - - - k - - - k - - - |]*8]*R
+@acid acid vol=0.3 len=0.25 cut=1400
+[$ac]*R
+@sub sub vol=0.26
+[$bs]*R
+@snr drums vol=0.42 len=0.25
+[[- - - - s - - - - - - - s - - - |]*7 - - - - s - - - - - s - s s? s s |]*R
+@stac violins vol=0.26 rev=0.5 len=0.5
+[$st]*R
+@brs brass vol=0.3 rev=0.65
+[$mel]*R
+@big organ vol=0.42 rev=0.75
+[$ch]*R
+@cho choir vol=0.24 rev=0.8
+[$chH]*R
+@arp lead vol=0.16 rev=0.5 dly=0.3 len=0.25
+[$ar]*R
+@strm strings vol=0.26 rev=0.7 oct=1
+[$mel2]*R
+@crash drums vol=0.4 len=4
+[y -:28]*R
+` };
   // 1周（6小節）で1オクターブ上がって元の和音に戻る＝ループの継ぎ目でも、ずっと上がりつづけて聞こえる
   B.kyo_noboru = { label: '巨大数：のぼりつづける', gain: 0.9, score: `
 title kyo_noboru
@@ -78,9 +232,10 @@ Kaisetsu.episode({
   },
   chapters: [['1000倍', ['hako', 'sen', 'man', 'oku', 'cho']], ['宇宙の原子', ['genshi', 'googol']], ['矢印', ['tashi', 'yaji', 'ue', 'kotae1']], ['1段ずつ', ['dan12', 'dan3', 'dan4', 'yomu']],
     ['3の塔', ['tou', 'nobori']], ['グラハム数', ['kusari', 'g1', 'g2', 'g64', 'hasamu', 'kotae']], ['果て', ['keta', 'hate']]],
-  bgm: { hako: 'kyo_kazu', sen: 'kyo_kazu', man: 'kyo_kazu', oku: 'kyo_kazu', cho: 'kyo_kazu', genshi: 'kyo_kazu', googol: 'kyo_kazu',
-    tashi: 'kyo_kazu', yaji: 'kyo_kazu', ue: 'kyo_kazu', kotae1: 'kyo_kazu', dan12: 'kyo_kazu', dan3: 'kyo_kazu', dan4: 'kyo_noboru',
-    tou: 'kyo_noboru', nobori: 'kyo_noboru', yomu: 'kyo_noboru', kusari: 'kyo_noboru', g1: 'kyo_noboru', g2: 'kyo_noboru', g64: 'kyo_noboru', hasamu: 'kyo_noboru',
+  // 数が大きくなる場面は「ひろがる」（3拍子、ゆったり）、手に負えなくなる場面は「かけあがる」（4拍子、速い）。説明の場面は、もとのマリンバ
+  bgm: { hako: 'kyo_sodai1', sen: 'kyo_sodai1', man: 'kyo_sodai1', oku: 'kyo_sodai1', cho: 'kyo_sodai1', genshi: 'kyo_sodai2', googol: 'kyo_sodai2',
+    tashi: 'kyo_kazu', yaji: 'kyo_kazu', ue: 'kyo_kazu', kotae1: 'kyo_kazu', dan12: 'kyo_drive1', dan3: 'kyo_drive1', dan4: 'kyo_noboru', yomu: 'kyo_noboru',
+    tou: 'kyo_drive1', nobori: 'kyo_drive2', kusari: 'kyo_kazu', g1: 'kyo_drive1', g2: 'kyo_drive2', g64: 'kyo_sodai3', hasamu: 'kyo_sodai3',
     kotae: 'wonder', keta: 'tension', hate: 'kyo_hate' },
 
   world(K) {
@@ -305,22 +460,32 @@ Kaisetsu.episode({
     const crown = glow('#FFE27A', 9); crown.position.set(-2, 63 * FH + 1.2, 0); GR.add(crown);
     const gyAt = t => 63 * FH * sstep(0.3, 5.6, t);      // 64階まで、5秒ほどで上がる
 
-    /* ======================= もとの問題：超立方体の頂点を、2色の線で全部結ぶ（x = 1500） ======================= */
+    /* ======================= もとの問題：立方体の頂点を、2色の線で全部結ぶ。3次元 → 4次元（x = 1500） ======================= */
     const QX = 1500, QG = new T.Group(); QG.position.x = QX; scene.add(QG);
     const V4 = []; for (let i = 0; i < 16; i++) V4.push([(i & 1) ? 1 : -1, (i & 2) ? 1 : -1, (i & 4) ? 1 : -1, (i & 8) ? 1 : -1]);
     const E = []; for (let a = 0; a < 16; a++) for (let b = a + 1; b < 16; b++) E.push([a, b]);
     const rods = new T.InstancedMesh(new T.CylinderGeometry(0.02, 0.02, 1, 6), toon('#ffffff'), E.length); rods.frustumCulled = false;
-    const cRed = new T.Color('#FF5A6E'), cBlue = new T.Color('#4DA3FF'); E.forEach((e, i) => rods.setColorAt(i, rnd() < 0.5 ? cRed : cBlue));
+    const cRed = new T.Color('#FF5A6E'), cBlue = new T.Color('#4DA3FF'), cDim = new T.Color('#1B2444'), cTmp = new T.Color();
+    // 色は乱数で決める。ただし、1つの面（頂点 0〜3）の6本は、わざと全部赤にしておく＝「同じ平面の4点を結ぶ線が、ぜんぶ同じ色」の例
+    const ECOL = E.map(() => rnd() < 0.5 ? cRed : cBlue), EHL = E.map(([p, q]) => p < 4 && q < 4);
+    E.forEach((e, i) => { if (EHL[i]) ECOL[i] = cRed; rods.setColorAt(i, ECOL[i]); });
     const dots = new T.InstancedMesh(new T.SphereGeometry(0.08, 14, 10), toon('#FFF4D6'), 16); dots.frustumCulled = false;
     QG.add(rods, dots);
     const P3 = V4.map(() => new V3());
-    function hyper(Tt) {
-      const a = Tt * 0.35, b = Tt * 0.23, ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b);
-      V4.forEach((v, i) => { let [x, y, z, w] = v; [x, w] = [x * ca - w * sa, x * sa + w * ca]; [y, z] = [y * cb - z * sb, y * sb + z * cb];
-        const k = 2.5 / (3.4 - w); P3[i].set(x * k * 1.25, y * k * 1.25, z * k * 1.25); M4.makeTranslation(P3[i].x, P3[i].y, P3[i].z); dots.setMatrixAt(i, M4); });
+    // 場面の中の時刻（声の長さからの見積もり）：点だけの立方体 → 5.8秒「線で結んで、赤か青で塗る」→ 10.7秒「同じ平面の4点」を太く →
+    // 17.2秒「次元を上げていくと」で、内側から2つ目の立方体が出てきて4次元の立方体になる
+    const QT = { e: [6.2, 9.0], h: [11.0, 12.0, 16.6, 17.6], d: [17.8, 21.5] };
+    function hyper(Tt, t) {
+      const e3 = sstep(QT.e[0], QT.e[1], t), hl = sstep(QT.h[0], QT.h[1], t) - sstep(QT.h[2], QT.h[3], t), d4 = sstep(QT.d[0], QT.d[1], t);
+      const a = 0.35 * Math.max(0, t - QT.d[0] - 1.2), b = Tt * 0.23, ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), big = lerp(1.75, 1, d4);
+      V4.forEach((v, i) => { let [x, y, z, w] = v; if (i >= 8) w = lerp(-1, 1, d4); [x, w] = [x * ca - w * sa, x * sa + w * ca]; [y, z] = [y * cb - z * sb, y * sb + z * cb];
+        const k = 2.5 / (3.4 - w) * big; P3[i].set(x * k * 1.25, y * k * 1.25, z * k * 1.25);
+        const ds = (i < 8 ? 1 : d4) * (i < 4 ? 1 + 0.9 * hl : 1) * lerp(1.5, 1, d4); M4.compose(P3[i], Q4.identity(), SC.set(ds, ds, ds).addScalar(0.0001)); dots.setMatrixAt(i, M4); });
       E.forEach(([p, q], i) => { const A = P3[p], Bq = P3[q]; P4.addVectors(A, Bq).multiplyScalar(0.5); S4.subVectors(Bq, A); const len = S4.length();
-        Q4.setFromUnitVectors(UP, S4.normalize()); M4.compose(P4, Q4, SC.set(1, len, 1)); rods.setMatrixAt(i, M4); });
-      rods.instanceMatrix.needsUpdate = true; dots.instanceMatrix.needsUpdate = true;
+        const th = e3 * (q < 8 ? 1 : d4) * (EHL[i] ? 1 + 2.4 * hl : 1) * lerp(1.4, 1, d4) + 0.0001;
+        Q4.setFromUnitVectors(UP, S4.normalize()); M4.compose(P4, Q4, SC.set(th, len, th)); rods.setMatrixAt(i, M4);
+        cTmp.copy(ECOL[i]); if (!EHL[i]) cTmp.lerp(cDim, 0.8 * hl); rods.setColorAt(i, cTmp); });
+      rods.instanceMatrix.needsUpdate = true; dots.instanceMatrix.needsUpdate = true; rods.instanceColor.needsUpdate = true;
     }
 
     /* ======================= 最後の10けた（x = 1800）：3の塔を1段ずつ高くする ======================= */
@@ -419,7 +584,7 @@ Kaisetsu.episode({
 
 
       // もとの問題
-      if (name === 'kotae' || jump) hyper(Tt);
+      if (name === 'kotae' || jump) hyper(Tt, name === 'kotae' ? t : 99);
 
       // 最後の10けた
       { const n = name === 'keta' ? kSteps(t) : 14;
@@ -461,7 +626,12 @@ Kaisetsu.episode({
       if (name === 'g2') L.push({ id: 'g2', p: new V3(GX + 4, FH + 0.95, 0.4), t: '矢印 g1本', sub: '終わりが見えない', dot: '#7CE0FF' });
       if (name === 'g64' && gyAt(t) > 60 * FH) L.push({ id: 'gt', p: new V3(GX - 2, 63 * FH + 1.6, 0.4), t: 'グラハム数', sub: '64段目の答え', dot: '#FFE27A' });
       if (name === 'hasamu') { L.push({ id: 'hu', p: new V3(CX, 2.4, -14), t: 'グラハム数より小さい', dot: '#7CE0FF' }); L.push({ id: 'hd', p: new V3(CX, -2.4, -14), t: 'グラハム数より大きい', dot: '#7CE0FF' }); }
-      if (name === 'kotae') L.push({ id: 'q', p: new V3(QX + 1.6, 1.5, 0), t: '頂点16個', sub: '4次元の立方体', dot: '#FF5A6E' });
+      if (name === 'kotae') {
+        if (t < 17.8) L.push({ id: 'q', p: new V3(QX + 2.2, 2.2, 0), t: '立方体', sub: t > 6.2 ? '頂点8個を、ぜんぶ結ぶ（28本）' : '頂点8個', dot: '#FFF4D6' });
+        else L.push({ id: 'q', p: new V3(QX + 2.2, 2.2, 0), t: '4次元の立方体', sub: '頂点16個（線は120本）', dot: '#FF5A6E' });
+        if (t > 11.6 && t < 17.0) L.push({ id: 'qh', p: P3[1].clone().add(new V3(QX, 0, 0.1)), t: '同じ平面の4点', sub: '6本とも赤＝これを避けたい', dot: '#FF5A6E' });
+        if (t > 24.4) L.push({ id: 'qa', p: new V3(QX - 2.4, -0.6, 0), t: '答えは13次元以上', sub: 'どこからかは、まだ分からない', dot: '#FFD166' });
+      }
       if (name === 'keta') { const n = kSteps(t); L.push({ id: 'kt', p: new V3(KX + 6.3, 0.3 + n * 0.53, 0), t: `3の塔 ${n}段`, dot: '#FFD166' }); L.push({ id: 'kd', p: new V3(KX + 0.3, 2.1, 0), t: '下10けた', dot: '#FFD166' }); }
       if (name === 'hate') { L.push({ id: 'g', p: new V3(HX, 0.35, 0.9), t: 'グラハム数', dot: '#FFE27A' }); if (t > 4) L.push({ id: 'inf', p: new V3(HX, 0.6, hateZ(t) - 30), t: 'この先も、ずっと', dot: '#9FB3FF' }); }
       return L;
@@ -601,11 +771,17 @@ Kaisetsu.episode({
     { w: 'A', s: 'hasamu', t: 'なのに、チェーン表記なら、4つの数で、はさめるの。',
       k: "なのに、ちぇ'ーん ひょうきなら、よっつの かずで、はさめるの。",
       b: { h: 'チェーン表記ではさむ', r: ['3→3→64→2 ＜ グラハム数', 'グラハム数 ＜ 3→3→65→2'] } },
-    { w: 'A', s: 'kotae', t: 'もともとは、ある問題の答えの、上限として出てきた数なの。',
-      k: "もともとわ、あ'る もんだいの こたえの、じょうげんと して でてきた かずなの。",
-      b: { h: 'もとの問題', r: ['頂点をすべて線で結び、線を2色で塗る', 'どう塗っても、同じ平面の4点が同じ色になる', 'その最小の次元：13以上としか分かっていない'] } },
-    { w: 'A', s: 'kotae', t: '本当の答えは、いまのところ、13以上としか分かっていない。',
-      k: "ほんとうの こたえわ、いまの ところ、じゅうさん いじょうと しか わかって いない。" },
+    { w: 'A', s: 'kotae', t: 'もともとは、ある問題の答えの上限として、紹介された数なの。',
+      k: "もともとわ、あ'る もんだいの こたえの じょうげんと して、しょうかい された かずなの。" },
+    { w: 'A', s: 'kotae', t: '立方体の頂点を、ぜんぶ線で結んで、線を赤か青で塗る。',
+      k: "りっぽうたいの ちょうて'んお、ぜ'んぶ せ'んで むすんで、せ'んお あ'かか あ'おで ぬる。" },
+    { w: 'A', s: 'kotae', t: '同じ平面にある4つの点を結ぶ線が、ぜんぶ同じ色。そうならないように、塗りたいの。',
+      k: "おなじ へいめんに ある よっつの てんお むすぶ せ'んが、ぜ'んぶ おなじ いろ'。そう ならない ように、ぬりたいの。" },
+    { w: 'A', s: 'kotae', t: 'でも、立方体の次元を上げていくと、どう塗っても避けられなくなる。それは、何次元から？',
+      k: "で'も、りっぽうたいの じげんお あげて いくと、ど'う ぬっても さけられなく なる。それわ、なんじげんから？",
+      b: { h: 'もとの問題', r: ['n次元の立方体の頂点をすべて結び、2色で塗る', '同じ平面の4点を結ぶ線が、ぜんぶ同じ色', 'どう塗ってもそうなるのは、何次元から？'] } },
+    { w: 'A', s: 'kotae', t: '本当の答えは、13以上。上限は、いまではずっと小さくなったけれど、それでも途方もない数。',
+      k: "ほんとうの こたえわ、じゅうさん いじょう。じょうげんわ、い'まで'わ ずっと ちい'さく なったけれど、それでも とほうも ない かず。" },
     { w: 'B', s: 'kotae', e: { B: 'surprise' }, t: 'えっ、13かもしれないの？',
       k: "/eq/、じゅうさ'ん かも しれないの？" },
     { w: 'A', s: 'kotae', e: { A: 'smile' }, t: 'かもしれないわ。',
