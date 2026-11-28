@@ -5,7 +5,7 @@
  * VTuber の声は OtoVoice、体は 翠卓（3D リーチ麻雀）の8人（vtuber.js）。動画は、画面と音を、そのまま録画して作る（実時間）。
  *
  * ■ 読みこむ順番
- *   otovoice.js、suitaku-chara.js、chara-common.js、vtuber.js、jikkyo.js、そして回（play-xxx.js。Jikkyo.play({...}) を呼ぶ）
+ *   otostudio.js（声の OtoVoice が入っている。それまでは otovoice.js）、suitaku-chara.js、chara-common.js、vtuber.js、jikkyo.js、そして回（play-xxx.js。Jikkyo.play({...}) を呼ぶ）
  *
  * ■ 回の書き方（Jikkyo.play）
  *   id, title（配信のタイトル）, game（ゲームの HTML のファイル名）, tags（タイトルの下に出す短い言葉）
