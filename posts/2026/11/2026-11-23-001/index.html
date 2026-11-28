@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>ゆっくり解説動画風のアニメを作る基盤を作った — 声もBGMも絵も、その場で合成 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="これまで作った話し声の合成（OtoVoice）と作曲の基盤（TextScore）に、丸い顔のキャラクターと3Dの場面を組み合わせて、2人の掛け合いで解説するアニメーションを作る基盤を作った。字幕の長さの決まり、場面ごとのBGM、動画ファイルへの書き出し、AIに回を書かせる前提の作り。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/11/2026-11-23-001/"><meta property="og:title" content="ゆっくり解説動画風のアニメを作る基盤を作った — 声もBGMも絵も、その場で合成"><meta property="og:description" content="これまで作った話し声の合成（OtoVoice）と作曲の基盤（TextScore）に、丸い顔のキャラクターと3Dの場面を組み合わせて、2人の掛け合いで解説するアニメーションを作る基盤を作った。字幕の長さの決まり、場面ごとのBGM、動画ファイルへの書き出し、AIに回を書かせる前提の作り。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/11/2026-11-23-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>ゆっくり解説動画風のアニメを作る基盤を作った — 声もBGMも絵も、その場で合成</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-11-23T23:50:00+09:00">2026-11-23T23:50:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-e0146c74c728/">プログラミング</a><a class="tag" href="/tags/javascript/">JavaScript</a><a class="tag" href="/tags/ai/">AI</a><a class="tag" href="/tags/entry-dbad2090ff4a/">音響</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="ゆっくり解説動画風のアニメを作る基盤を作った-声もbgmも絵も-その場で合成">ゆっくり解説動画風のアニメを作る基盤を作った — 声もBGMも絵も、その場で合成</h1>
+<p>これまでに作ったものを組み合わせて、ゆっくり解説動画のような、2人の掛け合いで難しいことを解説する3Dアニメーションを作る基盤を作った。ブラウザで再生できて、動画ファイルにも書き出せる。</p>
+<p>組み合わせたのは、この3つ。</p>
+<ul>
+<li><strong>声</strong>：<a href="/works/otovoice/">OtoVoice</a>。録音を使わない話し声の合成（<a href="/posts/2026/11/2026-11-22-001/">11月22日の記事</a>の追記に書いた）。口の動きは、声の大きさから決める。</li>
+<li><strong>BGM</strong>：<a href="/works/text-score-studio/">テキスト譜スタジオ</a>の作曲の基盤、TextScore。</li>
+<li><strong>絵</strong>：three.js。キャラクターは、前に作った3Dの頭のモデルの描き方を流用した。</li>
+</ul>
+<p>見本の回は「GPSは相対性理論なしでは使えない？」（4分1秒、48セリフ）。解説役のノアと、聞き役のヒナが話す。顔はまんじゅうのような平たい丸で、髪・髪飾り・帽子を乗せている。どちらもこのために作ったキャラクターで、髪型や色、帽子はページで変えられる。使い方を説明する40秒の回も入れてある。こちらは新しい回の雛形を兼ねている。</p>
+<p>→ <a href="/works/kaisetsu-studio/">Kaisetsu スタジオ</a></p>
+<p>今回も Claude と作った。Claude は音を聴けないので、音まわりの数字は機械で測ったものだ。</p>
+<h2 id="1回-台本-場面のコード">1回 ＝ 台本 ＋ 場面のコード</h2>
+<p>最初は GPS の解説を、1本ものとして作った。見てみると良い感じだったので、使い回せる形に分けた。</p>
+<ul>
+<li><code>kaisetsu.js</code>（約100KB）：声、口の動き、字幕、ボード、ラベル、BGM、キャラクター、書き出し、台本チェック</li>
+<li>回のファイル：台本と、3Dの場面のコード</li>
+</ul>
+<p>台本の1セリフは、こう書く。</p>
+<pre><code class="language-js">{ w: &#39;A&#39;, s: &#39;sum&#39;, t: &#39;合わせると、45引く7で、1日に約38マイクロ秒。&#39;,
+  k: &quot;あわせると、よんじゅうご ひく なな で、いちにちに やく さんじゅうはち まいく&#39;ろびょう。&quot;,
+  b: { h: &#39;＋45 − 7 ＝ ＋38 μs／日&#39;, r: [&#39;衛星の時計は、1日に約38マイクロ秒進む&#39;] } },</code></pre>
+<p><code>w</code> は話し手、<code>s</code> は場面、<code>t</code> は字幕、<code>k</code> は読み（ひらがなとアクセントの印）、<code>b</code> は左上のボード。表情も1セリフごとに付けられる。場面のほうは、three.js で物を置いて、場面ごとのカメラの位置と、物に付ける名前（ラベル）を返す関数を書く。</p>
+<p>場面は、回ごとにAIが書く前提にした。題材ごとに見せたい物はちがうので、部品を用意して選ばせるより、毎回コードを書かせたほうが早い。書き方と決まりは、<code>kaisetsu.js</code> の頭にコメントで手引きとして入れてある。ただ、その手引きだけを読んだ別のAIが良い回を書けるかは、まだ試していない。</p>
+<h2 id="見た目の決まりを-台本の決まりにする">見た目の決まりを、台本の決まりにする</h2>
+<p>最初の版は、字幕の帯の高さがセリフの長さで変わっていた。説明の文字やラベルが重なるところもあった。</p>
+<p>字幕は、2行分の高さで固定した。そのかわり、2行に入りきらないセリフは書けない、という決まりにした。</p>
+<ul>
+<li>字幕：全角48字まで、2行まで</li>
+<li>声：1セリフ9秒まで</li>
+<li>ボード：見出し20字まで、3行まで、1行26字まで</li>
+<li>ラベル：12字まで</li>
+<li>読み：OtoVoice が読めること</li>
+</ul>
+<p>ページの「台本チェック」が、全セリフの字幕を実際に折り返して、声の長さも測って、決まりの外を一覧にする。読みの誤りは、OtoVoice の <code>check()</code> で拾う。GPS の回は0件で、いちばん長い字幕が43字、いちばん長い声が7.2秒。見た目で困ることを台本の決まりに落としておくと、AIが書いた台本を機械で弾ける。</p>
+<p>画面の割りつけは、左上がボード、右上が章、下のまんなかが字幕、左下と右下がキャラクター。ボードは半透明にして、後ろの3Dが透けるようにした。ラベルは、ボード・字幕・キャラクター・ほかのラベルを避けて置き場所を探し、元の位置から離れたら細い線でつなぐ。</p>
+<h2 id="bgm-は場面ごとに-セリフの間は下げる">BGM は場面ごとに、セリフの間は下げる</h2>
+<p>BGM は TextScore で5曲書いた。はじまり（明るい）、説明（落ち着いた）、ふしぎ（考える）、緊張（時計の音）、解決（あたたか）。回のファイルで、場面ごとにどれを流すかを決める。どれも16〜23秒の曲で、ページを開いたときにブラウザで音にする。</p>
+<p>ループは、譜面を2回くり返して音にし、2回目の頭から終わりまでを使う。こうすると、ループの頭にも、前の小節の残響が入る。1回分だけを音にしてループさせると、頭の残響がない。</p>
+<p>セリフのあいだは、BGM の音量を自動で下げる。GPS の回の音を通しで書き出して測ると、BGM はセリフ中のほうが、セリフの間より4dBほど小さかった（中央値）。曲が場面の切りかわりで途切れていないことも、同じ音で確かめた。下げ方がちょうどいいかは、聴いて決めることになる。</p>
+<h2 id="動画ファイルに書き出す">動画ファイルに書き出す</h2>
+<p>書き出しは、再生と同じ予定表を使って、1コマずつ（30fps）描く。3Dと文字を1枚に重ねて、WebCodecs で VP9（WebM）か H.264（MP4）に圧縮する。音は OfflineAudioContext で、声と BGM を同じ予定表から作る。入れ物に詰めるのは webm-muxer と mp4-muxer（どちらも MIT）。</p>
+<p>書き出しても再生と同じ動きになるように、場面の動きは「場面に入ってからの秒」と「頭からの秒」で決めることにした。コマの間隔に頼った動きは、描く速さで変わってしまう。</p>
+<p>つまずいたのは1つ。書き出した動画の3Dが真っ黒だった。文字を描く関数が、最初に画面を消していた。再生では文字だけの層に描くので問題ないが、書き出しでは3Dを写した上に文字を描くので、3Dまで消えていた。</p>
+<p>claude.ai の中では、ページが自分でファイルをダウンロードさせられないので、claude.ai の保存の機能を通す。ブログに置いた版は、ふつうのダウンロードにしてある。</p>
+<h2 id="できないこと">できないこと</h2>
+<ul>
+<li>耳では確かめていない。BGM の雰囲気、声と BGM の釣り合い、読みのアクセントは、聴いて直すことになる。</li>
+<li>書き出しは時間がかかる。GPU のない試験環境では、動画の長さの約8倍かかった。GPU のある端末では測っていない。</li>
+<li>MP4 の音は、AAC を作れないブラウザでは Opus になる。Opus 入りの MP4 を再生できないソフトもあるかもしれない。困ったら WebM で。</li>
+<li>確かめたのは Chrome 系のブラウザだけ。Safari と Firefox は試していない。</li>
+<li>解説の数字（衛星の時計が1日に約38マイクロ秒進む、など）は、一般に言われている値を使った。</li>
+</ul>
+<p>→ <a href="/works/kaisetsu-studio/">Kaisetsu スタジオ</a></p>
+<h2 id="追記-11月24日">追記（11月24日）</h2>
+<p>VTuberのゲーム実況みたいなやつも作ってみた。自作のゲームを自動の遊び手が遊んで、VTuberがしゃべりながら配信している風の動画を、ブラウザの中で作る。</p>
+<ul>
+<li><strong>画面</strong>：左に大きくゲーム、右下にVTuber（腰から上）、右上に視聴者の書き込み、下に字幕。書き込みの名前は、ぜんぶ作りもの。</li>
+<li><strong>VTuber</strong>：自作の3D麻雀「翠卓」の8人をそのまま使った（頭と髪は Claude、服は GPT-6 Astra がフルスクラッチで書いた。肩・肘・手の関節や手のつくりは、自由に使える VRoid のモデルを参考にしている）。声は OtoVoice で、しゃべると口が開く。</li>
+<li><strong>ゲーム</strong>：<a href="/works/above-xx-city-left-orbit-gunner/">上空 左旋回・射手</a>、<a href="/works/above-xx-city-gunner/">上空・射手</a>、<a href="/works/xx-circuit-2am-laps/">✕✕サーキット 午前二時・周回</a>の3本（サーキットは24日の夜に足した）。遊び手は、外したり、被弾したり、後ろを撃とうとして止められたり、ブレーキが遅れてふくらんだり、たまに失敗もする。</li>
+<li><strong>掛け合い</strong>：「ズームってできるの？」と書きこまれると、答えてから実際にズームする。英語の無線を「なんて言ってるの？」と聞かれると、ゲームの字幕を言いかえて答える。</li>
+</ul>
+<p>最初の版は、エイムが急で画面酔いしそうだった。測ってみると、ねらいを移すときに毎秒200°近くで振っていて、真後ろを向いたところでは画面が1こまで70°以上跳ぶこともあった。手の速さと加速度に上限を置き、止まれる距離から逆算して減速するようにして、ふだんは毎秒50°くらいまでに抑えた。</p>
+<p>録画もできる（実時間なので、1本7〜11分くらいかかる）。今回も、声とゲームの音の釣り合いは、聴いて直すことになる。</p>
+<p>→ <a href="/works/jikkyo-studio/">Jikkyo スタジオ</a></p>
+<h2 id="追記-11月25日">追記（11月25日）</h2>
+<p>怪談の回を足した。「玄関の靴を数えてはいけない」（4分半、59セリフ）。語りのノアが、子供のころに住んでいた古い借家の、玄関の話をする。</p>
+<ul>
+<li>入り口は、脱いだ靴を外向きにそろえる「出船」と、内向きの「入船」の話。</li>
+<li>解説用の部品を、そのまま怖がらせる道具にした。物に付けるラベルが靴を数え、夜ごとの足あとを数え、最後は近づいてくる靴の歩数を数える。左上のボードも、最後は真顔で「決まり」を並べる。</li>
+<li>BGM は怪談用に4曲書いた（わらべうたのオルゴール、夜の玄関、心臓の音、子守唄）。和室の場面だけ、わざと無音にしてある。BGM もちゃんと怖い。</li>
+</ul>
+<p>→ <a href="/works/kaisetsu-studio/#kutsu">Kaisetsu スタジオ（怪談の回）</a></p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/11/2026-11-22-001/">← 音符とかなで歌わせる — 39KBの歌声合成を作って分かったこと</a><a rel="next" href="/posts/2026/11/2026-11-24-001/">✕✕サーキット 午前二時を、ゲームにした →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/11/2026-11-22-001/">音符とかなで歌わせる — 39KBの歌声合成を作って分かったこと</a></li><li><a href="/posts/2026/11/2026-11-28-001/">OtoFX に立体音響（HRTF もどき）を足した</a></li><li><a href="/posts/2026/09/2026-09-03-001/">楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む</a></li><li><a href="/posts/2026/09/2026-09-01-001/">声道を物理で鳴らす — ブラウザで動く調音音声合成をつくる</a></li><li><a href="/posts/2026/09/2026-09-07-002/">GPT-6 astraに郵便番号検索ツールを作らせてみた</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

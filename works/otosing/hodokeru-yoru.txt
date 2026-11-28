@@ -1,0 +1,359 @@
+title ほどける夜
+// 歌つきのリキッド・ドラムンベース。ハ短調、174BPM、144小節（約3分19秒。前奏16小節のあと、128小節＝約2分57秒をくり返す）
+// 構成：前奏16・A16・B8・サビ16・間奏8・A16・B8・サビ16・ブリッジ16（ハーフタイム）・サビ16・終わり8
+// 歌：女声。Aメロは息まじり（whisper=0.3）、Bメロで息を減らし、サビは息を切って歌う。ブリッジは囁き。息の雑音は air= で高い帯域へ
+//     サビの後半に3度下のハモり。最後のサビは、頭からハモりと、上で裏声の声（歌詞なし）。前奏と終わりに、歌詞のない囁き声
+// 伴奏：パッドとエレピの和音（2小節ずつ）、リースベース、kit=dnb のツーステップ。ピアノが前奏・Aメロの合いの手・間奏を弾く
+tempo 174
+intro 16
+reverb 3.2
+delay 0.75
+
+// ---- 和音（パッド、2小節ずつ） ----
+def PAb = Ab3+C4+Eb4+G4:8 |
+def PBb = Bb3+D4+F4+G4:8 |
+def PCm = Eb3+G3+Bb3+D4:8 |
+def PGm = G3+Bb3+D4+F4:8 |
+def PFm = F3+Ab3+C4+G4:8 |
+def PEb = Eb3+G3+Bb3+D4:8 |
+def PBs = Bb3+Eb4+F4+Ab4:8 |
+// ---- エレピの刻み（2小節で4打） ----
+def EAb = C4+Eb4+G4:1.5 C4+Eb4+G4:1 -:1.5 C4+Eb4+G4:0.5 -:1 C4+Eb4+G4:2.5 |
+def EBb = D4+F4+G4+Bb4:1.5 D4+F4+G4+Bb4:1 -:1.5 D4+F4+G4+Bb4:0.5 -:1 D4+F4+G4+Bb4:2.5 |
+def ECm = Eb4+G4+Bb4+D5:1.5 Eb4+G4+Bb4+D5:1 -:1.5 Eb4+G4+Bb4+D5:0.5 -:1 Eb4+G4+Bb4+D5:2.5 |
+def EGm = D4+F4+G4+Bb4:1.5 D4+F4+G4+Bb4:1 -:1.5 D4+F4+G4+Bb4:0.5 -:1 D4+F4+G4+Bb4:2.5 |
+def EFm = C4+Eb4+F4+Ab4:1.5 C4+Eb4+F4+Ab4:1 -:1.5 C4+Eb4+F4+Ab4:0.5 -:1 C4+Eb4+F4+Ab4:2.5 |
+def EEb = D4+Eb4+G4+Bb4:1.5 D4+Eb4+G4+Bb4:1 -:1.5 D4+Eb4+G4+Bb4:0.5 -:1 D4+Eb4+G4+Bb4:2.5 |
+def EBs = Eb4+F4+Ab4+Bb4:1.5 Eb4+F4+Ab4+Bb4:1 -:1.5 Eb4+F4+Ab4+Bb4:0.5 -:1 Eb4+F4+Ab4+Bb4:2.5 |
+// ---- ベース（2小節。終わりの音で、次の和音へ寄る） ----
+def BAbB = Ab1:1.5 -:1 Ab1:1.5 | Ab1:2 -:0.5 Bb1:1.5 |
+def BBbC = Bb1:1.5 -:1 Bb1:1.5 | Bb1:2 -:0.5 C2:1.5 |
+def BBbG = Bb1:1.5 -:1 Bb1:1.5 | Bb1:2 -:0.5 G1:1.5 |
+def BBbE = Bb1:1.5 -:1 Bb1:1.5 | Bb1:2 -:0.5 Eb2:1.5 |
+def BCmG = C2:1.5 -:1 C2:1.5 | C2:2 -:0.5 G1:1.5 |
+def BCmA = C2:1.5 -:1 C2:1.5 | C2:2 -:0.5 Ab1:1.5 |
+def BGmA = G1:1.5 -:1 G1:1.5 | G1:2 -:0.5 Ab1:1.5 |
+def BGmF = G1:1.5 -:1 G1:1.5 | G1:2 -:0.5 F1:1.5 |
+def BGmC = G1:1.5 -:1 G1:1.5 | G1:2 -:0.5 C2:1.5 |
+def BFmG = F1:1.5 -:1 F1:1.5 | F1:2 -:0.5 G1:1.5 |
+def BEbB = Eb2:1.5 -:1 Eb2:1.5 | Eb2:2 -:0.5 Bb1:1.5 |
+def BBsA = Bb1:1.5 -:1 Bb1:1.5 | Bb1:2 -:0.5 Ab1:1.5 |
+// ---- ドラム（16分で1小節。s?? はゴーストノート） ----
+def g1   = k - - - s - - s?? - s?? k - s - - - |
+def g2   = k - - - s - - s?? - - k - s - k? - |
+def g3   = k - - k? s - - s?? - s?? k - s - s?? - |
+def fill = k - - - s - - s?? - s?? k - s s? s s |
+def roll = s?? s?? s? s? s? s? s s s s s! s! s! s! s! s! |
+def half = k - - - - - - - s - - - - - k? - |
+def hal2 = k - - - - - - - s - - s?? - s?? k? - |
+def dend = k - - - - - - - - - - - - - - - |
+// ---- ピアノ：前奏の主題、Aメロの合いの手、間奏、ブリッジ ----
+def pm1 = -:1 G5 Eb5 C5 | Bb4:1.5 C5:0.5 Eb5:2 |
+def pm2 = -:1 F5 D5 Bb4 | G4:1.5 Bb4:0.5 D5:2 |
+def pm3 = -:1 G5 Eb5 D5 | C5:1.5 D5:0.5 Eb5:2 |
+def pm4 = -:1 F5 D5 Bb4 | D5:3 -:1 |
+def pa1 = -:1 D5:0.5 F5:0.5 G5 F5 | D5:1.5 Bb4:0.5 G4:2 |
+def pa2 = -:1 Bb4:0.5 D5:0.5 F5 G5 | Bb5:3 -:1 |
+def px1 = -:1 Eb5 G5 Bb5 | Ab5:1.5 G5:0.5 Eb5:2 |
+def px2 = -:1 D5 F5 Bb5 | G5:1.5 F5:0.5 D5:2 |
+def px3 = -:1 Eb5:0.5 G5:0.5 C6 Bb5 | G5:1.5 Eb5:0.5 D5:2 |
+def px4 = -:1 D5 F5 G5 | Bb5:3 -:1 |
+def pd1 = -:1 Ab5 G5 Eb5 | C5:3 -:1 |
+// ---- プラックの分散和音（サビ。8分で1小節） ----
+def kAb = Ab4 C5 Eb5 G5 Eb5 C5 G5 Eb5 |
+def kBb = Bb4 D5 F5 G5 F5 D5 G5 F5 |
+def kGm = G4 Bb4 D5 F5 D5 Bb4 F5 D5 |
+def kCm = C5 Eb5 G5 Bb5 G5 Eb5 Bb5 G5 |
+def kEb = Eb5 G5 Bb5 D6 Bb5 G5 D6 Bb5 |
+def kBs = Bb4 Eb5 F5 Ab5 F5 Eb5 Ab5 F5 |
+// ---- 歌（2小節でひとこと） ----
+def v1 = G4:1.5 Bb4:1.5 C5 | Eb5:1.5 C5 Bb4 -:0.5 |
+def v2 = F4:1.5 G4:1.5 Bb4 | D5:1.5 Bb4 G4 -:0.5 |
+def v3 = G4 G4 Bb4 C5 | Eb5:1.5 D5 C5 -:0.5 |
+def v4 = C5:1.5 Bb4:1.5 G4 | Bb4:1.5 C5 Eb5 -:0.5 |
+def v5 = D5:1.5 C5:1.5 Bb4 | F5:1.5 D5 Bb4 -:0.5 |
+def v6 = Eb5 D5 C5 Bb4 | C5:2 G4:1.5 -:0.5 |
+def b1 = Ab4 Ab4 C5 C5 | Eb5:1.5 C5 Ab4 -:0.5 |
+def b2 = Bb4 Bb4 D5 D5 | F5:1.5 D5 Bb4 -:0.5 |
+def b3 = C5 C5 Eb5 Eb5 | G5:2 Eb5:1.5 -:0.5 |
+def b4 = D5 D5 F5 F5 | G5:1.5 F5:2 -:0.5 |
+def c1 = C5:1.5 Eb5:2.5 | D5:2 C5:1.5 -:0.5 |
+def c2 = Bb4:1.5 D5:2.5 | C5:2 Bb4:1.5 -:0.5 |
+def c3 = Bb4 Bb4 D5 F5 | F5:1.5 D5 Bb4 -:0.5 |
+def c4 = C5 C5 G4 C5 | Eb5:2 C5:1.5 -:0.5 |
+def c5 = Eb5:1.5 G5:2.5 | F5:2 Eb5:1.5 -:0.5 |
+def c6 = D5:1.5 F5:2.5 | Eb5:2 D5:1.5 -:0.5 |
+def c7 = Bb4 Bb4 Eb5 G5 | G5:1.5 F5 Eb5 -:0.5 |
+def c8 = F5 F5 Eb5 F5 | G5:2 F5:1.5 -:0.5 |
+def d1 = D5:1.5 Bb4:1.5 G4 | Bb4:1.5 C5 D5 -:0.5 |
+def d2 = C5:1.5 Bb4:1.5 Ab4 | C5:1.5 Eb5 C5 -:0.5 |
+def d3 = D5:1.5 C5:1.5 Bb4 | D5:1.5 F5 D5 -:0.5 |
+def d4 = Bb4:1.5 D5:1.5 D5 | F5:1.5 D5 Bb4 -:0.5 |
+def d5 = C5 C5 Eb5 Eb5 | G5:2 Eb5:1.5 -:0.5 |
+// ハモり（3度〜6度下）
+def h1 = Ab4:1.5 C5:2.5 | Bb4:2 Ab4:1.5 -:0.5 |
+def h2 = G4:1.5 Bb4:2.5 | G4:2 G4:1.5 -:0.5 |
+def h3 = G4 G4 Bb4 D5 | D5:1.5 Bb4 G4 -:0.5 |
+def h4 = G4 G4 Eb4 G4 | C5:2 G4:1.5 -:0.5 |
+def h5 = C5:1.5 Eb5:2.5 | C5:2 C5:1.5 -:0.5 |
+def h6 = Bb4:1.5 D5:2.5 | Bb4:2 Bb4:1.5 -:0.5 |
+def h7 = G4 G4 Bb4 Eb5 | Eb5:1.5 D5 Bb4 -:0.5 |
+def h8 = D5 D5 Bb4 D5 | Eb5:2 D5:1.5 -:0.5 |
+// ---- 区間ごとの伴奏 ----
+def PA = $PAb $PBb $PCm $PGm
+def PB = $PFm $PGm $PAb $PBs
+def PC = $PAb $PBb $PGm $PCm $PAb $PBb $PEb $PBs
+def EA = $EAb $EBb $ECm $EGm
+def EB = $EFm $EGm $EAb $EBs
+def EC = $EAb $EBb $EGm $ECm $EAb $EBb $EEb $EBs
+def BA = $BAbB $BBbC $BCmG $BGmA
+def BAe = $BAbB $BBbC $BCmG $BGmF
+def BB = $BFmG $BGmA $BAbB $BBsA
+def BC = $BAbB $BBbG $BGmC $BCmA $BAbB $BBbE $BEbB $BBsA
+def DA = [$g1 $g2]*7 $g1 $fill
+def DB = [$g1 $g3]*3 $g1 $roll
+def DC = [$g1 $g2]*3 $g1 $fill [$g1 $g2]*3 $g1 $fill
+def KC = $kAb $kAb $kBb $kBb $kGm $kGm $kCm $kCm $kAb $kAb $kBb $kBb $kEb $kEb $kBs $kBs
+
+@uta voice vol=1.3 rev=0.45 dly=0.18 whisper=0.3 air=1
+-:64 |
+$v1
+よふけのみち
+$v2
+ぬれたほどう
+$v3
+あかりがにじむ
+-:8 |
+$v4
+いえないまま
+$v5
+むねのおくで
+$v6
+ゆれているよ
+-:8 |
+$b1
+【囁0.15】たちどまるたび
+$b2
+【囁0.15】おもいだすのわ
+$b3
+【囁0.1】あのひのこえ
+$b4
+【囁0】よるがあける
+$c1
+【囁0】ほどけて
+$c2
+【囁0】ほどけて
+$c3
+【囁0】よるがほどける
+$c4
+【囁0】あさのほうえ
+$c5
+【囁0】ひらいて
+$c6
+【囁0】ひらいて
+$c7
+【囁0】まどのむこうに
+$c8
+【囁0】ひかりがさす
+-:32 |
+$v1
+とおいそらが
+$v2
+しらんでゆく
+$v3
+とりがなきだす
+-:8 |
+$v4
+かたむすびを
+$v5
+ゆびでほどき
+$v6
+わらえるかな
+-:8 |
+$b1
+【囁0.15】たちどまるたび
+$b2
+【囁0.15】おもいだすのわ
+$b3
+【囁0.1】あのひのこえ
+$b4
+【囁0】よるがあける
+$c1
+【囁0】ほどけて
+$c2
+【囁0】ほどけて
+$c3
+【囁0】よるがほどける
+$c4
+【囁0】あさのほうえ
+$c5
+【囁0】ひらいて
+$c6
+【囁0】ひらいて
+$c7
+【囁0】まどのむこうに
+$c8
+【囁0】ひかりがさす
+-:8 |
+$d1
+【囁0.6】ねむれぬまま
+$d2
+【囁0.6】かぞえたほし
+$d3
+【囁0.6】ひとつきえた
+Ab4:4 | C5:3.5 -:0.5 |
+【囁0.6】うー
+$d4
+【囁0.4】けれどあさわ
+$d5
+【囁0.2】かならずくる
+F5:4 | G5:3 -:1 |
+【囁0】あー
+$c1
+【囁0】ほどけて
+$c2
+【囁0】ほどけて
+$c3
+【囁0】よるがほどける
+$c4
+【囁0】あさのほうえ
+$c5
+【囁0】ひらいて
+$c6
+【囁0】ひらいて
+$c7
+【囁0】まどのむこうに
+$c8
+【囁0】ひかりがさす
+-:32 |
+
+@hamo voice vol=0.62 rev=0.5 pan=0.3 vib=0.6 whisper=0.25 air=1
+-:64 | -:64 | -:32 |
+-:32 |
+$h5
+ひらいて
+$h6
+ひらいて
+$h7
+まどのむこうに
+$h8
+ひかりがさす
+-:32 | -:64 | -:32 |
+-:32 |
+$h5
+ひらいて
+$h6
+ひらいて
+$h7
+まどのむこうに
+$h8
+ひかりがさす
+-:64 |
+$h1
+ほどけて
+$h2
+ほどけて
+$h3
+よるがほどける
+$h4
+あさのほうえ
+$h5
+ひらいて
+$h6
+ひらいて
+$h7
+まどのむこうに
+$h8
+ひかりがさす
+-:32 |
+
+// 歌詞のない囁き声（前奏と終わり）
+@ko voice vol=0.7 rev=0.55 dly=0.25 pan=-0.25 whisper=0.6 air=1.5 vib=0.5
+-:32 |
+Eb5:4 | D5:3.5 -:0.5 | D5:4 | F5:3.5 -:0.5 | C5:4 | Eb5:3.5 -:0.5 | D5:4 | -:4 |
+-:64 | -:32 | -:64 | -:32 | -:64 | -:32 | -:64 | -:64 | -:64 |
+Eb5:4 | D5:3.5 -:0.5 | D5:4 | F5:3.5 -:0.5 | Eb5:8 | -:8 |
+
+// 最後のサビの上で鳴る、裏声の声（歌詞なし）
+@ad voice vol=0.9 rev=0.6 dly=0.3 pan=0.2 reg=falsetto whisper=0.4 air=1.5 onset=0.5 vib=0.6
+-:64 | -:64 | -:32 | -:64 | -:32 | -:64 | -:32 | -:64 | -:64 |
+-:4 | G5:3.5 -:0.5 | -:4 | F5:3.5 -:0.5 | -:4 | Bb5:3.5 -:0.5 | -:4 | G5:3.5 -:0.5 |
+-:2 G5:2 | Bb5:3.5 -:0.5 | -:2 F5:2 | Bb5:3.5 -:0.5 | -:2 G5:2 | Bb5:3.5 -:0.5 | Bb5:4 | Ab5:3 -:1 |
+-:32 |
+
+@pad pad vol=0.42 cut=2400 rev=0.55 pan=-0.15
+$PA $PAb $PBb $PCm $PCm
+$PA $PA $PB $PC
+$PA
+$PA $PA $PB $PC
+$PB $PFm $PGm $PAb $PBs
+$PC
+$PAb $PBb $PCm $PCm
+
+@keys epiano vol=0.5 rev=0.4 dly=0.22 pan=0.2 chorus=0.4
+-:32 | $EAb $EBb $ECm $ECm
+$EA $EA $EB $EC
+$EA
+$EA $EA $EB $EC
+-:32 | $EFm $EGm $EAb $EBs
+$EC
+$EAb $EBb -:16 |
+
+@piano piano vol=0.5 rev=0.45 dly=0.2 pan=-0.1
+$pm1 $pm2 $pm3 $pm4 -:32 |
+-:24 | $pa1 -:24 | $pa2 -:32 | -:64 |
+$px1 $px2 $px3 $px4
+-:24 | $pa1 -:24 | $pa2 -:32 | -:64 |
+$pd1 -:24 | $pd1 -:24 |
+-:64 |
+$pm1 $pm2 -:16 |
+
+@pluck pluck len=0.5 vol=0.24 rev=0.4 dly=0.3 pan=0.35
+-:64 | -:64 | -:32 |
+$KC
+-:32 | -:64 | -:32 |
+$KC
+-:64 |
+$KC
+-:32 |
+
+@bass reese vol=0.85 cut=900 rev=0.08
+-:60 | -:2 G1:2 |
+$BA $BAe $BB $BC
+$BA
+$BA $BAe $BB $BC
+F1:8 | G1:8 | Ab1:8 | Bb1:8 | F1:8 | G1:8 | Ab1:8 | Bb1:6 -:2 |
+$BC
+Ab1:8 | Bb1:8 | C2:8 | C2:4 -:4 |
+
+@drums drums kit=dnb len=1/4 vol=1.0 rev=0.14
+-:60 | $roll
+$DA $DB $DC
+[$g1 $g2]*3 $g1 $fill
+$DA $DB $DC
+[$half]*7 $hal2 [$half]*7 $roll
+$DC
+[$half]*4 $dend -:12 |
+
+@hats drums kit=dnb len=1/2 vol=0.9 rev=0.15 pan=0.25
+-:32 | [h??]*56 -:4 |
+[h? h??]*160
+[h? h??]*32
+[h? h??]*160
+[h?? -]*64
+[h? h??]*64
+[h?? -]*16 -:16 |
+
+@ride drums kit=dnb len=1/2 vol=0.65 rev=0.25 pan=-0.3
+-:64 | -:64 | -:32 |
+[z? z??]*64
+-:32 | -:64 | -:32 |
+[z? z??]*64
+-:64 |
+[z? z??]*64
+-:32 |
+
+@crash drums kit=dnb len=4 vol=0.9 rev=0.4
+-:64 | y? | -:60 | y?? | -:28 | y | -:60 | y?? | -:28 |
+y? | -:60 | y?? | -:28 | y | -:60 |
+y?? | -:60 | y | -:60 | y?? | -:28 |

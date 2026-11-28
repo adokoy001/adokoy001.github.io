@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kaisetsu スタジオ</title>
+<meta name="description" content="丸い顔の2人が掛け合いで解説する3Dアニメーションを、ブラウザで再生し、動画ファイルに書き出す。声・BGM・字幕・キャラクターは、すべてその場で合成。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>/* 下地（claude.ai のアーティファクトの枠と同じもの） */:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>
+/* Layout: one player column — the 16:9 stage (3D, hosts, subtitles and boards all drawn inside it so they export as-is), the transport, chapters; below, a two-column desk of tool panels: export, sound, script check, cast, and how to make a new episode. */
+:root{
+  --paper:#ECEFF6; --panel:#FFFFFF; --ink:#161C33; --muted:#5B6380; --rule:#D4D9E6; --accent:#2E62D9; --accent-ink:#FFFFFF; --warn:#B3261E; --ok:#1F7A4D;
+  --space:#070C22; --space-ink:#F3F5FF;
+  --font-display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --font-body:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --paper:#0D1121; --panel:#151A2E; --ink:#E7EAF5; --muted:#9AA2BD; --rule:#283050; --accent:#86A8FF; --accent-ink:#0D1121; --warn:#FF8A80; --ok:#7CD9A8; color-scheme:dark } }
+:root[data-theme="dark"]{ --paper:#0D1121; --panel:#151A2E; --ink:#E7EAF5; --muted:#9AA2BD; --rule:#283050; --accent:#86A8FF; --accent-ink:#0D1121; --warn:#FF8A80; --ok:#7CD9A8; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.65}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+.top{display:flex;flex-direction:column;gap:6px}
+.toprow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px}
+.eyebrow{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.08em;color:var(--accent)}
+h1{font-family:var(--font-display);font-weight:900;font-size:clamp(22px,3.2vw,34px);line-height:1.2;margin:0;text-wrap:balance}
+.eps{display:flex;gap:6px;flex-wrap:wrap}
+.eps a{font-size:13px;color:var(--ink);text-decoration:none;border:1px solid var(--rule);border-radius:999px;padding:4px 12px}
+.eps a[aria-current="page"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.eps a:hover{border-color:var(--accent)}
+
+/* ステージ：3D と文字を、同じ大きさのキャンバス2枚で重ねる */
+.stage{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;background:var(--space);border-radius:12px;overflow:hidden;color:var(--space-ink);user-select:none}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px;padding:0 16px 7%;text-align:center;pointer-events:none}
+.cover > *{pointer-events:auto}
+.go{font:inherit;font-family:var(--font-display);font-weight:700;font-size:clamp(14px,1.7vw,19px);border:0;border-radius:999px;padding:.6em 1.6em .6em 1.3em;background:#FFE27A;color:#1A1630;cursor:pointer;display:inline-flex;align-items:center;gap:.5em;box-shadow:0 4px 0 #B99A2E}
+.go::before{content:"";width:0;height:0;border-left:.8em solid currentColor;border-top:.5em solid transparent;border-bottom:.5em solid transparent}
+.go:disabled{opacity:.55;cursor:progress}
+.go:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 #B99A2E}
+.cover .note{font-size:12.5px;color:#C6CEEA;background:rgba(7,12,34,.6);padding:2px 10px;border-radius:999px}
+.phone-sub{background:var(--space);color:#fff;border-radius:10px;padding:8px 12px;min-height:4.4em;margin-top:8px;font-family:var(--font-display);font-weight:900;font-size:15px;line-height:1.45}
+.phone-sub b{display:inline-block;font-size:12px;color:#fff;border-radius:999px;padding:0 9px;margin-right:6px;vertical-align:.1em}
+.err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:#C6CEEA}
+
+/* 操作 */
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.btn{font:inherit;font-weight:700;font-size:14px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 16px;cursor:pointer;line-height:1.3}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);min-width:7.5em}
+.time{font-family:var(--font-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.seek{flex:1 1 160px;min-width:120px;accent-color:var(--accent)}
+.tg{display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;color:var(--muted)}
+.tg input{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:999px;background:var(--rule);position:relative;cursor:pointer;margin:0}
+.tg input::before{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--panel);transition:transform .15s}
+.tg input:checked{background:var(--accent)}.tg input:checked::before{transform:translateX(14px)}
+.chapters{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font:inherit;font-size:13px;color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:999px;padding:5px 12px;cursor:pointer;line-height:1.3}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* 道具の机 */
+.desk{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card h2{font-family:var(--font-display);font-weight:900;font-size:18px;margin:0}
+.card p{margin:0;font-size:13.5px;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.row label{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
+select{font:inherit;font-size:13.5px;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:4px 8px;max-width:100%}
+input[type=range]{accent-color:var(--accent)}
+.prog{height:6px;border-radius:99px;background:var(--rule);overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.status{font-size:13px;color:var(--muted);min-height:1.5em}
+.sum{font-size:13.5px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px}
+.sum dt{color:var(--muted)} .sum dd{margin:0;font-family:var(--font-mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+.issues{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto}
+.issues li{font-size:13px;display:grid;grid-template-columns:3.2em minmax(0,1fr);gap:8px;align-items:start;border-top:1px solid var(--rule);padding-top:6px}
+.issues button{font:inherit;font-family:var(--font-mono);font-size:12px;background:none;border:1px solid var(--rule);border-radius:6px;color:var(--ink);cursor:pointer;padding:1px 4px}
+.badge{font-size:12.5px;font-weight:700;border-radius:999px;padding:1px 10px;display:inline-block}
+.badge.ok{color:var(--ok);border:1px solid var(--ok)} .badge.ng{color:var(--warn);border:1px solid var(--warn)}
+.rules{font-size:12.5px;color:var(--muted);margin:0;padding-left:1.2em}
+.cast{display:flex;flex-direction:column;gap:14px}
+.who{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--rule);padding-top:10px}
+.who:first-child{border-top:0;padding-top:0}
+.who-name{font-family:var(--font-display);font-weight:900;font-size:17px}
+.who-name::before{content:"";display:inline-block;width:.55em;height:.55em;border-radius:50%;background:var(--c);margin-right:.35em;vertical-align:.08em}
+.who-name small{font-family:var(--font-body);font-weight:500;font-size:12.5px;color:var(--muted);margin-left:.5em}
+.opt{display:grid;grid-template-columns:4em minmax(0,1fr);gap:8px;align-items:start}
+.opt-h{font-size:12.5px;font-weight:700;color:var(--muted);padding-top:5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.sws{display:flex;flex-wrap:wrap;gap:4px}
+.sw{font:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;padding:2px 3px;cursor:pointer;color:var(--muted);font-size:11px;border-radius:8px}
+.sw i{display:block;width:22px;height:22px;border-radius:50%;border:1px solid var(--rule)}
+.sw[aria-pressed="true"]{color:var(--ink)}.sw[aria-pressed="true"] i{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent)}
+.bgmlist{list-style:none;margin:0;padding:0;font-size:13px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 12px}
+.bgmlist span{color:var(--muted)}
+.how ol{margin:0;padding-left:1.3em;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+code{font-family:var(--font-mono);font-size:12.5px;background:var(--paper);border:1px solid var(--rule);border-radius:5px;padding:0 4px}
+@media (max-width:820px){ .desk{grid-template-columns:minmax(0,1fr)} }
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <div class="toprow">
+      <div class="eyebrow">Kaisetsu スタジオ · 声は OtoVoice、BGM は TextScore で、その場で計算</div>
+      <nav class="eps" id="eps" aria-label="回"></nav>
+    </div>
+    <h1 id="title">読み込んでいます</h1>
+  </header>
+
+  <section aria-label="再生">
+    <div class="stage" id="stage">
+      <canvas id="gl" aria-label="3Dの解説アニメーションと、解説する2人のキャラクター"></canvas>
+      <canvas id="ov" aria-hidden="true"></canvas>
+      <div class="cover" id="cover">
+        <button class="go" id="coverPlay" type="button" disabled><span id="coverLabel">準備しています</span></button>
+        <div class="note" id="coverNote">声を作っています</div>
+      </div>
+    </div>
+    <div class="phone-sub" id="phoneSub" hidden></div>
+    <div class="bar">
+      <button class="btn primary" id="play" type="button" disabled>再生</button>
+      <button class="btn" id="prev" type="button" aria-label="前のセリフ">前へ</button>
+      <button class="btn" id="next" type="button" aria-label="次のセリフ">次へ</button>
+      <span class="time" id="time">0:00 / 0:00</span>
+      <input class="seek" id="seek" type="range" min="0" max="1" step="0.05" value="0" aria-label="再生位置">
+      <label class="tg" for="t-sub"><input type="checkbox" id="t-sub" checked>字幕</label>
+    </div>
+    <nav class="chapters" id="chapters" aria-label="章"></nav>
+  </section>
+
+  <div class="desk">
+    <section class="card" aria-labelledby="h-exp">
+      <h2 id="h-exp">動画に書き出す</h2>
+      <p>1コマずつ描いて、画面と同じ字幕・ボード・BGM ごと動画ファイルにします。時間は端末しだいです（GPU のない試験環境では、動画の長さの約8倍かかりました）。</p>
+      <div class="row">
+        <label for="fmt">形式 <select id="fmt"><option value="webm">WebM（VP9・Opus）</option><option value="mp4">MP4（H.264・AAC）</option></select></label>
+        <label for="res">画質 <select id="res"><option value="720">720p</option><option value="1080">1080p</option></select></label>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="exp" type="button" disabled>書き出す</button>
+        <button class="btn" id="expCancel" type="button" hidden>止める</button>
+      </div>
+      <div class="prog" aria-hidden="true"><i id="expBar"></i></div>
+      <div class="status" id="expStatus" aria-live="polite"></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-chk">
+      <h2 id="h-chk">台本チェック <span class="badge" id="chkBadge"></span></h2>
+      <dl class="sum" id="chkSum"></dl>
+      <ul class="issues" id="chkList"></ul>
+      <ul class="rules" id="rules"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="h-snd">
+      <h2 id="h-snd">音</h2>
+      <div class="row">
+        <label for="vVoice">声 <input type="range" id="vVoice" min="0" max="1.2" step="0.05" value="0.95"></label>
+        <label for="vBgm">BGM <input type="range" id="vBgm" min="0" max="1.2" step="0.05" value="0.7"></label>
+      </div>
+      <ul class="bgmlist" id="bgmList"></ul>
+      <div class="status" id="bgmStatus"></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-cast">
+      <h2 id="h-cast">出演</h2>
+      <p>声と見た目を変えられます。声を変えると、その人のセリフを作り直します。</p>
+      <div class="cast" id="cast"></div>
+    </section>
+
+    <section class="card how" aria-labelledby="h-how" style="grid-column:1/-1">
+      <h2 id="h-how">新しい回の作り方</h2>
+      <ol>
+        <li>回のファイル（<code>episode-howto.js</code> が雛形）を写して、台本の <code>lines</code> と、3Dの場面の <code>world</code> を書きかえます。</li>
+        <li>書き方と決まりは、<code>kaisetsu.js</code> の頭の手引きにあります。AIに渡して、台本と場面のコードを書かせる前提で書いています（手引きだけを読んだ別のAIが良い回を書けるかは、まだ試していません）。</li>
+        <li>このページで開いて、台本チェックの「決まりの外」が 0 件になるまで直し、再生して確かめてから書き出します。</li>
+      </ol>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="otovoice.js"></script>
+<script src="textscore.js"></script>
+<script src="kaisetsu.js"></script>
+<script src="episode-gps.js"></script>
+<script src="episode-howto.js"></script>
+<script src="episode-kutsu.js"></script>
+<script src="episode-kyodai.js"></script>
+<script src="episode-jikan.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const stage = $('stage');
+function fail(msg) { const d = document.createElement('div'); d.className = 'err'; d.textContent = msg; stage.appendChild(d); $('cover').hidden = true; }
+if (!window.THREE) return fail('3Dの部品（three.js）を読み込めませんでした。ページを開き直してください。');
+if (!window.OtoVoice) return fail('声の部品（otovoice.js）を読み込めませんでした。ページを開き直してください。');
+if (!window.Kaisetsu) return fail('解説の部品（kaisetsu.js）を読み込めませんでした。ページを開き直してください。');
+
+/* ---------- 回を選ぶ（#gps、#howto） ---------- */
+const EPS = Kaisetsu.episodes, ids = Object.keys(EPS);
+const id = (location.hash || '').slice(1), ep = EPS[id] || EPS.gps || EPS[ids[0]];
+for (const k of ids) { const a = document.createElement('a'); a.href = '#' + k; a.textContent = EPS[k].fileName || EPS[k].title; if (EPS[k] === ep) a.setAttribute('aria-current', 'page'); $('eps').appendChild(a); }
+window.addEventListener('hashchange', () => location.reload());
+$('title').textContent = ep.title;
+
+// 文字を描く前に、字の形を読み込んでおく（キャンバスの文字は、読み込みが終わってから正しい形になる）
+try { for (const f of ['900 20px "Zen Maru Gothic"', '700 20px "Zen Maru Gothic"', '700 20px "Zen Kaku Gothic New"', '500 20px "Zen Kaku Gothic New"', '500 20px "JetBrains Mono"']) document.fonts.load(f, 'あア字A1'); } catch (e) {}
+
+const K = Kaisetsu.mount({ episode: ep, canvas: $('gl'), overlay: $('ov') });
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+/* ---------- 準備のようす ---------- */
+K.on('progress', p => {
+  if (p.kind === 'voice' && K.state === 'loading') $('coverNote').textContent = `声を作っています ${p.done}/${p.total}`;
+  if (p.kind === 'bgm') $('bgmStatus').textContent = p.done < p.total ? `BGMを作っています ${p.done + 1}/${p.total}（${p.name}）` : 'BGMの準備ができました';
+});
+
+/* ---------- 再生の操作 ---------- */
+const playBtn = $('play'), seek = $('seek');
+let dragging = false;
+function sync() {
+  const s = K.state;
+  playBtn.textContent = s === 'playing' ? '一時停止' : s === 'paused' ? '続きから' : s === 'ended' ? 'もう一度' : '再生';
+  playBtn.disabled = s === 'loading' || s === 'export';
+  for (const b of ['prev', 'next']) $(b).disabled = s === 'loading' || s === 'export';
+  seek.disabled = s === 'loading' || s === 'export';
+  $('cover').hidden = !(s === 'loading' || s === 'idle' || s === 'ended');
+  $('coverPlay').disabled = s === 'loading';
+  $('coverLabel').textContent = s === 'loading' ? '準備しています' : s === 'ended' ? 'もう一度見る' : '再生する';
+  if (s !== 'loading') $('coverNote').textContent = s === 'ended' ? 'おわり' : `音が出ます · ${K.lines.length}セリフ · ${mmss(K.duration)}`;
+  $('exp').disabled = s === 'loading' || s === 'export';
+}
+K.on('state', sync); sync();
+playBtn.addEventListener('click', () => K.state === 'playing' ? K.pause() : K.play());
+$('coverPlay').addEventListener('click', () => K.play());
+const lineNow = () => K.lineAt(K.time + 0.06);
+$('prev').addEventListener('click', () => { const i = lineNow(); const st = K.timeline.start[Math.max(0, i)]; K.seekLine(K.time - st > 1.2 ? i : i - 1); });
+$('next').addEventListener('click', () => K.seekLine(lineNow() + 1));
+seek.addEventListener('input', () => { dragging = true; K.seek(+seek.value); });
+seek.addEventListener('change', () => { dragging = false; });
+$('t-sub').addEventListener('change', e => K.setSubtitles(e.target.checked));
+document.addEventListener('keydown', e => {
+  if (/INPUT|SELECT|TEXTAREA|BUTTON|A/.test(document.activeElement && document.activeElement.tagName) && e.key !== ' ') return;
+  if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName)) return;
+  if (e.key === ' ') { e.preventDefault(); K.state === 'playing' ? K.pause() : K.play(); }
+  else if (e.key === 'ArrowRight') $('next').click(); else if (e.key === 'ArrowLeft') $('prev').click();
+});
+// 章
+(ep.chapters || []).forEach(([name, scenes], ci) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = name;
+  b.addEventListener('click', () => { const i = K.lines.findIndex(L => scenes.includes(L.s)); if (i < 0) return; const t = K.timeline.start[i] - 0.75;
+    if (K.state === 'idle' || K.state === 'ended') K.playFrom(Math.max(0, t)); else K.seek(Math.max(0, t)); });
+  $('chapters').appendChild(b);
+});
+let lastCh = -2, lastSec = -1, lastSub = '';
+K.on('tick', t => {
+  const D = K.duration;
+  if (!dragging) { seek.max = D.toFixed(2); seek.value = t.toFixed(2); }
+  const sec = Math.floor(t); if (sec !== lastSec) { lastSec = sec; $('time').textContent = `${mmss(t)} / ${mmss(D)}`; }
+  const i = K.lineAt(t), sc = i >= 0 ? K.lines[i].s : (K.lines[0] && K.lines[0].s), ci = (ep.chapters || []).findIndex(c => c[1].includes(sc));
+  if (ci !== lastCh) { lastCh = ci; $('chapters').querySelectorAll('.chip').forEach((b, j) => b.setAttribute('aria-pressed', j === ci && K.state !== 'idle' ? 'true' : 'false')); }
+  // 画面が狭いときは、字幕をステージの下に出す
+  const narrow = !K.ui().subs, on = narrow && $('t-sub').checked && K.state !== 'idle';
+  $('phoneSub').hidden = !narrow;
+  const s = on ? K.subtitleAt(t) : null, key = s ? s.i : '';
+  if (key !== lastSub) { lastSub = key; const box = $('phoneSub'); box.textContent = '';
+    if (s) { const b = document.createElement('b'); b.textContent = s.who.name; b.style.background = s.who.color; box.append(b, document.createTextNode(s.line.t)); } }
+});
+
+/* ---------- 台本チェック ---------- */
+const R = Kaisetsu.RULE;
+for (const r of [`字幕：全角${R.subChars}字まで、${R.subLines}行まで（半角は0.5字）`, `声：1セリフ${R.speechMax}秒まで`, `ボード：見出し 全角${R.boardHead}字、${R.boardRows}行、1行 全角${R.boardRow}字まで`, '読み：OtoVoice で読めること']) {
+  const li = document.createElement('li'); li.textContent = r; $('rules').appendChild(li);
+}
+K.on('report', rep => {
+  const n = rep.issues.length, bad = $('chkBadge');
+  bad.textContent = n ? `決まりの外 ${n}件` : '決まりの内'; bad.className = 'badge ' + (n ? 'ng' : 'ok');
+  const sum = $('chkSum'); sum.innerHTML = '';
+  for (const [k, v] of [['セリフ', `${rep.lines}`], ['長さ', mmss(rep.duration)], ['字幕の最長', `全角${rep.maxChars}字・${rep.maxLines}行`], ['声の最長', `${rep.maxSec.toFixed(1)}秒`]]) {
+    const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; sum.append(dt, dd);
+  }
+  const ul = $('chkList'); ul.innerHTML = '';
+  for (const is of rep.issues) {
+    const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button'; b.textContent = '#' + (is.i + 1); b.title = 'このセリフへ';
+    b.addEventListener('click', () => { if (K.state === 'idle' || K.state === 'ended') K.playFrom(K.timeline.start[is.i] - 0.05); else K.seekLine(is.i); });
+    const sp = document.createElement('span'); sp.textContent = `${is.msg}　「${K.lines[is.i].t}」`; li.append(b, sp); ul.appendChild(li);
+  }
+  sync();
+});
+
+/* ---------- 音 ---------- */
+$('vVoice').addEventListener('input', e => K.setVolume({ voice: +e.target.value }));
+$('vBgm').addEventListener('input', e => K.setVolume({ bgm: +e.target.value }));
+for (const [name, scenes] of ep.chapters || []) {
+  const p = (ep.bgm || {})[scenes[0]], dt = document.createElement('li'); dt.textContent = name; const dd = document.createElement('span'); dd.textContent = p && Kaisetsu.BGM[p] ? Kaisetsu.BGM[p].label : 'なし';
+  $('bgmList').append(dt, dd);
+}
+
+/* ---------- 出演 ---------- */
+function chips(parent, label, table, get, set, swatch) {
+  const row = document.createElement('div'); row.className = 'opt';
+  const h = document.createElement('span'); h.className = 'opt-h'; h.textContent = label; row.appendChild(h);
+  const box = document.createElement('div'); box.className = swatch ? 'sws' : 'chips'; row.appendChild(box);
+  for (const k in table) {
+    const b = document.createElement('button'); b.type = 'button'; b.dataset.k = k;
+    if (swatch) { b.className = 'sw'; const i = document.createElement('i'); i.style.background = swatch(table[k]); b.append(i, document.createTextNode(table[k].name)); }
+    else { b.className = 'chip'; b.textContent = table[k].name; }
+    b.addEventListener('click', () => { set(k); box.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.k === k ? 'true' : 'false')); });
+    b.setAttribute('aria-pressed', get() === k ? 'true' : 'false'); box.appendChild(b);
+  }
+  parent.appendChild(row);
+}
+const M = Kaisetsu.Manju, voices = OtoVoice.voices();
+for (const k of Object.keys(K.cast)) {
+  const c = K.cast[k], box = document.createElement('div'); box.className = 'who'; box.style.setProperty('--c', c.color);
+  const nm = document.createElement('div'); nm.className = 'who-name'; nm.textContent = c.name; const sm = document.createElement('small'); sm.textContent = c.role; nm.appendChild(sm); box.appendChild(nm);
+  const vr = document.createElement('div'); vr.className = 'opt';
+  vr.innerHTML = `<label class="opt-h" for="v${k}">声</label><div class="row"><select id="v${k}"></select><label for="s${k}">速さ <input type="range" id="s${k}" min="0.8" max="1.4" step="0.05"></label></div>`;
+  box.appendChild(vr);
+  const sel = vr.querySelector('select'), rng = vr.querySelector('input');
+  for (const v of voices) { const o = document.createElement('option'); o.value = v.name; o.textContent = `${v.label}（${v.name}）`; sel.appendChild(o); }
+  sel.value = c.voice.voice; rng.value = c.voice.speed;
+  const redo = async () => { sel.disabled = rng.disabled = true; $('bgmStatus').textContent = `${c.name}の声を作り直しています`; await K.setVoice(k, { voice: sel.value, speed: +rng.value }); sel.disabled = rng.disabled = false; $('bgmStatus').textContent = `${c.name}の声を作り直しました`; };
+  sel.addEventListener('change', redo); rng.addEventListener('change', redo);
+  const L = c.look;
+  chips(box, '髪型', M.STYLES, () => L.hair, v => K.setLook(k, { hair: v }));
+  chips(box, '髪色', M.HAIR, () => L.hairColor, v => K.setLook(k, { hairColor: v }), p => `linear-gradient(135deg, ${p.hi} 0 22%, ${p.base} 22% 58%, ${p.shade} 58%)`);
+  chips(box, '瞳', M.EYE, () => L.eye, v => K.setLook(k, { eye: v }), p => `linear-gradient(180deg, ${p.top}, ${p.mid} 55%, ${p.low})`);
+  chips(box, '髪飾り', M.ORNAMENTS, () => L.ornament, v => K.setLook(k, { ornament: v }));
+  chips(box, '帽子', M.HATS, () => L.hat, v => K.setLook(k, { hat: v }));
+  $('cast').appendChild(box);
+}
+
+/* ---------- 書き出し ---------- */
+const INCLAUDE = !!(window.claude && typeof window.claude.use === 'function');
+let DL = null;
+const dlP = INCLAUDE ? Promise.resolve().then(() => window.claude.use('downloads')).catch(() => null) : Promise.resolve(null);
+dlP.then(ns => { DL = ns || null; if (INCLAUDE && !DL) { $('exp').hidden = true; $('expStatus').textContent = 'この表示では、ファイルの保存が使えません。claude.ai の中で開くと書き出せます。'; } });
+(async () => {      // MP4 が作れないブラウザでは、選べないようにする
+  const opt = $('fmt').querySelector('option[value=mp4]');
+  try { const v = await VideoEncoder.isConfigSupported({ codec: 'avc1.42001f', width: 1280, height: 720, bitrate: 3e6 }), a = await AudioEncoder.isConfigSupported({ codec: 'mp4a.40.2', sampleRate: 48000, numberOfChannels: 2, bitrate: 160000 });
+    if (!(v && v.supported && a && a.supported)) { opt.disabled = true; opt.textContent += '（このブラウザでは作れません）'; } }
+  catch (e) { opt.disabled = true; $('fmt').querySelector('option[value=webm]').textContent += ''; }
+})();
+function loadLib(src, name) { return window[name] ? Promise.resolve() : new Promise((ok, ng) => { const e = document.createElement('script'); e.src = src; e.onload = () => window[name] ? ok() : ng(new Error(src + ' を読めませんでした')); e.onerror = () => ng(new Error(src + ' を読めませんでした')); document.head.append(e); }); }
+function give(name, blob) { const u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; a.hidden = true; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 120000); }
+$('expCancel').addEventListener('click', () => { K.cancelExport(); $('expStatus').textContent = '止めています…'; });
+$('exp').addEventListener('click', async () => {
+  const fmt = $('fmt').value, h = +$('res').value, st = $('expStatus'), bar = $('expBar');
+  $('exp').disabled = true; $('expCancel').hidden = false; bar.style.width = '0%';
+  try {
+    await loadLib(fmt === 'mp4' ? 'mp4-muxer.js' : 'webm-muxer.js', fmt === 'mp4' ? 'Mp4Muxer' : 'WebMMuxer');
+    const r = await K.exportVideo({ format: fmt, height: h, onProgress: p => {
+      if (p.phase === 'bgm') st.textContent = 'BGMの準備を待っています';
+      else if (p.phase === 'audio') st.textContent = '音をまとめています';
+      else { bar.style.width = (p.p * 100).toFixed(1) + '%'; st.textContent = `絵を描いています ${p.frame}/${p.frames}コマ · のこり 約${mmss(p.rest)}`; } } });
+    bar.style.width = '100%';
+    const info = `（${(r.bytes / 1048576).toFixed(1)}MB、${r.width}×${r.height}、${mmss(r.seconds)}）`;
+    if (!INCLAUDE) { give(r.name, new Blob([r.data], { type: fmt === 'mp4' ? 'video/mp4' : 'video/webm' })); st.textContent = 'ダウンロードに渡しました：' + r.name + info; }
+    else { st.textContent = '保存の確認を出しています：' + r.name + info; const res = await DL.save({ filename: r.name, data: new Blob([r.data]) }); st.textContent = (res && res.status === 'delivered' ? '渡しました：' : '保存しました：') + r.name + info; }
+  } catch (e) {
+    const c = e && e.code;
+    st.textContent = c === 'cancel' ? '書き出しを止めました' : c === 'declined' ? '保存しませんでした' : c === 'rate_limited' ? 'ほかの保存の確認が開いています。少し待ってから、もう一度押してください'
+      : c === 'too_large' ? 'ファイルが大きすぎて保存できませんでした。720p で書き出してください' : c === 'rejected_extension' || c === 'extension_not_enabled' ? `この形式（.${fmt}）は、ここでは保存できません`
+      : (e && e.message) ? e.message : '書き出せませんでした';
+    if (c === 'unavailable' || c === 'not_granted' || c === 'capability_disabled' || c === 'capability_removed') { $('exp').hidden = true; st.textContent = 'この表示では、ファイルの保存が使えません。'; }
+  } finally { $('expCancel').hidden = true; sync(); }
+});
+
+K.ready.then(() => { sync(); });
+window.__k = K;
+})();
+</script>
+
+</body>
+</html>

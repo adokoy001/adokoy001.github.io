@@ -1,0 +1,1739 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Voice Lab — 調音音声合成 試作 v0.5</title>
+<style>
+:root{--bg:#0b0f14;--pan:#121821;--ln:#1e2733;--fg:#dbe4ee;--dim:#7d8b9c;--acc:#3FCF9E;--acc2:#e8b4a0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}
+header{padding:14px 16px;border-bottom:1px solid var(--ln);display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+h1{font-size:16px;margin:0;letter-spacing:.04em}
+header .sub{color:var(--dim);font-size:12px}
+.wrap{display:grid;grid-template-columns:320px 1fr;gap:0;min-height:calc(100vh - 52px)}
+@media(max-width:820px){.wrap{grid-template-columns:1fr}}
+#list{border-right:1px solid var(--ln);overflow-y:auto;max-height:calc(100vh - 52px);padding-bottom:24px}
+@media(max-width:820px){#list{max-height:340px;border-right:none;border-bottom:1px solid var(--ln)}}
+.cat{padding:10px 14px 4px;color:var(--dim);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.samp{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--ln);
+  color:var(--fg);padding:9px 14px;cursor:pointer;font:inherit}
+.samp:hover{background:#161d28}
+.samp.on{background:#16241f;border-left:3px solid var(--acc);padding-left:11px}
+.samp b{display:block;font-size:13px;font-weight:600}
+.samp span{display:block;color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+main{padding:16px;overflow-y:auto}
+.card{background:var(--pan);border:1px solid var(--ln);border-radius:8px;padding:14px;margin-bottom:14px}
+.card h2{font-size:12px;color:var(--dim);margin:0 0 10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+canvas{width:100%;display:block;border-radius:5px;margin-bottom:8px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 16px}
+label{display:block;font-size:12px;color:var(--dim);margin-bottom:2px}
+label em{color:var(--acc);font-style:normal;font-weight:700}
+input[type=range]{width:100%;accent-color:var(--acc)}
+select,textarea,input[type=text]{width:100%;background:#0d131c;color:var(--fg);border:1px solid var(--ln);
+  border-radius:5px;padding:7px 9px;font:inherit}
+textarea{min-height:74px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;resize:vertical}
+button.act{background:var(--acc);color:#04170f;border:none;border-radius:5px;padding:9px 16px;
+  font-weight:700;cursor:pointer;font:inherit;font-weight:700}
+button.gh{background:none;color:var(--fg);border:1px solid var(--ln);border-radius:5px;padding:9px 14px;cursor:pointer;font:inherit}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#stat,#spk{color:var(--dim);font-size:11.5px;font-family:ui-monospace,monospace}
+#spk{color:var(--acc2)}
+.note{color:var(--dim);font-size:11.5px;margin-top:8px}
+</style></head><body>
+<header>
+  <h1>Voice Lab</h1>
+  <span class="sub">調音音声合成 試作 v0.5 ／ 高域折返し・制御櫛対策 + 動的 Kelly-Lochbaum 声道 + Klatt 聴取補助 ／ ニューラルネット不使用</span>
+</header>
+<div class="wrap">
+  <div id="list"></div>
+  <main>
+    <div class="card">
+      <h2>声道</h2>
+      <canvas id="cvS"></canvas>
+      <canvas id="cvA"></canvas>
+      <canvas id="cvW"></canvas>
+      <div id="stat">サンプルを選ぶと再生されます</div>
+    </div>
+
+    <div class="card">
+      <h2>話者</h2>
+      <div class="row">
+        <div><label for="age">年齢 <em></em></label><input type="range" id="age" min="1" max="85" value="30"></div>
+        <div><label for="sex">性別（-100 女 … +100 男） <em></em></label><input type="range" id="sex" min="-100" max="100" value="90"></div>
+        <div><label for="size">体格 % <em></em></label><input type="range" id="size" min="85" max="115" value="100"></div>
+      </div>
+      <div id="spk" style="margin-top:8px"></div>
+      <div class="note">年齢・性別は声道長／咽頭比／声帯寸法へ非一様に写像されます（一様スケールではありません）。</div>
+    </div>
+
+    <div class="card">
+      <h2>表現</h2>
+      <div class="row">
+        <div><label for="engine">声門音源</label>
+          <select id="engine"><option value="stable">安定声門 v0.5（推奨）</option><option value="physical">二質量モデル v0.1（実験）</option></select></div>
+        <div><label for="emo">感情</label>
+          <select id="emo"><option>平静</option><option>喜び</option><option>怒り</option>
+          <option>悲しみ</option><option>恐怖</option><option>退屈</option><option>ささやき</option></select></div>
+        <div><label for="inten">強度 % <em></em></label><input type="range" id="inten" min="0" max="100" value="70"></div>
+        <div><label for="rate">発話速度 % <em></em></label><input type="range" id="rate" min="50" max="180" value="100"></div>
+        <div><label for="power">強さ % <em></em></label><input type="range" id="power" min="40" max="150" value="100"></div>
+        <div><label for="prec">明瞭度 % <em></em></label><input type="range" id="prec" min="10" max="100" value="85"></div>
+        <div><label for="pitch">ピッチ % <em></em></label><input type="range" id="pitch" min="60" max="160" value="100"></div>
+        <div><label for="warmth">声の柔らかさ % <em></em></label><input type="range" id="warmth" min="0" max="100" value="58"></div>
+        <div><label for="breath">息成分 % <em></em></label><input type="range" id="breath" min="0" max="60" value="12"></div>
+        <div><label for="assist">Klatt聴取補助 % <em></em></label><input type="range" id="assist" min="0" max="45" value="18"></div>
+      </div>
+      <div class="note">Klatt聴取補助は母音の目標 F1–F3 を薄く重ねる target-assisted 経路です。0%で純粋な声道物理出力を比較できます。</div>
+    </div>
+
+    <div class="card">
+      <h2>直接入力（内部表現 L2 / L3）</h2>
+      <div class="row" style="margin-bottom:8px">
+        <div><label for="mode">入力レベル</label>
+          <select id="mode"><option value="text">L3 テキスト（かな / English）</option>
+          <option value="phones">L2 PhoneLine（音素:長さ/F0）</option>
+          <option value="json">L1 音素JSON</option></select></div>
+        <div><label for="lang">言語</label><select id="lang"><option value="ja">日本語</option><option value="en">English</option></select></div>
+      </div>
+      <textarea id="free" placeholder="かな（例: は^し＝アクセント核）／ English text ／ PhoneLine 例: k:60 o:90 N:110 n:50 i:80 tS:70 i:75 w:55 a:120"></textarea>
+      <div class="btns">
+        <button class="act" id="btnSpeak">喋らせる</button>
+        <button class="gh" id="btnStop">停止</button>
+        <button class="gh" id="btnPhones">直前の音素列を編集欄へ</button>
+        <button class="gh" id="btnWav">WAV保存</button>
+      </div>
+      <label style="margin-top:10px">直前に生成された音素列（L2）</label>
+      <textarea id="phones" readonly></textarea>
+      <div class="note">JS API: <code>window.voiceLab.speakText("こんにちは",{lang:"ja"})</code> ／ <code>voiceLab.render(seq, opt)</code></div>
+    </div>
+  </main>
+</div>
+<script>
+/* ===== 00_calib.js ===== */
+// 自動生成: cal2.js（導波管そのものに対する較正、側枝込み）
+const NEUTRAL = [0.45, 1.1186, 1.5457, 1.3519, 1.1581, 1.2628, 1.4953, 1.7279, 1.9605, 2.193, 2.3706, 2.5015, 2.6323, 2.7631, 2.8939, 3.0247, 3.1555, 3.2219, 3.2551, 3.2884, 3.3216, 3.3548, 3.388, 3.4744, 3.5907, 3.707, 3.8233, 3.9395, 4.0558, 4.1721, 4.1337, 4.0465, 3.9593, 3.8721, 3.7849, 3.6977, 3.6105, 3.3135, 2.9879, 2.6623, 2.3367, 2.0202, 1.7101, 1.4];
+const VOWELS = {
+  "3": {q:[0.6419,0.114,-0.9237], lip:0.313, dN:6, F:[490, 1350, 1690]},
+  "a": {q:[1.3535,-0.0886,0.28], lip:2.2, dN:3, F:[711, 1089, 2351]},
+  "i": {q:[-1.0113,1.7999,-0.39], lip:2.1809, dN:3, F:[272, 2299, 2867]},
+  "u": {q:[-0.7179,0.7228,-0.735], lip:0.1951, dN:5, F:[301, 1139, 2219]},
+  "e": {q:[0.8083,0.6208,-1.0791], lip:1.9029, dN:3, F:[534, 1642, 2606]},
+  "o": {q:[0.8299,0.6026,0.765], lip:1.1712, dN:7, F:[564, 858, 2430]},
+  "I": {q:[-0.0397,1.4356,-0.6455], lip:1.1457, dN:3, F:[401, 2134, 2838]},
+  "U": {q:[0.1141,1.321,-0.2147], lip:0.1006, dN:5, F:[440, 1020, 2240]},
+  "uu": {q:[-0.8385,1.5456,0.1942], lip:0.1186, dN:7, F:[303, 887, 2464]},
+  "@": {q:[-0.2496,-0.0564,0.1301], lip:1.3192, dN:0, F:[496, 1390, 2416]},
+  "V": {q:[0.4748,0.5233,0.3535], lip:1.9481, dN:3, F:[640, 1190, 2390]},
+  "{": {q:[1.5642,0.8087,-0.7479], lip:1.7122, dN:3, F:[656, 1614, 2453]},
+};
+const CALIB_SRC='waveguide';
+
+/* ===== 01_phon.js ===== */
+/* ============================================================
+   音素 → ジェスチャ辞書
+   place: 声門を0、口唇を1とした正規化位置
+   deg  : 狭窄部の面積 cm^2 (0 に近いほど閉鎖)
+   wid  : 狭窄のガウス幅（正規化）
+   ============================================================ */
+const VOW_ALIAS = { 'A':'a', 'O':'o', 'E':'e' };   // en の ɑ ɔ ɛ は ja の a o e を流用
+
+const CONS = {
+  // 破裂音
+  'p' : {place:1.00, deg:0.00, wid:0.055, voi:0, stop:1, dur:80,  asp:{en:55,ja:15}, bf:1200,bq:0.42},
+  'b' : {place:1.00, deg:0.00, wid:0.055, voi:1, stop:1, dur:75,  asp:{en:8, ja:5},  bf:1100,bq:0.42},
+  't' : {place:0.855,deg:0.00, wid:0.045, voi:0, stop:1, dur:80,  asp:{en:60,ja:18}, bf:4300,bq:0.62},
+  'd' : {place:0.855,deg:0.00, wid:0.045, voi:1, stop:1, dur:70,  asp:{en:8, ja:5},  bf:3900,bq:0.58},
+  'k' : {place:0.640,deg:0.00, wid:0.060, voi:0, stop:1, dur:85,  asp:{en:65,ja:22}, bf:2500,bq:0.58},
+  'g' : {place:0.640,deg:0.00, wid:0.060, voi:1, stop:1, dur:75,  asp:{en:10,ja:6}, bf:2300,bq:0.55},
+  // 鼻音（口腔閉鎖＋軟口蓋開）
+  'm' : {place:1.00, deg:0.00, wid:0.055, voi:1, nas:1, dur:85},
+  'n' : {place:0.855,deg:0.00, wid:0.045, voi:1, nas:1, dur:80},
+  'N' : {place:0.640,deg:0.00, wid:0.060, voi:1, nas:1, dur:95},  // ŋ / ɴ
+  // 摩擦音   deg は狭窄部の残存面積。place は前部空洞長を決めるので摩擦音の音色を支配する。
+  // /s/ は前部空洞 約1.5cm(重心5.6kHz)、/ʃ/ は約2.2cm(3.0kHz) になるよう調整 [実測]
+  's' : {place:0.920,deg:0.130,wid:0.030, voi:0, fric:1, dur:110, cav:0.55,nf:5600,nq:0.78},
+  'z' : {place:0.920,deg:0.140,wid:0.030, voi:1, fric:1, dur:85,  cav:0.55,nf:5200,nq:0.72},
+  'S' : {place:0.850,deg:0.175,wid:0.040, voi:0, fric:1, dur:115, cav:1.00,nf:3100,nq:0.70},  // ʃ
+  'Z' : {place:0.850,deg:0.185,wid:0.040, voi:1, fric:1, dur:90,  cav:1.00,nf:3000,nq:0.66},
+  'f' : {place:0.975,deg:0.150,wid:0.030, voi:0, fric:1, dur:100, cav:0.20,nf:1800,nq:0.28},
+  'v' : {place:0.975,deg:0.160,wid:0.030, voi:1, fric:1, dur:80,  cav:0.20,nf:1700,nq:0.28},
+  'T' : {place:0.925,deg:0.155,wid:0.030, voi:0, fric:1, dur:100, cav:0.25,nf:3500,nq:0.32},  // θ
+  'D' : {place:0.925,deg:0.165,wid:0.030, voi:1, fric:1, dur:75,  cav:0.25,nf:3300,nq:0.32},
+  'C' : {place:0.775,deg:0.170,wid:0.045, voi:0, fric:1, dur:95,  cav:0.85,nf:3400,nq:0.62},  // ç (ヒ)
+  'P' : {place:1.00, deg:0.160,wid:0.035, voi:0, fric:1, dur:95,  cav:0.15,nf:1500,nq:0.26},  // ɸ (フ)
+  'h' : {place:0.00, deg:1.00, wid:0.20,  voi:0, fric:1, glot:1,  dur:75,nf:1800,nq:0.25},
+  // 破擦音（閉鎖→摩擦）
+  'ts': {place:0.900,deg:0.00, wid:0.035, voi:0, stop:1, aff:'s', dur:105},
+  'dz': {place:0.900,deg:0.00, wid:0.035, voi:1, stop:1, aff:'z', dur:90},
+  'tS': {place:0.850,deg:0.00, wid:0.045, voi:0, stop:1, aff:'S', dur:110},
+  'dZ': {place:0.850,deg:0.00, wid:0.045, voi:1, stop:1, aff:'Z', dur:95},
+  // 接近音・流音
+  'R' : {place:0.860,deg:0.03, wid:0.030, voi:1, tap:1, dur:28},   // ɾ ラ行
+  'r' : {place:0.800,deg:0.32, wid:0.070, voi:1, appr:1, dur:70, place2:0.36, deg2:0.55, wid2:0.11}, // ɹ 三狭窄
+  'l' : {place:0.865,deg:0.10, wid:0.030, voi:1, appr:1, dur:65, lat:1},
+  'L' : {place:0.865,deg:0.10, wid:0.030, voi:1, appr:1, dur:75, lat:1, place2:0.42, deg2:0.75, wid2:0.13}, // 暗いL
+  'j' : {place:0.740,deg:0.30, wid:0.060, voi:1, appr:1, dur:55},
+  'w' : {place:1.00, deg:0.28, wid:0.060, voi:1, appr:1, dur:55, rnd:0.45, place2:0.60, deg2:0.75, wid2:0.10},
+  // 日本語の拗音: 独立した /j/ を直列に置かず、主閉鎖と口蓋化の二ジェスチャを重ねる。
+  'kj': {place:0.640,deg:0.00,wid:0.060,voi:0,stop:1,dur:64,asp:{en:55,ja:20},bf:2700,bq:0.58,place2:0.740,deg2:0.30,wid2:0.060},
+  'gj': {place:0.640,deg:0.00,wid:0.060,voi:1,stop:1,dur:60,asp:{en:10,ja:6}, bf:2500,bq:0.55,place2:0.740,deg2:0.30,wid2:0.060},
+  'nj': {place:0.830,deg:0.00,wid:0.045,voi:1,nas:1, dur:62,place2:0.740,deg2:0.30,wid2:0.060},
+  'bj': {place:1.000,deg:0.00,wid:0.055,voi:1,stop:1,dur:60,asp:{en:8,ja:5}, bf:1500,bq:0.42,place2:0.740,deg2:0.30,wid2:0.060},
+  'pj': {place:1.000,deg:0.00,wid:0.055,voi:0,stop:1,dur:64,asp:{en:55,ja:15},bf:1600,bq:0.42,place2:0.740,deg2:0.30,wid2:0.060},
+  'mj': {place:1.000,deg:0.00,wid:0.055,voi:1,nas:1, dur:62,place2:0.740,deg2:0.30,wid2:0.060},
+  'Rj': {place:0.860,deg:0.03,wid:0.030,voi:1,tap:1, dur:32,place2:0.740,deg2:0.30,wid2:0.060},
+  // 特殊
+  'Q' : {silence:1, dur:120},                    // 促音
+  '|' : {pause:1, minor:1, boundary:1, dur:0},   // 非音響の語・文節境界
+  '_' : {pause:1, dur:180}                       // 句読点
+};
+
+/* かな → 音素列（辞書不要の規則G2P） */
+const KANA = {
+ 'あ':'a','い':'i','う':'u','え':'e','お':'o',
+ 'か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
+ 'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go',
+ 'さ':'sa','し':'Si','す':'su','せ':'se','そ':'so',
+ 'ざ':'dza','じ':'dZi','ず':'dzu','ぜ':'dze','ぞ':'dzo',
+ 'た':'ta','ち':'tSi','つ':'tsu','て':'te','と':'to',
+ 'だ':'da','ぢ':'dZi','づ':'dzu','で':'de','ど':'do',
+ 'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+ 'は':'ha','ひ':'Ci','ふ':'Pu','へ':'he','ほ':'ho',
+ 'ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
+ 'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po',
+ 'ま':'ma','み':'mi','む':'mu','め':'me','も':'mo',
+ 'や':'ja','ゆ':'ju','よ':'jo',
+ 'ら':'Ra','り':'Ri','る':'Ru','れ':'Re','ろ':'Ro',
+ 'わ':'wa','を':'o','ん':'N','っ':'Q','ー':':',
+ 'ゃ':'ja','ゅ':'ju','ょ':'jo','ぁ':'a','ぃ':'i','ぅ':'u','ぇ':'e','ぉ':'o',
+ 'きゃ':'kja','きゅ':'kju','きょ':'kjo','ぎゃ':'gja','ぎゅ':'gju','ぎょ':'gjo',
+ 'しゃ':'Sa','しゅ':'Su','しょ':'So','じゃ':'dZa','じゅ':'dZu','じょ':'dZo',
+ 'ちゃ':'tSa','ちゅ':'tSu','ちょ':'tSo','にゃ':'nja','にゅ':'nju','にょ':'njo',
+ 'ひゃ':'Ca','ひゅ':'Cu','ひょ':'Co','びゃ':'bja','びゅ':'bju','びょ':'bjo',
+ 'ぴゃ':'pja','ぴゅ':'pju','ぴょ':'pjo','みゃ':'mja','みゅ':'mju','みょ':'mjo',
+ 'りゃ':'Rja','りゅ':'Rju','りょ':'Rjo',
+ 'てぃ':'ti','でぃ':'di','とぅ':'tu','どぅ':'du','ふぁ':'Pa','ふぃ':'Pi',
+ 'ふぇ':'Pe','ふぉ':'Po','うぃ':'wi','うぇ':'we','うぉ':'wo',
+ 'ヴ':'vu','ゔ':'vu','ゔぁ':'va','ゔぃ':'vi','ゔぇ':'ve','ゔぉ':'vo','ゔゅ':'vju',
+ '、':'_','。':'_','！':'_','？':'_',' ':'|','　':'|','^':'^'
+};
+// カタカナは自動でひらがなに落とす
+
+/* ===== 02_synth.js ===== */
+/* ============================================================
+   物理ソルバ
+   ・声帯: 二質量モデル（Ishizaka-Flanagan / Steinecke-Herzel 簡約形）自励振動
+   ・声道: Kelly-Lochbaum 双方向遅延線（3ポート接合は散乱形式）
+   ・側枝: 鼻腔（軟口蓋結合）＋ 梨状窩（閉管×1、左右をまとめて等価化）
+   単位は SI。面積のみ cm^2 で持ち、内部で m^2 に直す。
+   ============================================================ */
+const C_SND = 350.0;      // m/s  体温高湿度 [文献]
+const RHO   = 1.14;       // kg/m^3
+
+/* ---- 話者パラメータ ----
+   年齢・性別・体格 → 声道長 / 咽頭比 / 声帯寸法
+   [文献] 成人男16.9cm 女14.1cm / 声帯長 乳児6-8mm 女12-17mm 男17-23mm */
+function makeSpeaker(age, sex, size){
+  const a = Math.max(0, Math.min(85, age));
+  const s = Math.max(-1, Math.min(1, sex));          // -1 女 .. +1 男
+  // 幼児→成人の成長曲線 [推定C]
+  const grow = 1 - Math.exp(-a / 6.2);               // 0..1 (6歳で約62%)
+  const pub  = 1 / (1 + Math.exp(-(a - 13.0) / 1.6));// 思春期シグモイド
+  const male = (s + 1) / 2;
+  // 声道長 cm : 新生児7.0 → 共通14.1 → 男性のみ思春期で+2.8
+  let L = 7.0 + (14.1 - 7.0) * grow;
+  L += 2.8 * pub * male;
+  // 高齢の喉頭下降 [推定C]
+  L += 0.4 * Math.max(0, (a - 55) / 30);
+  L *= size;
+  // 咽頭 : 口腔 比  乳児1.5:1 → 6-8歳で1:1 [文献]
+  const ratio = 1.5 - 0.5 * Math.min(1, a / 7.0);
+  // 声帯長 mm
+  let vf = 7.0 + (14.5 - 7.0) * grow;
+  vf += 5.5 * pub * male;
+  vf *= size;
+  // 声帯剛性（張力の基準）: 思春期男性で厚く重くなり F0 が下がる
+  const vfMass = Math.pow(vf / 14.5, 2.1);
+  // 高齢の萎縮 → 閉鎖不全 [推定C]
+  const atrophy = Math.max(0, (a - 60) / 40) * 0.45;
+  // 自然基本周波数: 成人女200Hz / 男120Hz になるよう声帯長から導出 [文献にフィット]
+  let f0nat = 200 * Math.pow(14.5 / vf, 1.59);
+  if (a > 60) f0nat *= (1 + (s > 0 ? 0.10 : -0.08) * Math.min(1, (a - 60) / 25)); // 高齢の逆方向変化 [文献]
+  f0nat = Math.max(70, Math.min(480, f0nat));
+  return { age:a, sex:s, size:size, tractLen:L/100, pharRatio:ratio,
+           vfLen:vf/1000, vfMass:vfMass, atrophy:atrophy, f0nat:f0nat,
+           nasalLen:(9.0 + 2.4*grow + 0.6*pub*male)*size/100 };
+}
+
+/* ---- 面積関数の生成  A = Omega * exp(sum q_k phi_k) * lip * Gamma ---- */
+function modeShapes(n){
+  const p1=new Float64Array(n), p2=new Float64Array(n), p3=new Float64Array(n);
+  for(let i=0;i<n;i++){
+    const xi=i/(n-1);
+    const w=Math.max(0,Math.min(1,(xi-0.06)/0.10));
+    p1[i]=-Math.cos(Math.PI*xi)*w;
+    p2[i]= Math.cos(2*Math.PI*xi)*w;
+    p3[i]= Math.cos(3*Math.PI*xi)*w;
+  }
+  return [p1,p2,p3];
+}
+function neutralArea(n, pharRatio){
+  const a=new Float64Array(n);
+  for(let i=0;i<n;i++){
+    // 咽頭/口腔 比に応じて中心線上の位置を歪ませる（非一様スケーリング）
+    let xi=i/(n-1);
+    const b=0.5*(pharRatio/1.0)/(1+ (pharRatio-1)*0.5);
+    const xw = xi<0.5 ? xi*(2*b) : b + (xi-0.5)*2*(1-b);
+    const t=xw*(NEUTRAL.length-1), k=Math.floor(t), f=t-k;
+    a[i]=NEUTRAL[Math.min(k,NEUTRAL.length-1)]*(1-f)+NEUTRAL[Math.min(k+1,NEUTRAL.length-1)]*f;
+  }
+  return a;
+}
+function neutralSample(xi,pharRatio){
+  const b=0.5*(pharRatio/1.0)/(1+(pharRatio-1)*0.5);
+  const xw=xi<0.5?xi*(2*b):b+(xi-0.5)*2*(1-b);
+  const t=Math.max(0,Math.min(NEUTRAL.length-1,xw*(NEUTRAL.length-1)));
+  const k=Math.floor(t),f=t-k;
+  return NEUTRAL[k]*(1-f)+NEUTRAL[Math.min(k+1,NEUTRAL.length-1)]*f;
+}
+
+/* ---- 二質量声帯 ---- */
+function Glottis(spk){
+  this.spk=spk;
+  // 初期非対称: x1=x2 では P1=0 となり自励振動が起動しない
+  this.x1=2.0e-5; this.x2=0.4e-5; this.v1=0; this.v2=0;
+  this.Lg=spk.vfLen;                 // 声帯長 m
+  this.d1=0.0025; this.d2=0.0008;    // 下部/上部の厚さ m [文献]
+  this.mB=spk.vfMass;
+  this.ug=0; this.a1=0; this.a2=0;
+  this.psLF=0; this.sd=0;
+}
+Glottis.prototype.step=function(dt, Ps, tension, adduction, Psup){
+  const Q=Math.max(0.25, tension);            // 張力 → F0
+  const m1=0.125e-3*this.mB/Q, m2=0.030e-3*this.mB/Q;
+  const k1=72*Q, k2=14*Q, kc=25*Q;            // N/m  F0=120Hz@Q=1 になるよう選定 [耳E]
+  const ad=Math.max(0, adduction);
+  // 静止開口面積 m^2  内転度が高いほど小さい。高齢の萎縮で下限が上がる
+  // 静止声門面積。内転1で約0.005cm2、外転0で約0.20cm2まで開く。
+  // 旧実装は 2.7倍しか変化せず外転しても発振が止まらなかった（無声音が有声化していた主因）。
+  // 外転時0.1〜0.2cm2 は文献値 [文献]
+  const a0=0.05e-5 + Math.pow(1-ad,1.5)*2.0e-5 + this.spk.atrophy*0.9e-5;
+  this.a1=a0+2*this.Lg*this.x1;
+  this.a2=a0+2*this.Lg*this.x2;
+  const amin=Math.min(this.a1,this.a2);
+  // 声門流（ベルヌーイ）。声道側の圧力を差し引く（双方向結合）
+  // 声道側圧力の帰還は 低域(閉鎖中の直流圧) と 音響成分 を分けて扱う。
+  // 直流はそのまま流れを止め、音響成分は弱く結合させる（強く結合すると
+  // 発話中の音量が激しく変動する）[耳E]
+  this.psLF += 0.0035*(Psup-this.psLF);
+  const dP=Math.max(0, Ps - 1.00*this.psLF - 0.22*(Psup-this.psLF));
+  let ug=0, P1=Ps;
+  if(amin>0 && this.a1>0){
+    ug=amin*Math.sqrt(2*dP/RHO);
+    P1=dP*(1-(amin/this.a1)*(amin/this.a1));
+    if(P1<0)P1=0;
+  }else{ ug=0; P1=dP; }
+  this.ug=ug;
+  // 減衰（閉鎖時は大きく）
+  const zo=0.10;   // 開放時の減衰比 [文献: 0.1程度]
+  const z1=(this.a1>0?zo:1.10), z2=(this.a2>0?zo*8:1.90);   // 開放時の減衰を下げ立上りを速く [耳E]
+  const r1=2*z1*Math.sqrt(m1*k1), r2=2*z2*Math.sqrt(m2*k2);
+  // 衝突（閉鎖時の反力）
+  const c1=(this.a1<=0? 3.0*k1*(this.a1/(2*this.Lg)) : 0);
+  const c2=(this.a2<=0? 3.0*k2*(this.a2/(2*this.Lg)) : 0);
+  const jit=1+0.0025*(Math.random()*2-1);      // 微小揺らぎ（起動と自然さ）[耳E]
+  const F1=this.Lg*this.d1*P1*jit;
+  const F2=this.Lg*this.d2*P1*0.35;
+  const acc1=(F1-r1*this.v1-k1*this.x1-c1-kc*(this.x1-this.x2))/m1;
+  const acc2=(F2-r2*this.v2-k2*this.x2-c2-kc*(this.x2-this.x1))/m2;
+  // 常時の微小シード: 無声区間後に振動が再起動しない問題への対策
+    // 起動用シード。白色のまま入れると放射の微分で高域ノイズ床になるため低域に限定する
+  this.sd+=0.004*((Math.random()*2-1)-this.sd);
+  this.v1+=(acc1+2.5e3*this.sd)*dt; this.v2+=acc2*dt;
+  this.x1+=this.v1*dt; this.x2+=this.v2*dt;
+  const lim=6e-4;   // 変位制限 0.6mm。3mm では外転しても閉鎖してしまい無声化しない
+  if(this.x1>lim)this.x1=lim; if(this.x1<-lim)this.x1=-lim;
+  if(this.x2>lim)this.x2=lim; if(this.x2<-lim)this.x2=-lim;
+  return ug;
+};
+
+/* ---- 安定声門音源 ----
+   二質量モデルの研究価値は残しつつ、通常の試聴では Rosenberg 型の滑らかな
+   声門流を用いる。声道への入力は流量なので、口唇放射側の微分と重複しない。 */
+function StableGlottis(spk){
+  this.spk=spk; this.phase=0; this.time=0; this.jitter=0; this.shimmer=0; this.asp=0; this.flowLP=0; this.psDC=0;
+}
+StableGlottis.prototype.step=function(dt, Ps, f0, voicing, breathiness, quality, Psup){
+  quality=quality||{};
+  const warmth=Math.max(0,Math.min(1,quality.warmth==null?0.58:quality.warmth));
+  const breath=Math.max(0,Math.min(0.8,quality.breath==null?0.12:quality.breath));
+  const rough=Math.max(0,Math.min(0.08,quality.jitter==null?0.008:quality.jitter));
+  // Level-1 source-filter coupling: 声門上圧で流量振幅だけを受動的に制限する。
+  // 閉鎖・狭窄中の定流量注入による非物理的な圧力蓄積を防ぐ。
+  Psup=isFinite(Psup)?Psup:0;
+  const ap=1-Math.exp(-dt/0.014);
+  this.psDC+=ap*(Psup-this.psDC);
+  const pdc=Math.max(0,Math.min(Ps*0.92,this.psDC));
+  const pac=Math.max(-Ps*0.25,Math.min(Ps*0.25,Psup-this.psDC));
+  const dP=Math.max(0,Ps-pdc-0.18*pac);
+  const pressure=Math.sqrt(dP/800);
+  this.time+=dt;
+  const aj=1-Math.exp(-dt/0.00416),as=1-Math.exp(-dt/0.00694);
+  this.jitter+=aj*((Math.random()*2-1)-this.jitter);
+  this.shimmer+=as*((Math.random()*2-1)-this.shimmer);
+  const flutter=(0.0035+0.07*rough)*(Math.sin(2*Math.PI*12.7*this.time)+
+    Math.sin(2*Math.PI*7.1*this.time)+Math.sin(2*Math.PI*4.7*this.time))/3;
+  const jf=Math.max(55,Math.min(520,f0*(1+flutter+0.15*rough*this.jitter)));
+  this.phase+=jf*dt; this.phase-=Math.floor(this.phase);
+  const q=this.phase;
+  // Rosenberg 流量波形。閉鎖相も端点で傾き0の raised-cosine とし、
+  // 離散化時に折返す「傾きの角」を作らない（C1連続）。
+  const openPeak=0.40+0.045*warmth, openEnd=openPeak+0.16+0.05*warmth;
+  let pulse=0;
+  if(q<openPeak) pulse=0.5-0.5*Math.cos(Math.PI*q/openPeak);
+  else if(q<openEnd){
+    const x=(q-openPeak)/(openEnd-openPeak);
+    pulse=0.5+0.5*Math.cos(Math.PI*x);
+  }
+  // 呼気の直流成分は口唇放射で除去されるが、狭窄部の乱流を駆動する。
+  // ささやきは膜様部の周期振動を弱め、後部声門の chink 乱流を増す近似。
+  const whisper=Math.max(0,Math.min(1,quality.whisper||0));
+  const v=Math.max(0,Math.min(1,voicing))*Math.pow(1-whisper,2);
+  const air=pressure*(0.62e-4+(1-v)*1.25e-4+whisper*0.55e-4);
+  const periodic=pressure*v*1.72e-4*pulse*(1+(0.025+rough)*this.shimmer);
+  const aa=1-Math.exp(-dt/0.0000815);
+  this.asp+=aa*((Math.random()*2-1)-this.asp);
+  // modal breathiness は開放相だけ。/h/・VOT・whisper の非周期音源は render 側で共通生成する。
+  const airy=pressure*v*(0.035+0.26*breath)*Math.sqrt(Math.max(0,pulse))*1e-4*this.asp;
+  const raw=air+periodic+airy;
+  // 柔らかさに応じて声門流の高調波傾斜を調整する（声道共鳴はこの後段）。
+  const fc=10500-4700*warmth;
+  const a=1-Math.exp(-2*Math.PI*fc*dt);
+  this.flowLP+=a*(raw-this.flowLP);
+  return this.flowLP;
+};
+
+/* ---- 2:1 線形位相 FIR 間引き ----
+   入力Nyquist比 0..0.40 を通し、0.50..1.0 を -67dB 以下へ落とす
+   63-tap equiripple。旧二段1-poleは24kHzで約-13dBしかなく、
+   24--48kHzの声道モードを可聴域へ折り返していた。 */
+const DECIM2_H=new Float64Array([
+ -0.000471770617571667, 0.000111266968882325, 0.001575234513952129,
+  0.001944178366428581,-0.000245687720276383,-0.002294683143974741,
+ -0.000428035315614885, 0.003196242457517276, 0.002109788719119941,
+ -0.003483706937282961,-0.004438719721665100, 0.002804787383071404,
+  0.007193255126298819,-0.000680039304782050,-0.009830822145766534,
+ -0.003216692096227930, 0.011577202719743680, 0.008996957933942656,
+ -0.011445901906281935,-0.016474285563910441, 0.008279415310760135,
+  0.025145290667340715,-0.000692894903538596,-0.034232489500051574,
+ -0.013333849567512456, 0.042775218807327986, 0.038160393333276955,
+ -0.049777460580179470,-0.089460500364155801, 0.054375117934210446,
+  0.311343738390560010, 0.441838901512719096
+]);
+function Decimator2(){ this.z=new Float64Array(64); this.p=0; this.phase=0; }
+Decimator2.prototype.step=function(x){
+  const z=this.z,p=this.p; z[p]=isFinite(x)?x:0;
+  this.phase^=1;
+  if(this.phase){ this.p=(p+1)&63; return null; }
+  let y=DECIM2_H[31]*z[(p-31)&63];
+  for(let i=0;i<31;i++) y+=DECIM2_H[i]*(z[(p-i)&63]+z[(p-(62-i))&63]);
+  this.p=(p+1)&63; return y;
+};
+
+/* ---- Klatt型の弱い聴取補助 ----
+   物理声道を置換せず、母音区間だけ目標F1-F3のカスケード共鳴を薄く加える。
+   0%なら完全にバイパスされるため、純物理経路との比較が可能。 */
+function FormantResonator(fs){
+  this.fs=fs; this.y1=0; this.y2=0; this.a=1; this.b=0; this.c=0;
+  this.ta=1; this.tb=0; this.tc=0; this.first=true;
+  this.ck=1-Math.exp(-2*Math.PI*650/fs);
+}
+FormantResonator.prototype.set=function(freq,bw){
+  freq=Math.max(80,Math.min(this.fs*0.44,freq)); bw=Math.max(35,Math.min(500,bw));
+  const r=Math.exp(-Math.PI*bw/this.fs), th=2*Math.PI*freq/this.fs;
+  this.tb=2*r*Math.cos(th); this.tc=-r*r; this.ta=1-this.tb-this.tc;
+  if(this.first){ this.a=this.ta; this.b=this.tb; this.c=this.tc; this.first=false; }
+};
+FormantResonator.prototype.step=function(x){
+  this.a+=this.ck*(this.ta-this.a); this.b+=this.ck*(this.tb-this.b); this.c+=this.ck*(this.tc-this.c);
+  const y=this.a*x+this.b*this.y1+this.c*this.y2;
+  this.y2=this.y1; this.y1=isFinite(y)?y:0; return this.y1;
+};
+function FormantAssist(fs){
+  this.fs=fs; this.r=[new FormantResonator(fs),new FormantResonator(fs),new FormantResonator(fs)];
+  this.hpX=0; this.hpY=0;
+}
+FormantAssist.prototype.set=function(F){
+  const bw=[65,95,145];
+  for(let i=0;i<3;i++) this.r[i].set(F[i],bw[i]);
+};
+FormantAssist.prototype.step=function(x){
+  let y=x;
+  for(const r of this.r) y=r.step(y);
+  const hp=y-this.hpX+0.995*this.hpY; this.hpX=y; this.hpY=hp;
+  return hp;
+};
+
+/* ---- 声道（導波管） ---- */
+function Tract(fs, spk){
+  this.fs=fs; this.spk=spk;
+  // 前進・後退の遅延線が各セクション1サンプルなので dx = c/fs（c/(2fs) は誤り）
+  this.dx=C_SND/fs;
+  // 母音ごとの声道長変化（口唇突出）を扱うため、末尾に余剰セクションを持つ。
+  // 使わない区間は面積を大きくして自由空間扱いにし、実効的な管長を可変にする。
+  this.Nbase=Math.max(24, Math.round(spk.tractLen/this.dx));
+  this.EXTRA=8;
+  this.N=this.Nbase+this.EXTRA;
+  this.A=new Float64Array(this.N).fill(3.0);
+  this.areaTarget=new Float64Array(this.N).fill(3.0);
+  this.areaStep=new Float64Array(this.N);
+  this.areaRemain=0;
+  this.F=new Float64Array(this.N); this.B=new Float64Array(this.N);
+  this.nFb=new Float64Array(this.N); this.nBb=new Float64Array(this.N); // 作業用
+  this.Fl=new Float64Array(this.N); this.Bl=new Float64Array(this.N);
+  this.lpc=0.85;   // セクションあたりの穏やかなLP [推定C]
+  // 乱流ノイズ用バンドパス 2.5kHz Q=0.4（前部空洞の共鳴域まで届かせる）
+  { const f0=2500,Q=0.4,w0=2*Math.PI*f0/fs,al=Math.sin(w0)/(2*Q),cw=Math.cos(w0);
+    const a0b=1+al;
+    this.bpB0=al/a0b; this.bpB1=0; this.bpB2=-al/a0b;
+    this.bpA1=-2*cw/a0b; this.bpA2=(1-al)/a0b;
+    this.bpX1=this.bpX2=this.bpY1=this.bpY2=0; }
+  this.bpTB0=this.bpB0; this.bpTB1=this.bpB1; this.bpTB2=this.bpB2;
+  this.bpTA1=this.bpA1; this.bpTA2=this.bpA2;
+  this.bpCoefK=1-Math.exp(-2*Math.PI*520/fs);
+  this.noiseF=2500; this.noiseQ=0.4;
+  this.noiseBypass=0;
+  this.gLP=0; this.lLP=0;   // 端点での周波数依存損失（壁・粘性の集約）
+  // 鼻腔
+  this.Nn=Math.max(12, Math.round(spk.nasalLen/this.dx));
+  this.nA=new Float64Array(this.Nn);
+  for(let i=0;i<this.Nn;i++){
+    const xi=i/(this.Nn-1);
+    this.nA[i]=1.2+2.4*Math.sin(Math.PI*Math.min(1,xi*1.15))+0.4;  // [推定C]
+  }
+  this.nF=new Float64Array(this.Nn); this.nB=new Float64Array(this.Nn);
+  this.nWorkF=new Float64Array(this.Nn); this.nWorkB=new Float64Array(this.Nn);
+  this.velumIdx=Math.round(this.Nbase*0.62);
+  this.velum=0; this.velumTarget=0;
+  this.velumK=1-Math.exp(-2*Math.PI*220/fs);
+  // 梨状窩（閉管、深さ1.8cm、体積2.5cm^3 相当）[文献]
+  // 実効往復が 2*Np-1 サンプル → 谷 ≈ fs/(2*(2Np-1))。Np=6 で約4.4kHz [文献: 4-5kHz]
+  this.Np=Math.max(4, Math.round(0.021/this.dx)+1);
+  this.pA=1.4;   // cm^2（体積2.5cm3 / 深さ1.8cm、左右合算）[文献]
+  this.pF=new Float64Array(this.Np); this.pB=new Float64Array(this.Np);
+  this.pirIdx=Math.max(2, Math.round(this.Nbase*0.10));
+  this.lipOut=0; this.noseOut=0;
+  this.radX=0; this.radY=0; this.lipRefLP=0;
+  this.lipRefK=1-Math.exp(-2*Math.PI*5000/fs);
+  this.radR=Math.exp(-2*Math.PI*4000/fs);   // 折点4kHz（ka=1相当）[文献]
+  const refDx=C_SND/96000;
+  // 旧値は往復減衰が小さすぎ、閉鎖開放や /r/ で高Q過渡が数百倍へ成長した。
+  // 約1ms往復で0.90程度となる損失へ寄せ、実声道のformant bandwidthを近似する。
+  this.loss=1-Math.pow(1-0.0010,this.dx/refDx);
+  this.nasalLoss=Math.pow(0.988,this.dx/refDx);
+  this.pirLoss=Math.pow(0.998,this.dx/refDx);
+  this.wall=new Float64Array(this.N);
+  this.kw=1-Math.exp(-2*Math.PI*45/fs);   // 壁が追従する上限周波数 45Hz [推定C]
+  this.gw=1.2e-4;            // 壁への漏れ。全接合合計で時定数 約25ms [耳E]
+  this.frication=0; this.glottalOpen=0; this.fricState=0; this.openState=0;
+  this.fricK=1-Math.exp(-2*Math.PI*210/fs);
+}
+Tract.prototype.setNoiseFilter=function(f0,Q){
+  f0=Math.max(500,Math.min(this.fs*0.42,f0||2500)); Q=Math.max(0.18,Math.min(1.2,Q||0.4));
+  if(Math.abs(f0-this.noiseF)<35 && Math.abs(Q-this.noiseQ)<0.015) return;
+  this.noiseF=f0; this.noiseQ=Q;
+  const w0=2*Math.PI*f0/this.fs, al=Math.sin(w0)/(2*Q), cw=Math.cos(w0), a0=1+al;
+  this.bpTB0=al/a0; this.bpTB1=0; this.bpTB2=-al/a0;
+  this.bpTA1=-2*cw/a0; this.bpTA2=(1-al)/a0;
+};
+Tract.prototype.setArea=function(A,span){
+  // 1msごとの断面積ZOHは、散乱係数を周期的に跳ばして1kHz櫛を作る。
+  // 次の制御フレームまで全音響サンプルで線形補間し、値の段差をなくす。
+  span=Math.max(1,span|0);
+  for(let i=0;i<this.N;i++){
+    const v=Math.max(0.012,A[i]); this.areaTarget[i]=v;
+    this.areaStep[i]=(v-this.A[i])/span;
+  }
+  this.areaRemain=span;
+};
+
+Tract.prototype.step=function(input, noiseIdx, noiseAmp){
+  const N=this.N, A=this.A, F=this.F, B=this.B;
+  const g=this.loss;
+  if(this.areaRemain>0){
+    const last=this.areaRemain===1;
+    for(let i=0;i<N;i++) A[i]=last?this.areaTarget[i]:A[i]+this.areaStep[i];
+    this.areaRemain--;
+  }
+  const ck=this.bpCoefK;
+  this.bpB0+=ck*(this.bpTB0-this.bpB0); this.bpB1+=ck*(this.bpTB1-this.bpB1);
+  this.bpB2+=ck*(this.bpTB2-this.bpB2); this.bpA1+=ck*(this.bpTA1-this.bpA1);
+  this.bpA2+=ck*(this.bpTA2-this.bpA2);
+  this.fricState+=this.fricK*(this.frication-this.fricState);
+  this.openState+=this.fricK*(this.glottalOpen-this.openState);
+  this.velum+=this.velumK*(this.velumTarget-this.velum);
+  // --- 主管の2ポート接合（散乱） ---
+  const nF=this.nFb, nB=this.nBb;
+  nF.fill(0); nB.fill(0);
+  // 無声摩擦では声門が開き、戻り波を母音時より強く吸収する。
+  const rg=0.75-0.44*this.openState;
+  nF[0]=rg*B[0]+input;
+  for(let j=1;j<N;j++){
+    if(j===this.velumIdx){ continue; }         // 3ポートは後段で
+    if(j===this.pirIdx){ continue; }
+    const Y1=A[j-1], Y2=A[j];
+    let pj=2*(Y1*F[j-1]+Y2*B[j])/(Y1+Y2);
+    // 降伏壁: 低域成分を壁が受け持ち、閉鎖中の直流的な圧力上昇を制限する
+    this.wall[j]+=this.kw*(pj-this.wall[j]);
+    pj-=this.gw*this.wall[j];
+    nF[j]=pj-B[j];
+    nB[j-1]=pj-F[j-1];
+  }
+  // --- 梨状窩（3ポート: 主管in, 主管out, 閉管） ---
+  if(!this._noPir){
+    const j=this.pirIdx;
+    const Y1=A[j-1], Y2=A[j], Y3=this.pA;
+    const pj=2*(Y1*F[j-1]+Y2*B[j]+Y3*this.pB[0])/(Y1+Y2+Y3);
+    nF[j]=pj-B[j];
+    nB[j-1]=pj-F[j-1];
+    // 閉管内を進める
+    const pin=pj-this.pB[0];
+    for(let i=this.Np-1;i>0;i--){ this.pF[i]=this.pF[i-1]*this.pirLoss; }
+    this.pF[0]=pin;
+    for(let i=0;i<this.Np-1;i++){ this.pB[i]=this.pB[i+1]*this.pirLoss; }
+    this.pB[this.Np-1]=this.pF[this.Np-1];    // 閉端で全反射（同符号）
+  }
+  else { const j=this.pirIdx; const Y1=A[j-1],Y2=A[j];
+    const pj=2*(Y1*F[j-1]+Y2*B[j])/(Y1+Y2); nF[j]=pj-B[j]; nB[j-1]=pj-F[j-1]; }
+  // --- 軟口蓋（3ポート: 主管in, 主管out, 鼻腔） ---
+  if(!this._noNose){
+    const j=this.velumIdx;
+    const vA=Math.max(0.0005, this.velum*this.nA[0]);
+    const Y1=A[j-1], Y2=A[j], Y3=vA;
+    const pj=2*(Y1*F[j-1]+Y2*B[j]+Y3*this.nB[0])/(Y1+Y2+Y3);
+    nF[j]=pj-B[j];
+    nB[j-1]=pj-F[j-1];
+    this._noseIn=pj-this.nB[0];
+  }
+  else { const j=this.velumIdx; const Y1=A[j-1],Y2=A[j];
+    const pj=2*(Y1*F[j-1]+Y2*B[j])/(Y1+Y2); nF[j]=pj-B[j]; nB[j-1]=pj-F[j-1]; this._noseIn=0; }
+  // --- 口唇端 ---
+  // 開口端反射は高域ほど弱い。固定 -0.85 は /h/ と高次モードを管内へ
+  // 過剰に戻すため、5kHzの1極LPを反射枝だけに掛ける。
+  const rl=-0.85;
+  this.lipRefLP+=this.lipRefK*(F[N-1]-this.lipRefLP);
+  nB[N-1]=rl*this.lipRefLP;
+  const lipWave=F[N-1]-nB[N-1];
+  // --- 乱流ノイズ注入 ---
+  // 無音時もゼロ入力でフィルタを進め、次の子音で古い状態がクリックとして再出現するのを防ぐ。
+  {
+    const activeNoise=noiseAmp>0 && noiseIdx>0 && noiseIdx<N-1;
+    const w=activeNoise?Math.random()*2-1:0;
+    const y=this.bpB0*w + this.bpB1*this.bpX1 + this.bpB2*this.bpX2
+            - this.bpA1*this.bpY1 - this.bpA2*this.bpY2;
+    this.bpX2=this.bpX1; this.bpX1=w; this.bpY2=this.bpY1; this.bpY1=y;
+    this.noiseBypass=activeNoise?y*noiseAmp:0;
+    if(activeNoise){
+    const n=y*noiseAmp;
+    nF[noiseIdx]+=n; nB[noiseIdx-1]-=n*0.7;
+    }
+  }
+  // --- 損失: スカラー減衰 + 極めて穏やかな1極LP ---
+  // 実声道は F1約50Hz → F4約150Hz と高次ほど帯域幅が広い。係数0.85（約29kHz相当）を
+  // 46段累積させてこの傾斜を作る。ここを 0.018 のような強い値にすると全滅する（既往バグ）。
+  // 損失はスカラー減衰のみ。周波数依存のLPを各セクションに掛けると
+  // 46段カスケードして帯域を潰す（既往バグ）。参照実装も損失フィルタを持たない。
+  // 摩擦時は狭窄・境界層による粘性損失が増す。低損失の櫛共鳴を抑える。
+  const d=Math.max(0.985,1-g-0.0013*this.fricState);
+  for(let i=0;i<N;i++){ F[i]=nF[i]*d; B[i]=nB[i]*d; }
+  // --- 鼻腔を進める ---
+  {
+    const Nn=this.Nn, a=this.nA, f=this.nF, b=this.nB;
+    const mf=this.nWorkF,mb=this.nWorkB;
+    mf.fill(0); mb.fill(0);
+    mf[0]=this._noseIn;
+    for(let j=1;j<Nn;j++){
+      const Y1=a[j-1],Y2=a[j];
+      const pj=2*(Y1*f[j-1]+Y2*b[j])/(Y1+Y2);
+      mf[j]=pj-b[j]; mb[j-1]=pj-f[j-1];
+    }
+    const rn=-0.80;
+    mb[Nn-1]=rn*f[Nn-1];
+    this.noseOut=(1-rn)*f[Nn-1];
+    for(let i=0;i<Nn;i++){ f[i]=mf[i]*this.nasalLoss; b[i]=mb[i]*this.nasalLoss; }
+  }
+  // --- 放射（微分特性）---
+  // 軟口蓋が閉じているときは鼻腔からの放射を遮断する。
+  // 微小な漏れでも持続音では鼻腔共鳴(1/4波長 約730Hz)が育って母音を濁らせるため。
+  const nz=Math.min(1, this.velum*25);
+  // 口唇放射: ka<1 で +6dB/oct、ka>1 で平坦。単純な一階差分だとナイキストまで
+  // 上がり続けるので 4kHz 折点の1次ハイパスにする。微分はこの一箇所だけ。
+  // 鼻腔は高Qになりやすいため、口唇放射と同振幅で足すと鼻音だけが過大になる。
+  const tot=lipWave+this.noseOut*0.45*nz;
+  const out=this.radR*(this.radY+tot-this.radX);
+  this.radX=tot; this.radY=out;
+  this.lipOut=out;
+  return out;
+};
+Tract.prototype.inputPressure=function(){ return this.F[0]+this.B[0]; };
+
+/* ===== 03_artic.js ===== */
+/* ============================================================
+   ジェスチャ層 → 面積関数 → レンダリング
+   ============================================================ */
+function Follower(w){ this.x=0; this.v=0; this.w=w; }
+Follower.prototype.set=function(v){ this.x=v; this.v=0; };
+Follower.prototype.step=function(t,dt,w){
+  const om=(w||this.w);
+  const a=-2*om*this.v-om*om*(this.x-t);      // 臨界減衰 zeta=1
+  this.v+=a*dt; this.x+=this.v*dt;
+  return this.x;
+};
+
+const OPEN_A=3.2;   // 狭窄なしを表す面積 cm^2
+
+/* 音素列 → タイムライン */
+function buildTimeline(phones, opt){
+  const rate=opt.rate||1.0, lang=opt.lang||'ja';
+  const seg=[]; let t=0;
+  for(let pi=0;pi<phones.length;pi++){
+    const p=phones[pi];
+    const ph=p.ph;
+    let c=CONS[ph];
+    // 促音は後続子音の調音を約一モーラ先取りする。破裂・破擦音なら閉鎖だけを
+    // 延長し、摩擦音なら摩擦を延長する（Q 自身から別の破裂は出さない）。
+    if(ph==='Q' && phones[pi+1]){
+      const nc=CONS[phones[pi+1].ph];
+      if(nc && !nc.pause && !nc.silence){
+        if(nc.fric && !nc.stop){
+          c=Object.assign({},nc,{dur:p.dur||118,geminate:1,stop:0,aff:null,asp:null});
+        }else{
+          c={place:nc.place,deg:0,wid:nc.wid,voi:nc.voi,geminate:1,dur:p.dur||118};
+        }
+      }
+    }
+    let dur;
+    if(p.dur!=null) dur=p.dur;
+    else if(c) dur=c.dur||80;
+    else dur=ph.length>1?110:100;
+    dur=dur/rate;
+    seg.push({ph, c, t0:t, t1:t+dur, dur, f0:p.f0, stress:p.stress||0,
+              devoice:p.devoice||0, acc:p.acc||0, isV:!c});
+    t+=dur;
+  }
+  return {seg, total:t};
+}
+
+function vowelParams(ph){
+  let k=ph;
+  if(VOW_ALIAS[k]) k=VOW_ALIAS[k];
+  if(VOWELS[k]) return VOWELS[k];
+  // 二重母音は先頭要素で代表（遷移は別処理）
+  if(k.length>1 && VOWELS[k[0]]) return VOWELS[k[0]];
+  return VOWELS['@'];
+}
+
+/* 制御状態 */
+function Controller(spk, tl, opt){
+  this.spk=spk; this.tl=tl; this.opt=opt;
+  const prec=opt.precision==null?0.85:opt.precision;
+  const wv=2*Math.PI*(3.2+3.6*prec), wc=2*Math.PI*(7+11*prec);
+  this.q=[new Follower(wv),new Follower(wv),new Follower(wv)];
+  this.lip=new Follower(wv); this.len=new Follower(wv);
+  this.plc=new Follower(wc); this.plc2=new Follower(wc);
+  this.act=new Follower(wc); this.act2=new Follower(wc);
+  this.vel=new Follower(2*Math.PI*12);
+  this.add=new Follower(2*Math.PI*16);
+  this.ten=new Follower(2*Math.PI*8);
+  this.prs=new Follower(2*Math.PI*18);
+  this.f0 =new Follower(2*Math.PI*9);
+  this.voice=new Follower(2*Math.PI*28);
+  this.audible=new Follower(2*Math.PI*45);
+  this.energy=new Follower(2*Math.PI*14);
+  this.formant=[new Follower(wv),new Follower(wv),new Follower(wv)];
+  this.formantGate=new Follower(2*Math.PI*24);
+  const v0=vowelParams('@');
+  this.q[0].set(v0.q[0]); this.q[1].set(v0.q[1]); this.q[2].set(v0.q[2]);
+  // 動く巨大面積境界は波動エネルギーを人工的に注入するため、既定は較正中心の+3段で固定。
+  // 分数遅延終端を比較したい場合だけ opt.dynamicLength=true で有効化する。
+  this.lip.set(v0.lip); this.len.set(3);
+  this.plc.set(0.86); this.plc2.set(0.5);
+  this.nwid=0.045; this.nwid2=0.08;
+  this.add.set(0.0); this.ten.set(1.0); this.prs.set(0);
+  this.voice.set(0);
+  this.audible.set(0);
+  this.energy.set(0);
+  const fscale=Math.max(0.72,Math.min(1.38,0.169/spk.tractLen));
+  for(let i=0;i<3;i++) this.formant[i].set(v0.F[i]*fscale);
+  this.formantGate.set(0); this.formantScale=fscale;
+  this.f0.set(opt.f0base||spk.f0nat||120);
+  this.wv=wv; this.wc=wc;
+  // 母音ターゲットの切替時刻を前もって作る（先行子音の頭で切替＝先読み共調音）
+  this.vswitch=[];
+  const s=tl.seg;
+  for(let i=0;i<s.length;i++){
+    if(!s[i].isV) continue;
+    let j=i;
+    while(j>0 && !s[j-1].isV && !(s[j-1].c&&(s[j-1].c.pause||s[j-1].c.silence))) j--;
+    const onset=s[j].t0/1000;
+    this.vswitch.push({t:onset, ph:s[i].ph});
+    // 二重母音は後半で第二ターゲットへ移る。
+    const ph=s[i].ph;
+    if(!VOWELS[ph] && ph.length>1 && VOWELS[ph[0]] && VOWELS[ph[1]])
+      this.vswitch.push({t:s[i].t0/1000+s[i].dur*0.56/1000, ph:ph[1]});
+  }
+  this.mode='';
+}
+Controller.prototype.update=function(t,dt){
+  const s=this.tl.seg, o=this.opt;
+  let active=null;
+  for(const g of s){ if(t>=g.t0/1000 && t<g.t1/1000){ active=g; break; } }
+  this.current=active;
+  // --- 母音サブストレート ---
+  let vp=vowelParams('@');
+  for(const w of this.vswitch){ if(t>=w.t) vp=vowelParams(w.ph); }
+  this.q[0].step(vp.q[0],dt); this.q[1].step(vp.q[1],dt); this.q[2].step(vp.q[2],dt);
+  this.lip.step(vp.lip,dt);
+  this.len.step(this.opt.dynamicLength?(vp.dN==null?3:vp.dN):3,dt);
+  for(let i=0;i<3;i++) this.formant[i].step(vp.F[i]*this.formantScale,dt);
+  // --- 現在の子音 ---
+  let cur=null, act=0;
+  for(const g of s){
+    if(!g.c||g.c.pause) continue;
+    const pad=0.020;                       // 立ち上がり余裕 s
+    if(t>g.t0/1000-pad && t<g.t1/1000+pad){
+      const c0=g.t0/1000, c1=g.t1/1000;
+      let a;
+      if(t<c0) a=(t-(c0-pad))/pad;
+      else if(t>c1) a=1-(t-c1)/pad;
+      else a=1;
+      a=Math.max(0,Math.min(1,a));
+      if(a>act){ act=a; cur=g; }
+    }
+  }
+  let targetAct=0, targetAct2=0, plc=this.plc.x, plc2=this.plc2.x;
+  // 狭窄面積は子音が終わっても保持する。act の減衰だけで開放させることで
+  // 面積が 1ms でジャンプして巨大な破裂突発を作るのを防ぐ
+  let velum=0, add=0.88, ten=1.0;
+  let narea=(this.narea==null?OPEN_A:this.narea), narea2=(this.narea2==null?OPEN_A:this.narea2);
+  if(!cur||!cur.c){ narea=this.narea==null?OPEN_A:this.narea; }
+  this.noiseGain=0; this.noisePlace=-1; this.noiseFreq=2500; this.noiseQ=0.4; this.cav=0.5;
+  this.aspirationGain=0;
+  const c=cur?cur.c:null;
+  if(c && !c.pause && !c.silence){
+    plc=c.place; targetAct=act; narea=c.deg; this.nwid=c.wid||0.045;
+    if(c.place2!=null){ plc2=c.place2; targetAct2=act*0.85; narea2=c.deg2; this.nwid2=c.wid2||0.08; }
+    if(c.nas) velum=0.92*act;
+    if(c.voi===0) add=0.88-0.80*act;
+    if(c.glot) { add=0.10; narea=OPEN_A; targetAct=0; this.aspirationGain=Math.max(this.aspirationGain,act); }
+    if(c.fric&&!c.glot) { this.noiseGain=act; this.cav=c.cav==null?0.5:c.cav;
+      this.noiseFreq=c.nf||2500; this.noiseQ=c.nq||0.4; }
+    if(c.rnd) { /* w の円唇 */ }
+    // 破擦音は後半で摩擦へ
+    if(c.aff){
+      const fr=(t-cur.t0/1000)/((cur.t1-cur.t0)/1000);
+      if(fr>0.55){ const f=CONS[c.aff]; narea=f.deg; plc=f.place;
+        this.nwid=f.wid||0.04; this.noiseGain=act; this.cav=f.cav;
+        this.noiseFreq=f.nf||2500; this.noiseQ=f.nq||0.4; }
+    }
+    // 破裂音の開放直後だけ短い乱流バーストを与える。
+    if(c.stop && !c.aff){
+      const br=(t-cur.t1/1000)/0.006;
+      if(br>=0 && br<1){ this.noiseGain=Math.max(this.noiseGain,(c.voi?0.09:0.16)*(1-br));
+        this.noiseFreq=c.bf||2500; this.noiseQ=c.bq||0.5; }
+    }
+  }
+  if(cur && cur.c && cur.c.silence){ add=0.9; narea=0.012; targetAct=act; plc=this.plc.x; }
+  // VOT は子音ジェスチャの20ms後パディングとは独立に進める。期間中は周期音源を
+  // 抑え、声門起源の帯気雑音を声道入口へ入れる。
+  let vot=0;
+  for(const g of s){
+    if(!g.c||!g.c.asp) continue;
+    const span=(g.c.asp[this.opt.lang]||g.c.asp.ja||0)/1000, rel=g.t1/1000;
+    if(span>0&&t>=rel&&t<rel+span){
+      const x=(t-rel)/span; vot=Math.max(vot,Math.pow(1-x,0.45));
+    }
+  }
+  if(vot>0) this.aspirationGain=Math.max(this.aspirationGain,0.88*vot);
+  // 音源の有声・無声を音素列から明示的に制御する。
+  let voiceTarget=0;
+  if(active){
+    if(active.isV) voiceTarget=active.devoice?0.04:1.0;
+    else if(active.c && active.c.voi) voiceTarget=active.c.nas?0.42:0.62;
+    if(active.c && (active.c.pause||active.c.silence)){ voiceTarget=0; add=0.03; }
+    if(active.devoice) add=0.08;
+  }
+  if(vot>0){ voiceTarget=0; add=0.06; }
+  this.voice.step(voiceTarget,dt);
+  const isAudible=!!active && !(active.c && (active.c.pause||active.c.silence));
+  this.audible.step(isAudible?1:0,dt,2*Math.PI*(isAudible?32:58));
+  let energyTarget=0;
+  if(isAudible){
+    if(active.isV){
+      const u=Math.max(0,Math.min(1,(t-active.t0/1000)/Math.max(0.001,active.dur/1000)));
+      energyTarget=(active.devoice?0.72:0.82+0.18*Math.sin(Math.PI*u));
+    } else if(active.c&&active.c.nas) energyTarget=0.60;
+    else energyTarget=(active.c&&active.c.voi)?0.76:0.94;
+  }
+  this.energy.step(energyTarget,dt);
+  this.formantGate.step(active&&active.isV&&!active.devoice?1:0,dt);
+  // 狭窄面積を開閉両方向で指数補間する。絶対差だけの旧slew制限は、stop→fricative
+  // の小さな面積差を1msで飛ばして音響インパルスを作っていた。
+  if(this.narea!=null){
+    const tau=narea>this.narea?0.006:0.004;
+    narea=this.narea+(1-Math.exp(-dt/tau))*(narea-this.narea);
+  }
+  if(this.narea2!=null){
+    const tau=narea2>this.narea2?0.007:0.005;
+    narea2=this.narea2+(1-Math.exp(-dt/tau))*(narea2-this.narea2);
+  }
+  this.plc.step(plc,dt); this.plc2.step(plc2,dt);
+  this.act.step(targetAct,dt); this.act2.step(targetAct2,dt);
+  this.narea=narea; this.narea2=narea2;
+  this.vel.step(velum,dt);
+  // --- 声門・呼吸 ---
+  const em=this.opt.em||{};
+  const inSpeech=isAudible;
+  const Ps=(inSpeech? (em.press==null?1:em.press)*800*(this.opt.power==null?1:this.opt.power)*this.energy.x : 0);
+  this.add.step(add*(em.adduct==null?1:em.adduct)*(1-this.spk.atrophy),dt);
+  this.ten.step(ten*(em.tension==null?1:em.tension)*(this.opt.tensionBase||1),dt);
+  this.prs.step(Ps,dt);
+  // --- F0 ---
+  let f0=(active&&active.f0) ? active.f0 :
+    (this.opt.f0curve? this.opt.f0curve(t) : (this.opt.f0base||this.spk.f0nat||120));
+  this.f0.step(f0,dt);
+};
+Controller.prototype.areaFn=function(nTot,nBase){
+  // 実効長を整数に丸めず、移動境界の一セクションを対数面積で補間する。
+  // セクション配列そのものは固定し、動的な再確保・全域ジャンプを起こさない。
+  const ext=Math.max(0,Math.min(nTot-nBase-1.001,this.len.x));
+  const nf=nBase+ext, last=Math.floor(nf), frac=nf-last;
+  const A=new Float64Array(nTot);
+  const q0=this.q[0].x,q1=this.q[1].x,q2=this.q[2].x;
+  const lip=this.lip.x;
+  for(let i=0;i<nTot;i++){
+    const active=i<last?1:(i===last?frac:0);
+    if(active<=0){ A[i]=40; continue; }
+    const xi=Math.max(0,Math.min(1,i/Math.max(1,nf-1)));
+    const wm=Math.max(0,Math.min(1,(xi-0.06)/0.10));
+    const p1=-Math.cos(Math.PI*xi)*wm;
+    const p2= Math.cos(2*Math.PI*xi)*wm;
+    const p3= Math.cos(3*Math.PI*xi)*wm;
+    const wlip=Math.max(0,Math.min(1,(xi-0.80)/0.20));
+    let area=neutralSample(xi,this.spk.pharRatio)*Math.exp(q0*p1+q1*p2+q2*p3)*(1+wlip*(lip-1));
+    const ap=[[this.plc.x,this.act.x,this.narea,this.nwid],[this.plc2.x,this.act2.x,this.narea2,this.nwid2]];
+    for(const [p,a,tg,wid0] of ap){
+      if(a<=0.001) continue;
+      const wid=wid0||0.045;
+      const d=(xi-p)/wid;
+      const w=a*Math.exp(-d*d);
+      // 面積比（=音響インピーダンス比）を滑らかに変える対数補間。
+      // 線形補間ではセクション格子とplaceが僅かにずれただけで /s,theta/ の
+      // 実効狭窄が目標の3--4倍に開き、乱流が消えていた。
+      area=Math.exp((1-w)*Math.log(Math.max(0.012,area))+w*Math.log(Math.max(0.012,tg)));
+    }
+    area=Math.max(0.012,area);
+    // 対数領域で補間すると反射係数が滑らかに変わり、面積の正値も保てる。
+    A[i]=active<1?Math.exp(active*Math.log(area)+(1-active)*Math.log(40)):area;
+  }
+  this.activeLength=nf;
+  return A;
+};
+
+/* ---- レンダリング ---- */
+function render(phones, opt){
+  opt=opt||{};
+  const fsOut=opt.fsOut||48000, OS=2, fs=fsOut*OS, dt=1/fs;
+  const spk=opt.speaker||makeSpeaker(30,1,1);
+  const tl=buildTimeline(phones,opt);
+  const ctrl=new Controller(spk,tl,opt);
+  const tract=new Tract(fs,spk);
+  const stableSource=(opt.engine||'stable')!=='physical';
+  const glot=stableSource?new StableGlottis(spk):new Glottis(spk);
+  const quality=opt.quality||{};
+  const assistMix=Math.max(0,Math.min(0.45,quality.formantAssist==null?0.18:quality.formantAssist));
+  const formantAssist=assistMix>0?new FormantAssist(fs):null;
+  const N=tract.N;
+  const totalS=Math.ceil((tl.total/1000+0.28)*fs);
+  const buf=new Float32Array(Math.ceil(totalS/OS));
+  const assistBuf=formantAssist?new Float32Array(buf.length):null;
+  const assistGateBuf=formantAssist?new Float32Array(buf.length):null;
+  const ctrlEvery=Math.round(fs/1000);           // 1ms
+  const frames=[]; const frameEvery=Math.round(fs/100);  // 10ms 可視化用 __FRAMES__
+  let dcx=0,dcy=0,kOut=0,assistDCx=0,assistDCy=0,ugPrev=0,aspLP=0,flowDC=0;
+  const mainDecim=new Decimator2();
+  const assistDecim=formantAssist?new Decimator2():null;
+  const gateDecim=formantAssist?new Decimator2():null;
+  const dcR=Math.exp(-2*Math.PI*30/fsOut);
+  const Z0=RHO*C_SND/(0.45e-4);
+  for(let k=0;k<totalS;k++){
+    const t=k*dt;
+    if(k%ctrlEvery===0){
+      ctrl.update(t,ctrlEvery*dt);
+      tract.setArea(ctrl.areaFn(N,tract.Nbase),ctrlEvery);
+      tract.setNoiseFilter(ctrl.noiseFreq,ctrl.noiseQ);
+      if(formantAssist) formantAssist.set(ctrl.formant.map(f=>f.x));
+      if(k%frameEvery<ctrlEvery) frames.push(Float32Array.from(tract.A));
+      tract.velumTarget=ctrl.vel.x;
+      // ノイズ位置＝最小面積点（口腔側）
+      let mi=-1,mv=1e9;
+      for(let i=Math.round(N*0.45);i<N;i++){ if(tract.A[i]<mv){mv=tract.A[i];mi=i;} }
+      this_noise: {
+        if(ctrl.noisePlace===-2){ ctrl.nIdx=Math.max(2,Math.round(N*0.06)); ctrl.nA=tract.A[ctrl.nIdx]; }
+        else { ctrl.nIdx=mi; ctrl.nA=mv; }
+      }
+    }
+    // 声門
+    // F0 → 張力 Q。実測で F0 = 110*Q/sqrt(vfMass)。Q>3.2 でモード跳躍するのでクランプ
+    let ten=(ctrl.f0.x/110)*Math.sqrt(spk.vfMass);
+    if(ten<0.30)ten=0.30; if(ten>3.20)ten=3.20;
+    const voiceAmp=ctrl.voice.x*Math.max(0,Math.min(1,ctrl.add.x/0.82));
+    const ug=stableSource
+      ? glot.step(dt,ctrl.prs.x,ctrl.f0.x,voiceAmp,ctrl.aspirationGain,quality,tract.inputPressure())
+      : glot.step(dt,ctrl.prs.x,ten,ctrl.add.x,tract.inputPressure());
+    // 完全な口腔閉鎖へ理想流量を押し込み続けない。鼻音は軟口蓋開度ぶんを通す。
+    const constrictionA=ctrl.nIdx>0?Math.max(0.012,tract.A[ctrl.nIdx]):ctrl.nA;
+    const cc=ctrl.current&&ctrl.current.c;
+    const occluding=!!(cc&&(cc.stop||cc.nas||cc.tap||cc.geminate)&&!(cc.aff&&ctrl.noiseGain>0));
+    const freeGate=Math.max(0,Math.min(1,(constrictionA-0.018)/0.075));
+    const closureGate=Math.max(0,Math.min(1,(constrictionA-0.012)/0.24));
+    const oralFlow=occluding?closureGate:freeGate;
+    const flowGate=Math.max(oralFlow,Math.max(0,Math.min(1,ctrl.vel.x)));
+    const flow=ug*flowGate;
+    // 1D音響管へは平均呼気ではなく変動流量を入れる。DC流を蓄積すると、
+    // 狭窄の開放時に非物理的な高域バーストとして一気に放出される。
+    const flowDCK=1-Math.exp(-2*Math.PI*35*dt);
+    flowDC+=flowDCK*(flow-flowDC);
+    const acousticFlow=flow-flowDC;
+    let inp=acousticFlow*Z0*0.55;   // 放射微分は口唇端の一箇所だけ
+    const whisperDrive=(quality.whisper||0)*ctrl.formantGate.x*ctrl.audible.x;
+    // /h/・VOT と whisper は同じ声門位置でも別ゲイン。旧aspirationは母音より
+    // 約7dB強かったため縮小し、whisper の可聴レベルは維持する。
+    const eventAsp=ctrl.aspirationGain,whisperAsp=0.24*whisperDrive;
+    let aspSample=0;
+    if(eventAsp>0||whisperAsp>0){
+      const white=Math.random()*2-1, ak=1-Math.exp(-2*Math.PI*5000/fs);
+      aspLP+=ak*(white-aspLP);
+      aspSample=aspLP*(eventAsp+whisperAsp);
+      const sourceLevel=34*eventAsp+90*whisperAsp;
+      inp+=aspLP*sourceLevel*Math.sqrt(Math.max(0,ctrl.prs.x)/800)*flowGate;
+    }
+    // Klatt 型補助は、放射音に対応する声門流微分を F1-F3 のカスケードへ通す。
+    // 母音ゲートの外では入力・出力を閉じ、休止中のリンギングを防ぐ。
+    let assistY=null,assistGateY=null;
+    if(formantAssist){
+      const excite=(flow-ugPrev)*1e5+aspSample*0.35;
+      const gate=Math.max(0,Math.min(1,ctrl.formantGate.x*ctrl.audible.x));
+      const ao=formantAssist.step(excite*gate)*gate;
+      assistY=assistDecim.step(ao); assistGateY=gateDecim.step(gate);
+    }
+    ugPrev=flow;
+    // 乱流
+    let namp=0;
+    // 狭窄が閉鎖に近いときは噴流ではないのでノイズを出さない。
+    // ここを外すと破擦音の閉鎖相で流速が発散して NaN になる。
+    if(ctrl.noiseGain>0 && ctrl.nIdx>0){
+      // 狭窄が狭すぎても広すぎても噴流にならない。参照実装の thinness/openness 窓を
+      // 面積で表現したもの。閉鎖時のノイズ発散もこれで防げる。
+      const A=Math.max(0.012,tract.A[ctrl.nIdx]);
+      const nonstrident=ctrl.cav<0.4;
+      const open=Math.max(0,Math.min(1,(A-0.03)/0.07));
+      // /f,theta,phi/ は歯擦音より広い狭窄でも弱い乱流を持つ。
+      const thin=Math.max(0,Math.min(1,((nonstrident?0.95:0.60)-A)/(nonstrident?0.45:0.25)));
+      const win=open*thin;
+      if(win>0){
+        const Ac=A*1e-4;
+        let v=Math.abs(flow)/Ac; if(v>120) v=120;
+        // 旧10m/s閾値では /s,S,f/ の全サンプルが0となり、制御クリックだけが
+        // 子音として残っていた。低Reから滑らかに立ち上げ、前方空洞の強さも反映する。
+        const vc=nonstrident?1.1:1.8;
+        const u=Math.max(0,Math.min(1,(v-vc)/(nonstrident?2.8:3.2)));
+        const onset=u*u*(3-2*u), sourceShape=0.30+0.70*ctrl.cav;
+        if(v>vc) namp=ctrl.noiseGain*win*onset*sourceShape*RHO*(v-vc)*(v-vc)*0.055;
+        // 非歯擦音は噴流衝突が弱く、簡略1D流量だけではRe閾値を下回りやすい。
+        // 呼気中の分布乱流に対応する小さな床を置き、/theta/ を無音にしない。
+        if(nonstrident) namp=Math.max(namp,ctrl.noiseGain*win*sourceShape*0.10);
+        if(namp>900) namp=900;
+      }
+    }
+    tract.frication=ctrl.noiseGain;
+    tract.glottalOpen=ctrl.noiseGain*(1-0.65*Math.max(0,Math.min(1,ctrl.voice.x)));
+    const tractOut=tract.step(inp, ctrl.nIdx, namp);
+    // Klatt型のbypass枝。短い前方空洞をもつ /f,theta,phi/ の雑音が
+    // 1D管の零点で消え切らないよう、同じ帯域制限乱流を少量だけ直接放射する。
+    const bypass=tract.noiseBypass*0.10*(1-Math.max(0,Math.min(1,ctrl.cav)));
+    const o=(tractOut+bypass)*Math.max(0,Math.min(1,ctrl.audible.x));
+    // 正規の63-tap FIRで全経路を帯域制限してから2:1間引きする。
+    const y=mainDecim.step(o);
+    if(y!==null){
+      dcy=y-dcx+dcR*dcy; dcx=y;                              // 30Hz DC/ランブル除去
+      if(!isFinite(dcy)){ dcy=0; dcx=0; }                      // 安全弁
+      buf[kOut++]=dcy;
+      if(assistBuf){
+        const ay=assistY==null?0:assistY;
+        assistDCy=ay-assistDCx+dcR*assistDCy; assistDCx=ay;
+        if(!isFinite(assistDCy)){ assistDCy=0; assistDCx=0; }
+        assistBuf[kOut-1]=assistDCy;
+        assistGateBuf[kOut-1]=Math.max(0,Math.min(1,assistGateY==null?0:assistGateY));
+      }
+    }
+  }
+  // 補助経路は母音ゲート内の物理RMSに対して較正する。発話全体RMSを使うと
+  // 強い破裂過渡が補助母音まで過大増幅するため。
+  if(assistBuf && assistMix>0){
+    let ep=0,ea=0;
+    for(let i=0;i<buf.length;i++){
+      const w=assistGateBuf[i]*assistGateBuf[i];
+      ep+=buf[i]*buf[i]*w; ea+=assistBuf[i]*assistBuf[i]*w;
+    }
+    const rp=Math.sqrt(ep),ra=Math.sqrt(ea);
+    const g=ra>1e-10&&rp>1e-10?Math.min(24,assistMix*rp/ra):0;
+    for(let i=0;i<buf.length;i++) buf[i]+=assistBuf[i]*g;
+  }
+  // 固定較正ゲイン＋4ms先読みピークリミッタ。発話ごとのAGCは power・感情・
+  // whisper の強弱を消すため使わず、局所的な高Q過渡だけを抑える。
+  {
+    const g=Math.max(0.03,Math.min(1.2,quality.outputGain==null?0.30:quality.outputGain));
+    const fade=Math.max(1,Math.round(fsOut*0.012));
+    for(let i=0;i<buf.length;i++){
+      const fi=Math.min(1,i/fade,(buf.length-1-i)/fade);
+      buf[i]=(isFinite(buf[i])?buf[i]:0)*g*fi;
+    }
+    const envBuf=new Float32Array(buf.length),lookR=Math.exp(-1/(fsOut*0.004));
+    let env=0;
+    for(let i=buf.length-1;i>=0;i--){ env=Math.max(Math.abs(buf[i]),env*lookR); envBuf[i]=env; }
+    const ceiling=0.90,rel=1-Math.exp(-1/(fsOut*0.055));
+    let lg=1;
+    for(let i=0;i<buf.length;i++){
+      const target=Math.min(1,ceiling/(envBuf[i]+1e-12));
+      if(target<lg) lg=target; else lg+=rel*(target-lg);
+      buf[i]=Math.max(-ceiling,Math.min(ceiling,buf[i]*lg));
+    }
+  }
+  return {audio:buf, sampleRate:fsOut, tract:tract, ctrl:ctrl, frames:frames,
+          dur:tl.total/1000, engine:stableSource?'stable':'physical', assist:assistMix};
+}
+
+/* ===== 04_g2p.js ===== */
+/* ============================================================
+   G2P と韻律
+   ============================================================ */
+const PH2=['tS','dZ','ts','dz','kj','gj','nj','bj','pj','mj','Rj','eI','aI','OI','aU','oU','I@','e@','U@'];
+function tokenizePhones(s){
+  const out=[]; let i=0;
+  while(i<s.length){
+    const two=s.substr(i,2);
+    if(PH2.indexOf(two)>=0){ out.push(two); i+=2; }
+    else { out.push(s[i]); i+=1; }
+  }
+  return out;
+}
+const VSET='aiueoIU{V@3AOE';
+function isVowelPh(p){ return VSET.indexOf(p[0])>=0 && !CONS[p]; }
+
+/* ---- 日本語: かな → 音素 ---- */
+function kata2hira(s){
+  return s.replace(/[\u30a1-\u30f6]/g, c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+}
+function jaConsonantDur(ph){
+  const c=CONS[ph]; if(!c) return 58;
+  if(c.tap) return 27;
+  if(c.appr) return 34;
+  if(c.aff) return c.voi?68:74;
+  if(c.fric||c.glot){
+    if(ph==='s'||ph==='S'||ph==='z'||ph==='Z') return c.voi?68:78;
+    return c.voi?58:62;
+  }
+  if(c.nas) return 58;
+  if(c.stop) return c.voi?52:58;
+  return Math.round((c.dur||70)*0.72);
+}
+function jaG2P(text){
+  // 分かち書きされた文節末の「は・へ」は助詞として読む。形態素解析なしの保守的規則。
+  let s=kata2hira(text.normalize('NFC')).normalize('NFC');
+  const bd='(?=\\^?(?:[\\s　、。！？,.!?]|$))';
+  s=s.replace(new RegExp('(^|[\\s　、。！？,.!?])は'+bd,'g'),'$1わ')
+     .replace(new RegExp('(^|[\\s　、。！？,.!?])へ'+bd,'g'),'$1え')
+     .replace(new RegExp('([ぁ-ゖー]{2,})は'+bd,'g'),'$1わ')
+     .replace(new RegExp('([ぁ-ゖー]{2,})へ'+bd,'g'),'$1え')
+     .replace(/[a-zA-Z]/g,'');
+  const ph=[]; let i=0;
+  while(i<s.length){
+    const two=s.substr(i,2);
+    if(KANA[two]){ ph.push(...tokenizePhones(KANA[two])); i+=2; continue; }
+    const one=s[i];
+    if(KANA[one]){
+      if(one==='ー'){ // 長音: 直前母音を延長
+        for(let k=ph.length-1;k>=0;k--){ if(isVowelPh(ph[k])){ ph.push(ph[k]); break; } }
+      } else ph.push(...tokenizePhones(KANA[one]));
+      i+=1; continue;
+    }
+    i+=1;   // 未知文字は捨てる
+  }
+  // モーラ長の付与
+  const seq=[];
+  for(let k=0;k<ph.length;k++){
+    const p=ph[k];
+    if(p==='^'){
+      for(let j=seq.length-1;j>=0;j--){
+        if(isVowelPh(seq[j].ph)||seq[j].ph==='N'){ seq[j].acc=1; break; }
+      }
+      continue;
+    }
+    if(p==='Q'){ seq.push({ph:'Q',dur:118}); continue; }
+    if(p==='|'){ seq.push({ph:'|',dur:0}); continue; }
+    if(p==='_'){ seq.push({ph:'_',dur:190}); continue; }
+    if(p==='N'){ seq.push({ph:'N',dur:105}); continue; }
+    if(isVowelPh(p)){
+      // 先行する子音群を含めて一モーラ約128msへ収める。
+      let cd=0;
+      for(let j=seq.length-1;j>=0;j--){
+        const c=CONS[seq[j].ph];
+        if(!c||c.pause||c.silence) break;
+        if(isVowelPh(seq[j].ph)||seq[j].ph==='N') break;
+        cd+=seq[j].dur;
+      }
+      // 子音が長いほど母音を縮めるが、完全補償にはしない。これにより摩擦音を
+      // 含むモーラがわずかに長くなり、子音の手掛かりを削らずに済む。
+      const intrinsic=({a:5,e:2,o:2,i:-2,u:-3})[p]||0;
+      let d=Math.max(45,Math.min(92,72-0.55*(cd-56)+intrinsic));
+      // 同母音が続く＝長音
+      let long=0;
+      const nv=k+1<ph.length?ph[k+1]:'';
+      if(nv===p||(p==='o'&&nv==='u')||(p==='e'&&nv==='i')){ d+=120; k++; long=1; }
+      seq.push({ph:p,dur:d,long});
+    } else {
+      const c=CONS[p];
+      seq.push({ph:p,dur:c?jaConsonantDur(p):58});
+    }
+  }
+  // 撥音の調音位置を後続子音へ同化させる。
+  for(let k=0;k<seq.length-1;k++){
+    if(seq[k].ph!=='N') continue;
+    const nx=seq[k+1].ph;
+    if(nx==='p'||nx==='b'||nx==='m') seq[k].ph='m';
+    else if('tdnszR'.indexOf(nx)>=0) seq[k].ph='n';
+  }
+  // 無声化: 無声子音に挟まれた、または無声子音後の句末 i/u。
+  let lastDevoiced=-99;
+  for(let k=1;k<seq.length;k++){
+    if((seq[k].ph==='i'||seq[k].ph==='u')&&!seq[k].long&&!seq[k].acc){
+      const a=CONS[seq[k-1].ph],b=seq[k+1]?CONS[seq[k+1].ph]:null;
+      const eligibleNext=!seq[k+1]||(b&&(b.voi===0||b.pause||b.silence));
+      if(a&&a.voi===0&&eligibleNext&&lastDevoiced!==k-2){
+        seq[k].devoice=1; lastDevoiced=k;
+      }
+    }
+  }
+  // 連続する境界は長い方へ統合し、合成的な空白の連打を防ぐ。
+  const compact=[];
+  for(const p of seq){
+    const last=compact[compact.length-1];
+    if(p.ph==='_' && last && (isVowelPh(last.ph)||last.ph==='N'||(CONS[last.ph]&&CONS[last.ph].nas)))
+      last.dur*=1.12;
+    if((p.ph==='|'||p.ph==='_') && last && (last.ph==='|'||last.ph==='_')){
+      if(p.dur>last.dur){ last.ph=p.ph; last.dur=p.dur; }
+    } else compact.push(p);
+  }
+  return compact;
+}
+
+/* ---- 英語 ---- */
+const ELEX={
+ "a":"@","about":"@ b aU t","and":"{ n d","at":"{ t","band":"b { n d","bag":"b { g",
+ "bait":"b eI t","bat":"b { t","beat":"b i t","beneath":"b I n i T","beside":"b I s aI d",
+ "began":"b I g { n","bet":"b E t","bird":"b 3 d","bit":"b I t","blend":"b l E n d",
+ "boat":"b oU t","book":"b U k","both":"b oU T","bought":"b O t","boot":"b u t",
+ "brown":"b r aU n","but":"b V t","by":"b aI","cat":"k { t","catch":"k { tS",
+ "cherry":"tS E r i","clock":"k l A k","comes":"k V m z","curled":"k 3 l d",
+ "dab":"d { b","dance":"d { n s","dawn":"d O n","day":"d eI","door":"d O r",
+ "dough":"d oU","dreaming":"d r i m I N","fee":"f i","fell":"f E l","folds":"f oU L d z",
+ "forest":"f O r I s t","found":"f aU n d","four":"f O r","fallen":"f O l @ n",
+ "far":"f A r","face":"f eI s","floats":"f l oU t s","green":"g r i n","gap":"g { p",
+ "hand":"h { n d","hands":"h { n d z","harbor":"h A r b @ r","her":"h 3 r","hill":"h I L",
+ "how":"h aU","i":"aI","in":"I n","is":"I z","it":"I t","knock":"n A k","lake":"l eI k",
+ "leaves":"l i v z","leaving":"l i v I N","left":"l E f t","light":"l aI t",
+ "little":"l I t L","long":"l O N","measure":"m E Z @ r","moon":"m u n","moves":"m u v z",
+ "mountain":"m aU n t @ n","my":"m aI","nine":"n aI n","night":"n aI t","of":"V v",
+ "old":"oU L d","on":"A n","one":"w V n","only":"oU n l i","opened":"oU p @ n d",
+ "our":"aU r","pack":"p { k","passes":"p { s I z","pat":"p { t","pocket":"p A k I t",
+ "put":"p U t","quiet":"k w aI @ t","rainy":"r eI n i","real":"r i @ L","ring":"r I N",
+ "rock":"r A k","roll":"r oU L","scratch":"s k r { tS","see":"s i","she":"S i",
+ "shade":"S eI d","shells":"S E L z","shines":"S aI n z","shore":"S O r","shrubs":"S r V b z",
+ "sings":"s I N z","six":"s I k s","slept":"s l E p t","small":"s m O L","snow":"s n oU",
+ "soft":"s O f t","song":"s O N","sound":"s aU n d","spring":"s p r I N","split":"s p l I t",
+ "stand":"s t { n d","star":"s t A r","still":"s t I L","stood":"s t U d","street":"s t r i t",
+ "strong":"s t r O N","summer":"s V m @ r","sun":"s V n","tap":"t { p","that":"D { t",
+ "the":"D @","then":"D E n","there":"D e@ r","thick":"T I k","thin":"T I n","this":"D I s",
+ "three":"T r i","thread":"T r E d","threw":"T r u","through":"T r u","thrushes":"T r V S I z",
+ "to":"t u","town":"t aU n","tree":"t r i","twelve":"t w E l v","up":"V p","vee":"v i",
+ "voice":"v OI s","wakes":"w eI k s","was":"w V z","water":"w O t @ r","we":"w i",
+ "well":"w E L","when":"w E n","white":"w aI t","who":"h u","will":"w I L","wind":"w I n d",
+ "window":"w I n d oU","with":"w I D","without":"w I T aU t","wound":"w aU n d","you":"j u",
+ "yellow":"j E l oU","zoo":"z u","girl":"g 3 L","curl":"k 3 L","beyond":"b i A n d",
+ "moves":"m u v z","birds":"b 3 d z","began":"b I g { n","sing":"s I N","bird":"b 3 d",
+ "shells":"S E L z","sells":"s E L z","chair":"tS e@ r","measure":"m E Z @ r"
+};
+const LTS=[[/tion$/,'S @ n'],[/ough$/,'V f'],[/ck/,'k'],[/ch/,'tS'],[/sh/,'S'],[/th/,'T'],
+ [/ph/,'f'],[/qu/,'k w'],[/ee/,'i'],[/ea/,'i'],[/oo/,'u'],[/ou/,'aU'],[/ow/,'aU'],
+ [/ai/,'eI'],[/ay/,'eI'],[/oa/,'oU'],[/igh/,'aI'],[/ing/,'I N']];
+const EN_STRESS={about:1,began:1,beneath:1,beside:1,beyond:1,without:1};
+const EN_FUNCTION=new Set(['a','and','at','by','for','in','is','it','of','on','the','to','was','we','with','you']);
+function enWord(w){
+  w=w.toLowerCase().replace(/[^a-z']/g,'');
+  if(!w) return [];
+  if(ELEX[w]) return ELEX[w].split(' ');
+  // 粗いLTS（未収録語のフォールバック）
+  let s=w;
+  for(const [re,rep] of LTS) s=s.replace(re,'\u0001'+rep+'\u0001');
+  const out=[];
+  const parts=s.split('\u0001');
+  for(let i=0;i<parts.length;i++){
+    if(i%2===1){ out.push(...parts[i].split(' ')); continue; }
+    for(const ch of parts[i]){
+      const m={a:'{',b:'b',c:'k',d:'d',e:'E',f:'f',g:'g',h:'h',i:'I',j:'dZ',k:'k',l:'l',
+               m:'m',n:'n',o:'A',p:'p',q:'k',r:'r',s:'s',t:'t',u:'V',v:'v',w:'w',x:'k s',
+               y:'j',z:'z',"'":''}[ch];
+      if(m) out.push(...m.split(' '));
+    }
+  }
+  return out;
+}
+function enG2P(text){
+  const seq=[];
+  const words=text.toLowerCase().split(/([^a-z']+)/);
+  for(const w of words){
+    if(!w) continue;
+    if(!/[a-z]/.test(w)){
+      if(/[.,;:!?]/.test(w)){
+        const last=seq[seq.length-1];
+        if(last&&(last.ph==='_'||last.ph==='|')){ last.ph='_'; last.dur=190; }
+        else seq.push({ph:'_',dur:190});
+      }
+      continue;
+    }
+    const ps=enWord(w);
+    const stressAt=EN_FUNCTION.has(w)?-1:(EN_STRESS[w]==null?0:EN_STRESS[w]);
+    let vi=0;
+    for(const p of ps){
+      if(!p) continue;
+      if(isVowelPh(p)){
+        const st=vi++===stressAt?1:0;
+        seq.push({ph:p, dur:(st?142:(stressAt<0?82:94)), stress:st});
+      } else {
+        const c=CONS[p];
+        seq.push({ph:p, dur:c?c.dur:70});
+      }
+    }
+    seq.push({ph:'|',dur:0});
+  }
+  return seq;
+}
+
+/* ---- 韻律（F0曲線） ---- */
+function makeF0(seq, opt){
+  const base=opt.f0base||(opt.speaker&&opt.speaker.f0nat)||120, range=(opt.f0range==null?1:opt.f0range);
+  const lang=opt.lang||'ja';
+  // 音素の開始時刻
+  let t=0; const marks=[];
+  for(const s of seq){ marks.push({t0:t/1000, t1:(t+s.dur/(opt.rate||1))/1000, s}); t+=s.dur/(opt.rate||1); }
+  const pts=[];
+  // 長いポーズごとに句を分け、各句でピッチレンジをリセットする。
+  const phrases=[]; let phrase=[];
+  for(const m of marks){
+    if((m.s.ph==='_'||m.s.ph==='|') && m.s.dur>=100){
+      if(phrase.length) phrases.push(phrase); phrase=[];
+    } else phrase.push(m);
+  }
+  if(phrase.length) phrases.push(phrase);
+  for(const p of phrases){
+    const vs=p.filter(m=>isVowelPh(m.s.ph)||(lang==='ja'&&m.s.ph==='N'));
+    if(!vs.length) continue;
+    if(lang==='ja'){
+      // Fujisaki 型を簡略化し、句の下降とアクセント句ごとの高域窓を加算する。
+      const units=[]; let unit=[];
+      for(const m of p){
+        if(m.s.ph==='|'){ if(unit.length){ units.push(unit); unit=[]; } }
+        else if(isVowelPh(m.s.ph)||m.s.ph==='N') unit.push(m);
+      }
+      if(unit.length) units.push(unit);
+      const pos=new Map(); vs.forEach((m,i)=>pos.set(m,i));
+      let downstep=0;
+      for(const u of units){
+        const nucleus=u.findIndex(m=>m.s.acc);
+        for(let i=0;i<u.length;i++){
+          const gi=pos.get(u[i]),gr=gi/Math.max(1,vs.length-1);
+          let local;
+          if(nucleus<0) local=(i===0?-1.15:1.75-0.30*i/Math.max(1,u.length-1));
+          else if(nucleus===0) local=(i===0?1.55:-1.20-0.16*(i-1));
+          else local=(i===0?-1.15:(i<=nucleus?1.55:-1.20-0.16*(i-nucleus-1)));
+          const semis=local-0.85*gr-downstep;
+          pts.push([u[i].t0,base*Math.pow(2,range*semis/12)]);
+          if(gi===vs.length-1&&p===phrases[phrases.length-1]){
+            const bt=semis+(opt.question?4.0:-1.15);
+            pts.push([Math.max(u[i].t0+0.018,u[i].t1-0.014),base*Math.pow(2,range*bt/12)]);
+          }
+        }
+        if(nucleus>=0) downstep=Math.min(2.4,downstep+0.9);
+      }
+    }else{
+      for(let i=0;i<vs.length;i++){
+        const r=i/Math.max(1,vs.length-1);
+        let semis;
+        semis=1.0-2.6*r+(vs[i].s.stress?2.3:-0.35);
+        pts.push([vs[i].t0,base*Math.pow(2,range*semis/12)]);
+        if(i===vs.length-1&&p===phrases[phrases.length-1]){
+          const bt=semis+(opt.question?4.0:-1.15);
+          pts.push([Math.max(vs[i].t0+0.018,vs[i].t1-0.014),base*Math.pow(2,range*bt/12)]);
+        }
+      }
+    }
+  }
+  if(!pts.length) pts.push([0,base]);
+  return function(tt){
+    let f;
+    if(tt<=pts[0][0]) f=pts[0][1];
+    else {
+      f=pts[pts.length-1][1];
+      for(let i=1;i<pts.length;i++){
+        if(tt<pts[i][0]){
+          const a=pts[i-1],b=pts[i];
+          const x=(tt-a[0])/Math.max(1e-6,b[0]-a[0]);
+          // 半余弦補間で折れ線的な機械感を抑える。
+          const u=0.5-0.5*Math.cos(Math.PI*x);
+          f=Math.exp(Math.log(a[1])+(Math.log(b[1])-Math.log(a[1]))*u); break;
+        }
+      }
+    }
+    const drift=1+0.006*Math.sin(2*Math.PI*0.73*tt)+0.0025*Math.sin(2*Math.PI*2.17*tt+0.8);
+    return f*drift;
+  };
+}
+
+/* ---- PhoneLine (L2) パーサ ---- */
+function parsePhoneLine(s){
+  const seq=[];
+  for(const tok of s.trim().split(/\s+/)){
+    if(!tok||tok[0]==='#') continue;
+    const m=tok.match(/^([^:\/\^]+)(?::([\d.]+))?(?:\/([\d.]+))?(?:\^(\d))?$/);
+    if(!m) continue;
+    const o={ph:m[1]};
+    if(m[2])o.dur=parseFloat(m[2]);
+    if(m[3])o.f0=parseFloat(m[3]);
+    if(m[4]){ o.stress=parseInt(m[4]); o.acc=parseInt(m[4]); }
+    if(!o.dur){ const c=CONS[o.ph]; o.dur=c?(c.dur||80):105; }
+    seq.push(o);
+  }
+  return seq;
+}
+
+/* ===== 05_samples.js ===== */
+/* ============================================================
+   サンプル 40本
+   テキストはすべて本プロジェクトのために書き下ろした自作。
+   既存の童話・詩・歌詞は使用していない（著作権回避と、
+   音韻カバレッジを設計できることの両方が理由）。
+   ============================================================ */
+const SAMPLES=[
+/* ---------- 日本語 童話風 5 ---------- */
+{id:'ja-t1',lang:'ja',cat:'童話',title:'ちいさなふね',
+ text:'あるあさ ちいさな ふねが みなとを でました。かぜは やわらかく うみは しずかでした。'},
+{id:'ja-t2',lang:'ja',cat:'童話',title:'もりのとけい',
+ text:'もりの おくに ふるい とけいが ありました。ねじを まくと とりたちが うたいはじめます。'},
+{id:'ja-t3',lang:'ja',cat:'童話',title:'あめのひのねこ',
+ text:'あめの ひ ねこは まどの そばで まるく なって ねむって いました。'},
+{id:'ja-t4',lang:'ja',cat:'童話',title:'ぱんやのおじさん',
+ text:'まちの ぱんやの おじさんは まいあさ よじに おきて こなを こねます。'},
+{id:'ja-t5',lang:'ja',cat:'童話',title:'ほしをひろうこ',
+ text:'おかの うえで おんなのこが おちた ほしを ひとつ ひろいました。'},
+/* ---------- 日本語 詩 5 ---------- */
+{id:'ja-p1',lang:'ja',cat:'詩',title:'かぜがとおる',
+ text:'かぜが とおる みずが ひかる とおい やまの むこうから。'},
+{id:'ja-p2',lang:'ja',cat:'詩',title:'しずかなよる',
+ text:'しずかな よるに ゆきが つもる おとも なく しろく つもる。'},
+{id:'ja-p3',lang:'ja',cat:'詩',title:'みずうみのつき',
+ text:'みずうみの おもてに つきが ひとつ うかんで いる。'},
+{id:'ja-p4',lang:'ja',cat:'詩',title:'なつのひかり',
+ text:'なつの ひかりが みどりの はっぱを すきとおらせる。'},
+{id:'ja-p5',lang:'ja',cat:'詩',title:'てのひら',
+ text:'きえて いく こえを おいかけて てのひらを ひらいた。'},
+/* ---------- 日本語 うた風 4 ---------- */
+{id:'ja-s1',lang:'ja',cat:'うた',title:'ゆらりふね',sing:1,
+ text:'ゆらり ゆらり ふねが ゆれる なみの うえで ゆめを みる。'},
+{id:'ja-s2',lang:'ja',cat:'うた',title:'とんとん',sing:1,
+ text:'とんとん とんとん だれか きた とびらの そとに かぜが きた。'},
+{id:'ja-s3',lang:'ja',cat:'うた',title:'ちいさなとり',sing:1,
+ text:'ちいさな とりが ちいさな こえで ちいさな うたを うたって いる。'},
+{id:'ja-s4',lang:'ja',cat:'うた',title:'さくらのした',sing:1,
+ text:'はるが きたら さくらの したで みんなで おどろう ららら。'},
+/* ---------- 日本語 音韻ドリル 6 ---------- */
+{id:'ja-d1',lang:'ja',cat:'ドリル',title:'清音',
+ text:'あいうえお かきくけこ さしすせそ たちつてと なにぬねの。'},
+{id:'ja-d2',lang:'ja',cat:'ドリル',title:'濁音・半濁音',
+ text:'がぎぐげご ざじずぜぞ だぢづでど ばびぶべぼ ぱぴぷぺぽ。'},
+{id:'ja-d3',lang:'ja',cat:'ドリル',title:'拗音',
+ text:'きゃきゅきょ しゃしゅしょ ちゃちゅちょ にゃにゅにょ ひゃひゅひょ。'},
+{id:'ja-d4',lang:'ja',cat:'ドリル',title:'促音・撥音',
+ text:'がっこう きって さんぽ せんぱい あんない かんがえる。'},
+{id:'ja-d5',lang:'ja',cat:'ドリル',title:'早口',
+ text:'きゃくが きゃっきゃと きゃべつを きざむ。しんかんせんの しゃしょうが しゅっぱつ しんこう。'},
+{id:'ja-d6',lang:'ja',cat:'ドリル',title:'長音・無声化',
+ text:'こうこう せんせい きしゃ くうこう しつもん ふたつ。'},
+/* ---------- 英語 童話風 5 ---------- */
+{id:'en-t1',lang:'en',cat:'tale',title:'The small boat',
+ text:'A small boat left the harbor at dawn. The wind was soft and the water was still.'},
+{id:'en-t2',lang:'en',cat:'tale',title:'The forest clock',
+ text:'In the old forest there stood a clock. When you wound it up the birds began to sing.'},
+{id:'en-t3',lang:'en',cat:'tale',title:'The cat on a rainy day',
+ text:'On a rainy day the cat curled up beside the window and slept.'},
+{id:'en-t4',lang:'en',cat:'tale',title:'The baker',
+ text:'The baker in our town wakes at four and folds the dough with both hands.'},
+{id:'en-t5',lang:'en',cat:'tale',title:'The fallen star',
+ text:'On the hill a girl found a fallen star and put it in her pocket.'},
+/* ---------- 英語 詩 5 ---------- */
+{id:'en-p1',lang:'en',cat:'poem',title:'The wind moves',
+ text:'The wind moves through. The water shines. Far beyond the mountain.'},
+{id:'en-p2',lang:'en',cat:'poem',title:'Snow',
+ text:'Snow falls on the quiet night, white and without a sound.'},
+{id:'en-p3',lang:'en',cat:'poem',title:'One moon',
+ text:'One moon floats on the face of the lake.'},
+{id:'en-p4',lang:'en',cat:'poem',title:'Summer light',
+ text:'Summer light passes through the green leaves.'},
+{id:'en-p5',lang:'en',cat:'poem',title:'Open hand',
+ text:'I opened my hand to catch a voice that was leaving.'},
+/* ---------- 英語 うた風 4 ---------- */
+{id:'en-s1',lang:'en',cat:'song',title:'Rock the boat',sing:1,
+ text:'Rock and roll the little boat, dreaming on the water.'},
+{id:'en-s2',lang:'en',cat:'song',title:'Knock knock',sing:1,
+ text:'Knock knock, who is there? Only the wind at the door.'},
+{id:'en-s3',lang:'en',cat:'song',title:'Little bird',sing:1,
+ text:'A little bird with a little voice sings a little song.'},
+{id:'en-s4',lang:'en',cat:'song',title:'Spring',sing:1,
+ text:'When the spring comes we will dance beneath the cherry tree.'},
+/* ---------- 英語 ドリル 6 ---------- */
+{id:'en-d1',lang:'en',cat:'drill',title:'Vowels',
+ text:'beat bit bait bet bat bought boat book boot but bird about'},
+{id:'en-d2',lang:'en',cat:'drill',title:'Stops',
+ text:'pat bat tap dab cat gap pack bag'},
+{id:'en-d3',lang:'en',cat:'drill',title:'Fricatives',
+ text:'fee vee thin then see zoo she measure how'},
+{id:'en-d4',lang:'en',cat:'drill',title:'Nasals and liquids',
+ text:'my nine ring long real yellow well'},
+{id:'en-d5',lang:'en',cat:'drill',title:'Clusters',
+ text:'street strong split scratch twelve blend'},
+{id:'en-d6',lang:'en',cat:'drill',title:'Sentence',
+ text:'Six thick shrubs stand in the shade.'}
+];
+
+/* 感情プリセット（仕様書 §7.2）[耳E] */
+const EMOTIONS={
+ '平静':  {press:1.00,adduct:1.00,tension:1.00,f0:1.00,range:1.00,rate:1.00,prec:0.85,jit:0.010},
+ '喜び':  {press:1.20,adduct:1.00,tension:1.20,f0:1.25,range:1.60,rate:1.10,prec:0.90,jit:0.010},
+ '怒り':  {press:1.55,adduct:1.12,tension:1.42,f0:1.20,range:1.40,rate:1.15,prec:1.00,jit:0.020},
+ '悲しみ':{press:0.70,adduct:0.76,tension:0.75,f0:0.85,range:0.60,rate:0.80,prec:0.65,jit:0.015},
+ '恐怖':  {press:1.10,adduct:0.94,tension:1.50,f0:1.35,range:1.30,rate:1.25,prec:0.75,jit:0.045},
+ '退屈':  {press:0.85,adduct:0.94,tension:0.83,f0:0.90,range:0.50,rate:0.90,prec:0.60,jit:0.010},
+ 'ささやき':{press:0.90,adduct:0.00,tension:0.67,f0:1.00,range:0.60,rate:0.95,prec:0.90,jit:0.010}
+};
+
+/* ===== 06_ui.js ===== */
+/* ============================================================
+   UI と可視化
+   ============================================================ */
+let AC=null, curSrc=null, lastRender=null, animT=0, playT0=0, playing=false;
+function ac(){ if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); return AC; }
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+
+function currentSpeaker(){
+  return makeSpeaker(+$('#age').value, +$('#sex').value/100, +$('#size').value/100);
+}
+function currentOpts(lang){
+  const em=EMOTIONS[$('#emo').value]||EMOTIONS['平静'];
+  const inten=+$('#inten').value/100;
+  const mix=k=>1+(em[k]-1)*inten;
+  const spk=currentSpeaker();
+  return {
+    speaker:spk, lang:lang, engine:$('#engine').value,
+    rate:(+$('#rate').value/100)*mix('rate'),
+    power:(+$('#power').value/100),
+    precision:Math.max(0.05,Math.min(1,(+$('#prec').value/100)*mix('prec'))),
+    f0base:spk.f0nat*mix('f0')*(+$('#pitch').value/100),
+    f0range:mix('range'),
+    quality:{warmth:+$('#warmth').value/100,breath:+$('#breath').value/100,
+             formantAssist:+$('#assist').value/100,
+             whisper:($('#emo').value==='ささやき'?inten:0),
+             jitter:EMOTIONS['平静'].jit+(em.jit-EMOTIONS['平静'].jit)*inten},
+    em:{press:mix('press'),adduct:(em.adduct===0?(1-inten):mix('adduct')),tension:mix('tension')},
+    fsOut:ac().sampleRate
+  };
+}
+function seqFor(item){
+  if(item.lang==='ja') return jaG2P(item.text);
+  return enG2P(item.text);
+}
+function doRender(seq,opt){
+  const t0=performance.now();
+  const r=render(seq,opt);
+  r.ms=performance.now()-t0;
+  r.rt=r.ms/1000/(r.audio.length/r.sampleRate);
+  return r;
+}
+function play(r){
+  const c=ac();
+  if(curSrc){ try{curSrc.stop();}catch(e){} }
+  const b=c.createBuffer(1,r.audio.length,r.sampleRate);
+  b.getChannelData(0).set(r.audio);
+  const s=c.createBufferSource(); s.buffer=b; s.connect(c.destination);
+  s.start(); curSrc=s; playing=true; playT0=c.currentTime;
+  s.onended=()=>{playing=false;};
+  lastRender=r;
+  $('#stat').textContent='長さ '+(r.audio.length/r.sampleRate).toFixed(2)+'s / '+
+    'レンダリング '+r.ms.toFixed(0)+'ms / 実時間比 '+r.rt.toFixed(3)+
+    ' （'+(1/r.rt).toFixed(1)+'倍速）/ 音源 '+(r.engine==='stable'?'安定声門':'二質量')+
+    ' / 聴取補助 '+Math.round((r.assist||0)*100)+'% / セクション数 '+r.tract.N;
+}
+function speak(item){
+  $$('.samp').forEach(e=>e.classList.toggle('on',e.dataset.id===item.id));
+  const opt=currentOpts(item.lang);
+  opt.question=/[?？]\s*$/.test(item.text);
+  if(item.sing){ opt.f0range=(opt.f0range||1)*1.7; opt.rate*=0.92; }
+  const seq=seqFor(item);
+  opt.f0curve=makeF0(seq,opt);
+  play(doRender(seq,opt));
+  $('#phones').value=seq.map(s=>s.ph+':'+Math.round(s.dur)).join(' ');
+}
+
+/* ---- 可視化 ---- */
+function drawFrame(){
+  requestAnimationFrame(drawFrame);
+  const r=lastRender; if(!r||!r.frames||!r.frames.length) return;
+  const c=ac();
+  let t=playing?(c.currentTime-playT0):0;
+  const idx=Math.max(0,Math.min(r.frames.length-1,Math.round(t*100)));
+  const A=r.frames[idx];
+  // 面積関数
+  const cv=$('#cvA'), g=cv.getContext('2d');
+  const W=cv.width=cv.clientWidth*devicePixelRatio, H=cv.height=180*devicePixelRatio;
+  g.clearRect(0,0,W,H);
+  g.fillStyle='#0d1117'; g.fillRect(0,0,W,H);
+  g.strokeStyle='#233'; g.lineWidth=1;
+  for(let k=1;k<5;k++){ const y=H*k/5; g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke(); }
+  const n=A.length, mx=5.0;
+  g.fillStyle='#3FCF9E';
+  g.beginPath(); g.moveTo(0,H);
+  for(let i=0;i<n;i++){ const x=W*i/(n-1), y=H-H*Math.min(1,A[i]/mx); g.lineTo(x,y); }
+  g.lineTo(W,H); g.closePath(); g.globalAlpha=0.85; g.fill(); g.globalAlpha=1;
+  g.fillStyle='#8ab'; g.font=(11*devicePixelRatio)+'px sans-serif';
+  g.fillText('声門',4,H-6); g.fillText('口唇',W-38*devicePixelRatio,H-6);
+  g.fillText('面積 cm²（上端5.0）',4,14*devicePixelRatio);
+  // 正中断面（面積を上下対称の管として描く）
+  const cv2=$('#cvS'), g2=cv2.getContext('2d');
+  const W2=cv2.width=cv2.clientWidth*devicePixelRatio, H2=cv2.height=200*devicePixelRatio;
+  g2.clearRect(0,0,W2,H2); g2.fillStyle='#0d1117'; g2.fillRect(0,0,W2,H2);
+  g2.strokeStyle='#e8b4a0'; g2.lineWidth=2*devicePixelRatio;
+  g2.beginPath();
+  for(let i=0;i<n;i++){
+    const x=W2*0.06+W2*0.88*i/(n-1);
+    const bend=Math.sin(Math.PI*Math.min(1,i/(n-1)*1.0))*0;
+    const rad=Math.sqrt(Math.max(0.02,A[i])/Math.PI)*13*devicePixelRatio;
+    const cy=H2*0.62-H2*0.30*Math.max(0,Math.min(1,(i/(n-1)-0.25)/0.55))+bend;
+    if(i===0)g2.moveTo(x,cy-rad); else g2.lineTo(x,cy-rad);
+  }
+  for(let i=n-1;i>=0;i--){
+    const x=W2*0.06+W2*0.88*i/(n-1);
+    const rad=Math.sqrt(Math.max(0.02,A[i])/Math.PI)*13*devicePixelRatio;
+    const cy=H2*0.62-H2*0.30*Math.max(0,Math.min(1,(i/(n-1)-0.25)/0.55));
+    g2.lineTo(x,cy+rad);
+  }
+  g2.closePath(); g2.fillStyle='rgba(232,180,160,0.22)'; g2.fill(); g2.stroke();
+  g2.fillStyle='#8ab'; g2.font=(11*devicePixelRatio)+'px sans-serif';
+  g2.fillText('正中断面（模式）  t='+(idx/100).toFixed(2)+'s',6,16*devicePixelRatio);
+  // 波形
+  const cv3=$('#cvW'), g3=cv3.getContext('2d');
+  const W3=cv3.width=cv3.clientWidth*devicePixelRatio, H3=cv3.height=90*devicePixelRatio;
+  g3.clearRect(0,0,W3,H3); g3.fillStyle='#0d1117'; g3.fillRect(0,0,W3,H3);
+  g3.strokeStyle='#5bb'; g3.lineWidth=1; g3.beginPath();
+  const step=Math.max(1,Math.floor(r.audio.length/W3));
+  for(let x=0;x<W3;x++){
+    let v=0; const o=x*step;
+    for(let k=0;k<step;k++) v=Math.max(v,Math.abs(r.audio[o+k]||0));
+    g3.moveTo(x,H3/2-v*H3/2); g3.lineTo(x,H3/2+v*H3/2);
+  }
+  g3.stroke();
+  if(playing){ const px=W3*t/(r.audio.length/r.sampleRate);
+    g3.strokeStyle='#3FCF9E'; g3.beginPath(); g3.moveTo(px,0); g3.lineTo(px,H3); g3.stroke(); }
+}
+
+/* ---- 起動 ---- */
+function boot(){
+  const list=$('#list');
+  const cats={};
+  for(const s of SAMPLES){ (cats[s.lang+'/'+s.cat]=cats[s.lang+'/'+s.cat]||[]).push(s); }
+  for(const [k,arr] of Object.entries(cats)){
+    const h=document.createElement('div'); h.className='cat'; h.textContent=k; list.appendChild(h);
+    for(const s of arr){
+      const b=document.createElement('button');
+      b.className='samp'; b.dataset.id=s.id;
+      b.innerHTML='<b>'+s.title+'</b><span>'+s.text.slice(0,34)+(s.text.length>34?'…':'')+'</span>';
+      b.onclick=()=>speak(s);
+      list.appendChild(b);
+    }
+  }
+  $$('input[type=range]').forEach(r=>{
+    const o=()=>{ const l=document.querySelector('label[for='+r.id+'] em'); if(l) l.textContent=r.value; };
+    r.addEventListener('input',o); o();
+  });
+  $('#age').addEventListener('input',showSpk);
+  $('#sex').addEventListener('input',showSpk);
+  $('#size').addEventListener('input',showSpk);
+  showSpk();
+  $('#btnSpeak').onclick=()=>{
+    const mode=$('#mode').value, txt=$('#free').value.trim();
+    if(!txt) return;
+    const lang=$('#lang').value;
+    const opt=currentOpts(lang);
+    opt.question=/[?？]\s*$/.test(txt);
+    let seq;
+    if(mode==='text') seq=(lang==='ja')?jaG2P(txt):enG2P(txt);
+    else if(mode==='phones') seq=parsePhoneLine(txt);
+    else { try{ const j=JSON.parse(txt); seq=j.phones||j; }catch(e){ alert('JSONが不正です'); return; } }
+    if(!seq.length) return;
+    opt.f0curve=makeF0(seq,opt);
+    play(doRender(seq,opt));
+    $('#phones').value=seq.map(s=>s.ph+':'+Math.round(s.dur)).join(' ');
+  };
+  $('#btnStop').onclick=()=>{ if(curSrc){try{curSrc.stop();}catch(e){}} playing=false; };
+  $('#btnPhones').onclick=()=>{ $('#mode').value='phones'; $('#free').value=$('#phones').value; };
+  $('#btnWav').onclick=()=>{ if(lastRender) downloadWav(lastRender); };
+  drawFrame();
+  window.voiceLab={version:'0.4',render:doRender, jaG2P, enG2P, parsePhoneLine, makeSpeaker, makeF0,
+                   SAMPLES, VOWELS, CONS, EMOTIONS,
+                   speakText:(t,o)=>{const opt=Object.assign(currentOpts(o&&o.lang||'ja'),o||{});
+                     if(opt.question==null) opt.question=/[?？]\s*$/.test(t);
+                     const s=(opt.lang==='ja')?jaG2P(t):enG2P(t);
+                     opt.f0curve=makeF0(s,opt); play(doRender(s,opt)); return s;}};
+}
+function showSpk(){
+  const s=currentSpeaker();
+  $('#spk').textContent='声道長 '+(s.tractLen*100).toFixed(1)+'cm / 声帯長 '+
+    (s.vfLen*1000).toFixed(1)+'mm / 自然F0 '+s.f0nat.toFixed(0)+'Hz / 咽頭比 '+s.pharRatio.toFixed(2);
+}
+function downloadWav(r){
+  const n=r.audio.length, bytes=44+n*2, buf=new ArrayBuffer(bytes), dv=new DataView(buf);
+  const wr=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i));};
+  wr(0,'RIFF'); dv.setUint32(4,bytes-8,true); wr(8,'WAVEfmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,r.sampleRate,true); dv.setUint32(28,r.sampleRate*2,true);
+  dv.setUint16(32,2,true); dv.setUint16(34,16,true); wr(36,'data');
+  dv.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++) dv.setInt16(44+i*2,Math.max(-1,Math.min(1,r.audio[i]))*32767,true);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));
+  a.download='voicelab.wav'; a.click();
+}
+window.addEventListener('DOMContentLoaded',boot);
+
+
+</script>
+</body></html>

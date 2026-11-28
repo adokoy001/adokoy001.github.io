@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>OtoFX に立体音響（HRTF もどき）を足した · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="効果音のコレクション OtoFX に、音を好きな向き・高さ・遠さに置く処理を足した。録音も耳の測定データも使わず、式だけで計算する。指で音の位置を動かして聴ける確認ページを作った。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/11/2026-11-28-001/"><meta property="og:title" content="OtoFX に立体音響（HRTF もどき）を足した"><meta property="og:description" content="効果音のコレクション OtoFX に、音を好きな向き・高さ・遠さに置く処理を足した。録音も耳の測定データも使わず、式だけで計算する。指で音の位置を動かして聴ける確認ページを作った。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/11/2026-11-28-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>OtoFX に立体音響（HRTF もどき）を足した</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-11-28T22:50:00+09:00">2026-11-28T22:50:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-dbad2090ff4a/">音響</a><a class="tag" href="/tags/javascript/">JavaScript</a><a class="tag" href="/tags/ai/">AI</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="otofx-に立体音響-hrtf-もどき-を足した">OtoFX に立体音響（HRTF もどき）を足した</h1>
+<p>効果音のコレクション OtoFX に、立体音響の処理を足した。音の向き、高さ、遠さを数で指定すると、ヘッドホンで聴いたときに、その位置から鳴っているように加工する。</p>
+<p>きっかけは、前に作った花火大会の音だ。あれは音ごとに位置を持たせていたが、左右は音量を振り分けているだけで、前とうしろの区別がなかった。そこを改善した。</p>
+<p>本物の立体音響は、人の耳で測ったデータ（HRTF）を使う。今回はそれを使わず、頭を球とみなした式だけで計算している。だから「HRTF もどき」と呼んでいる。処理は5つある。</p>
+<ul>
+<li>左右の耳に届く時間の差をつける（真横で約 0.6 ミリ秒）</li>
+<li>頭のかげをつける（音源と反対側の耳は、高い音ほど小さくなる）</li>
+<li>耳たぶの反射をつける（ごく短い遅れを5本足す。音の高さ方向の位置で、遅れの間隔が変わる）</li>
+<li>前後・上下で音色を変える（うしろは高い音を下げる。上は 8kHz を上げる）</li>
+<li>遠さをつける（音量を下げる、高い音を減らす、響きの割合を上げる、届く時刻を遅らせる）</li>
+</ul>
+<p>はじめの3つは Brown と Duda の 1998 年の論文のモデルを使った。音色の変え方は Blauert の「方向を決める帯域」を、空気で高い音が減る量は ISO 9613-1 を使った。</p>
+<p>作ったあとで、論文と規格に照らし合わせた。遠い音の高音の減り方が足りなかった（300m 先の 8kHz で、規格は約 32dB、最初の版は 10dB）。これは直して、いまは規格との差が 0.3dB 以内になっている。耳たぶの反射の数は、論文の表と照合できていない。</p>
+<p>聴いた感じは、かなりそれっぽい。ただし、この方式には限界がある。左右ははっきり出るが、前後と上下は弱い。もとの論文も前半分だけを対象にしていて、前後は頭を動かして聞き分けるものだと書いている。</p>
+<p>確認ページでできること。</p>
+<ul>
+<li>上から見た図の点を指で動かすと、鳴ったまま向きと遠さが変わる</li>
+<li>ふつうの左右の振り分けと聴きくらべる</li>
+<li>蚊が耳のまわりを飛ぶ音を聴く</li>
+<li>目の前を通りすぎる音を聴く（ドップラーつき）</li>
+<li>野外のこだまをかける</li>
+<li>シャカシャカ音を頭のまわりで動かした 79 秒の録音を聴く</li>
+</ul>
+<p>今回も Claude と作った。計算は JavaScript 1ファイル（<code>otofx.js</code>、約 55KB）で、録音も外部の部品も使っていない。ヘッドホン推奨。</p>
+<p>→ <a href="/works/otofx-place/">OtoFX 置き場所の確認</a></p>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/11/2026-11-24-001/">← ✕✕サーキット 午前二時を、ゲームにした</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/11/2026-11-23-001/">ゆっくり解説動画風のアニメを作る基盤を作った — 声もBGMも絵も、その場で合成</a></li><li><a href="/posts/2026/11/2026-11-22-001/">音符とかなで歌わせる — 39KBの歌声合成を作って分かったこと</a></li><li><a href="/posts/2026/09/2026-09-07-002/">GPT-6 astraに郵便番号検索ツールを作らせてみた</a></li><li><a href="/posts/2026/09/2026-09-07-001/">GPT-6 astraに太陽系を作らせてみた</a></li><li><a href="/posts/2026/09/2026-09-03-001/">楽器ラボ 統合版 — 5つの物理モデル楽器を1枚にまとめて曲を組む</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

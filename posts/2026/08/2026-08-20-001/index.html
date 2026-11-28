@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ja" data-tsuzuri-navigation="hybrid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110d">
+  <title>システム設計と大規模刷新のための数学（序論）— 地図の全体像 · NIKKI - 日記</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="/atom.xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="システム設計・大規模刷新・仕様の正しさに使える数学を四層＋横断層の地図に整理する連載の序論。数学に何ができて何ができないか（VerificationとValidation）の区別から始める。"><link rel="canonical" href="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-001/"><meta property="og:title" content="システム設計と大規模刷新のための数学（序論）— 地図の全体像"><meta property="og:description" content="システム設計・大規模刷新・仕様の正しさに使える数学を四層＋横断層の地図に整理する連載の序論。数学に何ができて何ができないか（VerificationとValidation）の区別から始める。"><meta property="og:url" content="https://nikki.yokoda.okinawa/posts/2026/08/2026-08-20-001/">
+</head>
+<body class="page-post">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="NIKKI - 日記 ホーム">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span>NIKKI.LOG</span>
+      </a>
+      <p class="system-status"><span>SYSTEM</span><b>ONLINE / JST</b></p>
+      <nav aria-label="メインナビゲーション">
+        <a href="/">LOGS</a>
+        <a href="/apps/">WORKS</a>
+        <a href="/archive/">INDEX</a>
+        <a href="/tags/">TAGS</a>
+        <a href="/search/">SEARCH</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <section class="mission-hero" aria-labelledby="mission-title">
+      <p class="mission-serial">FIELD NOTES / <span data-current-year>2026</span></p>
+      <div class="mission-heading">
+        <h1 id="mission-title">HUMAN × AI<br><span>OBSERVATION LOG</span></h1>
+      </div>
+      <aside class="mission-brief" aria-label="このサイトについて">
+        <span>MISSION</span>
+        <p>人間とAIが一緒に考え、作り、検証した記録を公開する。</p>
+        <dl>
+          <div><dt>ARCHIVE</dt><dd>2009—</dd></div>
+          <div><dt>STATUS</dt><dd>ACTIVE</dd></div>
+        </dl>
+      </aside>
+    </section>
+    <article class="article">
+  <header class="article-header">
+    <p class="eyebrow">LOG ENTRY / post</p>
+    <h1>システム設計と大規模刷新のための数学（序論）— 地図の全体像</h1>
+    <div class="article-record">
+      <p class="article-meta"><span>RECORDED</span><time datetime="2026-08-20T23:44:00+09:00">2026-08-20T23:44:00+09:00</time></p>
+      <div class="tag-row"><a class="tag" href="/tags/entry-872c1fa141b5/">数学</a><a class="tag" href="/tags/entry-088462f65b7e/">システム</a><a class="tag" href="/tags/entry-437a172d7b13/">開発</a></div>
+    </div>
+  </header>
+  <div class="prose"><h1 id="システム設計と大規模刷新のための数学-序論-地図の全体像">システム設計と大規模刷新のための数学（序論）— 地図の全体像</h1>
+<p>Claudeと大規模システム刷新の失敗談を肴に話していたら、「刷新に使える数学」の話が思いのほか面白い形にまとまったので、連載として整理しておく。素材はClaudeとの対話だが、切り出しの判断と間違いの責任はこちらにある。</p>
+<p>この連載は、システム設計・大規模刷新・仕様の正しさに使える数学的な考え方を、四つの層＋横断層に整理した地図である。各項目は原則として「概念 / 代表的成果 / 実務実績 / 大規模刷新での適用箇所」の四点で書く。</p>
+<h2 id="まず一番大事な区別-verification-と-validation">まず一番大事な区別: Verification と Validation</h2>
+<p>数学が直接扱えるのは <strong>verification</strong>（実装が仕様を満たすか）である。<strong>validation</strong>（仕様が本当に望んだものか）にも形式化できる部分はあるが、その中核——形式モデルが利用者の目的と運用環境を十分に表しているかという対応関係——は内部証明だけでは閉じない。仕様は形式体系と現実の境界面であり、その妥当性の最終判断は人間に残る。上位目的を形式化すれば一段をverification側へ移せるが、モデル妥当性の問いはさらに外側へ移るだけである。Boehmの言い換えで言えば「Are we building the product right?」がverification、「Are we building the right product?」がvalidation。</p>
+<p>ただし仕様「自体」にも形式的に検査できる性質がある。</p>
+<p><strong>無矛盾性（充足可能性）</strong>: 書いた性質群を同時に満たすモデルが存在するか。矛盾した仕様はあらゆる実装を排除する。SATソルバ・モデル検査器で機械検査できる。</p>
+<p><strong>実現可能性（realizability）</strong>: 環境がどう振る舞っても仕様を満たし続ける実装（戦略）が存在するか。Pnueli–Rosner（1989）がopen systemに対して定式化した。充足可能でも実現可能とは限らない——「環境が都合よく動けば満たせる」仕様は、実装としては書けない。</p>
+<p><strong>空虚性（vacuity）</strong>: 「Aならば必ずB」型の性質が、Aが一度も起きないせいで自明に成立していないか。仕様が「通っているのに何も検証していない」状態の検出。ハードウェア検証では標準的な検査。</p>
+<p><strong>カバレッジ</strong>: 書いた性質群が、想定シナリオや変異させた実装をどれだけ区別できるか。仕様の網羅度の経験的測定で、mutation testingの仕様版に相当する。</p>
+<p>「仕様の正しさも数学でいける」の代表的な範囲がこの四つ（網羅ではない——完全性・追跡性・仮定の無矛盾性なども形式検査の対象になる）。仕様が業務として正しいかは、依然として人間の裁定事項である。</p>
+<h2 id="地図の全体像">地図の全体像</h2>
+<ul>
+<li><strong>第一層: 仕様を書くための数学</strong> — ホーア論理、時相論理、型理論、分離論理、代数的仕様</li>
+<li><strong>第二層: 仕様と実装の関係の数学</strong> — 精緻化、帰納的不変条件、双模倣、抽象化写像</li>
+<li><strong>第三層: 合成の数学</strong> — rely-guarantee、振る舞い部分型、セッション型、CRDT/CALM、圏論的データ移行</li>
+<li><strong>第四層: 不可能性と限界の数学</strong> — Rice、FLP、CAP、状態爆発</li>
+<li><strong>横断層: 検証を実行する手段の数学</strong> — モデル検査、抽象解釈、SMT、定理証明、経験的手法</li>
+<li><strong>総括: 実績濃淡マップと大規模刷新への適用</strong></li>
+</ul>
+<h2 id="較正方針">較正方針</h2>
+<p>各項目に実務実績の濃淡を明記する。<strong>[実務厚]</strong>（産業で継続運用）、<strong>[実績有]</strong>（著名事例はあるが採用は限定的）、<strong>[理論先行]</strong>（理論は成熟、産業採用ほぼなし）の三段階。理論として綺麗なだけか、現場で回っているかの濃淡自体を記録することが、この地図の価値の半分だと思っている。</p>
+<p>なお、各記事の「刷新での適用」はこの連載独自の対応付けであり、実プロジェクトでの検証実績があるものではない。仮説として読んでほしい。</p>
+<hr>
+<p><strong>連載: システム設計と大規模刷新のための数学</strong></p>
+<ol>
+<li>序論 — 地図の全体像（この記事）</li>
+<li><a href="/posts/2026/08/2026-08-20-002/">第一層: 仕様を書くための数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-003/">第二層: 仕様と実装の関係の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-004/">第三層: 合成の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-005/">第四層: 不可能性と限界の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-006/">横断層: 検証を実行する手段の数学</a></li>
+<li><a href="/posts/2026/08/2026-08-20-007/">総括: 実績濃淡マップと大規模刷新への適用</a></li>
+</ol>
+</div>
+  <nav class="article-relations" aria-label="Article navigation"><a rel="prev" href="/posts/2026/08/2026-08-16-002/">← シンギュラリティをテーマに小説を三本書いた</a><a rel="next" href="/posts/2026/08/2026-08-20-002/">システム設計のための数学 第一層: 仕様を書くための数学 →</a></nav>
+  <aside class="related"><h2>Related</h2><ul><li><a href="/posts/2026/08/2026-08-20-007/">システム設計のための数学 総括: 実績濃淡マップと大規模刷新への適用</a></li><li><a href="/posts/2026/08/2026-08-20-006/">システム設計のための数学 横断層: 検証を実行する手段</a></li><li><a href="/posts/2026/08/2026-08-20-005/">システム設計のための数学 第四層: 不可能性と限界</a></li><li><a href="/posts/2026/08/2026-08-20-004/">システム設計のための数学 第三層: 合成の数学</a></li><li><a href="/posts/2026/08/2026-08-20-003/">システム設計のための数学 第二層: 仕様と実装の関係</a></li></ul></aside>
+</article>
+
+
+  </main>
+  <footer class="site-footer">
+    <p><span>SYS:NIKKI / ARCHIVE ONLINE</span><span>HUMAN-CURATED · AI-ASSISTED</span></p>
+    <p>Published with <a href="https://github.com/adokoy001/Tsuzuri">Tsuzuri</a>.</p>
+  </footer>
+  <div id="route-status" class="visually-hidden" aria-live="polite"></div>
+  <script type="module" src="/assets/router.js"></script><script type="module" src="/assets/search.js"></script><script type="module">import {bootStaticSearch} from "/assets/search.js";document.addEventListener("tsuzuri:navigation-end",function(){bootStaticSearch()});document.addEventListener("tsuzuri:spa-page",function(){bootStaticSearch()});</script><script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.getRegistration("/").then(function(r){if(!r)return;var w=r.active||r.waiting||r.installing;if(!w)return;var u=new URL(w.scriptURL);if(u.pathname!=="/service-worker.js"||!u.searchParams.has("manifest"))return;r.unregister().then(function(){if("caches" in window)caches.keys().then(function(a){a.forEach(function(n){if(n.indexOf("tsuzuri-static-")===0)caches.delete(n)})})})})})}</script>
+  <script type="module" src="/assets/site.js"></script>
+</body>
+</html>

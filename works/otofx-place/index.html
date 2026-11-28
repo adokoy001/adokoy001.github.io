@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OtoFX 置き場所の確認</title>
+<meta name="description" content="音を、頭のまわりの好きな場所に置いて聴く。計算だけで作る立体音響（HRTF もどき）の確認ページ。">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* 配置：上に名前と説明 → 貼りつく帯（音・鳴らす・くらべる）→ 左に「上から見た図」（指で動かす）、右に つまみ → 動かして聴く → こだま → 中身の説明。
+   「OtoVoice 発音の確認」と同じ見た目（紙の地に朱）。数は等幅 */
+:root{
+  --bg:#f5f2ea; --panel:#fffdf7; --panel2:#ece8dc; --line:#d5cfbf; --fg:#1d1b16; --mute:#6b6658;
+  --ac:#c8401f; --ac-ink:#fffaf2; --ac-soft:#f3d9cf; --code:#2c4a52;
+  --f-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12110e; --panel:#1b1a16; --panel2:#24221d; --line:#38352c; --fg:#ece8dd; --mute:#9a9484;
+  --ac:#ff6a3d; --ac-ink:#1a0d07; --ac-soft:#3a2018; --code:#9fd0d8; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12110e; --panel:#1b1a16; --panel2:#24221d; --line:#38352c; --fg:#ece8dd; --mute:#9a9484;
+  --ac:#ff6a3d; --ac-ink:#1a0d07; --ac-soft:#3a2018; --code:#9fd0d8; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.75}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:900px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.wrap{padding-block:28px 14px}
+.mark{font-family:var(--f-mono);font-weight:700;font-size:13px;letter-spacing:.16em;color:var(--ac)}
+h1{font-size:28px;line-height:1.25;font-weight:700;margin:2px 0 8px;letter-spacing:.02em;text-wrap:balance}
+.lead{margin:0;max-width:40em;color:var(--mute)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-block:1px solid var(--line)}
+.bar .wrap{padding-block:8px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.bar label{font-size:13px;display:flex;align-items:center;gap:6px}
+select{font:inherit;font-size:13px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:3px 6px;min-height:34px;max-width:100%}
+input[type=range]{accent-color:var(--ac);width:100%}
+input[type=checkbox]{accent-color:var(--ac);width:16px;height:16px}
+main.wrap{padding-block:8px 0;display:flex;flex-direction:column}
+section{padding-block:22px 6px;display:flex;flex-direction:column;gap:10px;min-width:0}
+h2{font-size:19px;font-weight:700;margin:0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h2 small{font-family:var(--f-mono);font-size:11px;font-weight:400;color:var(--mute);letter-spacing:.04em}
+.note{color:var(--mute);font-size:13.5px;margin:0;max-width:46em}
+.lab{font-size:11px;letter-spacing:.1em;color:var(--mute);font-weight:700}
+.stage{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:20px 28px;align-items:start}
+@media (max-width:760px){.stage{grid-template-columns:minmax(0,1fr)}}
+.padbox{display:flex;flex-direction:column;gap:8px;min-width:0}
+#pad{display:block;width:100%;max-width:100%;aspect-ratio:1/1;background:var(--panel);border:1px solid var(--line);border-radius:6px;touch-action:none;cursor:grab}
+#pad:active{cursor:grabbing}
+#pad:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.side{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center}
+#sidev{display:block;width:96px;height:96px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.knobs{display:flex;flex-direction:column;gap:10px;min-width:0}
+.knob{display:grid;grid-template-columns:7.4em minmax(0,1fr) 5.2em;align-items:center;gap:8px;font-size:13.5px}
+.knob output{font-family:var(--f-mono);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--code)}
+.tog{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.6}
+.tog input{margin-top:4px;flex:none}
+.read{font-family:var(--f-mono);font-size:12.5px;line-height:1.8;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px}
+.read dt{color:var(--mute);white-space:nowrap;font-family:var(--f-body)}
+.read dd{margin:0;color:var(--code);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.stat{font-family:var(--f-mono);font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer;border-radius:4px;border:1px solid var(--ac);background:var(--ac);color:var(--ac-ink);padding:6px 16px;min-height:42px;min-width:92px;line-height:1.3;font-weight:700}
+button.plain{border-color:var(--line);background:var(--panel);color:var(--fg);font-weight:500;min-height:36px;min-width:0;padding:2px 12px}
+button.plain:hover{border-color:var(--ac);color:var(--ac)}
+button.plain.on{border-color:var(--ac);background:var(--ac-soft);color:var(--fg)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;font-size:13.5px;min-width:520px;width:100%}
+th,td{text-align:left;vertical-align:top;padding:6px 10px 6px 0;border-bottom:1px solid var(--line)}
+th{font-size:11px;letter-spacing:.1em;color:var(--mute);font-weight:700;white-space:nowrap}
+code{font-family:var(--f-mono);font-size:.92em;color:var(--code)}
+footer.wrap{color:var(--mute);font-size:12px;padding-block:22px 40px}
+@media (max-width:560px){h1{font-size:24px}.knob{grid-template-columns:6.2em minmax(0,1fr) 4.6em}}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="mark" id="mark">OtoFX</div>
+  <h1>置き場所の確認</h1>
+  <p class="lead">音を、頭のまわりの好きな場所に置いて聴くページです。図の上の点を指でつかんで動かすと、鳴ったまま、向きと遠さが変わります。ヘッドホンで聴いてください。計算は <code>OtoFX.place</code> をそのまま使っています。</p>
+</header>
+<div class="bar"><div class="wrap">
+  <button id="play" type="button">鳴らす</button>
+  <label>音 <select id="snd" aria-label="鳴らす音"></select></label>
+  <label><input type="checkbox" id="bypass"> くらべる：ふつうの左右の振り分け</label>
+  <span class="stat" id="stat" aria-live="polite"></span>
+</div></div>
+<main class="wrap">
+  <section>
+    <h2>置く <small>OtoFX.place(x, {az, el, dist})</small></h2>
+    <div class="stage">
+      <div class="padbox">
+        <span class="lab">上から見た図（上が正面。点をつかんで動かす。輪は遠さ）</span>
+        <canvas id="pad" width="880" height="880" tabindex="0" role="img" aria-label="上から見た図。矢印キーで向きと遠さを変えられます"></canvas>
+      </div>
+      <div class="knobs">
+        <div class="side">
+          <canvas id="sidev" width="192" height="192" aria-hidden="true"></canvas>
+          <span class="note">横から見た図（右が正面）。高さは、下のつまみで変えます。</span>
+        </div>
+        <label class="knob"><span>向き</span><input type="range" id="az" min="-180" max="180" step="1" value="40"><output id="azO"></output></label>
+        <label class="knob"><span>高さ</span><input type="range" id="el" min="-90" max="90" step="1" value="0"><output id="elO"></output></label>
+        <label class="knob"><span>遠さ</span><input type="range" id="ds" min="0" max="1000" step="1" value="303"><output id="dsO"></output></label>
+        <label class="tog"><input type="checkbox" id="keep" checked> 遠くしても、音を小さくしない（音色の変わり方だけを聴く）</label>
+        <label class="tog"><input type="checkbox" id="old"> 耳の位置と前の色づけを、1.2.1 の設定に戻す（くらべる用）</label>
+        <span class="lab">効き具合（1 が、いまの既定）</span>
+        <label class="knob"><span>耳たぶの反射</span><input type="range" id="pinna" min="0" max="2" step="0.05" value="1"><output id="pinnaO"></output></label>
+        <label class="knob"><span>前後・上下の色</span><input type="range" id="eq" min="0" max="2" step="0.05" value="1"><output id="eqO"></output></label>
+        <label class="knob"><span>空気での減り</span><input type="range" id="air" min="0" max="3" step="0.05" value="1"><output id="airO"></output></label>
+        <label class="knob"><span>部屋の響き</span><input type="range" id="room" min="0" max="1" step="0.05" value="0.15"><output id="roomO"></output></label>
+        <dl class="read">
+          <dt>左右の時間の差</dt><dd id="rItd"></dd>
+          <dt>空気での減り</dt><dd id="rAir"></dd>
+          <dt>書き方</dt><dd id="rOpt"></dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h2>動かして聴く <small>{path:[[秒, az, el, dist], …]}</small></h2>
+    <p class="note">決まった道すじを、頭から終わりまで計算してから鳴らします。図の点が、音と一緒に動きます。上の「効き具合」は、ここにも効きます。</p>
+    <div class="row" id="moves"></div>
+  </section>
+  <section>
+    <h2>こだま <small>OtoFX.echo(x, {size, amount, tail})</small></h2>
+    <p class="note">いまの場所に置いた音を1回だけ鳴らして、野外のこだま（0.36〜2.8 秒の返り5本と、長い尾）をかけます。</p>
+    <div class="knobs" style="max-width:440px">
+      <label class="knob"><span>山の遠さ</span><input type="range" id="esize" min="0.5" max="2.5" step="0.05" value="1"><output id="esizeO"></output></label>
+    </div>
+    <div class="row"><button class="plain" id="echo" type="button">こだまつきで鳴らす</button></div>
+  </section>
+  <section>
+    <h2>録音を聴く <small>シャカシャカを、ひとつづきの道すじで動かしたもの（79 秒）</small></h2>
+    <audio id="rec" controls preload="none" src="shaka_3d.m4a" style="width:100%;max-width:560px"></audio>
+    <div class="tw"><table>
+      <thead><tr><th>時刻</th><th>動き</th></tr></thead>
+      <tbody>
+        <tr><td>0〜9 秒</td><td>正面 → 右へ跳ぶ → 左へ跳ぶ</td></tr>
+        <tr><td>10〜22 秒</td><td>ゆっくり、ひと回り（正面 → 右 → うしろ → 左）</td></tr>
+        <tr><td>22〜30 秒</td><td>逆向きに、速く ふた回り</td></tr>
+        <tr><td>31〜40 秒</td><td>右ななめ前へ 12m まで遠ざかり、近づいてきて、右の耳もとへ</td></tr>
+        <tr><td>43〜49 秒</td><td>頭のうしろを通って、左の耳もとへ</td></tr>
+        <tr><td>52〜62 秒</td><td>正面で、上 → 下 → もとへ</td></tr>
+        <tr><td>62 秒〜</td><td>まわりながら、上へ、遠くへ</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">40〜49 秒は耳もとで鳴るので、少し大きくなります。遠さでの音量の変わり方は、聴きやすいように4割に弱めてあります。</p>
+  </section>
+  <section>
+    <h2>中身</h2>
+    <div class="tw"><table>
+      <thead><tr><th>手がかり</th><th>していること</th><th>もと</th></tr></thead>
+      <tbody>
+        <tr><td>左右の時間の差</td><td>頭をまわりこむ道のりの差。真横で約 0.6 ミリ秒。耳は、真横より少しうしろ（±100°）にある</td><td>Woodworth の式、Brown と Duda</td></tr>
+        <tr><td>頭のかげ</td><td>向こう側の耳は、高い音ほど小さい</td><td>Brown と Duda（1998）</td></tr>
+        <tr><td>耳たぶの反射</td><td>ごく短い遅れ5本。高さで間隔が変わり、高い帯域の谷が動く</td><td>同じ（数は照合できていない）</td></tr>
+        <tr><td>前後・上下の色</td><td>前は 500Hz と 4kHz が少し上がる。うしろはこもり、1kHz が少し上がる。上は 8kHz が上がる。下はこもる</td><td>Blauert の帯域と、見積もり</td></tr>
+        <tr><td>空気での減り</td><td>遠いほど、高い音が減る。300m 先の 8kHz で約 32dB</td><td>ISO 9613-1（20°C・湿度 50%）</td></tr>
+        <tr><td>部屋の響き</td><td>遠いほど、もとの音に対する響きの割合が上がる</td><td>見積もり</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">だれの耳も測っていないので、本物の HRTF ではありません。左右は、はっきり出ます。前後と上下は、聞こえ方が人によって大きくちがいます。もとの論文も、前半分だけを対象にしています。</p>
+  </section>
+</main>
+<footer class="wrap">小さな音で始めてください。音は、音の出ない環境で作ったもので、作り手（Claude）は耳で確かめていません。</footer>
+<script src="otofx.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id),F=window.OtoFX,SR=48000,D2R=Math.PI/180;
+if(!F||!F.place){document.querySelector('.lead').textContent='音を作るファイル（otofx.js）を読み込めませんでした。ページを開き直してください。';return}
+$('mark').textContent='OtoFX '+F.VERSION;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const DMIN=.15,DMAX=300,d2u=d=>Math.log(d/DMIN)/Math.log(DMAX/DMIN),u2d=u=>DMIN*Math.pow(DMAX/DMIN,Math.min(1,Math.max(0,u)));
+const S={az:40,el:0,dist:1.5};
+let ac=null,master=null,cur=null,loopT0=0,src=null,srcKey='',dirty=false,lastRender=0,playing=false,move=null,busy=false;
+
+/* ---- 鳴らす音 ---- */
+function shaker(sec){let rs=5;const n=sec*SR,x=new Float32Array(n);let lp=0;for(let i=0;i<n;i++){rs=(rs*1664525+1013904223)>>>0;const w=rs/2147483648-1,t=(i/SR)%.25;lp+=(w-lp)*.04;x[i]=(w-lp)*Math.exp(-t*38)*Math.min(1,t/.002)*.5}return x}
+function white(sec){let rs=9;const n=sec*SR,x=new Float32Array(n);for(let i=0;i<n;i++){rs=(rs*1664525+1013904223)>>>0;x[i]=(rs/2147483648-1)*.16}const f=480;for(let i=0;i<f;i++){x[i]*=i/f;x[n-1-i]*=i/f}return x}
+const BUILT={shaker:['シャカシャカ（向きが分かりやすい）',()=>shaker(2)],white:['白い雑音（鳴りっぱなし）',()=>white(2)]};
+{const g0=document.createElement('optgroup');g0.label='確かめ用';for(const k in BUILT){const o=document.createElement('option');o.value=k;o.textContent=BUILT[k][0];g0.append(o)}$('snd').append(g0);
+ const GL={bug:'虫',hanabi:'花火',voice:'声と息',horror:'見返す太陽',car:'車',weather:'天気と走り',far:'遠くの音'};
+ for(const gk of Object.keys(GL)){const g=document.createElement('optgroup');g.label=GL[gk];for(const n of F.NAMES)if(n.group===gk){const o=document.createElement('option');o.value='fx:'+n.name;o.textContent=n.label;g.append(o)}if(g.children.length)$('snd').append(g)}}
+// 選んだ音を、1本・4 秒までの、くり返せる形にする
+function source(){const k=$('snd').value;if(k===srcKey&&src)return src;let x;
+  if(BUILT[k])x=BUILT[k][1]();
+  else{const nm=k.slice(3),inf=F.NAMES.find(n=>n.name===nm),y=F.render(nm,{reverb:0,seed:3,sec:inf.kind==='bed'?4:undefined,gain:inf.group==='horror'?1.6:2});
+    const n=Math.min(y[0].length,4*SR),gap=inf.kind==='bed'?0:Math.round(.45*SR);x=new Float32Array(n+gap);let pk=1e-6;for(let i=0;i<n;i++){x[i]=(y[0][i]+y[1][i])*.5;pk=Math.max(pk,Math.abs(x[i]))}
+    const g=Math.min(8,.5/pk),f=Math.min(2400,n>>2);for(let i=0;i<n;i++)x[i]*=g;for(let i=0;i<f;i++){x[n-1-i]*=i/f;if(inf.kind==='bed')x[i]*=i/f}}
+  src=x;srcKey=k;return x}
+const tile=(x,n)=>{const o=new Float32Array(n);for(let i=0;i<n;i++)o[i]=x[i%x.length];return o};
+
+/* ---- 置く ---- */
+const opt=()=>Object.assign({pinna:+$('pinna').value,eq:+$('eq').value,air:+$('air').value,room:+$('room').value,atten:$('keep').checked?0:1},$('old').checked?{model:'1.2.1'}:{});
+function panOnly(x,az){const p=Math.sin(az*D2R),gl=Math.cos((p+1)*Math.PI/4),gr=Math.sin((p+1)*Math.PI/4),L=new Float32Array(x.length),R=new Float32Array(x.length);for(let i=0;i<x.length;i++){L[i]=x[i]*gl;R[i]=x[i]*gr}return[L,R]}
+// くり返す音：2回ぶん並べて置き、2回めだけを使う（響きの尾が、頭へつながる）
+function placedLoop(){const x=source(),n=x.length;if($('bypass').checked)return panOnly(x,S.az);
+  const y=F.place(tile(x,2*n),Object.assign({az:S.az,el:S.el,dist:S.dist},opt()));return[y[0].subarray(n,2*n),y[1].subarray(n,2*n)]}
+function ensureAC(){if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)();master=ac.createGain();master.gain.value=.7;master.connect(ac.destination)}if(ac.state==='suspended')ac.resume()}
+function toBuf(y){const b=ac.createBuffer(2,y[0].length,SR);b.copyToChannel(y[0],0);b.copyToChannel(y[1],1);return b}
+function fadeOut(c,t){if(!c)return;try{c.g.gain.cancelScheduledValues(t);c.g.gain.setValueAtTime(c.g.gain.value,t);c.g.gain.linearRampToValueAtTime(0,t+.05);c.node.onended=null;c.node.stop(t+.07)}catch(e){}}
+function renderLoop(){if(!playing||move)return;const t0=performance.now(),y=placedLoop(),buf=toBuf(y),now=ac.currentTime,node=ac.createBufferSource(),g=ac.createGain();
+  node.buffer=buf;node.loop=true;node.connect(g);g.connect(master);g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(1,now+.04);
+  if(!cur)loopT0=now;const ph=((now-loopT0)%buf.duration+buf.duration)%buf.duration;node.start(now,ph);fadeOut(cur,now);cur={node,g};
+  $('stat').textContent=buf.duration.toFixed(1)+' 秒の音を '+Math.round(performance.now()-t0)+' ミリ秒で置きました';lastRender=performance.now();dirty=false}
+function stopAll(){const t=ac?ac.currentTime:0;fadeOut(cur,t);cur=null;if(move){fadeOut(move,t);move=null}playing=false;$('play').textContent='鳴らす';for(const b of $('moves').children)b.classList.remove('on');$('echo').classList.remove('on');show()}
+function startLoop(){ensureAC();if(move){fadeOut(move,ac.currentTime);move=null;for(const b of $('moves').children)b.classList.remove('on');$('echo').classList.remove('on')}playing=true;$('play').textContent='止める';cur&&fadeOut(cur,ac.currentTime);cur=null;renderLoop()}
+$('play').addEventListener('click',()=>{if(playing||move)stopAll();else startLoop()});
+function changed(){show();dirty=true}
+setInterval(()=>{if(dirty&&playing&&!move&&!busy&&performance.now()-lastRender>70){busy=true;try{renderLoop()}finally{busy=false}}},30);
+
+/* ---- 動かして聴く ---- */
+const pass=()=>{const P=[];for(let k=0;k<=48;k++){const t=k/48*8,x=-70+140*k/48,y=6;P.push([t,Math.atan2(x,y)/D2R,0,Math.hypot(x,y)])}return P};
+const fly=()=>{let rs=11;const r=()=>{rs=(rs*1664525+1013904223)>>>0;return rs/4294967296},P=[];let az=70,el=10,ds=.8;for(let k=0;k<=36;k++){P.push([k/3,az,el,ds]);az+=(r()-.5)*90+(k>20?-14:6);el=Math.max(-30,Math.min(60,el+(r()-.5)*40));ds=Math.max(.15,Math.min(1.6,ds*(.55+r()*.95)))}return P};
+const MOVES=[['蚊が、耳のまわりを飛ぶ',12,()=>fly(),{atten:1,ref:.4,room:0},'fx:mosquito'],['ひと回り',10,()=>[[0,0,0,1.5],[10,360,0,1.5]],{}],['正面で、下 → 上 → 下',10,()=>[[0,0,-40,1.5],[5,0,85,1.5],[10,0,-40,1.5]],{}],
+  ['うしろで、下 → 上 → 下',10,()=>[[0,180,-40,1.5],[5,180,85,1.5],[10,180,-40,1.5]],{}],['左うしろの遠くから、右の耳もとへ',12,()=>[[0,-140,0,40],[9,60,0,1.2],[12,85,5,.3]],{atten:1}],
+  ['目の前を通りすぎる（秒速 17.5m、ドップラー）',8,()=>pass(),{atten:1,delay:true,ref:6}]];
+const pathAt=(P,t)=>{for(let k=0;k<P.length-1;k++)if(t<P[k+1][0]){const a=P[k],b=P[k+1],u=Math.max(0,(t-a[0])/(b[0]-a[0]));return a.map((v,i)=>v+(b[i]-v)*u)}return P[P.length-1]};
+function playOnce(y,btn,path,dur){const now=ac.currentTime+.05,node=ac.createBufferSource(),g=ac.createGain();node.buffer=toBuf(y);node.connect(g);g.connect(master);node.start(now);
+  fadeOut(cur,ac.currentTime);cur=null;playing=false;$('play').textContent='止める';move={node,g,t0:now,path,dur,btn};btn.classList.add('on');show();
+  node.onended=()=>{if(move&&move.node===node){move=null;btn.classList.remove('on');$('play').textContent='鳴らす';show()}}}
+MOVES.forEach(([label,dur,mk,extra,snd])=>{const b=document.createElement('button');b.type='button';b.className='plain';b.textContent=label;
+  b.addEventListener('click',()=>{const was=move&&move.btn===b;ensureAC();stopAll();if(was)return;$('stat').textContent='「'+label+'」を計算しています…';
+    setTimeout(()=>{if(snd&&$('snd').value!==snd){$('snd').value=snd}const t0=performance.now(),P=mk(),x=tile(source(),dur*SR),y=F.place(x,Object.assign(opt(),extra,{path:P}));
+      $('stat').textContent=dur+' 秒の動きを '+Math.round(performance.now()-t0)+' ミリ秒で計算しました';playOnce(y,b,P,dur)},30)});$('moves').append(b)});
+$('echo').addEventListener('click',()=>{const b=$('echo'),was=move&&move.btn===b;ensureAC();stopAll();if(was)return;
+  const x=source(),y=F.echo(F.place(x,Object.assign({az:S.az,el:S.el,dist:S.dist},opt())),{size:+$('esize').value});playOnce(y,b,null,y.seconds);$('stat').textContent='こだまつき：'+y.seconds.toFixed(1)+' 秒'});
+
+/* ---- 図 ---- */
+function drawPad(p){const cv=$('pad'),g=cv.getContext('2d'),W=cv.width,c=W/2,R=W*.43;g.clearRect(0,0,W,W);g.font='22px '+css('--f-mono');g.textBaseline='middle';
+  for(const d of [.3,1,3,10,30,100,300]){const r=R*d2u(d);g.strokeStyle=css('--line');g.lineWidth=2;g.beginPath();g.arc(c,c,r,0,6.2832);g.stroke();g.fillStyle=css('--mute');g.textAlign='left';g.fillText(d+'m',c+r*.7071+6,c+r*.7071+12)}
+  g.strokeStyle=css('--line');g.beginPath();g.moveTo(c,c-R);g.lineTo(c,c+R);g.moveTo(c-R,c);g.lineTo(c+R,c);g.stroke();
+  g.font='24px '+css('--f-body');g.fillStyle=css('--mute');g.textAlign='center';g.fillText('正面',c,24);g.fillText('うしろ',c,W-22);g.textAlign='left';g.fillText('左',10,c-22);g.textAlign='right';g.fillText('右',W-10,c-22);
+  // 頭（鼻が上、耳が左右）
+  g.fillStyle=css('--panel2');g.strokeStyle=css('--fg');g.lineWidth=3;g.beginPath();g.arc(c,c,26,0,6.2832);g.fill();g.stroke();g.beginPath();g.moveTo(c-8,c-24);g.lineTo(c,c-38);g.lineTo(c+8,c-24);g.stroke();g.fillStyle=css('--fg');g.fillRect(c-33,c-8,7,16);g.fillRect(c+26,c-8,7,16);
+  const r=Math.max(40,R*d2u(p.dist)),x=c+Math.sin(p.az*D2R)*r,y=c-Math.cos(p.az*D2R)*r;g.strokeStyle=css('--ac');g.lineWidth=2;g.setLineDash([6,8]);g.beginPath();g.moveTo(c,c);g.lineTo(x,y);g.stroke();g.setLineDash([]);
+  g.fillStyle=css('--ac-soft');g.beginPath();g.arc(x,y,30,0,6.2832);g.fill();g.fillStyle=css('--ac');g.beginPath();g.arc(x,y,15,0,6.2832);g.fill()}
+function drawSide(p){const cv=$('sidev'),g=cv.getContext('2d'),W=cv.width,c=W/2,cy=W*.58,R=W*.4;g.clearRect(0,0,W,W);g.strokeStyle=css('--line');g.lineWidth=2;g.beginPath();g.arc(c,cy,R,0,6.2832);g.stroke();g.beginPath();g.moveTo(c-R-8,cy);g.lineTo(c+R+8,cy);g.stroke();
+  g.fillStyle=css('--panel2');g.strokeStyle=css('--fg');g.lineWidth=2.5;g.beginPath();g.arc(c,cy,13,0,6.2832);g.fill();g.stroke();g.beginPath();g.moveTo(c+12,cy-4);g.lineTo(c+20,cy);g.lineTo(c+12,cy+4);g.stroke();
+  const fz=Math.cos(p.az*D2R)*Math.cos(p.el*D2R),x=c+fz*R,y=cy-Math.sin(p.el*D2R)*R;g.fillStyle=css('--ac');g.beginPath();g.arc(x,y,9,0,6.2832);g.fill()}
+function show(){const p=move&&move.path?(()=>{const q=pathAt(move.path,Math.max(0,ac.currentTime-move.t0));return{az:q[1],el:q[2],dist:q[3]}})():S;drawPad(p);drawSide(p);
+  const az=((Math.round(S.az)+540)%360)-180;$('az').value=az;$('el').value=S.el;$('ds').value=Math.round(d2u(S.dist)*1000);
+  $('azO').textContent=(az===0?'正面':az===180||az===-180?'うしろ':az>0?'右 '+az+'°':'左 '+(-az)+'°');$('elO').textContent=(S.el>0?'上 ':S.el<0?'下 ':'')+Math.abs(S.el)+'°';$('dsO').textContent=(S.dist<10?S.dist.toFixed(2):S.dist.toFixed(0))+' m';
+  for(const k of ['pinna','eq','air','room'])$(k+'O').textContent='×'+(+$(k).value).toFixed(2);$('esizeO').textContent='×'+(+$('esize').value).toFixed(2);
+  // 理論の数：左右の時間の差（place と同じ式。頭をまわりこむ道のり）と、空気での減り（周波数の2乗の分＋350Hz より上の分）
+  const X=Math.sin(S.az*D2R)*Math.cos(S.el*D2R),Z=Math.cos(S.az*D2R)*Math.cos(S.el*D2R),od=$('old').checked,ear=k=>{const th=Math.acos(Math.max(-1,Math.min(1,od?k*X:k*X*.98481-Z*.17365)));return th<Math.PI/2?1-Math.cos(th):1+th-Math.PI/2},itd=.0875/343*(ear(-1)-ear(1))*1000,a=+$('air').value,ab=f=>(1.6e-9*f*f+3.3e-3)*S.dist*a;
+  $('rItd').textContent=Math.abs(itd)<.005?'0（両耳に同時）':(itd>0?'左の耳が ':'右の耳が ')+Math.abs(itd).toFixed(2)+' ミリ秒 おくれる';
+  $('rAir').textContent='1kHz −'+ab(1000).toFixed(1)+'dB、4kHz −'+ab(4000).toFixed(1)+'dB、8kHz −'+ab(8000).toFixed(1)+'dB';
+  const o=opt(),ex=[];if(o.pinna!==1)ex.push('pinna:'+o.pinna);if(o.eq!==1)ex.push('eq:'+o.eq);if(o.air!==1)ex.push('air:'+o.air);if(o.room)ex.push('room:'+o.room);if(!o.atten)ex.push('atten:0');if(o.model)ex.push("model:'1.2.1'");
+  $('rOpt').textContent='{az:'+az+', el:'+S.el+', dist:'+(S.dist<10?+S.dist.toFixed(2):Math.round(S.dist))+(ex.length?', '+ex.join(', '):'')+'}'}
+(function tick(){if(move&&move.path)show();requestAnimationFrame(tick)})();
+
+/* ---- 操作 ---- */
+const pad=$('pad');let drag=false;
+function fromPointer(e){const b=pad.getBoundingClientRect(),x=(e.clientX-b.left)/b.width*2-1,y=(e.clientY-b.top)/b.height*2-1,r=Math.hypot(x,y)/.86;S.az=Math.round(Math.atan2(x,-y)/D2R);S.dist=u2d(r);changed()}
+pad.addEventListener('pointerdown',e=>{drag=true;try{pad.setPointerCapture(e.pointerId)}catch(_){}fromPointer(e)});
+pad.addEventListener('pointermove',e=>{if(drag)fromPointer(e)});
+for(const ev of ['pointerup','pointercancel'])pad.addEventListener(ev,()=>{drag=false});
+pad.addEventListener('keydown',e=>{const k=e.key;if(k==='ArrowLeft')S.az-=5;else if(k==='ArrowRight')S.az+=5;else if(k==='ArrowUp')S.dist=u2d(d2u(S.dist)+.03);else if(k==='ArrowDown')S.dist=u2d(d2u(S.dist)-.03);else return;e.preventDefault();changed()});
+$('az').addEventListener('input',()=>{S.az=+$('az').value;changed()});
+$('el').addEventListener('input',()=>{S.el=+$('el').value;changed()});
+$('ds').addEventListener('input',()=>{S.dist=u2d(+$('ds').value/1000);changed()});
+for(const id of ['pinna','eq','air','room','esize'])$(id).addEventListener('input',changed);
+for(const id of ['keep','bypass','old'])$(id).addEventListener('change',changed);
+$('snd').addEventListener('change',()=>{if(playing){fadeOut(cur,ac.currentTime);cur=null;renderLoop()}});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',show);
+new MutationObserver(show).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(show);
+show();
+})();
+</script>
+</body>
+</html>

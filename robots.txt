@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://nikki.yokoda.okinawa/sitemap.xml
