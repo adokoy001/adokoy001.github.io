@@ -1,9 +1,9 @@
-/*! OtoVoice 1.3.0 — 話す・歌う。音素で書く、軽い音声合成（依存なし・外部通信なし・録音なし）
+/*! OtoVoice 1.4.0 — 話す・歌う。音素で書く、軽い音声合成（依存なし・外部通信なし・録音なし）
  *
  * 文を書くと、その場で計算して声にする。話し声（16kHz）と歌声（32kHz）。録音・辞書・通信は使わない。
  * 読み方を、音素（発音のいちばん小さな単位）で書ける。AI が台詞を書く前提なので、読めないところは、黙って飛ばさずにエラーで知らせる。
  * 日本語と英語で、話すことも歌うこともできる。
- * 中身は、話し声の合成 RSP（作品「大通り・砲手」の版に、音素の入口を足したもの）、その無線機、歌声の合成 OtoSing 0.8.0（0.7.2 に、英語の音節を足したもの）。
+ * 中身は、話し声の合成 RSP（作品「大通り・砲手」の版に、音素の入口を足したもの）、その無線機、歌声の合成 OtoSing 0.9.0（0.7.2 に、英語の音節と、音符ごとの指定を足したもの）。
  *
  * ■ いちばん短い使い方
  *   <script src="otovoice.js"></script>
@@ -17,6 +17,9 @@
  *   OtoVoice.check(文,o)       確かめる → {ok, errors, seconds, kana, phonemes, segments, contour, marks}。音は作らない。文がどう読まれるかを、かなと音素で返す
  *                              （contour は高さの動き [秒, Hz, 声が出ているか]、marks は音素の始まる時刻。図にするとき用）
  *   OtoVoice.toPhonemes(文,o)  かなの文を、自動の規則をかけたあとの音素の列（/ … /）に直す。直した文は、かなのときと同じ音になる
+ *   OtoVoice.speakRows(行,o)   手で書いた行を話す → Float32Array（16kHz）。.report に読み戻し（下の「手で書く行」）
+ *   OtoVoice.checkRows(行,o)   行を鳴らして測った結果を返す → {ok, errors, rows, warnings, text}
+ *   OtoVoice.toRows(文,o)      文を、自動の規則をかけた結果の行に直す（手で直すための下書き）
  *   OtoVoice.sing(譜面,o)      歌う → Float32Array（32kHz）
  *   OtoVoice.lyric(歌詞)       歌詞 → 拍の並び（OtoVoice.OtoSing.singNotes の音符の m に入れる）
  *   OtoVoice.radio(声,o)       話し声を無線機に通す → Float32Array（24kHz）
@@ -28,6 +31,7 @@
  *     voice 声の見本の名前 ／ f0 声の高さ（Hz。男 100〜130、女 200〜250）／ speed 速さ ／ 声の質：size soft bright breathy rough shake whisper（下の「声の質」）
  *     style 調子：calm 冷静・panic 焦り・joy 歓喜・sad 沈んだ声・whisper 囁き ／ range 抑揚の幅 ／ long 文末の伸ばし
  *     （もとの設定もそのまま使える：scale 口の共鳴の倍率 ／ oq 声帯が開いている割合 ／ breath 息の量 ／ sharp 声の硬さ。声の質の項目を書くと、そちらが優先）
+ *     nat・con 声の出し方の改良・子音の改良（1.4 から、書かなければ入る。false で 1.3.0 と同じ音。下の「声の出し方と子音の改良」）
  *     seed 乱数の種（同じ種なら、同じ音）／ strict:false 読めないところを飛ばして続ける（飛ばしたものは o.diag の配列に入る）
  *     かなの読み方：bidaku:true 語の中の が行を鼻にかける ／ devoice:false 母音の声を抜かない ／ wa:true 語の最後の は・へ を わ・え と読む ／ literal:true 字のとおりに読む
  *
@@ -165,6 +169,71 @@
  *   よぞらに [ SaI nIN lI t@l stAr ]
  *   ---
  *
+ * ■ 手で書く行（OtoVoice.speakRows）：音素1つを1行に書いて、長さ・高さ・強さ・声の質を、書いたとおりに鳴らす（1.4）
+ *   かなの文は、アクセントの山や拍の長さを自動で決める。行は、それをぜんぶ書き手が決める。自動の規則は、かからない
+ *   書式（# から行末は注釈）
+ *     はじめに書くもの    voice 名前 ／ f0 数（高さの基準 Hz。書かなければ、声の高さ）／ nat on|off ／ con on|off ／ smooth 数（高さの線の丸め。ミリ秒）／ seed 数
+ *     どこでも書けるもの  lang ja|en（ここから先の音素を、日本語として・英語として作る）
+ *     音素の行            音素  長さ（ミリ秒）  項目 値 …
+ *     間の行              _  長さ（ミリ秒）
+ *   音素の記号は、話し声の / / と [ ] の中と同じ（日本語の う は u、ら行は r）。長い母音・っ は、長さで書く（っ は、次の子音を長くする）
+ *   項目
+ *     p 値 …               高さの通過点。値は、音名（A3、C#4、A3+30 はセント）／ 220hz ／ 基準からの半音（+2、-3.5、0）。うしろに @位置（その音素の頭から％）
+ *                          位置をぜんぶ省くと、1つは真ん中、2つは頭と終わり、3つ以上は等間隔。一部に書くときは、頭と終わりだけ省ける。書かない行は、前後の点のあいだを通る
+ *     vib 深さ 速さ 遅れ   その音素の中で、高さをゆらす（半音、Hz、ミリ秒）
+ *     vol 数               強さの倍率
+ *     soft bright breathy  声の質（0〜1）。書いた行から先に効き、行の真ん中どうしを、なめらかにつなぐ（文を切らない）
+ *     creak 数             きしみ（0〜1）。語尾の、がらがらした声
+ *     asp 数               p t k のあとの息の長さ（ミリ秒）      noise 数   子音の雑音の強さの倍率      unv   母音の声を抜く
+ *     nc 数  nq 数         子音の雑音の山の中心（Hz）と鋭さ      n2 中心 鋭さ 強さ   2つめの山を足す      click 数   破裂の頭の衝撃の倍率（0 で無し）
+ *     mix 母音 数          ほかの母音へ寄せる（0〜1）            f1 f2 f3 数   共鳴の高さを、Hz でずらす
+ *   --- 行
+ *   voice onna
+ *   f0 215
+ *   k    60   asp 20
+ *   j    66   p +4.6
+ *   o    150  p +5.4 +5.8@25 +4.0@60 +1.8@100   soft .3 bright .7
+ *   w    55   p +1.0
+ *   a    100  p +0.8 +1.3 +1.8                  soft .5 bright .55
+ *   _    300
+ *   ---
+ *   読み戻し：speakRows の返り値の .report（checkRows も同じもの）。耳のない書き手が、結果を確かめるためのもの
+ *     .text      行ごとの表（頭の時刻、実際の長さ、書いた高さ、音名、音から測った高さ、強さ、子音の雑音の山）と、注意
+ *     .rows      同じ中身を、数で      .warnings   注意の一覧 [{line, msg}]
+ *     注意が出るのは：書いた長さにできなかった／母音が 40 ミリ秒より短い／高さの動きが急すぎる／長い母音の高さが動かない／母音の長さがどれも同じ／
+ *                     破裂音が短すぎる／息が次の音素の半分ちかく／測った高さが指定と半音より大きくずれた
+ *   句の終わりの音素には、消えぎわの余韻がつく。そのぶんは次の間の中に入るので、全体の時刻は、書いた長さの合計になる
+ *   作りの下限より短くは書けない音素がある（破擦音は約 123 ミリ秒、や行の j は約 66 ミリ秒）。そのときは、注意が出る
+ *   OtoVoice.toRows(文) は、かなの文を、自動の規則をかけた結果の行に直す。ほぼ同じ長さ・同じ高さの動きで鳴るので、そこから気になる行だけを直せる
+ *   書くときの目安（(推定) 音声学の一般的な値からの見積もり。この目安で書いた見本を、人が聴いて「自動より良い」と確かめた）
+ *     ・アクセントの山では声を張り（soft .3 bright .7）、句の終わりへゆるめる（soft .7、breathy .3）。山の高さは、あとの語ほど低くする
+ *     ・澄んだ子音（k s t など）のあとの母音は、半音ほど高く入って、目標へ下がる。濁った子音（d z など）のところは、半音ほど沈める
+ *     ・母音の長さは、そろえない。句の終わりは 1.5〜2 倍に伸ばし、助詞や「です」の う は短く、弱く（vol .7）
+ *     ・い は、あ・お より弱く鳴る（読み戻しの「強さ」で見える）。強めたい い には vol 1.3
+ *     ・問いは、最後の母音を長くして、後ろの半分で大きく上げる。言い切りは、最後の母音で 5 半音ほど下げ、creak .3 を足す
+ *     ・p t k の息（asp）は、次の母音の3分の1より短く
+ *
+ * ■ 声の出し方と子音の改良（nat・con）：話し声の音づくり（1.4 から、書かなければ入る）
+ *   nat（声の出し方）  sync 息の雑音を声帯の開閉に合わせる ／ jit・shim 1周期ごとの長さと強さのゆらぎ ／ drift 高さのゆっくりした漂い ／ b1 声帯が開いているあいだ第1共鳴の幅を広げる
+ *   con（子音）        vmod 濁った摩擦音の雑音を声に合わせる ／ bands 雑音の山の形（さ行・しゃ行のすそを切り、2つめの山を足す）／ click 破裂の頭の衝撃 ／
+ *                      tap ら行を短く閉じてはじく ／ round お・う の前で、さ行・しゃ行の雑音を低く ／ vbar 濁った破裂音のうなり ／ vz 濁った摩擦音の雑音を弱め、声を強める
+ *   書き方  {nat:false, con:false} で、1.3.0 と同じ音（同じ波形）。1つずつ選ぶなら {con:{vmod:1, tap:1}}（書かないものは切れる）。行では、はじめに nat off ／ con off
+ *
+ * ■ 歌の音符ごとの指定（1.4）：音符のうしろに書く
+ *   C4+30         セントで上げ下げ（C4-20 は 20 セント低く）
+ *   C4:2{…}       { } の中に、項目を , で区切って書く
+ *     vib 数      ゆらしの深さの倍率（0 で無し、1 でふつう。短い音符でも、書けばゆれる）      rate 数   ゆらしの速さ（Hz。ふつうは 5.5）      delay 数   ゆれはじめるまでの秒（ふつうは 0.19）
+ *     scoop 数    頭を、何半音下から入るか（0 でまっすぐ。負の数は、上から）                    cent 数   セント
+ *     p 半音@位置/…   音符の中の高さの線。位置は、音符の頭から％。点のあいだは、まっすぐ（p -1@0/0@25/0@80/-2@100）
+ *   o.nat  歌い方の改良（書かなければ入る。{nat:false} で、これまでと同じ音）：dip 濁った子音で高さが沈み、澄んだ子音のあとは少し高く入る ／ prep 大きく跳ぶ前に、反対へ少し振れる
+ *   --- 譜面（音符ごとの指定）
+ *   tempo 96
+ *   voice onna
+ *   C4{scoop 1.5} D4 E4:2{vib 1.4, delay .25} G4+15 E4 D4:2{p 0@0/0@60/-1.5@100, vib 0}
+ *   そ ら へ と ん で
+ *   ---
+ *   これまで、# のつく音名（C#4）は、# から先が注釈として切られて、エラーになっていた。1.4 で直した（注釈の # は、行の頭か、空白のあとに書く）
+ *
  * ■ AI が台詞を書くときの手順
  *   1 まず、かなで書く。文節ごとに空白を入れ、下がり目のある語に ' を打つ。漢字・数字は、かなに直す
  *   2 OtoVoice.check(文) を通す。ok が false なら errors を読んで直す。kana が、思ったとおりの読みになっているかを見る
@@ -173,7 +242,8 @@
  *   5 話し手が代わるところは <voice 名前>。1つの文字列に、何人ぶんでも続けて書ける
  *
  * ■ 知っておくこと
- *   ・音を耳で聴いて確かめたライブラリではない（音の出ない環境で作った）。確かめたのは、書いたとおりの長さ・高さ・音素の列になっていることと、
+ *   ・1.4 の話し声の改良（声の出し方・子音）と、手で書いた行の見本は、人が聴いて「前より良い」と確かめた。歌声の 1.4 の足しものは、まだ聴いて確かめていない
+ *   ・それより前の部分は、音を耳で聴いて確かめたものではない（音の出ない環境で作った）。確かめたのは、書いたとおりの長さ・高さ・音素の列になっていることと、
  *     これまでの書き方（かな、[ ]）の文が、足す前の RSP と同じ波形になること、かなを音素に直しても同じ波形になること
  *   ・(推定) 声の見本（VOICES）、声の質の項目の効き方、調子ごとの大きさは、見積もりの値
  *   ・話し声は 16kHz（8kHz から上の音はない）、歌声は 32kHz。まぜて鳴らすと、明るさがちがう
@@ -618,7 +688,7 @@ return (()=>{
       if(ix%2){TGS=[];const g=stamp(parseEN(part),TX.tags,AS);prosodyEN(g,S,R);for(const x of g)if(x.pm&&x.ax!=null&&x.ax!==1)x.pm=Math.pow(x.pm,x.ax);if(G.length&&!G[G.length-1].p)G.push({p:1});G=G.concat(g)}
       else{let T=[];const TG=[];part.split('/').forEach((sub,jx)=>{TGS=[];const t=jx%2?parsePH(sub):parse(sub,JX);if(jx%2)PHN++;for(const x of TGS)TG.push([x[0]+T.length,x[1]]);T=T.concat(t)});
         TGS=TG;T=stamp(T,TX.tags,AS);prosody(T,S,R,FJ?JX:null);if(o.dbg)T_ALL=T_ALL.concat(T);G=G.concat(expandJP(T))}});
-    const NEW=o.en!=='old'&&(o.jp==='new'||PHN>0||G.some(g=>g.en));if(NEW){planEN(G);if(o.jp!=='old')planJP(G,JT*(o.x&&o.x.jt||1))}       // 英語を含む文と、{jp:'new'} をつけた文は、新しい道すじで作る（何もつけない日本語だけの文は、元のまま）
+    const NEW=o.en!=='old'&&(o.jp==='new'||PHN>0||G.some(g=>g.en));if(NEW){planEN(G);if(o.jp!=='old')planJP(G,JT*(o.x&&o.x.jt||1))}if(o.gfix)o.gfix(G);       // 英語を含む文と、{jp:'new'} をつけた文は、新しい道すじで作る（何もつけない日本語だけの文は、元のまま）
     // 制御点：[時刻, F1,F2,F3, 声の強さ, 雑音の強さ, 雑音の中心, 雑音のQ, 声帯が鳴っているか, 高さの倍率, 鼻の谷の高さ, 共鳴の幅 B1,B2,B3]（うしろの4つは、新しい道すじだけが使う）
     const K=[];let tt=0,cur=VW.a,fc=4000,fq=1,pf=1,cav=0;
     const k=(dt,F,av,af,vo)=>{tt+=dt*sp;cur=F;cav=av;K.push([tt,F[0],F[1],F[2],NEW?av*1.6:av,af,fc,fq,vo,pf,NP,70,100,160])};
@@ -640,9 +710,16 @@ return (()=>{
       e=(dt,F,av,af,vo,nz)=>{tt+=Math.max(.001,dt);cur=F;cav=av;K.push([tt,F[0],F[1],F[2],av,af,fc,fq,vo,pf,nz||NP,F[3]||70,F[4]||100,F[5]||160])},
       noise=(c,q)=>{fc=c;fq=q;const L=K[K.length-1];if(!L[5]){L[6]=c;L[7]=q}};
     // 日本語の し・ち・じ は、英語の sh・ch・j より、雑音が高く、強い
-    const frs=g=>{const f=FRS[g.ph];return g.J&&(g.ph==='S'||g.ph==='tS'||g.ph==='dZ')?[f[0]*1.25,f[1],f[2]*1.4,f[3]]:f};
+    const frs0=g=>{const f=FRS[g.ph];return g.J&&(g.ph==='S'||g.ph==='tS'||g.ph==='dZ')?[f[0]*1.25,f[1],f[2]*1.4,f[3]]:f},
+      RND={o:1,M:1,u:1,U:1,oU:1,O:1,w:1},SIB={s:1,z:1,S:1,Z:1,ts:1,dz:1,tS:1,dZ:1},
+      frs=g=>{let f=frs0(g);if(CON&&CON.vz&&f[3]>0)f=[f[0],f[1],f[2]*(1-.4*CON.vz),f[3]*(1+.5*CON.vz)];return CON&&CON.round&&SIB[g.ph]&&g.N&&RND[g.N.ph.split('~')[0]]?[f[0]*(1-.12*CON.round),f[1],f[2],f[3]]:f};   // 唇が丸まると、口の前の部屋が長くなって、雑音の山が下がる
+    /* 子音の改良（1.4 試作）。CNB＝雑音の山の形：[すそを切るか, 2つめの山の中心, 鋭さ, 強さ]。(推定) 値は見積もり */
+    const CON=o.con||null,CONB=CON?CON.bands:0,CLK={l:4,a:6,v:6},VB=CON&&CON.vbar?1+.6*CON.vbar:1,
+      CNB={s:[1,7000,1.2,.7],z:[1,7000,1.2,.7],ts:[1,7000,1.2,.7],dz:[1,7000,1.2,.7],S:[1,5200,1.5,.5],Z:[1,5200,1.5,.5],tS:[1,5200,1.5,.5],dZ:[1,5200,1.5,.5],
+        T:[0,6500,1,1],D:[0,6000,1,.8],C:[0,6000,1.2,.4],t:[0,6800,1,.6],d:[0,6800,1,.6]},
+      cnbFix=(s,kb)=>{let t=CNB[s.ph];if(s.nbX)t=[t?t[0]:0,s.nbX[0],s.nbX[1],s.nbX[2]];if(!t)return;const v=[t[0],t[1]*(s.J&&(s.ph==='S'||s.ph==='tS'||s.ph==='dZ')&&!s.nbX?1.1:1),t[2],t[3]*(CONB||1)];for(let i=Math.max(0,kb-1);i<K.length;i++)K[i].nb=v};
     const emitEN=g=>{
-      const P=g.P,N=g.N,v=EV[g.ph],c=EC[g.ph],D=Math.max(.012,g.D*sp)+(EV[g.ph]&&!g.wv?(g.aspT||0)*.7:0),st=r2(.9,1)*(g.am||1)*S.amp,Lb=bnd(P,g),Rb=bnd(g,N),Nv=N&&EV[N.ph],Pv=P&&EV[P.ph],voiced=x=>x&&(EV[x.ph]||EC[x.ph][2]);
+      const P=g.P,N=g.N,v=EV[g.ph],c=EC[g.ph],D=Math.max(.012,g.D*sp)+(EV[g.ph]&&!g.wv&&!g.xd?(g.aspT||0)*.7:0),st=r2(.9,1)*(g.am||1)*S.amp,Lb=bnd(P,g),Rb=bnd(g,N),Nv=N&&EV[N.ph],Pv=P&&EV[P.ph],voiced=x=>x&&(EV[x.ph]||EC[x.ph][2]);
       if(o.dbg)(o.dbg.ph=o.dbg.ph||[]).push([tt,g.ph]);
       if(!P)e(.004,Lb,0,0,1);
       if(v&&g.wv&&1){
@@ -667,19 +744,19 @@ return (()=>{
           else e(D*(u-pu),f,a,0,1,nzAt(u));
           pu=u}
         if(!N)e(.05*sp,cur,0,0,1);return}
-      const k0=g.J&&g.ph==='dZ'&&Pv&&0?'f':c[0],vd=c[2],bar=vd&&voiced(P);                 // 日本語の じ は、母音のあいだでは、閉じずに摩擦だけになる
+      const k0=g.J&&g.ph==='dZ'&&Pv&&0?'f':c[0],vd=c[2],bar=vd&&(voiced(P)||!!(CON&&CON.vbar&&!P&&(c[0]==='s'||c[0]==='a')));                 // 日本語の じ は、母音のあいだでは、閉じずに摩擦だけになる
       if(k0==='s'){
         // 破裂音：閉鎖（濁音は、低いうなり）→ 破裂の雑音 →（澄んだ音は）次の音の頭に息。次が破裂・摩擦・鼻音なら、破裂させない
         const pl=c[1],nx=N&&EC[N.ph],rel=!N||Nv||(nx&&(nx[0]==='x'||nx[0]==='h')),bl=(pl==='l'?.005:pl==='a'?.009:.014)*sp,clo=Math.max(.02*sp,D-bl),B=BUR[pl],A=B[2]*1*(vd?.7:1)*(rel?1:.4);
-        e(.012*sp,[bar?200:Lb[0],Lb[1],Lb[2],60,110,170],bar?.16*st:0,0,1);
-        e(clo-.012*sp,[bar?200:Rb[0],Rb[1],Rb[2],60,110,170],bar?.1*st:0,0,vd?1:0);
-        {noise(pl==='v'?cl(Rb[1]*1.25,1500,3200):B[0],B[1]);e(.0015,Rb,vd?.12*st:0,A,vd?1:0);e(bl,Rb,vd?.2*st:0,A*.45,vd?1:0);}
+        e(.012*sp,[bar?200:Lb[0],Lb[1],Lb[2],60,110,170],bar?.16*st*VB:0,0,1);
+        e(clo-.012*sp,[bar?200:Rb[0],Rb[1],Rb[2],60,110,170],bar?.1*st*VB:0,0,vd?1:0);
+        {noise(pl==='v'?cl(Rb[1]*1.25,1500,3200):B[0],B[1]);e(.0015,Rb,vd?.12*st:0,A,vd?1:0);if(rel&&(g.clkX!=null||CON&&CON.click&&(N||pl!=='l')))K[K.length-1][pl==='l'?'clk':'clkn']=(g.clkX!=null?g.clkX:1)*(CON&&CON.click||1)*(vd?.5:1)*CLK[pl]*st;e(bl,Rb,vd?.2*st:0,A*.45,vd?1:0);}
         if(rel){
-          if(!vd&&N){const sv=Nv?N:N.N&&EV[N.N.ph]?N.N:null;N.aspT=VOT[pl]*(g.J?.45:sv&&sv.st===1?1:g.wi===0?.8:.5)*(P&&P.ph==='s'&&g.wi>0?.3:1)*sp}
+          if(!vd&&N&&g.aspX!=null)N.aspT=g.aspX;else if(!vd&&N){const sv=Nv?N:N.N&&EV[N.N.ph]?N.N:null;N.aspT=VOT[pl]*(g.J?.45:sv&&sv.st===1?1:g.wi===0?.8:.5)*(P&&P.ph==='s'&&g.wi>0?.3:1)*sp}
           if(!N)e(.035*sp,Rb,vd?0:.14*st,0,0)}}
       else if(k0==='a'){
         const dz=g.ph==='dz',f=frs(g),clo=dz?.025*sp:Math.max(.045*sp,D*.5),fr=dz?Math.max(.04*sp,D-clo):Math.max((vd?.06:.075)*sp,D-clo)*1,va=vd?f[3]*st:0;
-        e(.012*sp,[bar?200:Lb[0],Lb[1],Lb[2],60,110,170],bar?.14*st:0,0,1);e(clo-.012*sp,Rb,bar?.1*st:0,0,vd?1:0);noise(f[0],f[1]);
+        e(.012*sp,[bar?200:Lb[0],Lb[1],Lb[2],60,110,170],bar?.14*st*VB:0,0,1);e(clo-.012*sp,Rb,bar?.1*st*VB:0,0,vd?1:0);noise(f[0],f[1]);
         e(.003,Rb,va*.5,f[2]*1.3,vd?1:0);e(fr*.75,Rb,va,f[2]*.9,vd?1:0);e(fr*.25,Rb,va,f[2]*.2,vd?1:0)}
       else if(k0==='f'){
         const f=frs(g),r=Math.min(.02*sp,D*.3),a=f[2]*(N||P?1:.8),va=vd?f[3]*st:0;noise(f[0],f[1]);
@@ -690,6 +767,9 @@ return (()=>{
       else if(k0==='x'){const T=APT[g.ph],a=.75*st,ua=1?(g.aspT||0)*.8:Math.min(D*.7,g.aspT||0);
         if(ua){e(ua,mixA(Lb,T,.7),.2*st,0,0);e(.006*sp,T,a,0,1);e(Math.max(1?.03*sp:.005,D*.65-ua),T,a,0,1)}else{e(D*.35,T,a,0,1);e(D*.3,T,a,0,1)}
         e(D*.35,Rb,a*1.1,0,1)}
+      else if(k0==='4'&&CON&&CON.tap){const B=BUR.a;                                  // ら行：舌先で短く閉じて（声は弱く続く）、小さくはじく
+        e(D*.3,[260,Lb[1],Lb[2],80,110,170],.3*st,0,1);e(D*.35,[260,Rb[1],Rb[2],80,110,170],.14*st,0,1);noise(B[0],B[1]);
+        e(.0015,Rb,.35*st,B[2]*.3*CON.tap,1);if(CON.click)K[K.length-1].clkn=2*CON.click*st;e(Math.max(.004,D*.35-.0015),Rb,.6*st,B[2]*.06,1)}
       else{e(D*.5,[Lb[0]*.8,Lb[1],Lb[2],60,110,170],.45*st,0,1);e(D*.5,Rb,.55*st,0,1)}
       if(!N)e(.02*sp,cur,0,0,K[K.length-1][8])};
 
@@ -743,14 +823,15 @@ return (()=>{
     };
     /* 文の中の指定：音素を1つ置くごとに、置いた制御点の時刻を伸び縮みさせ（rate、pause）、強さを掛け（vol）、高さのずれを書きとめる（pitch）。
        指定がなければ、何もしない（当てる前と同じ波形） */
-    G.forEach((s,n)=>{const kb=K.length,t0=tt,a=s.mo||s;step(s,n);
+    G.forEach((s,n)=>{const kb=K.length,t0=tt,a=s.mo||s;s._k0=kb;s._ta=t0;step(s,n);if((CONB||s.nbX)&&s.ph)cnbFix(s,kb);
       if(a.cut&&NEW&&s.J&&EV[s.ph]&&!s.wv){const L=K[K.length-1],P=K[K.length-2];                         // q：母音を急に止めて、短い無音を置く
         if(L[4]===0&&P&&L[0]-P[0]>.02){tt=P[0]+.012;L[0]=tt}else e(.012,cur,0,0,1);e(.045*sp,cur,0,0,1)}
       let z=1;if(s.ps!=null&&tt>t0)z=s.ps/(tt-t0);else if(a.rt&&a.rt!==1)z=1/a.rt;
       if(z!==1){for(let i=kb;i<K.length;i++)K[i][0]=t0+(K[i][0]-t0)*z;tt=t0+(tt-t0)*z;if(NEW&&s.J){const m=s.mo||(s.q?s:null);if(m)m.t1=tt}}
-      if(a.px||(a.vx!=null&&a.vx!==1))for(let i=kb;i<K.length;i++){if(a.px)K[i].px=a.px;if(a.vx!=null&&a.vx!==1){K[i][4]*=a.vx;K[i][5]*=a.vx}}});
+      if(a.px||(a.vx!=null&&a.vx!==1))for(let i=kb;i<K.length;i++){if(a.px)K[i].px=a.px;if(a.vx!=null&&a.vx!==1){K[i][4]*=a.vx;K[i][5]*=a.vx}}s._k1=K.length;s._tb=tt});
     k(.04,cur,0,0,1);if(FJ){const fj=fuji(K,JX,S,sp,JT*(o.x&&o.x.jt||1),R,o.x&&o.x.fj);if(o.dbg){o.dbg.fj=fj;o.dbg.bg=JX.bg}}{let any=0;for(const q of K)if(q.px){any=1;break}                                                  // 高さのずれ（<pitch>）：30ミリ秒ほどでなめらかに移る
       if(any){let y=0,pt=0;for(const q of K){const d=q[0]-pt;pt=q[0];y+=((q.px||0)-y)*(1-Math.exp(-d/.03));q[9]*=Math.pow(2,y/12)}}}
+    if(o.kfix)o.kfix(K,G,f0b);
     if(DIAG&&!(tt>=0))note('長さが計算できませんでした','');
     if(o.dbg){o.dbg.K=K;o.dbg.G=G;o.dbg.T=T_ALL;o.dbg.dur=tt}if(o.dry)return new Float32Array(0);
     const N=Math.ceil(tt*SRV),out=new Float32Array(N);
@@ -767,20 +848,29 @@ return (()=>{
         R1=rs(),R2=rs(),R3=rs(),R4=rs(),R5=rs(),R6=rs(),RN=rs(),RZ=rs(),smn=1-Math.exp(-8/SRV/.002),shn=cl((shp||.6)+(S.eff||0),.1,1),tpn=oq*(.5+.22*shn),cxn=2-shn,scn=sc*(S.fs||1),wh=S.wh||0;       // 気持ち：力んだ声は鋭く（eff）、笑顔の声は口が横に開いて共鳴が上がる（fs）、ささやきは声帯を鳴らさない（wh）
       sr(R4,3300*scn,250);sr(R5,3750*scn,200);sr(R6,4900*scn,1000);sr(RN,NP,100);
       let b1=70,b2=100,b3=160,za=1,zb=0,zc=0,x1=0,x2=0,hl=0;
+      /* 試作（1.4）：kx＝制御点の 14〜17 列め（声帯が開いている割合・閉じ方の鋭さ・息の量・きしみ）を読む。
+         nat＝声の出し方の改良 {sync 息を声帯の開閉に合わせる, jit 1周期ごとの長さのゆらぎ, shim 強さのゆらぎ, drift 高さの漂い, b1 開いているあいだ第1共鳴の幅を広げる}。
+         どちらも無ければ、1.3.0 と同じ波形（乱数の引き方も変えない） */
+      const VM=o.con?o.con.vmod:0,fn2=flt(),ffb=flt();let nb=null,imp=0,impn=0;
+      const NT=o.nat||null,KX=!!o.kx,B1M=!!(NT&&NT.b1),SYN=!!(NT&&NT.sync),R1o=rs();let oqv=oq,brx=brv,crk=0,tpx=tpn,cxx=cxn,pj=1,sh=1,cy=0,drf=0;
       for(let i=0;i<N;i++){
-        if((i&7)===0){const x=i/SRV;while(ki<K.length-2&&K[ki+1][0]<=x)ki++;
+        if((i&7)===0){const x=i/SRV;while(ki<K.length-2&&K[ki+1][0]<=x){ki++;if(K[ki].clk)imp+=K[ki].clk;if(K[ki].clkn)impn+=K[ki].clkn}
           const A=K[ki],B=K[ki+1],u=cl((x-A[0])/(B[0]-A[0]||1),0,1),L=j=>A[j]+(B[j]-A[j])*u;
           c1+=(L(1)-c1)*smn;c2+=(L(2)-c2)*smn;c3+=(L(3)-c3)*smn;av=L(4);af=L(5);vo=L(8)*(1-wh);b1=L(11);b2=L(12);b3=L(13);
-          jit+=((R()-.5)-jit)*.3;f0=f0b*L(9)*(1+S.jit*1.4*jit)*(1+S.trem*Math.sin(x*46+tp));
-          sr(R1,c1*scn,b1);sr(R2,c2*scn,b2);sr(R3,c3*scn,b3);sr(RZ,L(10),100);za=1/RZ.a;zb=-RZ.b*za;zc=-RZ.c*za;set(ff,L(6),L(7))}
-        ph+=f0/SRV;if(ph>=1)ph-=1;
-        const w=R()*2-1,gl=ph<tpn?Math.pow(Math.sin(1.5708*ph/tpn),2):ph<oq?Math.pow(Math.max(0,Math.cos(1.5708*(ph-tpn)/(oq-tpn))),cxn):0,src=gl-oq*.5,d=src-prev;prev=src;
-        const x=d*GV*av*vo+w*GA2*av*(1-vo)*(1+1.6*wh)+w*GA2*brv*.5*av*vo,z=za*x+zb*x1+zc*x2;x2=x1;x1=x;
+          if(KX){oqv=L(14);const sv=L(15);brx=L(16);crk=L(17);tpx=oqv*(.5+.22*sv);cxx=2-sv}
+          jit+=((R()-.5)-jit)*.3;f0=f0b*L(9)*(1+S.jit*1.4*jit)*(1+S.trem*Math.sin(x*46+tp));if(NT){drf+=((R()-.5)-drf)*.004;f0*=1+NT.drift*drf}
+          sr(R1,c1*scn,b1);if(B1M)sr(R1o,c1*scn*(1+.03*NT.b1),b1+NT.b1*(40+.8*b1));sr(R2,c2*scn,b2);sr(R3,c3*scn,b3);sr(RZ,L(10),100);za=1/RZ.a;zb=-RZ.b*za;zc=-RZ.c*za;set(ff,L(6),L(7));nb=A.nb||null;if(nb){if(nb[0])set(ffb,L(6),L(7));set(fn2,nb[1],nb[2])}}
+        ph+=f0*pj/SRV;if(ph>=1){ph-=1;
+          if(NT||crk>0){cy^=1;if(crk>0&&R()<.06)cy^=1;const sg=cy?1:-1,j=NT?NT.jit:0,s=NT?NT.shim:0;   // 1周期ごとに、長さと強さが少しずつ変わる。きしみ：1周期おきに長い・短いが入れかわる
+            pj=1+j*(R()*2-1)+crk*(.28*sg+.25*(R()-.5));sh=1+s*(R()*2-1)+crk*(.35*sg+.3*(R()-.5))}}
+        const w=R()*2-1,gl=ph<tpx?Math.pow(Math.sin(1.5708*ph/tpx),2):ph<oqv?Math.pow(Math.max(0,Math.cos(1.5708*(ph-tpx)/(oqv-tpx))),cxx):0,src=gl-oqv*.5,d=src-prev;prev=src;
+        const x=d*GV*av*vo*sh+w*GA2*av*(1-vo)*(1+1.6*wh)+w*GA2*brx*.5*av*vo*(SYN?.3+1.7*gl:1)+imp,z=za*x+zb*x1+zc*x2;x2=x1;x1=x;imp=0;
         let y=RN.a*z+RN.b*RN.p+RN.c*RN.q;RN.q=RN.p;RN.p=y;
         y=R6.a*y+R6.b*R6.p+R6.c*R6.q;R6.q=R6.p;R6.p=y;y=R5.a*y+R5.b*R5.p+R5.c*R5.q;R5.q=R5.p;R5.p=y;y=R4.a*y+R4.b*R4.p+R4.c*R4.q;R4.q=R4.p;R4.p=y;
-        y=R3.a*y+R3.b*R3.p+R3.c*R3.q;R3.q=R3.p;R3.p=y;y=R2.a*y+R2.b*R2.p+R2.c*R2.q;R2.q=R2.p;R2.p=y;y=R1.a*y+R1.b*R1.p+R1.c*R1.q;R1.q=R1.p;R1.p=y;
+        y=R3.a*y+R3.b*R3.p+R3.c*R3.q;R3.q=R3.p;R3.p=y;y=R2.a*y+R2.b*R2.p+R2.c*R2.q;R2.q=R2.p;R2.p=y;y=B1M&&ph<oqv?R1o.a*y+R1o.b*R1.p+R1o.c*R1.q:R1.a*y+R1.b*R1.p+R1.c*R1.q;R1.q=R1.p;R1.p=y;
         hl+=(x-hl)*.75;                                                    // 4kHz から上の、うすい息（直列の共鳴だけだと、ここが空になる）
-        const s=y+(x-hl)*HA+af*GF2*run(ff,w);
+        let nz=run(ff,w+impn);impn=0;if(nb){if(nb[0])nz=run(ffb,nz)*1.5;nz+=nb[3]*run(fn2,w)}if(VM&&vo>0)nz*=1+VM*vo*(1.7*gl-.6);   // 雑音：山を足す・すそを切る。濁った摩擦音は、声帯が開くたびに強まる
+        const s=y+(x-hl)*HA+af*GF2*nz;
         out[i]=s;const a=s<0?-s:s;if(a>pk)pk=a}
     }else
     for(let i=0;i<N;i++){
@@ -802,7 +892,7 @@ return (()=>{
   function phones(text,X){let o=[];String(text).split(/\[([^\]]*)\]/).forEach((part,ix)=>{if(!part.trim())return;const G=ix%2?parseEN(part):expandJP(parse(part,X&&{bidaku:!!X.bidaku,dv:X.devoice!==false,dz:X.dz!==false}));
     o.push(G.map(g=>g.p?'|':g.w?' ':g.q?'Q':g.l?':':g.ph+(g.wv?'°':'')+(g.dv&&!['k','p','tS','ts'].includes(g.ph)?'°':'')+(g.st===1?"'":'')).join(''))});return o.join(' ')}
   const GV=14,GA=.35,GF=.3,GA2=.25,GF2=1.5,HA=.7;
-  return{speak,parse,parseEN,parsePH,toPH,phones,STY,SRV,PH:2,isV:ph=>!!EV[ph]};
+  return{speak,parse,parseEN,parsePH,toPH,phones,STY,SRV,PH:2,isV:ph=>!!EV[ph],EV,EC};
 })();
 })();
 /*</SPEECH-CORE>*/
@@ -899,7 +989,7 @@ const SEMI={c:0,d:2,e:4,f:5,g:7,a:9,b:11},AH={c:'',g:'',v:'a',ch:'あ'};
 function parse(score,o){
   o=o||{};let tempo=96,voice=null;const ev=[];let beat=0,pend=[];const errs=[];
   String(score).split(/\r?\n/).forEach((raw,li)=>{
-    const line=raw.replace(/#.*$/,'').replace(/\/\/.*$/,'').trim();if(!line)return;
+    const line=raw.replace(/(^|\s)#.*$/,'').replace(/\/\/.*$/,'').trim();if(!line)return;
     let m;
     if((m=/^tempo\s+([\d.]+)$/i.exec(line))){tempo=+m[1];return}
     if((m=/^voice\s+(\w+)$/i.exec(line))){voice=m[1];return}
@@ -932,6 +1022,8 @@ function sing(score,o){
 function singNotes(N,o){
   o=o||{};const vc=VOICES[o.voice]||VOICES.onna,df=(x,d)=>x==null?d:x,cl=(x,a,b)=>x<a?a:x>b?b:x;
   let sd=(df(o.seed,1)*2654435761)>>>0;const R=()=>{sd=(sd+0x6D2B79F5)>>>0;let t=sd;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296},r2=(a,b)=>a+R()*(b-a);
+  const SN=o.nat||null,VOB={b:1,d:1,g:1,z:1,j:1,v:1,D:1,Z:1},VLS={k:1,s:1,sh:1,t:1,ch:1,ts:1,h:1,f:1,p:1,T:1},
+    pcAt=(A,u)=>{if(u<=A[0][0])return A[0][1];for(let i=1;i<A.length;i++)if(u<=A[i][0]){const a=A[i-1],b=A[i];return a[1]+(b[1]-a[1])*(u-a[0])/(b[0]-a[0]||1)}return A[A.length-1][1]};
   const tune=df(o.tune,1),shape=df(o.shape,1),brM=df(o.breath,1),onM=df(o.onset,1),vibM=df(o.vib,1),E=df(o.expr,1),gl0=o.glide||0,T0=o.pad||0,ROOM=df(o.room,.43);   // room: 音符の手前の何秒までに、息つぎと子音を収めるか
   const V=vc.VX||(vc.VX=XV(vc)),br0=vc.breath*brM,onB=.5*onM,n0=N.length;
   const ASL=df(o._asl,.4),ASH=df(o._ash,1.25),KQ=df(o._kq,2),HA=df(o._ha,.7);
@@ -1115,15 +1207,19 @@ function singNotes(N,o){
       while(ni<n0-1&&N[ni+1].t+T0-(X[ni+1].flip!==X[ni<0?0:ni].flip?.014:.035)<=x){ni++;const q=X[ni],pv=ni>0?N[ni-1].midi:q.e.midi,iv=Math.abs(q.e.midi-pv);
         w0=1/(cl(.014+.0032*iv,.014,.042)+gl0*.4);
         if(ni>0&&q.flip!==X[ni-1].flip){for(let j=0;j<15;j++)S[j]=q.P[j];lp=q.e.midi+(q.flip?.5:-.3);lv=0;w0=1/.01}   // ひっくり返る：出し方も高さも、一瞬で切りかわる
-        if(q.first){lp=q.e.midi-.55*E*Math.min(1,q.vel)*(1+q.sh);lv=0;w0=1/(.03+gl0*.4)}}
+        if(q.first){lp=q.e.midi-.55*E*Math.min(1,q.vel)*(1+q.sh);lv=0;w0=1/(.03+gl0*.4)}
+        if(q.e.scoop!=null){lp=q.e.midi-q.e.scoop;lv=0;if(q.e.scoop>0)w0=Math.min(w0,1/.03)}}
       const q=X[Math.max(0,ni)],e=q.e,ta=x-(e.t+T0),tE=e.t+T0+e.dur;
-      let tg=e.midi;if(e.bend&&e.bend.amt)tg+=e.bend.amt*cl((ta-(e.bend.at||0))/Math.max(.01,e.bend.dur||.1),0,1);
+      let tg=e.midi+(e.cent?e.cent/100:0);if(e.pc)tg+=pcAt(e.pc,ta/e.dur);
+      if(SN){const c=q.m&&q.m.c;if(SN.dip){if(VOB[c])tg-=.5*SN.dip*cl(1-ta/.04,0,1);else if(VLS[c]&&ta>0)tg+=.3*SN.dip*cl(1-ta/.06,0,1)}   // 子音のところの、細かい高さの動き
+        if(SN.prep&&e.join&&ni>=0&&ni<n0-1){const nx=N[ni+1],iv=nx.midi-e.midi,u=x-(nx.t+T0-.125);if(u>0&&(iv>=3||iv<=-3))tg-=(iv>0?1:-1)*Math.min(.6,.07*Math.abs(iv))*SN.prep*Math.min(1,u/.05)}}   // 跳ぶ前の、反対向きの予備動作
+      if(e.bend&&e.bend.amt)tg+=e.bend.amt*cl((ta-(e.bend.at||0))/Math.max(.01,e.bend.dur||.1),0,1);
       if(q.hic&&x>=tE-q.hd){tg+=q.hic;if(hon!==ni){hon=ni;for(let j=0;j<15;j++)S[j]=q.PH[j];lp=tg+.4;lv=0;w0=1/.01}}   // 語尾が、裏声で上へ跳ねる
       else if(q.last&&E>0)tg-=.4*E*(1+1.5*q.sh)*(1-q.ed)*cl((x-(tE-.1))/.1,0,1.5);                  // 語尾は、少し下がりながら消える
       lv+=(w0*w0*(tg-lp)-2*zeta*w0*lv)*dtc;lp+=lv*dtc;
       dr+=((R()-.5)-dr)*.0025;
-      const long=e.join&&!q.last?e.dur>.5:e.dur>.4,want=long?vibM*.34*(1+.12*(q.vel-1))*cl((ta-.19)/.32,0,1)*cl((tE-x)/.12,0,1)*(e.dur>1.3?1.15:1)*q.vb:0;vd+=(want-vd)*.02;
-      vph+=dtc*5.5*(1+.08*jit+.03*Math.min(1,ta));jit+=((R()-.5)-jit)*.3;
+      const long=e.vib>0||(e.join&&!q.last?e.dur>.5:e.dur>.4),want=long?(e.vib!=null?e.vib:1)*vibM*.34*(1+.12*(q.vel-1))*cl((ta-(e.vibDelay!=null?e.vibDelay:.19))/.32,0,1)*cl((tE-x)/.12,0,1)*(e.dur>1.3?1.15:1)*q.vb:0;vd+=(want-vd)*.02;
+      vph+=dtc*(e.vibRate||5.5)*(1+.08*jit+.03*Math.min(1,ta));jit+=((R()-.5)-jit)*.3;
       const sv=Math.sin(6.2832*vph),fs=440*Math.pow(2,(lp+dr*7*E-69)/12);f0=fs*Math.pow(2,vd*sv/12)*(1+.012*jit);inc=f0/SR;
       trm=1+.09*vd*sv+.03*jit*E;                                          // ビブラートは、強さもわずかにゆれる
       // 声の出し方は、音符の変わり目でなめらかに移す
@@ -1172,7 +1268,7 @@ function singNotes(N,o){
   if(o.norm){let pk=1e-6;for(let i=0;i<n;i++){const a=out[i]<0?-out[i]:out[i];if(a>pk)pk=a}const g=.9/pk;for(let i=0;i<n;i++)out[i]*=g}
   return out;
 }
-return{VERSION:'0.8.0',sing,singNotes,parse,kana,VOICES,REGS,SR,EV:EVM};
+return{VERSION:'0.9.0',sing,singNotes,parse,kana,VOICES,REGS,SR,EV:EVM};
 })();
 /*</OTOSING-CORE>*/
 /*<OTOVOICE-API>*/
@@ -1182,7 +1278,7 @@ return{VERSION:'0.8.0',sing,singNotes,parse,kana,VOICES,REGS,SR,EV:EVM};
    ・読めなかった文字・記号があれば、黙って飛ばさずに、エラーにする（{strict:false} で、飛ばして続ける）
    ・歌は、歌詞の / / のところを拍に直して、OtoSing に渡す（OtoSing そのものは変えていない） */
 const OtoVoice=(function(){
-  const VERSION='1.3.0';
+  const VERSION='1.4.0';
   // 声の見本（(推定) 値は見積もり。f0＝高さ Hz、scale＝口の大きさの逆数：大きいほど小さな体）。OtoVoice.VOICES.名前={f0,scale,…} で足せる
   // sing＝歌うときに使う歌声の見本の名前。自分で足す声は、下の「声の質」の項目でも書ける： OtoVoice.VOICES.haha={f0:190,size:1.12,soft:.7,breathy:.3}
   const VOICES={otoko:{label:'男（見本）',f0:118,scale:1,sing:'otoko'},onna:{label:'女（見本）',f0:215,scale:1.17,sing:'onna'},kodomo:{label:'子供（見本）',f0:290,scale:1.3,sing:'kodomo'},
@@ -1278,7 +1374,7 @@ const OtoVoice=(function(){
         bidaku（かなの が行を鼻にかける）、devoice:false・dz:false・wa:true・literal:true（かなの読み方）、fuji:false（高さを元の作り方で）、
         strict:false（読めないところを飛ばして続ける。飛ばしたものは o.diag に入る）、seed（乱数の種。同じ種なら同じ音） */
   function speak(text,o){
-    o=Object.assign({},o);const errs=[],base=Object.assign({},o.voice&&VOICES[o.voice],o);delete base.voice;
+    o=Object.assign({},o);o.nat=natOf(o.nat);o.con=conOf(o.con);const errs=[],base=Object.assign({},o.voice&&VOICES[o.voice],o);delete base.voice;
     if(o.voice&&!VOICES[o.voice])errs.push({msg:'知らない声「'+o.voice+'」',near:''});
     const segs=plan(text,errs),parts=[];let n=0,keepR=null;
     if(o.seed!=null){let sd=(o.seed*2654435761)>>>0;keepR=Math.random;Math.random=()=>{sd=(sd+0x6D2B79F5)>>>0;let t=sd;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
@@ -1383,12 +1479,24 @@ const OtoVoice=(function(){
   const isNoteTok=x=>/^([A-Ga-g][#b]?-?\d|[Rr_])[!?]*(:[\d.]+)?[!?]*$/.test(x);
   /* 歌う：譜面（音符の行と歌詞の行を交互に）→ 32kHz の Float32Array。譜面の書き方と o は OtoSing.sing と同じ。歌詞の行に、/ / の日本語の音素と、[ ] の英語の音節が書ける。
      o.strict:false で、歌詞の読めないところを飛ばして続ける */
+  /* 音符のうしろに書ける指定（1.4）： C4+30（セント）、C4:2{vib 1.5, rate 6, delay .3, scoop 1, cent -20, p -1@0/0@25/0@100}
+     vib ゆらしの深さの倍率（0 で無し。短い音符でも、書けばゆれる）／rate ゆらしの速さ Hz／delay ゆれはじめるまでの秒／scoop 頭を何半音下から入るか（0 でまっすぐ）／
+     cent 高さのずれ（セント）／p 音符の中の高さの線：半音@位置％ を / で区切る（点のあいだは、まっすぐ） */
+  const NOTEX=/^([A-Ga-g][#b]?-?\d|[Rr_])([+-]\d+(?:\.\d+)?)?([!?]*(?::[\d.]+)?[!?]*)(\{[^}]*\})?$/;
+  function noteAttr(m,warn,near){const a={};let any=0;if(m[2]){a.cent=+m[2];any=1}if(!m[4])return any?a:null;
+    for(const it of m[4].slice(1,-1).split(/[,;]/).filter(Boolean)){const k=/^([a-z]+)=?(.*)$/.exec(it);if(!k){warn.push({msg:'音符の { } の中が読めません',near});continue}const key=k[1],v=k[2],x=parseFloat(v);any=1;
+      if(key==='p'){const P=v.split('/').map(s=>{const q=/^([+-]?[\d.]+)@([\d.]+)%?$/.exec(s);return q?[Math.min(1,Math.max(0,+q[2]/100)),+q[1]]:null});if(!P.length||P.some(q=>!q)||P.some((q,j)=>j&&q[0]<P[j-1][0])){warn.push({msg:'音符の p は「半音@位置」を / で区切って、位置の小さい順に書きます（p -1@0/0@25）',near});continue}a.pc=P;continue}
+      if(!isFinite(x)){warn.push({msg:'音符の「'+key+'」のあとに数がありません',near});continue}
+      if(key==='vib')a.vib=Math.min(4,Math.max(0,x));else if(key==='rate')a.vibRate=Math.min(9,Math.max(2,x));else if(key==='delay')a.vibDelay=Math.min(3,Math.max(0,x));else if(key==='scoop')a.scoop=Math.min(7,Math.max(-7,x));
+      else if(key==='cent')a.cent=(a.cent||0)+x;else warn.push({msg:'音符の { } に、知らない項目「'+key+'」があります（使えるのは vib rate delay scoop cent p）',near})}
+    return any?a:null}
   function sing(score,o){
-    o=Object.assign({},o);const warn=[],fix=[];let idx=0;
+    o=Object.assign({},o);const warn=[],fix=[],attrs=[];let idx=0,nidx=0;
     const lines=String(score).split(/\r?\n/).map(raw=>{
-      const line=raw.replace(/#.*$/,'').replace(/(^|\s)\/\/.*$/,'').trim();if(!line)return'';
+      const line=raw.replace(/(^|\s)#.*$/,'').replace(/(^|\s)\/\/.*$/,'').trim();if(!line)return'';
       if(/^tempo\s+[\d.]+$/i.test(line)||/^voice\s+\w+$/i.test(line))return line;
-      if(line.split(/\s+/).filter(x=>x!=='|').every(isNoteTok))return line;
+      {const tk=line.replace(/\s*\{\s*/g,'{').replace(/\{[^}]*\}/g,s=>s.replace(/\s+/g,'')).split(/\s+/).filter(x=>x!=='|');
+        if(tk.every(x=>NOTEX.test(x)))return tk.map(x=>{const m=NOTEX.exec(x);if(/^[Rr_]/.test(x))return m[1]+m[3];const a=noteAttr(m,warn,line);if(a)attrs.push([nidx,a]);nidx++;return m[1]+m[3]}).join(' ')}
       if(!/[\/\[]/.test(line)){idx+=OtoSing.kana(line).length;return line}
       const M=lyric(line,warn);M.forEach((m,i)=>fix.push([idx+i,m]));idx+=M.length;
       return M.map(m=>m.n?'ん':m.l?'ー':'あ').join('')+' '});       // 数だけ合わせた仮の歌詞。あとで、本物の拍に入れかえる
@@ -1396,7 +1504,8 @@ const OtoVoice=(function(){
     const hard=warn.filter(e=>!/近い音|母音をつけて/.test(e.msg));
     if(hard.length&&o.strict!==false)throw fail(hard,score);
     const S=OtoSing.parse(lines.join('\n'),o);
-    for(const [i,m] of fix)if(S.notes[i])S.notes[i].m=m;                 // 歌詞は、行の順に、頭の音符から1つずつ当たっている（数が合わなければ、上の parse がエラーにする）
+    for(const [i,m] of fix)if(S.notes[i])S.notes[i].m=m;for(const [i,a] of attrs)if(S.notes[i])Object.assign(S.notes[i],a);
+    o.nat=o.nat===false||o.nat==='off'||o.nat===0?null:Object.assign({dip:1,prep:1},typeof o.nat==='object'&&o.nat?Object.assign({dip:0,prep:0},o.nat):null);                 // 歌詞は、行の順に、頭の音符から1つずつ当たっている（数が合わなければ、上の parse がエラーにする）
     // 声：譜面の voice（または o.voice）と、声の質の項目から決める。質を動かさなければ、歌声の見本そのまま
     {const d={};for(const k of DIMS)if(o[k]!=null){d[k]=o[k];delete o[k]}const r=singVoice(o.voice||S.voice,d);o.voice=r.voice;for(const k in r.add)if(o[k]==null)o[k]=r.add[k]}
     delete o.strict;delete o.diag;const out=OtoSing.sing(S,o);out.rate=OtoSing.SR;return out}
@@ -1408,7 +1517,195 @@ const OtoVoice=(function(){
     d.rate=sr;return d}
   // AudioContext で鳴らせる形にする（speak・sing・radio の返り値を渡す）
   const buffer=(ac,x,rate)=>{const b=ac.createBuffer(1,Math.max(1,x.length),rate||x.rate||RSP.SRV);b.getChannelData(0).set(x);return b};
-  return{VERSION,speak,sing,check,toPhonemes,lyric,radio,buffer,VOICES,voices,DIMS,voiceAt,STYLES:Object.keys(RSP.STY),RSP,OtoSing,SR:{speak:RSP.SRV,sing:OtoSing.SR,radio:24000}};
+  /* ---------- 手で書く行（1.4.0）----------
+     音素1つを1行に書いて、長さ・高さ・強さ・声の質を、書いたとおりに鳴らす。自動の規則（アクセントの山、拍の長さ、母音の無声化）は、かからない。
+     書式（# から行末は注釈）：
+       はじめに書くもの   voice 名前 ／ f0 数（高さの基準 Hz。書かなければ声の高さ）／ nat on|off（声の出し方の改良）／ con on|off（子音の改良）／ smooth 数（高さの線の丸め、ミリ秒）／ seed 数
+       どこでも書けるもの lang ja|en（ここから先の音素を、日本語として・英語として作る）
+       音素の行           音素  長さ(ミリ秒)  [項目 値 …]
+       間の行             _  長さ(ミリ秒)
+     項目：
+       p 値 値 …    高さの通過点。値は、音名（A3、C#4、A3+30 はセント）／ 220hz ／ 基準からの半音（+2、-3.5、0）。うしろに @位置（その音素の頭から％）
+                    位置をぜんぶ省くと、1つなら真ん中、2つなら頭と終わり、3つ以上は等間隔。一部に書くときは、頭と終わりだけ省ける（0 と 100）。点のあいだは、まっすぐつないで角を丸める。書かない行は、前後の点のあいだを通る
+       vib 深さ 速さ [遅れ]   その音素の中で、高さをゆらす（半音、Hz、ミリ秒）
+       vol 数       強さの倍率
+       soft bright breathy   声の質（0〜1。話し声の声の質と同じ意味）。書いた行から先に効き、行の真ん中どうしを、なめらかにつなぐ
+       creak 数     きしみ（0〜1）。1周期おきに、長い・短い、強い・弱いが入れかわる
+       asp 数       p t k のあとの息の長さ（ミリ秒）。次の音素の頭に入る
+       noise 数     子音の雑音（破裂・摩擦）の強さの倍率
+       nc 数  nq 数  子音の雑音の山の中心（Hz）と鋭さ       n2 中心 鋭さ 強さ   2つめの山を足す       click 数   破裂の頭の衝撃の倍率（0 で無し）
+       unv          母音の声を抜く（息だけ）
+       mix 母音 数  ほかの母音へ寄せる（0〜1）       f1 f2 f3 数   共鳴の高さを、Hz でずらす
+     音素の記号は、話し声の / / と [ ] の中と同じ（日本語の う は u、ら行は r と書いてもよい）。長い母音・っ は、長さで書く
+     (推定) 読み戻しの注意（短すぎる母音、急すぎる高さの動き、など）のしきい値は、見積もり */
+  const NATDEF={sync:1,jit:.008,shim:.04,drift:.6,b1:1};
+  const natOf=v=>v==null||v===true||v==='on'||v===1?Object.assign({},NATDEF):v===false||v==='off'||v===0?null:typeof v==='object'?Object.assign({sync:0,jit:0,shim:0,drift:0,b1:0},v):Object.assign({},NATDEF);
+  const CONDEF={vmod:1,bands:1,click:1,tap:1,round:1,vbar:1,vz:1};
+  const conOf=v=>v==null||v===true||v==='on'||v===1?Object.assign({},CONDEF):v===false||v==='off'||v===0?null:typeof v==='object'?Object.assign({vmod:0,bands:0,click:0,tap:0,round:0,vbar:0,vz:0},v):Object.assign({},CONDEF);
+  const RK={nc:1,nq:1,n2:1,click:1,p:1,vib:1,vol:1,soft:1,bright:1,breathy:1,creak:1,asp:1,noise:1,unv:1,mix:1,f1:1,f2:1,f3:1},HK={voice:1,f0:1,nat:1,con:1,smooth:1,seed:1,lang:1};
+  const NOTE_RE=/^([A-Ga-g])([#b]?)(-?\d)([+-]\d+(?:\.\d+)?)?$/,SEMI2={c:0,d:2,e:4,f:5,g:7,a:9,b:11},NN=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const noteName=hz=>{if(!(hz>0))return'';const m=69+12*Math.log2(hz/440),r=Math.round(m),c=Math.round((m-r)*100);return NN[((r%12)+12)%12]+(Math.floor(r/12)-1)+(c?(c>0?'+':'')+c:'')};
+  const pitchTok=s=>{let pos=null;const at=s.indexOf('@');if(at>=0){pos=parseFloat(s.slice(at+1));s=s.slice(0,at)}
+    const m=NOTE_RE.exec(s);let o=null;
+    if(m){const midi=12*(+m[3]+1)+SEMI2[m[1].toLowerCase()]+(m[2]==='#'?1:m[2]==='b'?-1:0)+(m[4]?+m[4]/100:0);o={hz:440*Math.pow(2,(midi-69)/12)}}
+    else if(/^\d+(\.\d+)?hz$/i.test(s))o={hz:parseFloat(s)};
+    else if(/^[+-]?(\d+\.?\d*|\.\d+)$/.test(s))o={st:parseFloat(s)};
+    if(!o||(at>=0&&!(pos>=0&&pos<=100)))return null;o.pos=pos;return o};
+  const phKey=(sym,en)=>{const EV=RSP.EV,EC=RSP.EC,k=!en&&sym==='u'?'M':!en&&sym==='r'?'4':sym;return EV[k]||EC[k]?k:null};
+
+  function parseRows(src,errs){
+    const head={},rows=[];let en=false;const EV=RSP.EV;
+    String(src).split(/\r?\n/).forEach((raw,ix)=>{
+      const line=raw.replace(/#.*$/,'').trim(),ln=ix+1,bad=(msg)=>errs.push({msg:ln+'行め：'+msg,near:line});if(!line)return;
+      const w=line.split(/[\s,]+/).filter(Boolean),k=w[0];
+      if(HK[k]){const v=w[1];
+        if(k==='lang'){if(v==='ja'||v==='en')en=v==='en';else bad('lang は ja か en');return}
+        if(k==='voice'){if(VOICES[v])head.voice=v;else bad('知らない声「'+(v||'')+'」');return}
+        if(k==='nat'||k==='con'){if(v==='on'||v==='off')head[k]=v;else bad(k+' は on か off');return}
+        const x=parseFloat(v);if(!isFinite(x)){bad('「'+k+'」のあとに数がありません');return}head[k]=x;return}
+      const dur=parseFloat(w[1]);
+      if(!(dur>0)||!/^\d+(\.\d+)?(ms)?$/.test(w[1]||'')){bad('2つめに、長さ（ミリ秒）を書きます');return}
+      if(k==='_'){if(w.length>2)bad('間の行には、長さだけを書きます');rows.push({ln,pause:1,dur});return}
+      const key=phKey(k,en);if(!key){bad('知らない音素「'+k+'」'+(en?'':'（日本語の音素として読みました。英語は、前の行に lang en）'));return}
+      const r={ln,sym:k,key,en,dur,vowel:!!EV[key]};let i=2;
+      while(i<w.length){const f=w[i++];if(!RK[f]){bad('知らない項目「'+f+'」（使えるのは '+Object.keys(RK).join(' ')+'）');return}
+        const args=[];while(i<w.length&&!RK[w[i]])args.push(w[i++]);const num=j=>parseFloat(args[j]),need=n=>{if(args.length<n||args.slice(0,n).some((a,j)=>f==='mix'&&j===0?false:!isFinite(parseFloat(a)))){bad('「'+f+'」の値が足りないか、数ではありません');return false}return true};
+        if(f==='unv'){if(!r.vowel)bad('unv は、母音の行に書きます');r.unv=1;continue}
+        if(f==='p'){const P=args.map(pitchTok);if(!P.length||P.some(x=>!x)){bad('高さの値が読めません（音名 A3、220hz、半音 +2 のどれか。位置は @0〜@100）');return}
+          const np=P.filter(x=>x.pos==null).length,L=P.length-1;
+          if(np===P.length)P.forEach((x,j)=>{x.pos=L?100*j/L:50});
+          else{if(P[0].pos==null)P[0].pos=0;if(P[L].pos==null)P[L].pos=100;if(P.some(x=>x.pos==null)){bad('高さの位置（@）を書くときは、あいだの点にはぜんぶ書きます（頭と終わりは省けて、0 と 100 になる）');return}}
+          if(P.some((x,j)=>j&&x.pos<P[j-1].pos)){bad('高さの位置は、左から右へ大きくなる順に書きます');return}r.p=P;continue}
+        if(f==='n2'){if(r.vowel||!need(3)){if(r.vowel)bad('n2 は、子音の行に書きます');return}r.n2=[Math.min(7200,Math.max(300,num(0))),Math.max(.2,num(1)),Math.max(0,num(2))];continue}
+        if(f==='vib'){if(!need(2))return;r.vib=[num(0),num(1),args.length>2?num(2):0];continue}
+        if(f==='mix'){const mk=phKey(args[0]||'',en);if(!r.vowel||!mk||!EV[mk]||!isFinite(num(1))){bad('mix は、母音の行に「mix 母音 数」と書きます');return}r.mix=[mk,Math.min(1,Math.max(0,num(1)))];continue}
+        if(!need(1))return;const x=num(0);
+        if(f==='f1'||f==='f2'||f==='f3'){if(!r.vowel){bad(f+' は、母音の行に書きます');return}(r.df=r.df||[0,0,0])[+f[1]-1]=x;continue}
+        if(f==='soft'||f==='bright'||f==='breathy'||f==='creak'){r[f]=Math.min(1,Math.max(0,x));continue}
+        if(f==='vol'){r.vol=Math.min(3,Math.max(0,x));continue}
+        if(f==='noise'){r.noise=Math.min(4,Math.max(0,x));continue}
+        if(f==='asp'){r.asp=Math.min(150,Math.max(0,x));continue}
+        if(f==='nc'||f==='nq'||f==='click'){if(r.vowel){bad(f+' は、子音の行に書きます');return}r[f]=f==='nc'?Math.min(7200,Math.max(300,x)):f==='nq'?Math.min(8,Math.max(.2,x)):Math.min(4,Math.max(0,x));continue}}
+      rows.push(r)});
+    if(!rows.some(r=>!r.pause)&&!errs.length)errs.push({msg:'音素の行がありません',near:''});
+    return{head,rows}}
+
+  const withSeed=(seed,fn)=>{if(seed==null)return fn();let sd=(seed*2654435761)>>>0;const keep=Math.random;
+    Math.random=()=>{sd=(sd+0x6D2B79F5)>>>0;let t=sd;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296};
+    try{return fn()}finally{Math.random=keep}};
+  const lerpAt=(A,t)=>{if(!A.length)return null;if(t<=A[0][0])return A[0][1];for(let i=1;i<A.length;i++)if(t<=A[i][0]){const a=A[i-1],b=A[i];return a[1]+(b[1]-a[1])*(t-a[0])/(b[0]-a[0]||1)}return A[A.length-1][1]};
+
+  // 行を鳴らす（dry なら、音は作らずに、時刻と高さの線だけ）
+  function runRows(P,o,dry){
+    const H=P.head,rows=P.rows,EV=RSP.EV,vname=o.voice||H.voice,base=Object.assign({},vname&&VOICES[vname],o);delete base.voice;
+    if(H.f0!=null&&o.f0==null)base.f0=H.f0;
+    const q=segOpts(base,{}),S0=RSP.STY[q.style]||RSP.STY.calm,seed=o.seed!=null?o.seed:H.seed,smooth=(o.smooth!=null?o.smooth:H.smooth!=null?H.smooth:10)/1000;
+    q.sty=Object.assign({},q.sty,{sp:1,pm:1});q.speed=1;q.fuji=false;q.kx=1;q.dry=!!dry;q.nat=natOf(o.nat!=null?o.nat:H.nat);q.con=conOf(o.con!=null?o.con:H.con);delete q.seed;delete q.smooth;if(!q.diag)q.diag=[];
+    const cl=(x,a,b)=>x<a?a:x>b?b:x,D0={soft:q.oq||.58,bright:cl((q.sharp||.6)+(S0.eff||0),.1,1),breathy:(q.breath||0)+S0.br,creak:0},tmp=[],out={P,q,f0b:q.f0||150};
+    rows.forEach((r,n)=>{r.use=r.key;if(r.pause||(!r.mix&&!r.df))return;const a=EV[r.key].slice();                     // 母音を寄せる・ずらす：その行だけの母音を、いっとき表に足す
+      if(r.mix){const b=EV[r.mix[0]];for(let j=0;j<9;j++)a[j]+=(b[j]-a[j])*r.mix[1]}
+      if(r.df)for(let j=0;j<3;j++){a[j]=Math.max(150,a[j]+r.df[j]);a[j+6]=Math.max(150,a[j+6]+r.df[j])}
+      r.use=r.key+'~'+n;EV[r.use]=a;tmp.push(r.use)});
+    /* 長さ：芯は、音素によって少し長く作る（破擦音の下限、息のあとの継ぎ目、など）。書いた長さになるまで、渡す長さを直す（下の3回の空回し）。
+       句の終わりの音素には、芯が消えぎわ（余韻）を足す。そのぶんは、次の間の中に入れて、全体の時刻が「書いた長さの合計」になるようにする */
+    const EC=RSP.EC,tailOf=(r,nx)=>nx&&!nx.pause?0:r.vowel?(r.unv?.02:.05):EC[r.key][0]==='s'?.055:.02;
+    rows.forEach((r,n)=>{if(r.pause){const pv=rows[n-1];r.tail=pv&&!pv.pause?pv.tail:0}else{r.tail=tailOf(r,rows[n+1]);if(r.d==null)r.d=r.dur/1000}});
+    q.gfix=G=>{G.length=0;let pv=null;
+      for(const r of rows){if(r.pause){G.push(r.g={p:1,ps:Math.max(.004,r.dur/1000-r.tail)});pv=null;continue}
+        const g={ph:r.use,D:r.d,xd:1,am:1};if(r.en)g.en=1;else{g.J=1;g.jp=1}
+        if(r.vol!=null&&r.vol!==1)g.vx=r.vol;if(r.unv)g.wv=1;if(r.asp!=null)g.aspX=r.asp/1000;if(r.n2)g.nbX=r.n2;if(r.click!=null)g.clkX=r.click;
+        g.P=pv;g.N=null;if(pv)pv.N=g;pv=g;G.push(g);r.g=g}};
+    q.kfix=(K,G,f0b)=>{
+      for(const r of rows){const g=r.g;r.ta=g._ta;r.tb=g._tb;if(r.pause)r.ta-=r.tail;else r.tb-=r.tail;if(q.dry===2)continue;if(r.pause)continue;if(r.noise!=null)for(let i=g._k0;i<g._k1;i++)K[i][5]*=r.noise;
+        if(r.nc!=null||r.nq!=null)for(let i=Math.max(0,g._k0-1);i<g._k1;i++){if(i<g._k0&&K[i][5])continue;if(r.nc!=null)K[i][6]=r.nc;if(r.nq!=null)K[i][7]=r.nq}}
+      if(q.dry===2)return;
+      const T=K[K.length-1][0],h=.0025,n=Math.ceil(T/h)+2,y=new Float32Array(n),W=[];
+      // 高さ：通過点をまっすぐつなぎ、角を丸める（前から・後ろからの2回がけで、時刻はずれない）。そのあとで、ゆらし（vib）を足す
+      for(const r of rows)if(r.p&&!r.pause)for(const pt of r.p)W.push([r.ta+(r.tb-r.ta)*pt.pos/100,pt.hz!=null?12*Math.log2(pt.hz/f0b):pt.st]);
+      for(let i=0;i<n;i++)y[i]=W.length?lerpAt(W,i*h):0;
+      if(smooth>0){const a=1-Math.exp(-h/(smooth*.6));let s=y[0];for(let i=0;i<n;i++){s+=(y[i]-s)*a;y[i]=s}s=y[n-1];for(let i=n-1;i>=0;i--){s+=(y[i]-s)*a;y[i]=s}}
+      for(const r of rows)if(r.vib&&!r.pause){const t0=r.ta+r.vib[2]/1000;for(let i=Math.max(0,Math.ceil(t0/h));i<n&&i*h<=r.tb;i++){const t=i*h;y[i]+=r.vib[0]*Math.sin(6.2832*r.vib[1]*(t-t0))*cl((t-t0)/.12,0,1)*cl((r.tb-t)/.06,0,1)}}
+      const yAt=t=>{const u=cl(t/h,0,n-1),i=Math.min(n-2,Math.floor(u));return y[i]+(y[i+1]-y[i])*(u-i)};
+      // 声の質：書いた行から先に効く。行の真ん中どうしを、まっすぐつなぐ
+      const LN=['soft','bright','breathy','creak'],lane=LN.map(k=>{const A=[];let v=D0[k];for(const r of rows){if(r.pause)continue;if(r[k]!=null)v=k==='soft'?.42+.36*r[k]:k==='bright'?.1+.9*r[k]:k==='breathy'?1.5*r[k]:r[k];A.push([(r.ta+r.tb)/2,v])}return A});
+      // 制御点を 5 ミリ秒おきに足して（足した点は、前後をまっすぐつないだ値なので、ほかの列は変わらない）、高さと声の質を書きこむ
+      const N2=[];for(let i=0;i<K.length;i++){const A=K[i];N2.push(A);const B=K[i+1];if(!B)break;
+        for(let t=(Math.floor(A[0]/.005)+1)*.005;t<B[0]-1e-6;t+=.005){const u=(t-A[0])/(B[0]-A[0]),C=new Array(14);for(let j=0;j<14;j++)C[j]=A[j]+(B[j]-A[j])*u;C[0]=t;if(A.nb)C.nb=A.nb;N2.push(C)}}
+      for(const A of N2){const t=A[0];A[9]=Math.pow(2,yAt(t)/12);for(let j=0;j<4;j++)A[14+j]=lerpAt(lane[j],t);if(A[14]==null){A[14]=D0.soft;A[15]=D0.bright;A[16]=D0.breathy;A[17]=0}}
+      K.length=0;for(const A of N2)K.push(A);
+      out.curve={h,y,f0b,at:t=>f0b*Math.pow(2,yAt(t)/12)};out.f0b=f0b;out.dur=T};
+    try{q.dry=2;for(let it=0;it<3;it++){RSP.speak('/a/',q);let m=0;for(const r of rows)if(!r.pause){const e=r.dur/1000-(r.tb-r.ta);r.d=Math.max(.004,r.d+e);if(Math.abs(e)>m)m=Math.abs(e)}if(m<.0005)break}
+      q.dry=!!dry;out.x=withSeed(seed,()=>RSP.speak('/a/',q))}finally{for(const k of tmp)delete EV[k]}
+    out.x.rate=RSP.SRV;return out}
+
+  // 読み戻し：鳴らした結果を測って、行ごとに返す。おかしな所は warnings に
+  function readback(R){
+    const x=R.x,rows=R.P.rows,sr=RSP.SRV,EC=RSP.EC,cv=R.curve,warn=[],out=[],W=(r,msg)=>warn.push({line:r?r.ln:0,msg:(r?r.ln+'行め（'+r.sym+'）：':'')+msg});
+    const measF0=(tc,fe)=>{const half=Math.max(.02,1.5/fe),a=Math.max(0,Math.round((tc-half)*sr)),b=Math.min(x.length,Math.round((tc+half)*sr)),n=b-a;if(n<sr*.03)return null;
+      const lo=Math.max(2,Math.floor(sr/Math.min(700,fe*1.5))),hi=Math.min(n-2,Math.ceil(sr/Math.max(40,fe/1.5))),c=[];let best=0,bl=0;
+      for(let L=lo;L<=hi;L++){let s=0,e1=0,e2=0;for(let i=a;i<b-L;i++){s+=x[i]*x[i+L];e1+=x[i]*x[i];e2+=x[i+L]*x[i+L]}c[L]=s/Math.sqrt(e1*e2+1e-12);if(c[L]>best){best=c[L];bl=L}}
+      if(best<.5||bl<=lo||bl>=hi)return null;const L=bl,d=(c[L-1]-c[L+1])/(2*(c[L-1]-2*c[L]+c[L+1])||1);return sr/(L+d)};   // 指定の高さの前後（0.67〜1.5倍）で、いちばん周期のそろう所
+    const rms=(ta,tb)=>{const a=Math.max(0,Math.round(ta*sr)),b=Math.min(x.length,Math.round(tb*sr));let s=0;for(let i=a;i<b;i++)s+=x[i]*x[i];return b>a?Math.sqrt(s/(b-a)):0};
+    // 子音の雑音：250Hz きざみで強さを測り、いちばん強い所（山）と、重心を返す。破裂音は終わりの4割、破擦音は終わりの6割、摩擦音は真ん中の7割を測る
+    const spec=(ta,tb)=>{const a=Math.max(0,Math.round(ta*sr)),b=Math.min(x.length,Math.round(tb*sr)),n=b-a;if(n<48)return null;let pk=0,pf=0,s0=0,s1=0;
+      for(let f=750;f<=7750;f+=250){const w=6.2832*f/sr,c=2*Math.cos(w);let q1=0,q2=0;for(let i=0;i<n;i++){const q0=x[a+i]*(.5-.5*Math.cos(6.2832*i/(n-1)))+c*q1-q2;q2=q1;q1=q0}const e=q1*q1+q2*q2-c*q1*q2;if(e>pk){pk=e;pf=f}s0+=e;s1+=e*f}
+      return s0>0?[pf,Math.round(s1/s0/10)*10]:null};
+    let top=1e-9,lo=1e9,hi=0;const vd=[];
+    for(const r of rows){const o={line:r.ln,ph:r.pause?'_':r.sym,start:Math.round(r.ta*1e4)/10,dur:Math.round((r.tb-r.ta)*1e4)/10};out.push(o);if(r.pause)continue;
+      const voiced=r.vowel?!r.unv:!!(EC[r.key]&&EC[r.key][2]),d=r.tb-r.ta;if(Math.abs(d*1000-r.dur)>4)W(r,'書いた長さ（'+r.dur+' ミリ秒）にできず、'+Math.round(d*1000)+' ミリ秒になりました（この音素の作りの下限）');o.voiced=voiced;o.rms=rms(r.ta,r.tb);
+      if(voiced){o.f0=[r.ta,(r.ta+r.tb)/2,r.tb].map(t=>Math.round(cv.at(t)*10)/10);o.note=noteName(o.f0[1]);for(const f of o.f0){if(f<lo)lo=f;if(f>hi)hi=f}}
+      if(r.vowel&&voiced){if(o.rms>top)top=o.rms;vd.push(d);
+        if(d>=.045){const m=measF0((r.ta+r.tb)/2,o.f0[1]);o.meas=m?Math.round(m*10)/10:null;
+          if(m&&!r.vib&&!(r.creak>0)&&Math.abs(12*Math.log2(m/o.f0[1]))>1)W(r,'測った高さ（'+o.meas+'Hz）が、指定（'+o.f0[1]+'Hz）と半音より大きくずれています')}
+        if(d<.04)W(r,'母音が '+Math.round(d*1000)+' ミリ秒しかありません。40 ミリ秒より短いと、母音に聞こえにくくなります');
+        const sl=Math.abs(12*Math.log2(o.f0[2]/o.f0[0]))/d;if(sl>60&&Math.abs(12*Math.log2(o.f0[2]/o.f0[0]))>2)W(r,'高さの動きが急です（1秒あたり '+Math.round(sl)+' 半音）。人の声は、1秒あたり 50 半音あたりまで');
+        if(d>.4&&!r.vib&&Math.abs(12*Math.log2(o.f0[2]/o.f0[0]))<.4)W(r,'400 ミリ秒より長い母音の高さが、ほとんど動いていません（機械のように聞こえやすい）')}
+      if(!r.vowel){const c=EC[r.key];if(c&&(c[0]==='s'||c[0]==='a'||c[0]==='f')){const nzm=c[0]==='s'?spec(r.tb-d*.4,r.tb+.004):c[0]==='a'?spec(r.tb-d*.6,r.tb):spec(r.ta+d*.15,r.tb-d*.15);if(nzm)o.noise=nzm}
+        if(c&&c[0]==='s'&&d<.03)W(r,'破裂音が 30 ミリ秒より短く、閉じる間がほとんどありません');
+        if(c&&c[0]==='s'&&!c[2]&&r.g.N&&r.g.N.aspT>(r.g.N._tb-r.g.N._ta)*.45)W(r,'息（asp）が、次の音素の半分ちかくを占めています')}}
+    for(const o of out)if(o.rms!=null){o.level=Math.round(200*Math.log10((o.rms+1e-9)/top))/10;delete o.rms}
+    if(!rows.some(r=>r.p))W(null,'高さ（p）がどの行にも書かれていません。ぜんぶ基準の高さで、平らに鳴ります');
+    if(hi>0&&(lo<55||hi>520))W(null,'高さが '+Math.round(lo)+'〜'+Math.round(hi)+'Hz に広がっています（人の話し声は、だいたい 60〜500Hz）');
+    if(vd.length>=6){const m=vd.reduce((a,b)=>a+b,0)/vd.length,sd=Math.sqrt(vd.reduce((a,b)=>a+(b-m)*(b-m),0)/vd.length);if(sd/m<.06)W(null,'母音の長さが、ほとんど同じです（ばらつき '+Math.round(sd/m*100)+'%）。句の終わりを伸ばす、強めたい拍を長くする、などの差をつけると、棒読みから離れます')}
+    const pad=(s,n)=>{s=String(s);while(s.length<n)s=' '+s;return s};
+    const text=['行   音素   頭ms  長さms  高さHz（頭→中→終）       音名      測った高さ  強さdB  雑音の山Hz（重心）'].concat(out.map(o=>pad(o.line,3)+'  '+pad(o.ph,4)+'  '+pad(o.start.toFixed(0),6)+'  '+pad(o.dur.toFixed(0),5)+'   '+
+      (o.f0?pad(o.f0.map(f=>f.toFixed(0)).join('→'),15)+'   '+pad(o.note,8)+'  '+pad(o.meas!=null?o.meas.toFixed(0)+'Hz':'—',9):pad(o.ph==='_'?'（間）':'（声なし）',15)+pad('',23))+'  '+pad(o.level!=null?o.level.toFixed(1):'',6)+(o.noise?'  '+pad(o.noise[0],6)+'（'+o.noise[1]+'）':''))).join('\n')+
+      '\n全体 '+(R.dur*1000).toFixed(0)+' ミリ秒'+(hi>0?'、高さ '+lo.toFixed(0)+'〜'+hi.toFixed(0)+'Hz（'+(12*Math.log2(hi/lo)).toFixed(1)+' 半音）':'')+(warn.length?'\n注意：\n'+warn.map(w=>'  ・'+w.msg).join('\n'):'\n注意：なし');
+    return{ok:true,rows:out,warnings:warn,dur:R.dur,range:hi>0?[lo,hi]:null,curve:R.curve,text}}
+
+  /* 行を鳴らす → 16kHz の Float32Array（.report に読み戻し）。o：voice、f0、nat（true/false か {sync,jit,shim,drift,b1}）、seed、smooth、
+     声の質（size soft bright breathy rough shake whisper）、strict:false（読めない行を飛ばして続ける） */
+  function speakRows(src,o){o=Object.assign({},o);const errs=[],P=parseRows(src,errs);
+    if(errs.length&&(o.strict!==false||!P.rows.some(r=>!r.pause)))throw fail(errs,src);
+    const R=runRows(P,o,false);R.x.report=readback(R);R.x.report.errors=errs;return R.x}
+  // 行を確かめる：鳴らして測った結果を返す（読めない行があれば ok:false と errors）
+  function checkRows(src,o){o=Object.assign({},o);const errs=[],P=parseRows(src,errs);if(errs.length)return{ok:false,errors:errs,text:'読めない行があります\n'+errs.map(e=>'  ・'+e.msg).join('\n')};
+    const R=runRows(P,o,false),rep=readback(R);rep.errors=[];return rep}
+
+  /* おまけ：かな（や / / [ ]）の文を、自動の規則をかけた結果の「行」に直す。直した行は、もとの文と、ほぼ同じ長さ・同じ高さの動きで鳴る（手で直すための下書き）。
+     声や調子の切りかえ（<voice> など）のある文は、まだ直せない */
+  function toRows(text,o){o=Object.assign({},o);const errs=[],base=Object.assign({},o.voice&&VOICES[o.voice],o);delete base.voice;
+    const segs=plan(text,errs);if(segs.length>1)errs.push({msg:'声や調子の切りかえ（<voice> など）のある文は、まだ行に直せません',near:''});
+    if(!segs.length)errs.push({msg:'読む文がありません',near:''});if(errs.length)throw fail(errs,text);
+    const q=segOpts(base,segs[0].set);q.diag=errs;q.dry=true;q.dbg={};delete q.seed;delete q.nat;delete q.con;
+    withSeed(o.seed!=null?o.seed:1,()=>RSP.speak(segs[0].t,q));if(errs.length&&o.strict!==false)throw fail(errs,text);
+    const EV=RSP.EV,EC=RSP.EC,S=Object.assign({},RSP.STY[q.style]||RSP.STY.calm,q.sty),K=q.dbg.K,f0b=(q.f0||150)*S.pm,KA=K.map(k=>[k[0],k[9]]),st=t=>12*Math.log2(lerpAt(KA,t)),rows=[];
+    for(const g of q.dbg.G){if(g._ta==null)continue;let d=g._tb-g._ta;const ok=g.ph&&!g.skip&&(EV[g.ph]||EC[g.ph]);
+      if(!ok){if(d>.0015)rows.push({ln:0,pause:1,dur:d*1000});continue}
+      const vowel=!!EV[g.ph],en=!!g.en,c=EC[g.ph],cut=(g.mo||g).cut&&vowel&&!g.wv?Math.min(d*.5,.012+.045/((q.speed||1)*S.sp)):0;d-=cut;
+      const r={ln:0,sym:!en&&g.ph==='M'?'u':!en&&g.ph==='4'?'r':g.ph,key:g.ph,en,vowel,dur:d*1000,target:d};
+      if(g.wv)r.unv=1;if((vowel&&!g.wv)||(c&&c[2])){const a=g._ta+Math.min(.004,d*.1),b=g._ta+d-Math.min(.002,d*.05);r.p=(vowel?[a,(a+b)/2,b]:[(a+b)/2]).map((t,j,A)=>({st:Math.round(st(t)*10)/10,pos:A.length===1?50:50*j}))}
+      if(c&&c[0]==='s'&&!c[2]&&g.N&&g.N.aspT)r.asp=Math.round(g.N.aspT*1000);
+      if(g.am&&Math.abs(g.am-1)>.03)r.vol=Math.round(g.am*100)/100;
+      rows.push(r);if(cut)rows.push({ln:0,pause:1,dur:cut*1000})}
+    // 句の終わりの余韻は、次の間に入れる（行の書式の決まり）。長さ合わせは、鳴らすときに runRows がする
+    rows.forEach((r,n)=>{if(r.pause)return;const nx=rows[n+1];if(nx&&!nx.pause)return;const t=r.vowel?(r.unv?.02:.05):EC[r.key][0]==='s'?.055:.02,sp=1/((q.speed||1)*S.sp);r.dur=Math.max(10,r.dur-t*sp*1000);if(nx)nx.dur+=t*sp*1000});
+    const P={head:{f0:Math.round(f0b*10)/10}};if(o.voice)P.head.voice=o.voice;
+    const L=[];if(P.head.voice)L.push('voice '+P.head.voice);L.push('f0 '+P.head.f0);let en=false;const pad=(s,n)=>{s=String(s);while(s.length<n)s+=' ';return s};
+    for(const r of rows){if(r.pause){L.push(pad('_',5)+Math.round(r.dur));continue}if(r.en!==en){en=r.en;L.push('lang '+(en?'en':'ja'))}
+      L.push((pad(r.sym,5)+pad(Math.round(r.dur),5)+(r.p?' p '+r.p.map(x=>(x.st>0?'+':'')+x.st).join(' '):'')+(r.unv?' unv':'')+(r.asp!=null?' asp '+r.asp:'')+(r.vol!=null?' vol '+r.vol:'')).trimEnd())}
+    return L.join('\n')}
+  return{speakRows,checkRows,toRows,parseRows,NAT:NATDEF,CON:CONDEF,VERSION,speak,sing,check,toPhonemes,lyric,radio,buffer,VOICES,voices,DIMS,voiceAt,STYLES:Object.keys(RSP.STY),RSP,OtoSing,SR:{speak:RSP.SRV,sing:OtoSing.SR,radio:24000}};
 })();
 /*</OTOVOICE-API>*/
 root.OtoVoice=OtoVoice;if(typeof module!=='undefined'&&module.exports)module.exports=OtoVoice;

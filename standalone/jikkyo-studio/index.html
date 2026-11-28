@@ -7,7 +7,7 @@
 <meta name="description" content="自作のゲームを自動の遊び手が遊び、VTuber がリスナーと雑談しながら配信しているような動画を、ブラウザの中で作る。視聴者の書き込み、投げ銭、字幕、声はその場で合成。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=JetBrains+Mono:wght@500&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
 <style>/* 下地（claude.ai のアーティファクトの枠と同じもの） */:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <style>
 :root{
@@ -138,8 +138,8 @@ code{font-family:var(--font-mono);font-size:12.5px;background:var(--bg);border:1
         <li>回のファイルに、自動の遊び手（<code>step</code>）、出来事ごとのセリフ（<code>lines</code>）、書き込みの言葉（<code>chat</code>）、視聴者との掛け合い（<code>talk</code>）を書きます。書き方は <code>jikkyo.js</code> の頭の手引きにあります。</li>
         <li>雑談（世間話・出演者ごとの話・投げ銭とお礼）は <code>zatsudan.js</code> に共通でまとめてあります。回に <code>zatsu</code>（その回だけの掛け合いと、終わったあとの振り返り）を書くと、遊んでいる最中の雑談と、終わったあとの「雑談タイム」が入ります。</li>
         <li>アオイとレイは英語で話します（字幕は英語、その下に日本語）。英語のセリフは <code>Jikkyo.english</code> に、日本語の字幕と対にして書きます。訳がないセリフは、台本チェックに出ます。</li>
-        <li>ゲームの中身を外から読めると、遊び手も出来事も書きやすくなります。射手の2本は <code>window.__kj</code>、サーキットは <code>window.__ng</code>、井戸底ソフトは <code>window.__idz</code> に中身を出しています。サーキットの回は、ゲームの入力（<code>IN.get</code>）を差しかえて、ゲームの自動運転の線とペダルを、人の手らしく遅らせて渡しています。</li>
-        <li>ページの頭に <code>&lt;script src="play-xxx.js"&gt;</code> を足すと、上の「Game」に並びます。リンクの末尾に <code>#joukuu</code>・<code>#circuit</code>・<code>#idozoko</code> のように書くと、そのゲームで開きます。</li>
+        <li>ゲームの中身を外から読めると、遊び手も出来事も書きやすくなります。射手の2本は <code>window.__kj</code>、サーキットは <code>window.__ng</code>、井戸底ソフトは <code>window.__idz</code> に中身を出しています。積層宙域は中身を外に出していないので、回の <code>source</code> で、読みこむときに窓口（<code>window.__sk</code>）を1行差しこんでいます（ゲームのファイルそのものは元のまま）。サーキットの回は、ゲームの入力（<code>IN.get</code>）を差しかえて、ゲームの自動運転の線とペダルを、人の手らしく遅らせて渡しています。</li>
+        <li>ページの頭に <code>&lt;script src="play-xxx.js"&gt;</code> を足すと、上の「Game」に並びます。リンクの末尾に <code>#joukuu</code>・<code>#circuit</code>・<code>#idozoko</code>・<code>#sekisou</code> のように書くと、そのゲームで開きます。</li>
       </ol>
     </section>
   </div>
@@ -156,6 +156,7 @@ code{font-family:var(--font-mono);font-size:12.5px;background:var(--bg);border:1
 <script src="play-joukuu.js"></script>
 <script src="play-circuit.js"></script>
 <script src="play-idozoko.js"></script>
+<script src="play-sekisou.js"></script>
 <script>
 /* Jikkyo スタジオ：ページの部品と、配信の土台（Jikkyo.mount）をつなぐ */
 (() => {

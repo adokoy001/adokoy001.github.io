@@ -1,4 +1,4 @@
-/*! Jikkyo 1.3.0 — ゲームを遊びながらしゃべる VTuber の配信のような動画を、ブラウザの中で作る土台
+/*! Jikkyo 1.3.1 — ゲームを遊びながらしゃべる VTuber の配信のような動画を、ブラウザの中で作る土台
  *
  * 画面：左に大きくゲーム、右下に VTuber（腰から上。ゲームの右下の角に重ねる）、右上に視聴者の書き込みが流れる、下に小さく字幕。
  * ゲームは、自作の HTML のゲームを、そのまま同じページの中（iframe）で動かす。遊ぶのは「自動の遊び手」（回のファイルが書く）。
@@ -10,6 +10,7 @@
  * ■ 回の書き方（Jikkyo.play）
  *   id, title（配信のタイトル）, game（ゲームの HTML のファイル名）, tags（タイトルの下に出す短い言葉）
  *   short（ゲームを選ぶところに出す短い名前）, blurb（ひとことの説明）, minutes（ゲームの終わりまでのおよその分）, character（はじめの出演者）
+ *   source(html)    → html  ゲームの HTML を開く前に、手を入れる（中身を外から読む窓口を足す、など。なくてもよい。ファイルそのものは元のまま）
  *   setup(g)        ゲームを読みこんだあとに1回。g.win はゲームの window、g.doc は document
  *   canvases(g)     → [ゲームの絵の canvas, ...]。上から重ねて写す（あとの物ほど上）
  *   overlay(ctx,x,y,w,h,s)  写したあとに足す絵（走査線など。なくてもよい）
@@ -55,7 +56,7 @@
  */
 const Jikkyo = (() => {
   'use strict';
-  const VERSION = '1.3.0';
+  const VERSION = '1.3.1';
   // 投げ銭の色（金額で変わる）：bg 見出し、body 本文、ink 見出しの字、bodyInk 本文の字
   function scTier(n) {
     if (n >= 10000) return { bg: '#c4161c', body: '#e62117', ink: '#ffffff', bodyInk: '#ffffff' };
@@ -206,7 +207,9 @@ window.__jk={pump:function(now){var L=Q.splice(0);for(var i=0;i<L.length;i++){tr
 try{var gc=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(t,a){if(/webgl/.test(String(t)))a=Object.assign({},a||{},{preserveDrawingBuffer:true});return gc.call(this,t,a)}}catch(e){}
 try{var mk=window.parent&&window.parent.__jkGameAudio;if(mk){var F=function(){return mk()};window.AudioContext=F;window.webkitAudioContext=F}}catch(e){}})();`;
     async function loadGame() {
-      const html = await (await fetch(base + P.game)).text();
+      let html = await (await fetch(base + P.game)).text();
+      // 回が、ゲームの HTML に手を入れてから開くことがある（中身を外から読む窓口を足す、など。ファイルそのものは元のまま）
+      if (P.source) { try { html = P.source(html); } catch (e) { console.error(e); } }
       const i = html.indexOf('<script');
       // 前置き：requestAnimationFrame を預かる／WebGL の絵を残す（ゲームが描かなかったこまでも写せる）／AudioContext をこちらのものにする
       const doc = i < 0 ? html : html.slice(0, i) + '<script>' + PRELUDE + '<\/script>' + html.slice(i);
